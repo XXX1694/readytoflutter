@@ -97,43 +97,43 @@ export default function HomePage() {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {/* Hero */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           Flutter Interview Prep
           <span className="ml-2 text-flutter-blue">💙</span>
         </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-sm max-w-2xl">
+        <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base max-w-3xl">
           Comprehensive interview preparation covering Dart & Flutter from Junior to Senior level.
           Topics include state management, architecture patterns, DSA, native integration, and more.
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{total}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
+          <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{total}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Total Questions</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">{completed}</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
+          <div className="text-xl sm:text-2xl font-bold text-cyan-700 dark:text-cyan-300">{completed}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Completed</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-2xl font-bold text-flutter-blue dark:text-flutter-sky">{inProgress}</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
+          <div className="text-xl sm:text-2xl font-bold text-flutter-blue dark:text-flutter-sky">{inProgress}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">In Progress</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-2xl font-bold text-slate-700 dark:text-slate-300">{pct}%</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
+          <div className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-300">{pct}%</div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Completion</div>
         </div>
       </div>
 
       {/* Progress bar */}
       {total > 0 && (
-        <div className="mb-8">
-          <div className="h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
+        <div className="mb-6 sm:mb-8">
+          <div className="h-1.5 sm:h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
             <div
               className="h-full bg-flutter-blue rounded-full transition-all duration-700"
               style={{ width: `${pct}%` }}
@@ -148,16 +148,16 @@ export default function HomePage() {
         if (!levelTopics.length) return null;
         const cfg = LEVEL_CONFIG[level];
         return (
-          <div key={level} className="mb-10">
-            <div className="flex items-center gap-3 mb-4">
+          <div key={level} className="mb-8 sm:mb-10">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cfg.label}</h2>
-              <span className="text-xs text-slate-500 dark:text-slate-400">{cfg.desc}</span>
+              <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">{cfg.label}</h2>
+              <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">{cfg.desc}</span>
               <span className={`ml-auto text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
-                {levelTopics.length} topics
+                {levelTopics.length} topic{levelTopics.length !== 1 ? 's' : ''}
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
               {levelTopics.map(topic => (
                 <TopicCard key={topic.id} topic={topic} level={level} />
               ))}

@@ -24,7 +24,10 @@ export default function TopicPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadTopic(); }, [slug]);
+  useEffect(() => {
+    loadTopic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   if (loading) {
     return (
@@ -49,11 +52,11 @@ export default function TopicPage() {
   const pct = questions.length > 0 ? Math.round((completedCount / questions.length) * 100) : 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {/* Breadcrumb */}
       <button
         onClick={() => navigate('/')}
-        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-4 sm:mb-6 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -62,18 +65,18 @@ export default function TopicPage() {
       </button>
 
       {/* Topic header */}
-      <div className="flex items-start gap-4 mb-6">
-        <span className="text-4xl">{topic.icon}</span>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{topic.title}</h1>
+      <div className="flex items-start gap-3 sm:gap-4 mb-6">
+        <span className="text-3xl sm:text-4xl">{topic.icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-100">{topic.title}</h1>
             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
               {cfg.label}
             </span>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 text-sm">{topic.description}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">{topic.description}</p>
           {/* Progress */}
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-3">
             <div className="flex-1 max-w-xs h-1.5 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
               <div
                 className="h-full bg-flutter-sky rounded-full transition-all"

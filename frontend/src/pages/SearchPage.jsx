@@ -22,27 +22,34 @@ export default function SearchPage() {
   }, [query, level, difficulty]);
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/')} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <button onClick={() => navigate('/')} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors shrink-0">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-          Search results for <span className="text-flutter-blue dark:text-flutter-sky">"{query}"</span>
+        <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100 min-w-0">
+          Search: <span className="text-flutter-blue dark:text-flutter-sky truncate">"{query}"</span>
         </h1>
         {!loading && (
-          <span className="text-sm text-slate-500 dark:text-slate-400 ml-auto">{results.length} results</span>
+          <span className="hidden sm:inline text-sm text-slate-500 dark:text-slate-400 ml-auto shrink-0">{results.length} result{results.length !== 1 ? 's' : ''}</span>
         )}
       </div>
 
+      {/* Results count mobile */}
+      {!loading && (
+        <div className="sm:hidden text-xs text-slate-500 dark:text-slate-400 mb-3">
+          {results.length} result{results.length !== 1 ? 's' : ''}
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
         <select
           value={level}
           onChange={e => setLevel(e.target.value)}
-          className="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-flutter-blue dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300"
+          className="flex-1 sm:flex-none bg-white border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-flutter-blue dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300"
         >
           <option value="">All Levels</option>
           <option value="junior">Junior</option>
@@ -52,7 +59,7 @@ export default function SearchPage() {
         <select
           value={difficulty}
           onChange={e => setDifficulty(e.target.value)}
-          className="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-flutter-blue dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300"
+          className="flex-1 sm:flex-none bg-white border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-flutter-blue dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300"
         >
           <option value="">All Difficulties</option>
           <option value="easy">Easy</option>

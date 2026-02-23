@@ -44,7 +44,7 @@ export default function QuestionCard({ question, index, onProgressChange }) {
   const statusConfig = STATUSES.find(s => s.key === status);
 
   return (
-    <div className={`border rounded-xl overflow-hidden transition-all duration-200 ${
+    <div className={`border rounded-lg sm:rounded-xl overflow-hidden transition-all duration-200 ${
       open
         ? 'border-flutter-blue/50 bg-white dark:border-flutter-blue/50 dark:bg-slate-900'
         : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
@@ -52,7 +52,7 @@ export default function QuestionCard({ question, index, onProgressChange }) {
       {/* Question header */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-start gap-3 p-4 text-left"
+        className="w-full flex items-start gap-2 sm:gap-3 p-3 sm:p-4 text-left"
       >
         {/* Index */}
         <span className="shrink-0 w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs flex items-center justify-center font-mono mt-0.5 dark:bg-slate-800 dark:text-slate-400">
@@ -60,8 +60,8 @@ export default function QuestionCard({ question, index, onProgressChange }) {
         </span>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-slate-800 dark:text-slate-200 leading-snug">{question.question}</p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-snug">{question.question}</p>
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded border font-medium ${difficultyColors[question.difficulty]}`}>
               {question.difficulty}
             </span>
@@ -112,19 +112,19 @@ export default function QuestionCard({ question, index, onProgressChange }) {
           </div>
 
           {/* Answer */}
-          <div className="px-4 py-4">
+          <div className="px-3 sm:px-4 py-4">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Answer</h4>
-            <div className="answer-text text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+            <div className="answer-text text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
               {question.answer}
             </div>
           </div>
 
           {/* Code example */}
           {question.code_example && (
-            <div className="px-4 pb-4">
+            <div className="px-3 sm:px-4 pb-4">
               <button
                 onClick={() => setShowCode(!showCode)}
-                className="flex items-center gap-2 text-xs font-semibold text-flutter-blue hover:text-[#0168c1] dark:text-flutter-sky dark:hover:text-cyan-300 mb-3 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold text-flutter-blue hover:text-[#0168c1] dark:text-flutter-sky dark:hover:text-cyan-300 mb-3 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
@@ -141,12 +141,12 @@ export default function QuestionCard({ question, index, onProgressChange }) {
           )}
 
           {/* Notes */}
-          <div className="px-4 pb-4">
+          <div className="px-3 sm:px-4 pb-4">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">My Notes</h4>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Add your personal notes here..."
+              placeholder="Add your notes..."
               rows={3}
               className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-flutter-blue focus:ring-1 focus:ring-flutter-blue resize-none dark:bg-zinc-950 dark:border-slate-700 dark:text-slate-300 dark:placeholder-slate-500"
             />
