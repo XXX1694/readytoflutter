@@ -1,0 +1,132 @@
+[
+  {
+    "id": 24,
+    "topic_id": 12,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "How do you handle REST APIs and JSON serialization in Flutter?",
+    "answer": "Steps:\n1. Choose HTTP client: http (simple), Dio (interceptors, multipart, cancellation)\n2. Make request and handle status codes + exceptions\n3. Deserialize JSON → Dart models\n4. Show loading/error/data in UI\n\nSerialization approaches:\n• Manual fromJson/toJson — fine for small projects\n• json_serializable — code generation, type-safe (recommended)\n• Freezed — immutable + copyWith + pattern matching (production grade)\n\nDio advantages over http: interceptors, request cancellation, form data, response transformers, base URL.",
+    "code_example": "// ── Model with json_serializable ──────────────────\n@JsonSerializable()\nclass User {\n  final int id;\n  final String name;\n  @JsonKey(name: 'email_address')\n  final String email;\n\n  const User({required this.id, required this.name, required this.email});\n\n  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);\n  Map<String, dynamic> toJson() => _$UserToJson(this);\n}\n// Run: dart run build_runner build\n\n// ── API service with Dio ───────────────────────────\nclass ApiService {\n  late final Dio _dio;\n\n  ApiService(String baseUrl) {\n    _dio = Dio(BaseOptions(\n      baseUrl: baseUrl,\n      connectTimeout: const Duration(seconds: 10),\n      receiveTimeout: const Duration(seconds: 30),\n      headers: {'Content-Type': 'application/json'},\n    ));\n\n    _dio.interceptors.addAll([\n      // Auth header interceptor\n      InterceptorsWrapper(\n        onRequest: (options, handler) {\n          final token = TokenStorage.getToken();\n          if (token != null) options.headers['Authorization'] = 'Bearer $token';\n          handler.next(options);\n        },\n        onError: (error, handler) async {\n          if (error.response?.statusCode == 401) {\n            await refreshToken();\n            return handler.resolve(await _retry(error.requestOptions));\n          }\n          handler.next(error);\n        },\n      ),\n      LogInterceptor(requestBody: true, responseBody: true),\n    ]);\n  }\n\n  Future<List<User>> getUsers({int page = 1}) async {\n    final response = await _dio.get('/users', queryParameters: {'page': page});\n    return (response.data as List)\n        .map((e) => User.fromJson(e as Map<String, dynamic>))\n        .toList();\n  }\n\n  Future<User> createUser(String name, String email) async {\n    final response = await _dio.post('/users', data: {'name': name, 'email': email});\n    return User.fromJson(response.data as Map<String, dynamic>);\n  }\n\n  Future<Response<dynamic>> _retry(RequestOptions options) =>\n      _dio.fetch(options);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 51,
+    "topic_id": 12,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "How do you implement pagination and infinite scroll in Flutter?",
+    "answer": "Pagination patterns:\n\n1. Offset-based: ?page=2&limit=20 — simple, works everywhere\n2. Cursor-based: ?after=cursor123 — better for real-time data, no skipped/duplicated items\n3. Keyset: ?last_id=500 — efficient for large datasets\n\nFlutter implementation:\n• ScrollController — detect when user reaches the bottom\n• ListView.builder with a loading indicator at the end\n• Track state: items, isLoading, hasMore, error",
+    "code_example": "class ProductListCubit extends Cubit<ProductListState> {\n  final ProductRepository _repo;\n  static const _pageSize = 20;\n\n  int _page = 1;\n  bool _hasMore = true;\n  bool _loading = false;\n\n  ProductListCubit(this._repo) : super(const ProductListState());\n\n  Future<void> loadMore() async {\n    if (_loading || !_hasMore) return;\n    _loading = true;\n\n    try {\n      final newItems = await _repo.getProducts(page: _page, limit: _pageSize);\n      _hasMore = newItems.length == _pageSize;\n      _page++;\n      emit(state.copyWith(\n        items: [...state.items, ...newItems],\n        hasMore: _hasMore,\n        isLoading: false,\n      ));\n    } catch (e) {\n      emit(state.copyWith(error: e.toString(), isLoading: false));\n    } finally {\n      _loading = false;\n    }\n  }\n\n  Future<void> refresh() async {\n    _page = 1; _hasMore = true; _loading = false;\n    emit(const ProductListState(isLoading: true));\n    await loadMore();\n  }\n}\n\n// ── Scroll detection widget ─────────────────────────\nclass InfiniteProductList extends StatefulWidget {\n  const InfiniteProductList({super.key});\n  @override State<InfiniteProductList> createState() => _State();\n}\n\nclass _State extends State<InfiniteProductList> {\n  final _scrollCtrl = ScrollController();\n\n  @override\n  void initState() {\n    super.initState();\n    context.read<ProductListCubit>().loadMore();\n    _scrollCtrl.addListener(_onScroll);\n  }\n\n  void _onScroll() {\n    final pos = _scrollCtrl.position;\n    // Load more when 200px from bottom\n    if (pos.pixels >= pos.maxScrollExtent - 200) {\n      context.read<ProductListCubit>().loadMore();\n    }\n  }\n\n  @override void dispose() { _scrollCtrl.dispose(); super.dispose(); }\n\n  @override\n  Widget build(BuildContext context) {\n    return BlocBuilder<ProductListCubit, ProductListState>(\n      builder: (context, state) => ListView.builder(\n        controller: _scrollCtrl,\n        itemCount: state.items.length + (state.hasMore ? 1 : 0),\n        itemBuilder: (context, index) {\n          if (index == state.items.length) {\n            return const Center(child: CircularProgressIndicator()); // loading indicator\n          }\n          return ProductTile(product: state.items[index]);\n        },\n      ),\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 72,
+    "topic_id": 12,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "How do you implement request/response interceptors in Flutter?",
+    "answer": "Interceptors allow you to:\n• Add headers to all requests (auth tokens)\n• Log requests/responses\n• Handle errors globally\n• Retry failed requests\n• Transform data\n\nImplementation:\n• Dio package has built-in interceptors\n• For http package, create wrapper class\n• Can chain multiple interceptors",
+    "code_example": "// ── Using Dio with interceptors ────────────\nimport 'package:dio/dio.dart';\n\nclass ApiClient {\n  late final Dio dio;\n\n  ApiClient() {\n    dio = Dio(BaseOptions(\n      baseUrl: 'https://api.example.com',\n      connectTimeout: Duration(seconds: 5),\n      receiveTimeout: Duration(seconds: 3),\n    ));\n\n    dio.interceptors.add(AuthInterceptor());\n    dio.interceptors.add(LoggingInterceptor());\n    dio.interceptors.add(ErrorInterceptor());\n  }\n}\n\n// ── Auth interceptor ───────────────────────\nclass AuthInterceptor extends Interceptor {\n  @override\n  void onRequest(\n    RequestOptions options,\n    RequestInterceptorHandler handler,\n  ) async {\n    // Add token to all requests\n    final token = await getAuthToken();\n    if (token != null) {\n      options.headers['Authorization'] = 'Bearer $token';\n    }\n\n    // Continue with modified request\n    handler.next(options);\n  }\n\n  @override\n  void onError(\n    DioException err,\n    ErrorInterceptorHandler handler,\n  ) async {\n    // Refresh token on 401\n    if (err.response?.statusCode == 401) {\n      try {\n        await refreshToken();\n\n        // Retry original request\n        final opts = err.requestOptions;\n        final response = await Dio().request(\n          opts.path,\n          options: Options(\n            method: opts.method,\n            headers: opts.headers,\n          ),\n          data: opts.data,\n          queryParameters: opts.queryParameters,\n        );\n\n        return handler.resolve(response);\n      } catch (e) {\n        return handler.reject(err);\n      }\n    }\n\n    handler.next(err);\n  }\n}\n\n// ── Logging interceptor ────────────────────\nclass LoggingInterceptor extends Interceptor {\n  @override\n  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {\n    print('REQUEST[${options.method}] => ${options.path}');\n    print('Headers: ${options.headers}');\n    print('Data: ${options.data}');\n    handler.next(options);\n  }\n\n  @override\n  void onResponse(Response response, ResponseInterceptorHandler handler) {\n    print('RESPONSE[${response.statusCode}] => ${response.requestOptions.path}');\n    print('Data: ${response.data}');\n    handler.next(response);\n  }\n\n  @override\n  void onError(DioException err, ErrorInterceptorHandler handler) {\n    print('ERROR[${err.response?.statusCode}] => ${err.requestOptions.path}');\n    print('Message: ${err.message}');\n    handler.next(err);\n  }\n}\n\n// ── Error handling interceptor ─────────────\nclass ErrorInterceptor extends Interceptor {\n  @override\n  void onError(DioException err, ErrorInterceptorHandler handler) {\n    String message;\n\n    switch (err.type) {\n      case DioExceptionType.connectionTimeout:\n      case DioExceptionType.sendTimeout:\n      case DioExceptionType.receiveTimeout:\n        message = 'Connection timeout';\n        break;\n      case DioExceptionType.badResponse:\n        message = 'Server error: ${err.response?.statusCode}';\n        break;\n      case DioExceptionType.cancel:\n        message = 'Request cancelled';\n        break;\n      default:\n        message = 'Network error';\n    }\n\n    // Could show snackbar here or log to analytics\n    print('Error: $message');\n\n    handler.next(err);\n  }\n}\n\n// ── Usage ──────────────────────────────────\nfinal api = ApiClient();\n\nFuture<User> getUser(String id) async {\n  try {\n    final response = await api.dio.get('/users/$id');\n    return User.fromJson(response.data);\n  } on DioException catch (e) {\n    if (e.response?.statusCode == 404) {\n      throw NotFoundException('User not found');\n    }\n    rethrow;\n  }\n}\n\n// ── Custom http wrapper (without Dio) ──────\nimport 'package:http/http.dart' as http;\n\nclass HttpClient {\n  final String baseUrl;\n  final Map<String, String> defaultHeaders;\n\n  HttpClient({\n    required this.baseUrl,\n    this.defaultHeaders = const {},\n  });\n\n  Future<http.Response> get(String path) async {\n    final url = Uri.parse('$baseUrl$path');\n    final headers = await _buildHeaders();\n\n    _logRequest('GET', url, headers);\n\n    final response = await http.get(url, headers: headers);\n\n    _logResponse(response);\n\n    return response;\n  }\n\n  Future<Map<String, String>> _buildHeaders() async {\n    final token = await getAuthToken();\n    return {\n      ...defaultHeaders,\n      'Content-Type': 'application/json',\n      if (token != null) 'Authorization': 'Bearer $token',\n    };\n  }\n\n  void _logRequest(String method, Uri url, Map<String, String> headers) {\n    print('[$method] $url');\n    print('Headers: $headers');\n  }\n\n  void _logResponse(http.Response response) {\n    print('Response [${response.statusCode}]');\n    print('Body: ${response.body}');\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 101,
+    "topic_id": 12,
+    "order_index": 101,
+    "difficulty": "hard",
+    "question": "Interview scenario #12: How would you handle performance optimization for render performance in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: render performance. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'render performance';\nvoid discuss() {\n  debugPrint('Scenario 12: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 124,
+    "topic_id": 12,
+    "order_index": 102,
+    "difficulty": "medium",
+    "question": "Interview scenario #35: How would you handle testing approach for CI reliability in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: CI reliability. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'CI reliability';\nvoid discuss() {\n  debugPrint('Scenario 35: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 147,
+    "topic_id": 12,
+    "order_index": 103,
+    "difficulty": "easy",
+    "question": "Interview scenario #58: How would you handle null safety best practices for error reporting in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: error reporting. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'error reporting';\nvoid discuss() {\n  debugPrint('Scenario 58: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 170,
+    "topic_id": 12,
+    "order_index": 104,
+    "difficulty": "hard",
+    "question": "Interview scenario #81: How would you handle debugging strategy for widget lifecycle in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: widget lifecycle. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'widget lifecycle';\nvoid discuss() {\n  debugPrint('Scenario 81: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 193,
+    "topic_id": 12,
+    "order_index": 105,
+    "difficulty": "medium",
+    "question": "Interview scenario #104: How would you handle error handling for form validation in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: form validation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'form validation';\nvoid discuss() {\n  debugPrint('Scenario 104: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 255,
+    "topic_id": 12,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 1: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss12_1() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 256,
+    "topic_id": 12,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 2: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss12_2() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 257,
+    "topic_id": 12,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 3: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss12_3() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 258,
+    "topic_id": 12,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 4: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss12_4() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 259,
+    "topic_id": 12,
+    "order_index": 110,
+    "difficulty": "hard",
+    "question": "Scenario 5: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss12_5() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

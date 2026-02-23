@@ -1,0 +1,132 @@
+[
+  {
+    "id": 23,
+    "topic_id": 11,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "Explain BLoC pattern: Events, States, Bloc vs Cubit.",
+    "answer": "BLoC (Business Logic Component) separates UI from business logic using events and states.\n\nCubit — simplified BLoC:\n• No events — call methods directly to emit new states\n• Less boilerplate, good for simple state\n\nBloc — full event-driven:\n• Explicit Event classes → better auditing, logging, undo/redo\n• on<Event>() handlers registered in constructor\n• More testable, more explicit flow\n\nBoth:\n• BlocBuilder — rebuild UI based on state\n• BlocListener — side effects (navigation, snackbar)\n• BlocConsumer — builder + listener combined\n• MultiBlocProvider — provide multiple blocs",
+    "code_example": "// ── CUBIT ─────────────────────────────────────────\nclass CounterCubit extends Cubit<int> {\n  CounterCubit() : super(0);\n  void increment() => emit(state + 1);\n  void decrement() => emit(state - 1);\n  void reset() => emit(0);\n}\n\n// ── BLOC (full event-driven) ───────────────────────\n// Events\nsealed class AuthEvent {}\nclass LoginRequested extends AuthEvent {\n  final String email, password;\n  LoginRequested(this.email, this.password);\n}\nclass LogoutRequested extends AuthEvent {}\n\n// States\nsealed class AuthState {}\nclass AuthInitial extends AuthState {}\nclass AuthLoading extends AuthState {}\nclass AuthSuccess extends AuthState { final User user; AuthSuccess(this.user); }\nclass AuthFailure extends AuthState { final String message; AuthFailure(this.message); }\n\n// Bloc\nclass AuthBloc extends Bloc<AuthEvent, AuthState> {\n  final AuthRepository _repo;\n  AuthBloc(this._repo) : super(AuthInitial()) {\n    on<LoginRequested>(_onLogin);\n    on<LogoutRequested>(_onLogout);\n  }\n\n  Future<void> _onLogin(LoginRequested e, Emitter<AuthState> emit) async {\n    emit(AuthLoading());\n    try {\n      final user = await _repo.login(e.email, e.password);\n      emit(AuthSuccess(user));\n    } catch (e) {\n      emit(AuthFailure(e.toString()));\n    }\n  }\n\n  Future<void> _onLogout(LogoutRequested e, Emitter<AuthState> emit) async {\n    await _repo.logout();\n    emit(AuthInitial());\n  }\n}\n\n// ── UI ─────────────────────────────────────────────\nBlocConsumer<AuthBloc, AuthState>(\n  listener: (ctx, state) {\n    if (state is AuthSuccess) ctx.go('/home');\n    if (state is AuthFailure) {\n      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message)));\n    }\n  },\n  builder: (ctx, state) {\n    if (state is AuthLoading) return const CircularProgressIndicator();\n    return LoginForm(\n      onLogin: (e, p) => ctx.read<AuthBloc>().add(LoginRequested(e, p)),\n    );\n  },\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 50,
+    "topic_id": 11,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "What is BlocObserver and how do you use it for logging and analytics?",
+    "answer": "BlocObserver is a global listener for all Bloc/Cubit events, state changes, transitions, and errors. Set it once in main() — it applies to every Bloc in your app.\n\nUse cases:\n• Logging all state transitions (debugging)\n• Sending analytics events\n• Crash reporting (Sentry, Firebase Crashlytics)\n• Performance monitoring\n\noverride methods:\n• onCreate — bloc created\n• onEvent — event added (Bloc only)\n• onChange — state changed\n• onTransition — event → state (Bloc only)\n• onError — error occurred\n• onClose — bloc closed",
+    "code_example": "// ── Custom BlocObserver ─────────────────────────────\nclass AppBlocObserver extends BlocObserver {\n  final AnalyticsService _analytics;\n  final CrashService _crash;\n\n  AppBlocObserver(this._analytics, this._crash);\n\n  @override\n  void onCreate(BlocBase bloc) {\n    super.onCreate(bloc);\n    print('[BLoC] Created: ${bloc.runtimeType}');\n  }\n\n  @override\n  void onEvent(Bloc bloc, Object? event) {\n    super.onEvent(bloc, event);\n    print('[BLoC] Event: ${bloc.runtimeType} → $event');\n  }\n\n  @override\n  void onChange(BlocBase bloc, Change change) {\n    super.onChange(bloc, change);\n    print('[BLoC] Change: ${bloc.runtimeType}');\n    print('  From: ${change.currentState}');\n    print('  To:   ${change.nextState}');\n  }\n\n  @override\n  void onTransition(Bloc bloc, Transition transition) {\n    super.onTransition(bloc, transition);\n    // Send to analytics\n    _analytics.logEvent('bloc_transition', {\n      'bloc': bloc.runtimeType.toString(),\n      'event': transition.event.runtimeType.toString(),\n      'from': transition.currentState.runtimeType.toString(),\n      'to': transition.nextState.runtimeType.toString(),\n    });\n  }\n\n  @override\n  void onError(BlocBase bloc, Object error, StackTrace stackTrace) {\n    super.onError(bloc, error, stackTrace);\n    print('[BLoC] Error in ${bloc.runtimeType}: $error');\n    _crash.report(error, stackTrace, context: {\n      'bloc': bloc.runtimeType.toString(),\n      'state': bloc.state.toString(),\n    });\n  }\n\n  @override\n  void onClose(BlocBase bloc) {\n    super.onClose(bloc);\n    print('[BLoC] Closed: ${bloc.runtimeType}');\n  }\n}\n\n// ── Register in main() ──────────────────────────────\nvoid main() {\n  Bloc.observer = AppBlocObserver(\n    AnalyticsService(),\n    CrashService(),\n  );\n  runApp(const MyApp());\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 87,
+    "topic_id": 11,
+    "order_index": 7,
+    "difficulty": "hard",
+    "question": "What is the difference between Bloc and Cubit, and when to use each?",
+    "answer": "Both are state management solutions from flutter_bloc:\n\nCubit:\n• Simplified version of Bloc\n• Uses functions instead of events\n• emit() to change state\n• Less boilerplate\n• Better for simple cases\n\nBloc:\n• Uses Event + State pattern\n• mapEventToState or on<Event>()\n• More verbose\n• Better for complex logic\n• Better testability\n• Event sourcing support\n\nChoose Cubit for simple state, Bloc for complex business logic.",
+    "code_example": "import 'package:flutter_bloc/flutter_bloc.dart';\n\n// ══ CUBIT EXAMPLE ══════════════════════════\nclass CounterCubit extends Cubit<int> {\n  CounterCubit() : super(0);\n\n  void increment() => emit(state + 1);\n  void decrement() => emit(state - 1);\n  void reset() => emit(0);\n}\n\n// Usage\nclass CounterPage extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return BlocProvider(\n      create: (_) => CounterCubit(),\n      child: CounterView(),\n    );\n  }\n}\n\nclass CounterView extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        BlocBuilder<CounterCubit, int>(\n          builder: (context, count) {\n            return Text('$count');\n          },\n        ),\n        Row(\n          children: [\n            ElevatedButton(\n              onPressed: () => context.read<CounterCubit>().increment(),\n              child: Text('+'),\n            ),\n            ElevatedButton(\n              onPressed: () => context.read<CounterCubit>().decrement(),\n              child: Text('-'),\n            ),\n          ],\n        ),\n      ],\n    );\n  }\n}\n\n// ══ BLOC EXAMPLE ═══════════════════════════\n// 1. Define events\nabstract class CounterEvent {}\n\nclass CounterIncremented extends CounterEvent {}\nclass CounterDecremented extends CounterEvent {}\nclass CounterReset extends CounterEvent {}\n\n// 2. Define Bloc\nclass CounterBloc extends Bloc<CounterEvent, int> {\n  CounterBloc() : super(0) {\n    on<CounterIncremented>((event, emit) {\n      emit(state + 1);\n    });\n\n    on<CounterDecremented>((event, emit) {\n      emit(state - 1);\n    });\n\n    on<CounterReset>((event, emit) {\n      emit(0);\n    });\n  }\n}\n\n// Usage\nclass CounterView2 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        BlocBuilder<CounterBloc, int>(\n          builder: (context, count) => Text('$count'),\n        ),\n        Row(\n          children: [\n            ElevatedButton(\n              onPressed: () =>\n                context.read<CounterBloc>().add(CounterIncremented()),\n              child: Text('+'),\n            ),\n            ElevatedButton(\n              onPressed: () =>\n                context.read<CounterBloc>().add(CounterDecremented()),\n              child: Text('-'),\n            ),\n          ],\n        ),\n      ],\n    );\n  }\n}\n\n// ══ COMPLEX CUBIT ══════════════════════════\nclass TodosCubit extends Cubit<TodosState> {\n  final TodoRepository repository;\n\n  TodosCubit(this.repository) : super(TodosInitial());\n\n  Future<void> loadTodos() async {\n    emit(TodosLoading());\n    try {\n      final todos = await repository.getTodos();\n      emit(TodosLoaded(todos));\n    } catch (e) {\n      emit(TodosError(e.toString()));\n    }\n  }\n\n  void addTodo(Todo todo) {\n    if (state is TodosLoaded) {\n      final current = (state as TodosLoaded).todos;\n      emit(TodosLoaded([...current, todo]));\n    }\n  }\n\n  void toggleTodo(String id) {\n    if (state is TodosLoaded) {\n      final todos = (state as TodosLoaded).todos.map((todo) {\n        return todo.id == id ? todo.copyWith(done: !todo.done) : todo;\n      }).toList();\n      emit(TodosLoaded(todos));\n    }\n  }\n}\n\n// States\nabstract class TodosState {}\nclass TodosInitial extends TodosState {}\nclass TodosLoading extends TodosState {}\nclass TodosLoaded extends TodosState {\n  final List<Todo> todos;\n  TodosLoaded(this.todos);\n}\nclass TodosError extends TodosState {\n  final String message;\n  TodosError(this.message);\n}\n\n// ══ COMPLEX BLOC ═══════════════════════════\n// Events\nabstract class TodosEvent {}\nclass TodosLoadRequested extends TodosEvent {}\nclass TodoAdded extends TodosEvent {\n  final Todo todo;\n  TodoAdded(this.todo);\n}\nclass TodoToggled extends TodosEvent {\n  final String id;\n  TodoToggled(this.id);\n}\nclass TodoDeleted extends TodosEvent {\n  final String id;\n  TodoDeleted(this.id);\n}\n\n// Bloc\nclass TodosBloc extends Bloc<TodosEvent, TodosState> {\n  final TodoRepository repository;\n\n  TodosBloc(this.repository) : super(TodosInitial()) {\n    on<TodosLoadRequested>(_onLoadRequested);\n    on<TodoAdded>(_onTodoAdded);\n    on<TodoToggled>(_onTodoToggled);\n    on<TodoDeleted>(_onTodoDeleted);\n  }\n\n  Future<void> _onLoadRequested(\n    TodosLoadRequested event,\n    Emitter<TodosState> emit,\n  ) async {\n    emit(TodosLoading());\n    try {\n      final todos = await repository.getTodos();\n      emit(TodosLoaded(todos));\n    } catch (e) {\n      emit(TodosError(e.toString()));\n    }\n  }\n\n  void _onTodoAdded(TodoAdded event, Emitter<TodosState> emit) {\n    if (state is TodosLoaded) {\n      final current = (state as TodosLoaded).todos;\n      emit(TodosLoaded([...current, event.todo]));\n    }\n  }\n\n  void _onTodoToggled(TodoToggled event, Emitter<TodosState> emit) {\n    if (state is TodosLoaded) {\n      final todos = (state as TodosLoaded).todos.map((todo) {\n        return todo.id == event.id\n            ? todo.copyWith(done: !todo.done)\n            : todo;\n      }).toList();\n      emit(TodosLoaded(todos));\n    }\n  }\n\n  void _onTodoDeleted(TodoDeleted event, Emitter<TodosState> emit) {\n    if (state is TodosLoaded) {\n      final todos = (state as TodosLoaded).todos\n          .where((todo) => todo.id != event.id)\n          .toList();\n      emit(TodosLoaded(todos));\n    }\n  }\n}\n\n// ══ WHEN TO USE EACH ═══════════════════════\n// Cubit:\n// • Simple state changes\n// • Direct function calls feel natural\n// • Less code, faster development\n// • UI-driven state (toggle, filter, etc.)\n\n// Bloc:\n// • Complex business logic\n// • Need event history/logging\n// • Multiple sources of events\n// • Replay/undo functionality\n// • Better separation of concerns\n// • More testable (test events independently)\n\n// ══ TESTING COMPARISON ═════════════════════\n// Cubit test\nblocTest<CounterCubit, int>(\n  'emits [1] when increment is called',\n  build: () => CounterCubit(),\n  act: (cubit) => cubit.increment(),\n  expect: () => [1],\n);\n\n// Bloc test\nblocTest<CounterBloc, int>(\n  'emits [1] when CounterIncremented is added',\n  build: () => CounterBloc(),\n  act: (bloc) => bloc.add(CounterIncremented()),\n  expect: () => [1],\n);",
+    "code_language": "dart"
+  },
+  {
+    "id": 100,
+    "topic_id": 11,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #11: How would you handle debugging strategy for platform channels in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: platform channels. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'platform channels';\nvoid discuss() {\n  debugPrint('Scenario 11: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 123,
+    "topic_id": 11,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #34: How would you handle error handling for feature flags in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: feature flags. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'feature flags';\nvoid discuss() {\n  debugPrint('Scenario 34: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 146,
+    "topic_id": 11,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #57: How would you handle clean architecture boundaries for internationalization in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: internationalization. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'internationalization';\nvoid discuss() {\n  debugPrint('Scenario 57: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 169,
+    "topic_id": 11,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #80: How would you handle code review readiness for release rollback plan in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: release rollback plan. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'release rollback plan';\nvoid discuss() {\n  debugPrint('Scenario 80: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 192,
+    "topic_id": 11,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Interview scenario #103: How would you handle state management trade-offs for navigation guards in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 103: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 250,
+    "topic_id": 11,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss11_1() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 251,
+    "topic_id": 11,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss11_2() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 252,
+    "topic_id": 11,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss11_3() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 253,
+    "topic_id": 11,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss11_4() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 254,
+    "topic_id": 11,
+    "order_index": 110,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss11_5() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

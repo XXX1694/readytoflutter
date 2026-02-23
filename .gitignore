@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Node
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+frontend/dist
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Backend runtime data
+backend/data/interview.db
+backend/data/interview.db-*
+backend/data/progress.json

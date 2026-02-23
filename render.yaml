@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: readytoflutter-api
+    env: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+    disks:
+      - name: readytoflutter-data
+        mountPath: /opt/render/project/src/backend/data
+        sizeGB: 1

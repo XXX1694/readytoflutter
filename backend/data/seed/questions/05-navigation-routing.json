@@ -1,0 +1,132 @@
+[
+  {
+    "id": 16,
+    "topic_id": 5,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "Explain Navigator 1.0 (imperative) vs go_router (declarative).",
+    "answer": "Navigator 1.0 — imperative, stack-based:\n• push/pop/pushReplacement/pushAndRemoveUntil\n• Simple but struggles with deep links, web URLs, and complex flows\n\nNavigator 2.0 (Router API) — declarative, URL-driven:\n• RouterDelegate + RouteInformationParser — complex to implement manually\n• go_router (Google-maintained) wraps Navigator 2.0 into a simple API\n\nUse go_router for: any app with deep linking, web URL support, or complex navigation graphs. Use Navigator 1.0 only for very simple apps with no URL routing.",
+    "code_example": "// ── Navigator 1.0 ─────────────────────────────────────\n// Push\nNavigator.of(context).push(\n  MaterialPageRoute(builder: (_) => const DetailScreen(id: 42)),\n);\n// Pop with value\nNavigator.of(context).pop('result');\n// Receive result\nfinal result = await Navigator.of(context).push<String>(\n  MaterialPageRoute(builder: (_) => const PickerScreen()),\n);\n// Clear stack (e.g. after login)\nNavigator.of(context).pushAndRemoveUntil(\n  MaterialPageRoute(builder: (_) => const HomeScreen()),\n  (route) => false,\n);\n\n// ── go_router (recommended) ───────────────────────────\n// pubspec: go_router: ^14.0.0\n\nfinal router = GoRouter(\n  initialLocation: '/',\n  routes: [\n    GoRoute(path: '/', builder: (_, __) => const HomeScreen()),\n    GoRoute(\n      path: '/product/:id',\n      builder: (ctx, state) {\n        final id = int.parse(state.pathParameters['id']!);\n        return ProductScreen(id: id);\n      },\n      routes: [\n        GoRoute(\n          path: 'review',\n          builder: (ctx, state) => ReviewScreen(\n            id: int.parse(state.pathParameters['id']!),\n          ),\n        ),\n      ],\n    ),\n    ShellRoute(\n      builder: (ctx, state, child) => BottomNavShell(child: child),\n      routes: [\n        GoRoute(path: '/home',    builder: (_, __) => const HomeTab()),\n        GoRoute(path: '/profile', builder: (_, __) => const ProfileTab()),\n      ],\n    ),\n  ],\n);\n\n// Usage in widget\ncontext.go('/product/42');         // replace\ncontext.push('/product/42');       // push\ncontext.push('/product/42/review');\ncontext.pop();\ncontext.goNamed('product', pathParameters: {'id': '42'});",
+    "code_language": "dart"
+  },
+  {
+    "id": 46,
+    "topic_id": 5,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "How do you implement bottom navigation with persistent state in Flutter?",
+    "answer": "Bottom navigation should preserve state in each tab — users expect the Home tab to stay scrolled where they left it.\n\nOptions:\n• IndexedStack — renders all tabs at once, preserves state. Simple but higher memory use.\n• AutomaticKeepAliveClientMixin — explicitly keep state alive in PageView/TabBarView\n• go_router ShellRoute — best for deep linking + bottom nav\n\nIndexedStack is the simplest: all children exist in the tree simultaneously, only the selected one is visible. State is never destroyed.",
+    "code_example": "// ── IndexedStack approach (simplest) ──────────────\nclass MainNav extends StatefulWidget {\n  const MainNav({super.key});\n  @override State<MainNav> createState() => _MainNavState();\n}\n\nclass _MainNavState extends State<MainNav> {\n  int _currentIndex = 0;\n\n  static const _tabs = [\n    HomeTab(),\n    SearchTab(),\n    ProfileTab(),\n  ];\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      body: IndexedStack(\n        index: _currentIndex,\n        children: _tabs, // all built, only one shown\n      ),\n      bottomNavigationBar: NavigationBar(\n        selectedIndex: _currentIndex,\n        onDestinationSelected: (i) => setState(() => _currentIndex = i),\n        destinations: const [\n          NavigationDestination(icon: Icon(Icons.home_outlined),   selectedIcon: Icon(Icons.home),   label: 'Home'),\n          NavigationDestination(icon: Icon(Icons.search),                                             label: 'Search'),\n          NavigationDestination(icon: Icon(Icons.person_outlined), selectedIcon: Icon(Icons.person), label: 'Profile'),\n        ],\n      ),\n    );\n  }\n}\n\n// ── AutomaticKeepAliveClientMixin ──────────────────\nclass SearchTab extends StatefulWidget {\n  const SearchTab({super.key});\n  @override State<SearchTab> createState() => _SearchTabState();\n}\n\nclass _SearchTabState extends State<SearchTab>\n    with AutomaticKeepAliveClientMixin {\n  @override\n  bool get wantKeepAlive => true; // don't dispose when switching tabs\n\n  @override\n  Widget build(BuildContext context) {\n    super.build(context); // required\n    return const SearchContent();\n  }\n}\n\n// ── go_router ShellRoute (deep linking support) ────\nfinal router = GoRouter(\n  initialLocation: '/home',\n  routes: [\n    ShellRoute(\n      builder: (context, state, child) {\n        return BottomNavShell(child: child);\n      },\n      routes: [\n        GoRoute(path: '/home',    builder: (_, __) => const HomeTab()),\n        GoRoute(path: '/search',  builder: (_, __) => const SearchTab()),\n        GoRoute(path: '/profile', builder: (_, __) => const ProfileTab()),\n      ],\n    ),\n  ],\n);",
+    "code_language": "dart"
+  },
+  {
+    "id": 69,
+    "topic_id": 5,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "How do you pass data between screens and get results back?",
+    "answer": "Three approaches for passing data:\n\n1. Constructor arguments (simple, type-safe)\n2. Named route arguments\n3. Router parameters (go_router)\n\nGetting results back:\n• Navigator.push returns Future\n• Use .then() or await to get result\n• Call Navigator.pop(result) from second screen",
+    "code_example": "// ── Method 1: Constructor (recommended) ────\nclass DetailsPage extends StatelessWidget {\n  final String userId;\n  final int age;\n\n  const DetailsPage({required this.userId, required this.age});\n\n  @override Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: Text('User: $userId')),\n      body: Text('Age: $age'),\n    );\n  }\n}\n\n// Navigate and pass data\nNavigator.push(\n  context,\n  MaterialPageRoute(\n    builder: (_) => DetailsPage(userId: '123', age: 25),\n  ),\n);\n\n// ── Method 2: Named routes with arguments ──\n// In route definition\nroutes: {\n  '/details': (ctx) {\n    final args = ModalRoute.of(ctx)!.settings.arguments as Map<String, dynamic>;\n    return DetailsPage(userId: args['userId'], age: args['age']);\n  },\n}\n\n// Navigate\nNavigator.pushNamed(\n  context,\n  '/details',\n  arguments: {'userId': '123', 'age': 25},\n);\n\n// ── Getting results back ───────────────────\n// Screen 1: Push and await result\nfinal result = await Navigator.push<String>(\n  context,\n  MaterialPageRoute(builder: (_) => SelectColorPage()),\n);\n\nif (result != null) {\n  print('Selected color: $result');\n}\n\n// Screen 2: Pop with result\nclass SelectColorPage extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return Scaffold(\n      body: Column(\n        children: [\n          ElevatedButton(\n            onPressed: () {\n              Navigator.pop(context, 'Red');\n            },\n            child: Text('Red'),\n          ),\n          ElevatedButton(\n            onPressed: () {\n              Navigator.pop(context, 'Blue');\n            },\n            child: Text('Blue'),\n          ),\n        ],\n      ),\n    );\n  }\n}\n\n// ── With go_router ─────────────────────────\n// Define route with parameters\nGoRoute(\n  path: '/details/:userId',\n  builder: (context, state) {\n    final userId = state.pathParameters['userId']!;\n    final age = int.parse(state.uri.queryParameters['age'] ?? '0');\n    return DetailsPage(userId: userId, age: age);\n  },\n),\n\n// Navigate\ncontext.go('/details/123?age=25');\n\n// Or type-safe\ncontext.push('/details/$userId', extra: {'age': 25});",
+    "code_language": "dart"
+  },
+  {
+    "id": 94,
+    "topic_id": 5,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #5: How would you handle testing approach for async loading states in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: async loading states. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'async loading states';\nvoid discuss() {\n  debugPrint('Scenario 5: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 117,
+    "topic_id": 5,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #28: How would you handle null safety best practices for secure storage in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 28: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 140,
+    "topic_id": 5,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #51: How would you handle debugging strategy for platform channels in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: platform channels. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'platform channels';\nvoid discuss() {\n  debugPrint('Scenario 51: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 163,
+    "topic_id": 5,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #74: How would you handle error handling for feature flags in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: feature flags. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'feature flags';\nvoid discuss() {\n  debugPrint('Scenario 74: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 186,
+    "topic_id": 5,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Interview scenario #97: How would you handle clean architecture boundaries for internationalization in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: internationalization. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'internationalization';\nvoid discuss() {\n  debugPrint('Scenario 97: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 220,
+    "topic_id": 5,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss5_1() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 221,
+    "topic_id": 5,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss5_2() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 222,
+    "topic_id": 5,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss5_3() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 223,
+    "topic_id": 5,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss5_4() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 224,
+    "topic_id": 5,
+    "order_index": 110,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss5_5() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

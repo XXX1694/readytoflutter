@@ -1,0 +1,112 @@
+[
+  {
+    "id": 21,
+    "topic_id": 9,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "What are Isolates in Dart and when should you use them?",
+    "answer": "Dart is single-threaded, but Isolates provide TRUE parallelism. Each isolate has its own memory heap and event loop — no shared state, no race conditions. Communication is via message passing (SendPort/ReceivePort).\n\nUse isolates for heavy CPU work that would block the UI thread:\n• Parsing large JSON (>1MB)\n• Image processing / resizing\n• Cryptography / hashing\n• Complex algorithms\n\nAPIs (simplest to most powerful):\n• Isolate.run() (Dart 2.19+) — one-shot, simplest\n• compute() (Flutter) — wraps Isolate.run, for functions\n• Isolate.spawn() — full control, for long-lived isolates",
+    "code_example": "// ── Isolate.run() — simplest (Dart 2.19+) ──────────\nimport 'dart:isolate';\n\nFuture<List<int>> sortHeavy(List<int> data) async {\n  return Isolate.run(() {\n    final copy = List<int>.from(data);\n    copy.sort();\n    return copy;\n  });\n}\n\n// ── compute() — Flutter helper ───────────────────────\nimport 'package:flutter/foundation.dart';\n\n// MUST be top-level or static\nList<Product> _parseProducts(String json) {\n  final list = jsonDecode(json) as List;\n  return list.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();\n}\n\nFuture<List<Product>> loadProducts(String jsonBody) {\n  return compute(_parseProducts, jsonBody); // runs in isolate\n}\n\n// ── Manual Isolate — for long-lived workers ──────────\nFuture<void> manualIsolate() async {\n  final receivePort = ReceivePort();\n  await Isolate.spawn(_worker, receivePort.sendPort);\n\n  receivePort.listen((message) {\n    print('Result: $message');\n    receivePort.close();\n  });\n}\n\n// Must be a top-level function\nvoid _worker(SendPort sendPort) {\n  var sum = 0;\n  for (var i = 0; i < 100000000; i++) sum += i;\n  sendPort.send(sum);\n}\n\n// ── When NOT to use isolates ────────────────────────\n// • Fast operations (<10ms) — overhead not worth it\n// • Flutter UI work — must be on main isolate\n// • Operations needing shared state — use streams/ports",
+    "code_language": "dart"
+  },
+  {
+    "id": 98,
+    "topic_id": 9,
+    "order_index": 101,
+    "difficulty": "hard",
+    "question": "Interview scenario #9: How would you handle stream handling for dependency injection in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 9: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 121,
+    "topic_id": 9,
+    "order_index": 102,
+    "difficulty": "medium",
+    "question": "Interview scenario #32: How would you handle performance optimization for render performance in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: render performance. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'render performance';\nvoid discuss() {\n  debugPrint('Scenario 32: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 144,
+    "topic_id": 9,
+    "order_index": 103,
+    "difficulty": "easy",
+    "question": "Interview scenario #55: How would you handle testing approach for CI reliability in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: CI reliability. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'CI reliability';\nvoid discuss() {\n  debugPrint('Scenario 55: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 167,
+    "topic_id": 9,
+    "order_index": 104,
+    "difficulty": "hard",
+    "question": "Interview scenario #78: How would you handle null safety best practices for error reporting in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: error reporting. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'error reporting';\nvoid discuss() {\n  debugPrint('Scenario 78: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 190,
+    "topic_id": 9,
+    "order_index": 105,
+    "difficulty": "medium",
+    "question": "Interview scenario #101: How would you handle debugging strategy for widget lifecycle in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: widget lifecycle. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'widget lifecycle';\nvoid discuss() {\n  debugPrint('Scenario 101: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 240,
+    "topic_id": 9,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 1: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss9_1() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 241,
+    "topic_id": 9,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 2: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss9_2() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 242,
+    "topic_id": 9,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 3: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss9_3() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 243,
+    "topic_id": 9,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 4: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss9_4() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 244,
+    "topic_id": 9,
+    "order_index": 110,
+    "difficulty": "hard",
+    "question": "Scenario 5: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss9_5() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

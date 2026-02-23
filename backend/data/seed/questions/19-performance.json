@@ -1,0 +1,122 @@
+[
+  {
+    "id": 33,
+    "topic_id": 19,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "What causes jank in Flutter and how do you optimize performance?",
+    "answer": "Jank = dropped frames (< 60fps / >16ms per frame). The UI thread must complete layout+paint in 16ms.\n\nCommon jank causes:\n1. Heavy computation on the UI thread (should use isolates)\n2. Excessive widget rebuilds (setState rebuilds too much)\n3. Large images not sized/cached properly\n4. Missing const constructors\n5. Synchronous I/O\n6. Memory pressure causing GC pauses\n\nOptimization tools:\n• Flutter DevTools → Performance tab, Rebuild counts\n• Flutter Inspector → Highlight repaints\n• --profile mode: flutter run --profile\n• Timeline events, flame charts",
+    "code_example": "// ── Const constructors — zero cost reuse ───────────\n// ❌ Creates new TextStyle object every build\nText('Hello', style: TextStyle(fontSize: 16, color: Colors.blue));\n// ✅ Reuses same instance\nconst Text('Hello', style: TextStyle(fontSize: 16, color: Colors.blue));\n\n// ── Extract heavy subtrees ─────────────────────────\n// ❌ HeavyList rebuilds on every counter change\nclass BadPage extends StatefulWidget { ... }\nclass _BadPageState extends State<BadPage> {\n  int _tab = 0;\n  @override Widget build(BuildContext context) => Column(children: [\n    TabBar(onTap: (i) => setState(() => _tab = i), ...),\n    HeavyProductGrid(products: allProducts), // ❌ rebuilds on tab change\n  ]);\n}\n// ✅ Extract into const or separate widget\nclass GoodPage extends StatefulWidget { ... }\nclass _GoodPageState extends State<GoodPage> {\n  int _tab = 0;\n  @override Widget build(BuildContext context) => Column(children: [\n    TabBar(onTap: (i) => setState(() => _tab = i), ...),\n    const HeavyProductGrid(), // ✅ const — Flutter skips diff\n  ]);\n}\n\n// ── RepaintBoundary — isolate animation layers ──────\nRepaintBoundary(\n  child: AnimatedRotation(turns: _rotation, child: const Logo()),\n)\n// Only the logo layer repaints on animation frame\n\n// ── CustomPainter — shouldRepaint optimization ──────\nclass ProgressPainter extends CustomPainter {\n  final double progress;\n  const ProgressPainter(this.progress);\n\n  @override void paint(Canvas canvas, Size size) { /* draw arc */ }\n\n  @override bool shouldRepaint(ProgressPainter old) =>\n      progress != old.progress; // skip repaint if unchanged\n}\n\n// ── Move heavy work off UI thread ────────────────────\n// ❌ Blocks UI\nvoid onTap() {\n  final sorted = hugeList.toList()..sort(); // freezes UI!\n}\n// ✅ Compute in isolate\nFuture<void> onTap() async {\n  final sorted = await compute(_sort, hugeList);\n  setState(() => _items = sorted);\n}\nList<int> _sort(List<int> list) => list..sort();",
+    "code_language": "dart"
+  },
+  {
+    "id": 58,
+    "topic_id": 19,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "How do you detect and fix memory leaks in Flutter?",
+    "answer": "Common sources of memory leaks in Flutter:\n\n1. StreamSubscription not cancelled in dispose()\n2. AnimationController not disposed\n3. TextEditingController / FocusNode not disposed\n4. Timer not cancelled\n5. GlobalKey held in static variables\n6. Closures capturing large objects\n7. Image cache growing unbounded\n\nDetection tools:\n• Flutter DevTools → Memory tab → heap snapshots\n• Leak Tracker package (flutter_test)\n• Observatory → allocation profiling",
+    "code_example": "// ── Common leaks and fixes ─────────────────────────\n\nclass LeakyWidget extends StatefulWidget {\n  @override State<LeakyWidget> createState() => _LeakyState();\n}\n\nclass _LeakyState extends State<LeakyWidget>\n    with SingleTickerProviderStateMixin {\n\n  // These ALL need disposal\n  late AnimationController _anim;\n  late TextEditingController _textCtrl;\n  late FocusNode _focusNode;\n  late StreamSubscription _sub;\n  Timer? _timer;\n\n  @override\n  void initState() {\n    super.initState();\n    _anim = AnimationController(vsync: this, duration: const Duration(seconds: 1));\n    _textCtrl = TextEditingController();\n    _focusNode = FocusNode();\n    _sub = eventStream.listen(_handleEvent);\n    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _refresh());\n  }\n\n  @override\n  void dispose() {\n    // ✅ Dispose ALL controllers and cancel ALL subscriptions\n    _anim.dispose();\n    _textCtrl.dispose();\n    _focusNode.dispose();\n    _sub.cancel();\n    _timer?.cancel();\n    super.dispose();\n  }\n\n  @override Widget build(BuildContext context) => const Placeholder();\n}\n\n// ── Image cache limits ─────────────────────────────\n// In main() or app init:\nPaintingBinding.instance.imageCache.maximumSize = 100; // max 100 images\nPaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20; // 50 MB\n\n// ── Avoid closures capturing large state ───────────\nclass _BadState extends State<MyWidget> {\n  Uint8List _largeBuffer = Uint8List(1024 * 1024);\n\n  @override Widget build(BuildContext context) {\n    return ElevatedButton(\n      // ❌ closure captures 'this' → captures _largeBuffer\n      onPressed: () => print(_largeBuffer.length),\n      child: const Text('Bad'),\n    );\n  }\n}\n\nclass _GoodState extends State<MyWidget> {\n  Uint8List _largeBuffer = Uint8List(1024 * 1024);\n\n  void _onPressed() => print(_largeBuffer.length);\n\n  @override Widget build(BuildContext context) {\n    return ElevatedButton(\n      onPressed: _onPressed, // ✅ method reference, not a new closure each build\n      child: const Text('Good'),\n    );\n  }\n}\n\n// ── Detect leaks with leak_tracker ─────────────────\n// flutter test --enable-leak-tracking\n// Or in test:\ntestWidgets('no leaks', (tester) async {\n  await tester.pumpWidget(const MyApp());\n  // All disposables tracked automatically in test mode\n});",
+    "code_language": "dart"
+  },
+  {
+    "id": 74,
+    "topic_id": 19,
+    "order_index": 6,
+    "difficulty": "hard",
+    "question": "What causes jank in Flutter and how do you fix it?",
+    "answer": "Jank = dropped frames (< 60fps on most devices, < 120fps on high refresh rate)\n\nCommon causes:\n1. Expensive build() methods\n2. Unnecessary rebuilds\n3. Large lists without lazy loading\n4. Heavy computations on UI thread\n5. Non-const widgets\n6. Opacity/clip/backdrop filter overuse\n\nFixes:\n• Use const constructors\n• ListView.builder for long lists\n• RepaintBoundary for expensive subtrees\n• Isolates for heavy computation\n• Cached values and memoization\n• Profile with DevTools",
+    "code_example": "// ── Problem: Expensive build ───────────────\nclass BadWidget extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    // ✗ Creates new list every build\n    final items = List.generate(1000, (i) => Item(i));\n\n    // ✗ Expensive computation in build\n    final sortedItems = items..sort((a, b) => a.compareTo(b));\n\n    return ListView(\n      children: sortedItems.map((item) => ItemTile(item)).toList(),\n    );\n  }\n}\n\n// ── Solution: Cache and lazy load ──────────\nclass GoodWidget extends StatefulWidget {\n  @override State<GoodWidget> createState() => _GoodWidgetState();\n}\n\nclass _GoodWidgetState extends State<GoodWidget> {\n  late final List<Item> items;\n\n  @override\n  void initState() {\n    super.initState();\n    // ✓ Compute once\n    items = List.generate(1000, (i) => Item(i))\n      ..sort((a, b) => a.compareTo(b));\n  }\n\n  @override Widget build(BuildContext context) {\n    // ✓ Lazy loading with builder\n    return ListView.builder(\n      itemCount: items.length,\n      itemBuilder: (ctx, i) => ItemTile(items[i]),\n    );\n  }\n}\n\n// ── Problem: Unnecessary rebuilds ──────────\nclass Parent extends StatefulWidget {\n  @override State<Parent> createState() => _ParentState();\n}\n\nclass _ParentState extends State<Parent> {\n  int counter = 0;\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        Text('$counter'),\n        ElevatedButton(\n          onPressed: () => setState(() => counter++),\n          child: Text('Increment'),\n        ),\n        // ✗ ExpensiveChild rebuilds every time!\n        ExpensiveChild(),\n      ],\n    );\n  }\n}\n\n// ── Solution: Extract and use const ────────\nclass _ParentState extends State<Parent> {\n  int counter = 0;\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        Text('$counter'),\n        ElevatedButton(\n          onPressed: () => setState(() => counter++),\n          child: const Text('Increment'), // ✓ const\n        ),\n        // ✓ Doesn't rebuild because const\n        const ExpensiveChild(),\n      ],\n    );\n  }\n}\n\nclass ExpensiveChild extends StatelessWidget {\n  const ExpensiveChild({super.key});\n\n  @override Widget build(BuildContext context) {\n    print('Building ExpensiveChild'); // Won't print on parent rebuild\n    return Container(/* complex UI */);\n  }\n}\n\n// ── Problem: Opacity causes repaints ───────\nOpacity(\n  opacity: 0.5,\n  child: ComplexWidget(), // ✗ Entire subtree repaints\n)\n\n// ── Solution: Use rgba or AnimatedOpacity ──\nContainer(\n  color: Colors.black.withOpacity(0.5), // ✓ Shader-based\n  child: ComplexWidget(),\n)\n\nAnimatedOpacity(\n  opacity: _visible ? 1.0 : 0.0,\n  duration: Duration(milliseconds: 300),\n  child: ComplexWidget(), // ✓ Optimized animations\n)\n\n// ── Problem: Heavy computation blocks UI ───\nvoid processData() {\n  final result = heavyComputation(); // ✗ Blocks UI thread\n  setState(() => _result = result);\n}\n\n// ── Solution: Use isolate ──────────────────\nimport 'dart:isolate';\n\nFuture<void> processData() async {\n  final result = await Isolate.run(() {\n    return heavyComputation(); // ✓ Runs on separate thread\n  });\n  setState(() => _result = result);\n}\n\n// ── RepaintBoundary for subtrees ───────────\nColumn(\n  children: [\n    // Frequently changing\n    AnimatedWidget(),\n\n    // Static expensive widget\n    RepaintBoundary(\n      child: ExpensiveStaticWidget(), // ✓ Won't repaint with parent\n    ),\n  ],\n)\n\n// ── Profile performance ────────────────────\n// 1. Run: flutter run --profile\n// 2. Open DevTools: dart devtools\n// 3. Check Performance tab:\n//    • Frame rendering time\n//    • Identify slow builds\n//    • Memory usage\n// 4. Use Timeline:\n//    • Record UI actions\n//    • Find janky frames\n//    • Trace expensive operations",
+    "code_language": "dart"
+  },
+  {
+    "id": 108,
+    "topic_id": 19,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #19: How would you handle stream handling for analytics instrumentation in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: analytics instrumentation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'analytics instrumentation';\nvoid discuss() {\n  debugPrint('Scenario 19: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 131,
+    "topic_id": 19,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #42: How would you handle performance optimization for BuildContext usage in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: BuildContext usage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'BuildContext usage';\nvoid discuss() {\n  debugPrint('Scenario 42: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 154,
+    "topic_id": 19,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #65: How would you handle testing approach for async loading states in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: async loading states. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'async loading states';\nvoid discuss() {\n  debugPrint('Scenario 65: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 177,
+    "topic_id": 19,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #88: How would you handle null safety best practices for secure storage in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 88: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 290,
+    "topic_id": 19,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss19_1() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 291,
+    "topic_id": 19,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss19_2() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 292,
+    "topic_id": 19,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss19_3() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 293,
+    "topic_id": 19,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss19_4() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 294,
+    "topic_id": 19,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss19_5() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

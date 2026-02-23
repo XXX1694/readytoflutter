@@ -1,0 +1,202 @@
+[
+  {
+    "id": 9,
+    "topic_id": 3,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is Flutter and how does it differ from other cross-platform frameworks?",
+    "answer": "Flutter is Google's UI toolkit for building natively compiled apps from a single codebase for mobile, web, and desktop.\n\nKey differentiators:\n• Own rendering engine (Skia / Impeller) — doesn't use native UI widgets; Flutter draws every pixel itself → pixel-perfect, consistent across platforms\n• Dart language — AOT compiled for production (fast), JIT for development (hot reload)\n• Widget-based — everything is a widget, composable by design\n• No JavaScript bridge — unlike React Native, Flutter talks directly to the GPU via its engine\n\nvs React Native: Uses native UI components via JS bridge → platform-native look, but bridge overhead and platform inconsistencies\nvs Xamarin: Shares business logic, native UI per platform — no shared UI layer\nvs Flutter: Shares everything including UI, own renderer → fastest UI updates, consistent\n\nArchitecture layers: Dart app → Flutter Framework → Flutter Engine (C++) → Skia/Impeller → GPU",
+    "code_example": "// Everything in Flutter is a widget composed together\nimport 'package:flutter/material.dart';\n\nvoid main() => runApp(const MyApp());\n\nclass MyApp extends StatelessWidget {\n  const MyApp({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: 'Flutter Demo',\n      theme: ThemeData(\n        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),\n        useMaterial3: true,\n      ),\n      home: const HomePage(),\n    );\n  }\n}\n\nclass HomePage extends StatelessWidget {\n  const HomePage({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('Home')),\n      body: Center(\n        child: Column(\n          mainAxisAlignment: MainAxisAlignment.center,\n          children: [\n            const Text('Hello, Flutter!',\n              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),\n            const SizedBox(height: 16),\n            ElevatedButton(\n              onPressed: () {},\n              child: const Text('Press Me'),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 10,
+    "topic_id": 3,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "What is the difference between StatelessWidget and StatefulWidget?",
+    "answer": "StatelessWidget — immutable description of UI. Rebuild only when parent provides new data. Use when the widget's appearance depends only on its constructor arguments.\n\nStatefulWidget — splits into Widget (immutable config) + State (mutable). Call setState() to schedule a rebuild. Use for user interactions, animations, network data.\n\nWhy the split? Widget objects are lightweight and cheap to recreate on every build. State objects are heavy and persist — they hold the actual data.\n\nLifecycle (StatefulWidget State):\ncreateState → initState → didChangeDependencies → build → setState → build → deactivate → dispose",
+    "code_example": "// StatelessWidget — pure function of its inputs\nclass GreetingCard extends StatelessWidget {\n  final String name;\n  final Color color;\n  const GreetingCard({super.key, required this.name, this.color = Colors.blue});\n\n  @override\n  Widget build(BuildContext context) {\n    return Card(\n      color: color.withOpacity(0.1),\n      child: Padding(\n        padding: const EdgeInsets.all(16),\n        child: Text('Hello, $name!'),\n      ),\n    );\n  }\n}\n\n// StatefulWidget — owns mutable state\nclass Counter extends StatefulWidget {\n  const Counter({super.key});\n  @override State<Counter> createState() => _CounterState();\n}\n\nclass _CounterState extends State<Counter> {\n  int _count = 0;\n\n  @override\n  void initState() {\n    super.initState();\n    // One-time setup: init controllers, start subscriptions\n  }\n\n  @override\n  void dispose() {\n    // Clean up controllers, subscriptions — ALWAYS call super.dispose()\n    super.dispose();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Column(\n      children: [\n        Text('Count: $_count', style: const TextStyle(fontSize: 32)),\n        ElevatedButton(\n          onPressed: () => setState(() => _count++),\n          child: const Text('+'),\n        ),\n      ],\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 11,
+    "topic_id": 3,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What is BuildContext and why is it important?",
+    "answer": "BuildContext is a handle to a widget's location in the widget tree. Every build() receives a context that represents THAT widget's position.\n\nKey uses:\n• Theme.of(context) — material theme data\n• Navigator.of(context) — push/pop screens\n• MediaQuery.of(context) — screen size, orientation, padding\n• Scaffold.of(context) — show snackbar, open drawer\n• Provider.of<T>(context) — state access\n\nCritical pitfalls:\n• Never use context after async gaps without checking mounted\n• Each widget has its OWN context — don't use parent context in child\n• Context from an ancestor might not have access to a descendant's inherited widgets",
+    "code_example": "class MyWidget extends StatefulWidget {\n  const MyWidget({super.key});\n  @override State<MyWidget> createState() => _MyWidgetState();\n}\n\nclass _MyWidgetState extends State<MyWidget> {\n  @override\n  Widget build(BuildContext context) {\n    // Reading theme\n    final colorScheme = Theme.of(context).colorScheme;\n\n    // Screen dimensions\n    final size = MediaQuery.sizeOf(context);\n    final isTablet = size.width >= 600;\n\n    return Scaffold(\n      body: Column(children: [\n        Text('Width: ${size.width.toInt()}',\n            style: TextStyle(color: colorScheme.primary)),\n        ElevatedButton(\n          onPressed: () => _doAsync(context),\n          child: const Text('Go'),\n        ),\n      ]),\n    );\n  }\n\n  Future<void> _doAsync(BuildContext context) async {\n    // ✅ Capture what you need BEFORE the async gap\n    final nav = Navigator.of(context);\n    await Future.delayed(const Duration(seconds: 1));\n\n    // ✅ Check mounted after every async gap\n    if (!mounted) return;\n\n    nav.pushNamed('/next'); // safe — navigator captured before gap\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 12,
+    "topic_id": 3,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What is the widget lifecycle in Flutter?",
+    "answer": "StatelessWidget: Constructor → build()\n\nStatefulWidget State lifecycle:\n1. createState() — creates the State object\n2. initState() — called ONCE after insertion into tree. Set up controllers, subscriptions.\n3. didChangeDependencies() — after initState(), and when an InheritedWidget ancestor changes\n4. build() — returns widget tree; called on setState() or when dependencies change\n5. didUpdateWidget(oldWidget) — when parent passes new configuration (new widget props)\n6. setState() — marks dirty, schedules rebuild\n7. deactivate() — temporarily removed from tree (might be reinserted)\n8. dispose() — permanently removed. Cancel subscriptions, dispose controllers.",
+    "code_example": "class RichLifecycleWidget extends StatefulWidget {\n  final String config;\n  const RichLifecycleWidget({super.key, required this.config});\n  @override State<RichLifecycleWidget> createState() => _State();\n}\n\nclass _State extends State<RichLifecycleWidget> {\n  late TextEditingController _ctrl;\n  late AnimationController _anim;\n\n  @override\n  void initState() {\n    super.initState(); // always first\n    _ctrl = TextEditingController(text: widget.config);\n    // DON'T use context here for InheritedWidgets — use didChangeDependencies\n    print('initState: config=${widget.config}');\n  }\n\n  @override\n  void didChangeDependencies() {\n    super.didChangeDependencies();\n    // Safe to use context here — InheritedWidget reads\n    final locale = Localizations.localeOf(context);\n    print('locale: $locale');\n  }\n\n  @override\n  void didUpdateWidget(RichLifecycleWidget oldWidget) {\n    super.didUpdateWidget(oldWidget);\n    if (oldWidget.config != widget.config) {\n      _ctrl.text = widget.config; // react to config change\n    }\n  }\n\n  @override\n  Widget build(BuildContext context) => TextField(controller: _ctrl);\n\n  @override\n  void dispose() {\n    _ctrl.dispose();   // ✅ prevent memory leak\n    // _anim.dispose(); // dispose all controllers\n    super.dispose();   // always last\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 42,
+    "topic_id": 3,
+    "order_index": 5,
+    "difficulty": "easy",
+    "question": "What is the difference between hot reload, hot restart, and full restart?",
+    "answer": "Three ways to update a running Flutter app during development:\n\nHot Reload (r) — injects new code into the running Dart VM and rebuilds the widget tree. State is PRESERVED. Fastest — milliseconds. Works for most UI changes.\n\nHot Restart (R) — restarts the Dart VM, resets all state. Slower than hot reload but faster than a full restart. Needed when: changing main(), modifying initState, changing native code.\n\nFull Restart — stops and relaunches the app from scratch. Required when: changing native code (Kotlin/Swift), adding plugins, changing build config.\n\nLimitations of hot reload: doesn't work for changes to main(), native code, global variable initializers, or static fields.",
+    "code_example": "// Hot Reload works for:\n// ✅ Widget UI changes\n// ✅ Adding/modifying build() methods\n// ✅ Changing styles, layouts\n// ✅ Adding new widgets\n\n// Hot Reload does NOT work for:\n// ❌ Changes to initState (state already initialized)\n// ❌ Changes to main() or runApp()\n// ❌ Adding/removing packages (pubspec.yaml changes)\n// ❌ Native code changes (Android/iOS)\n// ❌ Changing static/global variable initializers\n\n// Hot Restart needed for:\nclass MyApp extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      // Changing theme seed requires hot restart\n      // because ThemeData is computed at app start\n      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue)),\n      home: const HomePage(),\n    );\n  }\n}\n\n// Example of what breaks hot reload:\nclass _MyState extends State<MyWidget> {\n  late final String _data;\n\n  @override\n  void initState() {\n    super.initState();\n    _data = 'initialized'; // ← change this → need hot restart\n  }\n}\n\n// Using flutter CLI:\n// flutter run              → starts app\n// r                        → hot reload\n// R                        → hot restart\n// q                        → quit\n// flutter run --release    → production build (no hot reload)",
+    "code_language": "dart"
+  },
+  {
+    "id": 43,
+    "topic_id": 3,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What is MediaQuery and how do you build responsive layouts?",
+    "answer": "MediaQuery provides information about the device screen: size, pixel ratio, text scale, padding (safe area), orientation, and accessibility settings.\n\nResponsive layout strategies:\n• MediaQuery.sizeOf(context) — get screen dimensions\n• LayoutBuilder — get available constraints from parent\n• OrientationBuilder — react to portrait/landscape changes\n• AdaptiveLayout / adaptive_breakpoints — Google's responsive package\n\nBest practice: prefer LayoutBuilder over MediaQuery for layouts — it responds to the actual available space (accounts for sidebars, drawers) rather than the full screen size.",
+    "code_example": "class ResponsivePage extends StatelessWidget {\n  const ResponsivePage({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    // Screen information\n    final size = MediaQuery.sizeOf(context);\n    final padding = MediaQuery.paddingOf(context);  // safe area\n    final textScale = MediaQuery.textScalerOf(context);\n    final orientation = MediaQuery.orientationOf(context);\n    final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;\n\n    final isTablet = size.width >= 600;\n    final isDesktop = size.width >= 1200;\n\n    return Scaffold(\n      body: SafeArea(  // respects status bar + notch\n        child: LayoutBuilder(  // ✅ prefer over MediaQuery for layouts\n          builder: (context, constraints) {\n            if (constraints.maxWidth >= 1200) {\n              return _DesktopLayout();\n            } else if (constraints.maxWidth >= 600) {\n              return _TabletLayout();\n            }\n            return _MobileLayout();\n          },\n        ),\n      ),\n    );\n  }\n}\n\n// Responsive grid\nclass ResponsiveGrid extends StatelessWidget {\n  final List<Widget> items;\n  const ResponsiveGrid({super.key, required this.items});\n\n  @override\n  Widget build(BuildContext context) {\n    return LayoutBuilder(\n      builder: (context, constraints) {\n        final crossAxisCount = switch (constraints.maxWidth) {\n          >= 1200 => 4,\n          >= 800  => 3,\n          >= 600  => 2,\n          _       => 1,\n        };\n        return GridView.builder(\n          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(\n            crossAxisCount: crossAxisCount,\n            crossAxisSpacing: 16,\n            mainAxisSpacing: 16,\n          ),\n          itemCount: items.length,\n          itemBuilder: (_, i) => items[i],\n        );\n      },\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 67,
+    "topic_id": 3,
+    "order_index": 7,
+    "difficulty": "medium",
+    "question": "What is BuildContext and why is it important?",
+    "answer": "BuildContext:\n• Represents the location of a widget in the widget tree\n• Handle to the widget's position in the tree hierarchy\n• Used to access inherited widgets and theme data\n• Each widget has its own BuildContext\n\nImportant uses:\n1. Accessing InheritedWidgets (Theme, MediaQuery, Provider, etc.)\n2. Navigation (Navigator.of(context))\n3. Showing dialogs/snackbars\n4. Finding ancestor/descendant widgets\n\nCommon pitfalls:\n• Using BuildContext after async gaps (use mounted check)\n• Accessing context before widget is built\n• Confused context when using Builder widgets",
+    "code_example": "class MyWidget extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    // context represents THIS widget's position in tree\n\n    // ── Accessing InheritedWidgets ──────────\n    final theme = Theme.of(context);\n    final size = MediaQuery.of(context).size;\n    final navigator = Navigator.of(context);\n\n    // ── Navigation ──────────────────────────\n    return ElevatedButton(\n      onPressed: () {\n        Navigator.of(context).push(\n          MaterialPageRoute(builder: (_) => NextPage()),\n        );\n      },\n      child: Text('Next'),\n    );\n  }\n}\n\n// ── Common mistake: wrong context ──────────\nclass MyPage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    // This context is MyPage's context\n    return Scaffold(\n      appBar: AppBar(title: Text('Home')),\n      body: ElevatedButton(\n        onPressed: () {\n          // ✗ Wrong: tries to find Scaffold in MyPage ancestors\n          Scaffold.of(context).openDrawer();\n        },\n        child: Text('Open'),\n      ),\n    );\n  }\n}\n\n// ── Fix with Builder ──────────────────────\nclass MyPage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: Text('Home')),\n      body: Builder(\n        builder: (scaffoldContext) {\n          // scaffoldContext is inside Scaffold\n          return ElevatedButton(\n            onPressed: () {\n              // ✓ Correct: scaffoldContext has Scaffold as ancestor\n              Scaffold.of(scaffoldContext).openDrawer();\n            },\n            child: Text('Open'),\n          );\n        },\n      ),\n    );\n  }\n}\n\n// ── Async pitfall ─────────────────────────\nclass MyWidget extends StatefulWidget {\n  @override State<MyWidget> createState() => _MyWidgetState();\n}\n\nclass _MyWidgetState extends State<MyWidget> {\n  Future<void> loadData() async {\n    await Future.delayed(Duration(seconds: 2));\n\n    // ✗ Dangerous: widget might be disposed\n    if (context.mounted) {  // ✓ Check mounted first\n      Navigator.of(context).pop();\n    }\n  }\n\n  @override Widget build(BuildContext context) => Container();\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 68,
+    "topic_id": 3,
+    "order_index": 8,
+    "difficulty": "hard",
+    "question": "Explain the difference between StatelessWidget and StatefulWidget lifecycle.",
+    "answer": "StatelessWidget lifecycle:\n1. Constructor called\n2. build() called\n3. Widget rendered\n• build() called again only when parent rebuilds with different parameters\n• Immutable — cannot change internal state\n\nStatefulWidget lifecycle:\n1. Constructor (widget)\n2. createState() — creates State object (once)\n3. initState() — initialization (once)\n4. didChangeDependencies() — when InheritedWidget changes\n5. build() — renders UI\n6. didUpdateWidget() — when parent rebuilds with new widget\n7. setState() — triggers rebuild\n8. deactivate() — when removed from tree (might be reinserted)\n9. dispose() — cleanup (once, when removed permanently)\n\nState object persists across rebuilds, widget does not.",
+    "code_example": "// ── StatelessWidget ────────────────────────\nclass MyStateless extends StatelessWidget {\n  final String title;\n\n  const MyStateless({required this.title, super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    print('Building StatelessWidget');\n    return Text(title);\n  }\n}\n\n// ── StatefulWidget ─────────────────────────\nclass MyStateful extends StatefulWidget {\n  final String initialValue;\n\n  const MyStateful({required this.initialValue, super.key});\n\n  @override\n  State<MyStateful> createState() {\n    print('1. createState()');\n    return _MyStatefulState();\n  }\n}\n\nclass _MyStatefulState extends State<MyStateful> {\n  late String value;\n\n  @override\n  void initState() {\n    super.initState();\n    print('2. initState()');\n    value = widget.initialValue;\n    // Can't use context here for InheritedWidgets\n  }\n\n  @override\n  void didChangeDependencies() {\n    super.didChangeDependencies();\n    print('3. didChangeDependencies()');\n    // Called after initState and when InheritedWidget changes\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    print('4. build()');\n    return Column(\n      children: [\n        Text(value),\n        ElevatedButton(\n          onPressed: () {\n            setState(() {\n              value = 'Updated';\n              print('setState() -> triggers build()');\n            });\n          },\n          child: Text('Update'),\n        ),\n      ],\n    );\n  }\n\n  @override\n  void didUpdateWidget(MyStateful oldWidget) {\n    super.didUpdateWidget(oldWidget);\n    print('5. didUpdateWidget()');\n    if (oldWidget.initialValue != widget.initialValue) {\n      setState(() {\n        value = widget.initialValue;\n      });\n    }\n  }\n\n  @override\n  void deactivate() {\n    print('6. deactivate()');\n    super.deactivate();\n  }\n\n  @override\n  void dispose() {\n    print('7. dispose()');\n    // Clean up controllers, listeners, subscriptions\n    super.dispose();\n  }\n}\n\n// Order of calls:\n// Initial build: createState -> initState -> didChangeDependencies -> build\n// setState: build\n// Parent rebuild with new widget: didUpdateWidget -> build\n// Remove from tree: deactivate -> dispose",
+    "code_language": "dart"
+  },
+  {
+    "id": 81,
+    "topic_id": 3,
+    "order_index": 9,
+    "difficulty": "easy",
+    "question": "What is the difference between hot reload and hot restart?",
+    "answer": "Hot Reload:\n• Injects updated code into running Dart VM\n• Preserves app state\n• Fast (< 1 second)\n• Works for UI changes, most code changes\n• Doesn't re-run main() or initState()\n\nHot Restart:\n• Restarts the app from scratch\n• Loses all state\n• Slower (few seconds)\n• Re-runs main() and all initialization\n• Needed for: main() changes, global variables, native code\n\nWhen hot reload doesn't work:\n• Changing app initialization\n• Adding/removing imports\n• Changing class to mixin\n• Modifying const to final",
+    "code_example": "// ── Hot reload works ───────────────────────\nclass Counter extends StatefulWidget {\n  @override State<Counter> createState() => _CounterState();\n}\n\nclass _CounterState extends State<Counter> {\n  int count = 0;\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        Text('Count: $count'),\n        // Change this color and hot reload → state preserved\n        ElevatedButton(\n          onPressed: () => setState(() => count++),\n          style: ElevatedButton.styleFrom(\n            backgroundColor: Colors.blue, // Change to Colors.red\n          ),\n          child: Text('Increment'),\n        ),\n      ],\n    );\n  }\n}\n\n// ── Hot restart needed ─────────────────────\n// 1. Changing main()\nvoid main() {\n  runApp(MyApp());\n  // Add logging here → needs hot restart\n  debugPrint('App started');\n}\n\n// 2. Changing global variables\n// var apiUrl = 'https://api.dev.com';\nvar apiUrl = 'https://api.prod.com'; // Hot restart needed\n\n// 3. Changing const to final\nclass Config {\n  // const String version = '1.0';\n  final String version = '1.0'; // Hot restart needed\n}\n\n// 4. initState changes\nclass _MyWidgetState extends State<MyWidget> {\n  late String data;\n\n  @override\n  void initState() {\n    super.initState();\n    data = 'Initial';\n    // Add code here → hot restart to re-run\n  }\n\n  @override Widget build(BuildContext context) {\n    // Changes here → hot reload works\n    return Text(data);\n  }\n}\n\n// ── Best practices ─────────────────────────\n// • Use hot reload for rapid UI iteration\n// • Use hot restart after changing state initialization\n// • Full restart/rebuild after native code changes\n// • Rebuild after pubspec.yaml changes",
+    "code_language": "dart"
+  },
+  {
+    "id": 82,
+    "topic_id": 3,
+    "order_index": 10,
+    "difficulty": "medium",
+    "question": "Explain Keys in Flutter and when they are necessary.",
+    "answer": "Keys help Flutter identify widgets uniquely in the widget tree.\n\nTypes of Keys:\n• ValueKey — based on value\n• ObjectKey — based on object identity\n• UniqueKey — always unique\n• GlobalKey — access widget state anywhere\n• PageStorageKey — preserve scroll position\n\nWhen you NEED keys:\n• Reordering stateful widgets\n• Modifying collection of widgets\n• Preserving state when widget moves\n• Accessing widget state from outside\n\nFlutter's diffing algorithm uses keys to match old/new widgets.",
+    "code_example": "// ── Problem: Without keys ──────────────────\nclass StatefulTile extends StatefulWidget {\n  final String title;\n  const StatefulTile(this.title, {super.key});\n\n  @override State<StatefulTile> createState() => _StatefulTileState();\n}\n\nclass _StatefulTileState extends State<StatefulTile> {\n  bool selected = false;\n\n  @override Widget build(BuildContext context) {\n    return ListTile(\n      title: Text(widget.title),\n      selected: selected,\n      onTap: () => setState(() => selected = !selected),\n    );\n  }\n}\n\nclass BadList extends StatefulWidget {\n  @override State<BadList> createState() => _BadListState();\n}\n\nclass _BadListState extends State<BadList> {\n  List<String> items = ['A', 'B', 'C'];\n\n  void removeFirst() {\n    setState(() => items.removeAt(0));\n  }\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        ...items.map((item) => StatefulTile(item)), // ✗ No keys\n        ElevatedButton(\n          onPressed: removeFirst,\n          child: Text('Remove First'),\n        ),\n      ],\n    );\n  }\n}\n\n// Problem: If you select 'B', then remove 'A',\n// the selection stays on second position (now 'C')\n// because Flutter matches widgets by type and position\n\n// ── Solution: With keys ────────────────────\nclass _GoodListState extends State<GoodList> {\n  List<String> items = ['A', 'B', 'C'];\n\n  void removeFirst() {\n    setState(() => items.removeAt(0));\n  }\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        ...items.map((item) =>\n          StatefulTile(item, key: ValueKey(item)) // ✓ With keys\n        ),\n        ElevatedButton(\n          onPressed: removeFirst,\n          child: Text('Remove First'),\n        ),\n      ],\n    );\n  }\n}\n\n// Now Flutter correctly tracks each widget by its key\n\n// ── ValueKey ───────────────────────────────\n// Use when value uniquely identifies widget\nListView(\n  children: users.map((user) =>\n    UserTile(user, key: ValueKey(user.id))\n  ).toList(),\n)\n\n// ── ObjectKey ──────────────────────────────\n// Use when object itself is unique\nListView(\n  children: items.map((item) =>\n    ItemWidget(item, key: ObjectKey(item))\n  ).toList(),\n)\n\n// ── UniqueKey ──────────────────────────────\n// Always creates new key (forces rebuild)\nWidget build(BuildContext context) {\n  return Container(\n    key: UniqueKey(), // New widget every build\n    child: Text('Always rebuilds'),\n  );\n}\n\n// ── GlobalKey ──────────────────────────────\n// Access widget state from anywhere\nclass MyForm extends StatelessWidget {\n  final formKey = GlobalKey<FormState>();\n\n  void submit() {\n    if (formKey.currentState!.validate()) {\n      formKey.currentState!.save();\n      print('Form is valid!');\n    }\n  }\n\n  @override Widget build(BuildContext context) {\n    return Form(\n      key: formKey,\n      child: Column(\n        children: [\n          TextFormField(\n            validator: (v) => v!.isEmpty ? 'Required' : null,\n          ),\n          ElevatedButton(\n            onPressed: submit,\n            child: Text('Submit'),\n          ),\n        ],\n      ),\n    );\n  }\n}\n\n// ── PageStorageKey ─────────────────────────\n// Preserve scroll position when switching tabs\nListView(\n  key: PageStorageKey('my-list'),\n  children: items.map((item) => ListTile(title: Text(item))).toList(),\n)\n\n// ── When NOT to use keys ───────────────────\n// • Static widget trees\n// • Stateless widgets that don't move\n// • Performance: keys have overhead",
+    "code_language": "dart"
+  },
+  {
+    "id": 92,
+    "topic_id": 3,
+    "order_index": 101,
+    "difficulty": "hard",
+    "question": "Interview scenario #3: How would you handle state management trade-offs for navigation guards in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 3: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 115,
+    "topic_id": 3,
+    "order_index": 102,
+    "difficulty": "medium",
+    "question": "Interview scenario #26: How would you handle API integration for pagination strategy in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 26: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 138,
+    "topic_id": 3,
+    "order_index": 103,
+    "difficulty": "easy",
+    "question": "Interview scenario #49: How would you handle stream handling for dependency injection in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 49: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 161,
+    "topic_id": 3,
+    "order_index": 104,
+    "difficulty": "hard",
+    "question": "Interview scenario #72: How would you handle performance optimization for render performance in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: render performance. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'render performance';\nvoid discuss() {\n  debugPrint('Scenario 72: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 184,
+    "topic_id": 3,
+    "order_index": 105,
+    "difficulty": "medium",
+    "question": "Interview scenario #95: How would you handle testing approach for CI reliability in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: CI reliability. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'CI reliability';\nvoid discuss() {\n  debugPrint('Scenario 95: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 210,
+    "topic_id": 3,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 1: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss3_1() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 211,
+    "topic_id": 3,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 2: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss3_2() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 212,
+    "topic_id": 3,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 3: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss3_3() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 213,
+    "topic_id": 3,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 4: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss3_4() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 214,
+    "topic_id": 3,
+    "order_index": 110,
+    "difficulty": "hard",
+    "question": "Scenario 5: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss3_5() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

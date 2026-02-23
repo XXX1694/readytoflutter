@@ -1,0 +1,142 @@
+[
+  {
+    "id": 28,
+    "topic_id": 16,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "Implement and explain the Repository Pattern in Flutter.",
+    "answer": "The Repository Pattern abstracts data access behind an interface. The rest of the app works with the interface — it doesn't care if data comes from an API, a database, or a cache.\n\nBenefits:\n• Swap implementations without touching business logic\n• Inject mocks in tests\n• Centralize caching and offline logic\n• Single source of truth for data\n\nPattern: Domain defines abstract interface → Data layer provides concrete implementation.",
+    "code_example": "// Abstract contract (Domain layer)\nabstract class WeatherRepository {\n  Future<Weather> getWeather(String city);\n  Stream<Weather> watchWeather(String city);\n}\n\n// Remote data source\nclass WeatherApiSource {\n  final Dio _dio;\n  WeatherApiSource(this._dio);\n  Future<WeatherModel> fetch(String city) async {\n    final r = await _dio.get('/weather', queryParameters: {'q': city});\n    return WeatherModel.fromJson(r.data as Map<String, dynamic>);\n  }\n}\n\n// Local cache source\nclass WeatherCacheSource {\n  final Box<WeatherModel> _box;\n  WeatherCacheSource(this._box);\n  Future<void> save(String city, WeatherModel w) => _box.put(city, w);\n  WeatherModel? get(String city) => _box.get(city);\n}\n\n// Implementation with stale-while-revalidate strategy\nclass WeatherRepositoryImpl implements WeatherRepository {\n  final WeatherApiSource _api;\n  final WeatherCacheSource _cache;\n  WeatherRepositoryImpl(this._api, this._cache);\n\n  @override\n  Future<Weather> getWeather(String city) async {\n    // Return cached immediately, refresh in background\n    final cached = _cache.get(city);\n    if (cached != null) {\n      _api.fetch(city).then((fresh) => _cache.save(city, fresh));\n      return cached;\n    }\n    // No cache — wait for network\n    final weather = await _api.fetch(city);\n    await _cache.save(city, weather);\n    return weather;\n  }\n\n  @override\n  Stream<Weather> watchWeather(String city) =>\n      Stream.periodic(const Duration(minutes: 15))\n          .asyncMap((_) => getWeather(city));\n}\n\n// Testing — inject mock\nclass MockWeatherRepository extends Mock implements WeatherRepository {}\n\nvoid main() {\n  test('WeatherCubit loads weather', () async {\n    final mock = MockWeatherRepository();\n    when(() => mock.getWeather('London'))\n        .thenAnswer((_) async => Weather(city: 'London', temp: 15));\n\n    final cubit = WeatherCubit(mock);\n    await cubit.load('London');\n\n    expect(cubit.state, isA<WeatherLoaded>());\n  });\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 29,
+    "topic_id": 16,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "Explain common GoF design patterns in Flutter: Singleton, Factory, Observer, Strategy.",
+    "answer": "Design Patterns in Flutter context:\n\nSingleton — single instance throughout app life (service locator, config)\nFactory — create objects via a method that can return subtypes (platform-specific services)\nObserver — publish/subscribe (ChangeNotifier, Streams are the pattern!)\nStrategy — plug-in interchangeable algorithms at runtime\nBuilder — build complex objects step-by-step\nCommand — encapsulate operations as objects (Actions, undo/redo)",
+    "code_example": "// ── SINGLETON ─────────────────────────────────────\nclass AppConfig {\n  static AppConfig? _instance;\n  late final String apiUrl;\n  late final bool isDebug;\n  AppConfig._();\n  static AppConfig get instance => _instance ??= AppConfig._()\n    ..apiUrl = const String.fromEnvironment('API_URL', defaultValue: 'https://api.example.com')\n    ..isDebug = kDebugMode;\n}\n// Usage: AppConfig.instance.apiUrl\n\n// ── FACTORY (platform-specific) ────────────────────\nabstract class PushNotificationService {\n  Future<void> requestPermission();\n  Future<String?> getToken();\n\n  factory PushNotificationService() {\n    if (Platform.isAndroid) return FCMService();\n    if (Platform.isIOS) return APNsService();\n    return WebPushService();\n  }\n}\n\n// ── OBSERVER (ChangeNotifier = Observer) ────────────\nclass ThemeStore extends ChangeNotifier { // Subject\n  bool _dark = false;\n  bool get isDark => _dark;\n  void toggle() { _dark = !_dark; notifyListeners(); } // notify all observers\n}\n// Observers registered via Provider/context.watch\n\n// ── STRATEGY ───────────────────────────────────────\nabstract class PaymentStrategy {\n  Future<bool> pay(double amount);\n}\nclass CardPayment implements PaymentStrategy {\n  @override Future<bool> pay(double amount) async => processCard(amount);\n}\nclass PayPalPayment implements PaymentStrategy {\n  @override Future<bool> pay(double amount) async => processPayPal(amount);\n}\n\nclass Checkout {\n  PaymentStrategy _strategy = CardPayment();\n  void setStrategy(PaymentStrategy s) => _strategy = s;\n  Future<bool> checkout(double total) => _strategy.pay(total);\n}\n\n// ── BUILDER ────────────────────────────────────────\nclass NotificationBuilder {\n  String _title = '';\n  String _body = '';\n  String? _imageUrl;\n  Map<String, String> _data = {};\n\n  NotificationBuilder title(String t) { _title = t; return this; }\n  NotificationBuilder body(String b)  { _body = b;  return this; }\n  NotificationBuilder image(String u) { _imageUrl = u; return this; }\n  NotificationBuilder data(String k, String v) { _data[k] = v; return this; }\n  RemoteMessage build() => RemoteMessage(title: _title, body: _body, imageUrl: _imageUrl, data: _data);\n}\n\nfinal notif = NotificationBuilder()\n  .title('New Message')\n  .body('Alice sent you a message')\n  .data('screen', 'chat')\n  .build();",
+    "code_language": "dart"
+  },
+  {
+    "id": 54,
+    "topic_id": 16,
+    "order_index": 3,
+    "difficulty": "hard",
+    "question": "Explain Dependency Injection in Flutter. Compare get_it vs injectable vs Riverpod.",
+    "answer": "Dependency Injection (DI) provides dependencies to a class from outside rather than creating them internally — enabling testability, flexibility, and loose coupling.\n\nApproaches in Flutter:\n\nget_it — service locator (global registry):\n• Simple, no code generation\n• Not compile-time safe (runtime lookup)\n• Great for simple to medium apps\n\ninjectable (wraps get_it):\n• Adds code generation with annotations\n• @injectable, @singleton, @lazySingleton, @module\n• Compile-time safe via generated code\n\nRiverpod:\n• First-class DI built into state management\n• Compile-time safe, auto-dispose, testable\n• Best for new Flutter apps",
+    "code_example": "// ── get_it (manual registration) ──────────────────\nimport 'package:get_it/get_it.dart';\n\nfinal sl = GetIt.instance;\n\nFuture<void> setupDi() async {\n  // Singletons — created once\n  sl.registerLazySingleton<Dio>(() => createDio());\n  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));\n\n  // Factories — new instance each time\n  sl.registerFactory(() => LoginBloc(sl()));\n  sl.registerFactory<ProductsBloc>(() => ProductsBloc(sl(), sl()));\n\n  // Async singleton\n  sl.registerSingletonAsync<SharedPreferences>(\n    () => SharedPreferences.getInstance(),\n  );\n  await sl.allReady(); // wait for async singletons\n}\n\n// Usage anywhere (no context needed):\nfinal repo = sl<AuthRepository>();\nfinal bloc = sl<LoginBloc>();\n\n// ── injectable (code generation) ──────────────────\n@module\nabstract class NetworkModule {\n  @lazySingleton\n  Dio get dio => createDio();\n}\n\n@LazySingleton(as: AuthRepository)\nclass AuthRepositoryImpl implements AuthRepository {\n  final Dio _dio;\n  AuthRepositoryImpl(this._dio); // injected automatically\n}\n\n@injectable\nclass LoginBloc extends Bloc<LoginEvent, LoginState> {\n  final AuthRepository _repo;\n  LoginBloc(this._repo) : super(LoginInitial());\n}\n\n// ── Riverpod (recommended for new projects) ─────────\nfinal dioProvider = Provider<Dio>((ref) => createDio());\n\nfinal authRepositoryProvider = Provider<AuthRepository>((ref) {\n  return AuthRepositoryImpl(ref.watch(dioProvider));\n});\n\nfinal loginBlocProvider = StateNotifierProvider<LoginNotifier, LoginState>((ref) {\n  return LoginNotifier(ref.watch(authRepositoryProvider));\n});\n\n// ── Testing: override dependencies ─────────────────\n// get_it\nsl.unregister<AuthRepository>();\nsl.registerFactory<AuthRepository>(() => MockAuthRepository());\n\n// Riverpod\ntestWidgets('login test', (tester) async {\n  await tester.pumpWidget(\n    ProviderScope(\n      overrides: [\n        authRepositoryProvider.overrideWithValue(MockAuthRepository()),\n      ],\n      child: const App(),\n    ),\n  );\n});",
+    "code_language": "dart"
+  },
+  {
+    "id": 89,
+    "topic_id": 16,
+    "order_index": 7,
+    "difficulty": "medium",
+    "question": "Explain the Singleton pattern in Dart and its implementation.",
+    "answer": "Singleton ensures a class has only one instance and provides global access.\n\nDart implementations:\n1. Factory constructor with static instance\n2. Static final field\n3. get_it or riverpod for dependency injection\n\nUse cases:\n• Database connections\n• API clients\n• Configuration/settings\n• Logger\n• Cache manager\n\nCaution:\n• Makes testing harder (global state)\n• Consider dependency injection instead\n• Avoid for stateful logic",
+    "code_example": "// ══ METHOD 1: Factory constructor ══════════\nclass Database {\n  // Private static instance\n  static final Database _instance = Database._internal();\n\n  // Factory constructor returns same instance\n  factory Database() {\n    return _instance;\n  }\n\n  // Private named constructor\n  Database._internal() {\n    print('Database instance created');\n  }\n\n  void query(String sql) {\n    print('Executing: $sql');\n  }\n}\n\n// Usage\nvar db1 = Database();\nvar db2 = Database();\nprint(identical(db1, db2)); // true — same instance\n\ndb1.query('SELECT * FROM users');\n\n// ══ METHOD 2: Static getter ════════════════\nclass Logger {\n  static final Logger _instance = Logger._internal();\n\n  static Logger get instance => _instance;\n\n  Logger._internal();\n\n  void log(String message) {\n    print('[${DateTime.now()}] $message');\n  }\n}\n\n// Usage\nLogger.instance.log('App started');\nLogger.instance.log('User logged in');\n\n// ══ METHOD 3: Lazy initialization ══════════\nclass ApiClient {\n  static ApiClient? _instance;\n\n  static ApiClient get instance {\n    _instance ??= ApiClient._internal();\n    return _instance!;\n  }\n\n  ApiClient._internal() {\n    print('ApiClient initialized');\n  }\n\n  Future<void> get(String endpoint) async {\n    print('GET $endpoint');\n  }\n}\n\n// Not created until first access\nApiClient.instance.get('/users');\n\n// ══ METHOD 4: With parameters ══════════════\nclass AppConfig {\n  final String apiUrl;\n  final String apiKey;\n\n  static AppConfig? _instance;\n\n  AppConfig._internal({\n    required this.apiUrl,\n    required this.apiKey,\n  });\n\n  static void initialize({\n    required String apiUrl,\n    required String apiKey,\n  }) {\n    _instance ??= AppConfig._internal(\n      apiUrl: apiUrl,\n      apiKey: apiKey,\n    );\n  }\n\n  static AppConfig get instance {\n    if (_instance == null) {\n      throw StateError('AppConfig not initialized');\n    }\n    return _instance!;\n  }\n}\n\n// Usage\nvoid main() {\n  AppConfig.initialize(\n    apiUrl: 'https://api.example.com',\n    apiKey: 'secret',\n  );\n\n  runApp(MyApp());\n}\n\n// Anywhere in app\nfinal config = AppConfig.instance;\nprint(config.apiUrl);\n\n// ══ THREAD-SAFE SINGLETON ══════════════════\nclass ThreadSafeCache {\n  static ThreadSafeCache? _instance;\n  static final _lock = Object();\n\n  final Map<String, dynamic> _cache = {};\n\n  ThreadSafeCache._internal();\n\n  static ThreadSafeCache get instance {\n    if (_instance == null) {\n      synchronized(_lock, () {\n        _instance ??= ThreadSafeCache._internal();\n      });\n    }\n    return _instance!;\n  }\n\n  void set(String key, dynamic value) {\n    _cache[key] = value;\n  }\n\n  dynamic get(String key) {\n    return _cache[key];\n  }\n}\n\n// ══ SINGLETON WITH DISPOSAL ════════════════\nclass SocketManager {\n  static SocketManager? _instance;\n  late IOWebSocketChannel _channel;\n\n  static SocketManager get instance {\n    _instance ??= SocketManager._internal();\n    return _instance!;\n  }\n\n  SocketManager._internal() {\n    _connect();\n  }\n\n  void _connect() {\n    _channel = IOWebSocketChannel.connect('ws://example.com');\n  }\n\n  void send(String message) {\n    _channel.sink.add(message);\n  }\n\n  void dispose() {\n    _channel.sink.close();\n    _instance = null;\n  }\n}\n\n// ══ BETTER: DEPENDENCY INJECTION ═══════════\n// Instead of Singleton, use DI\nimport 'package:get_it/get_it.dart';\n\nfinal getIt = GetIt.instance;\n\nvoid setupDependencies() {\n  // Register as singleton\n  getIt.registerLazySingleton<Database>(() => Database());\n  getIt.registerLazySingleton<Logger>(() => Logger());\n  getIt.registerLazySingleton<ApiClient>(() => ApiClient());\n}\n\n// Usage\nfinal db = getIt<Database>();\nfinal logger = getIt<Logger>();\n\n// ══ SINGLETON IN FLUTTER ═══════════════════\n// Real-world example: Theme manager\nclass ThemeManager {\n  static final ThemeManager _instance = ThemeManager._internal();\n\n  factory ThemeManager() => _instance;\n\n  ThemeManager._internal();\n\n  ThemeMode _themeMode = ThemeMode.system;\n\n  ThemeMode get themeMode => _themeMode;\n\n  void setTheme(ThemeMode mode) {\n    _themeMode = mode;\n    // Persist to storage\n    _saveToPrefs(mode);\n  }\n\n  Future<void> _saveToPrefs(ThemeMode mode) async {\n    final prefs = await SharedPreferences.getInstance();\n    prefs.setString('theme_mode', mode.name);\n  }\n\n  Future<void> loadTheme() async {\n    final prefs = await SharedPreferences.getInstance();\n    final modeName = prefs.getString('theme_mode');\n    if (modeName != null) {\n      _themeMode = ThemeMode.values.firstWhere(\n        (m) => m.name == modeName,\n        orElse: () => ThemeMode.system,\n      );\n    }\n  }\n}\n\n// Usage in app\nclass MyApp extends StatefulWidget {\n  @override State<MyApp> createState() => _MyAppState();\n}\n\nclass _MyAppState extends State<MyApp> {\n  final themeManager = ThemeManager();\n\n  @override\n  void initState() {\n    super.initState();\n    themeManager.loadTheme();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      themeMode: themeManager.themeMode,\n      theme: ThemeData.light(),\n      darkTheme: ThemeData.dark(),\n      home: HomePage(),\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 105,
+    "topic_id": 16,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #16: How would you handle API integration for accessibility in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: accessibility. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'accessibility';\nvoid discuss() {\n  debugPrint('Scenario 16: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 128,
+    "topic_id": 16,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #39: How would you handle stream handling for analytics instrumentation in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: analytics instrumentation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'analytics instrumentation';\nvoid discuss() {\n  debugPrint('Scenario 39: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 151,
+    "topic_id": 16,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #62: How would you handle performance optimization for BuildContext usage in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: BuildContext usage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'BuildContext usage';\nvoid discuss() {\n  debugPrint('Scenario 62: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 174,
+    "topic_id": 16,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #85: How would you handle testing approach for async loading states in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: async loading states. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'async loading states';\nvoid discuss() {\n  debugPrint('Scenario 85: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 197,
+    "topic_id": 16,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Interview scenario #108: How would you handle null safety best practices for secure storage in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 108: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 275,
+    "topic_id": 16,
+    "order_index": 106,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss16_1() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 276,
+    "topic_id": 16,
+    "order_index": 107,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss16_2() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 277,
+    "topic_id": 16,
+    "order_index": 108,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss16_3() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 278,
+    "topic_id": 16,
+    "order_index": 109,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss16_4() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 279,
+    "topic_id": 16,
+    "order_index": 110,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss16_5() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

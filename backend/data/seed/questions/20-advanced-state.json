@@ -1,0 +1,112 @@
+[
+  {
+    "id": 34,
+    "topic_id": 20,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "Explain Riverpod: providers, WidgetRef, and AsyncNotifier.",
+    "answer": "Riverpod is a complete Provider rewrite with compile-time safety.\n\nKey advantages over Provider:\n• No context needed to read providers outside widgets\n• Compile-time type safety — no runtime ProviderNotFoundException\n• Auto-dispose — no memory leaks from forgotten providers\n• DevTools integration — view provider state\n\nProvider types:\n• Provider<T> — read-only derived value\n• StateProvider<T> — simple mutable state\n• NotifierProvider — complex sync state (Notifier class)\n• AsyncNotifierProvider — async state with loading/error/data\n• StreamProvider — stream of values\n• FutureProvider — one-time async value",
+    "code_example": "// pubspec: flutter_riverpod: ^2.5.0\n\n// ── Simple providers ──────────────────────────────\nfinal apiUrlProvider = Provider<String>((ref) => 'https://api.example.com');\nfinal counterProvider = StateProvider<int>((ref) => 0);\n\n// ── AsyncNotifier — recommended for async state ────\nclass ProductsNotifier extends AsyncNotifier<List<Product>> {\n  @override\n  Future<List<Product>> build() async {\n    // Called once on first use; result is cached\n    final repo = ref.watch(productRepositoryProvider);\n    return repo.getProducts();\n  }\n\n  Future<void> refresh() async {\n    state = const AsyncLoading();\n    state = await AsyncValue.guard(() =>\n      ref.read(productRepositoryProvider).getProducts()\n    );\n  }\n\n  Future<void> addProduct(Product p) async {\n    final repo = ref.read(productRepositoryProvider);\n    await repo.create(p);\n    ref.invalidateSelf(); // re-run build()\n  }\n}\n\nfinal productsProvider = AsyncNotifierProvider<ProductsNotifier, List<Product>>(\n  ProductsNotifier.new,\n);\n\n// ── Combining providers ────────────────────────────\nfinal searchProvider = StateProvider<String>((ref) => '');\n\nfinal filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {\n  final products = ref.watch(productsProvider);\n  final search   = ref.watch(searchProvider);\n  return products.whenData((list) =>\n    list.where((p) => p.name.toLowerCase().contains(search.toLowerCase())).toList(),\n  );\n});\n\n// ── Widget usage ────────────────────────────────────\nclass ProductsPage extends ConsumerWidget {\n  const ProductsPage({super.key});\n\n  @override\n  Widget build(BuildContext context, WidgetRef ref) {\n    final products = ref.watch(filteredProductsProvider);\n\n    return products.when(\n      data: (list) => ListView.builder(\n        itemCount: list.length,\n        itemBuilder: (ctx, i) => ProductTile(product: list[i]),\n      ),\n      loading: () => const CircularProgressIndicator(),\n      error: (e, _) => Text('Error: $e'),\n    );\n  }\n}\n\n// ── ConsumerStatefulWidget ─────────────────────────\nclass SearchPage extends ConsumerStatefulWidget {\n  @override ConsumerState<SearchPage> createState() => _SearchPageState();\n}\nclass _SearchPageState extends ConsumerState<SearchPage> {\n  @override Widget build(BuildContext context) {\n    return TextField(\n      onChanged: (v) => ref.read(searchProvider.notifier).state = v,\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 59,
+    "topic_id": 20,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "Explain Riverpod family modifier and how to override providers in tests.",
+    "answer": "family — parametrize a provider by an argument. Creates a separate provider instance per parameter value. Each instance is cached and auto-disposed when no longer watched.\n\nUse for: fetching by ID, filtering by category, locale-specific providers.\n\nTesting with Riverpod — override any provider in ProviderScope for unit and widget tests. This replaces the real implementation with a mock.",
+    "code_example": "// ── family modifier ────────────────────────────────\n// Provider parameterized by product ID\nfinal productProvider = FutureProvider.family<Product, int>((ref, id) async {\n  final repo = ref.watch(productRepositoryProvider);\n  return repo.getProduct(id);\n});\n\n// Usage in widget — each ID gets its own cached provider\nclass ProductPage extends ConsumerWidget {\n  final int productId;\n  const ProductPage({super.key, required this.productId});\n\n  @override\n  Widget build(BuildContext context, WidgetRef ref) {\n    final product = ref.watch(productProvider(productId)); // unique per ID\n    return product.when(\n      data: (p) => Text(p.name),\n      loading: () => const CircularProgressIndicator(),\n      error: (e, _) => Text('Error: $e'),\n    );\n  }\n}\n\n// ── Combining family with autoDispose ────────────────\nfinal userPostsProvider = StreamProvider.autoDispose.family<List<Post>, int>(\n  (ref, userId) {\n    final repo = ref.watch(postRepositoryProvider);\n    return repo.watchPosts(userId); // auto-cancels stream when widget leaves\n  },\n);\n\n// ── Overriding in tests ─────────────────────────────\nclass FakeProductRepository implements ProductRepository {\n  @override Future<Product> getProduct(int id) async =>\n      Product(id: id, name: 'Fake Product', price: 9.99);\n  @override Future<List<Product>> getProducts({int page = 1}) async => [];\n}\n\nvoid main() {\n  testWidgets('ProductPage shows product name', (tester) async {\n    await tester.pumpWidget(\n      ProviderScope(\n        overrides: [\n          // Override the repository — affects all providers that depend on it\n          productRepositoryProvider.overrideWithValue(FakeProductRepository()),\n        ],\n        child: MaterialApp(\n          home: ProductPage(productId: 42),\n        ),\n      ),\n    );\n    await tester.pumpAndSettle();\n    expect(find.text('Fake Product'), findsOneWidget);\n  });\n\n  // Unit testing a notifier\n  test('ProductsNotifier loads products', () async {\n    final container = ProviderContainer(\n      overrides: [\n        productRepositoryProvider.overrideWithValue(FakeProductRepository()),\n      ],\n    );\n    addTearDown(container.dispose);\n\n    final notifier = container.read(productsProvider.notifier);\n    await container.read(productsProvider.future);\n\n    expect(container.read(productsProvider).hasValue, true);\n  });\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 109,
+    "topic_id": 20,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #20: How would you handle code review readiness for release rollback plan in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: release rollback plan. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'release rollback plan';\nvoid discuss() {\n  debugPrint('Scenario 20: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 132,
+    "topic_id": 20,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #43: How would you handle state management trade-offs for navigation guards in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 43: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 155,
+    "topic_id": 20,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #66: How would you handle API integration for pagination strategy in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 66: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 178,
+    "topic_id": 20,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #89: How would you handle stream handling for dependency injection in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 89: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 295,
+    "topic_id": 20,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss20_1() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 296,
+    "topic_id": 20,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss20_2() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 297,
+    "topic_id": 20,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss20_3() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 298,
+    "topic_id": 20,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss20_4() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 299,
+    "topic_id": 20,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss20_5() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

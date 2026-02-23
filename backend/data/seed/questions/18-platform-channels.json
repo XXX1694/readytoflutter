@@ -1,0 +1,122 @@
+[
+  {
+    "id": 32,
+    "topic_id": 18,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "How do Platform Channels work? Implement a MethodChannel example.",
+    "answer": "Platform Channels allow Flutter (Dart) to communicate with native code (Android/Kotlin, iOS/Swift).\n\nThree channel types:\n• MethodChannel — request/response. Flutter calls native method, awaits result. Best for: battery level, camera, sensors.\n• EventChannel — continuous stream FROM native. Best for: accelerometer, location updates.\n• BasicMessageChannel — raw message passing with a custom codec.\n\nBoth sides must use the SAME channel name string. Messages are serialized via StandardMessageCodec (supports: null, bool, int, double, String, Uint8List, List, Map).",
+    "code_example": "// ── FLUTTER SIDE (Dart) ────────────────────────────\nclass DeviceService {\n  static const _method = MethodChannel('com.example.app/device');\n  static const _events = EventChannel('com.example.app/accelerometer');\n\n  // One-shot call\n  static Future<String> getDeviceId() async {\n    try {\n      return await _method.invokeMethod<String>('getDeviceId') ?? '';\n    } on PlatformException catch (e) {\n      throw Exception('Native error: ${e.message}');\n    }\n  }\n\n  // Calling with arguments\n  static Future<bool> vibrate(int duration) async {\n    return await _method.invokeMethod<bool>('vibrate', {'duration': duration}) ?? false;\n  }\n\n  // Continuous event stream\n  static Stream<Map<String, double>> watchAccelerometer() {\n    return _events.receiveBroadcastStream().map((event) {\n      final m = Map<String, dynamic>.from(event as Map);\n      return {'x': m['x'] as double, 'y': m['y'] as double, 'z': m['z'] as double};\n    });\n  }\n}\n\n// ── ANDROID (Kotlin) ───────────────────────────────\n/*\nclass MainActivity : FlutterActivity() {\n  private val DEVICE_CHANNEL = \"com.example.app/device\"\n\n  override fun configureFlutterEngine(engine: FlutterEngine) {\n    super.configureFlutterEngine(engine)\n\n    MethodChannel(engine.dartExecutor.binaryMessenger, DEVICE_CHANNEL)\n      .setMethodCallHandler { call, result ->\n        when (call.method) {\n          \"getDeviceId\" -> {\n            val id = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)\n            result.success(id)\n          }\n          \"vibrate\" -> {\n            val duration = call.argument<Int>(\"duration\") ?: 200\n            val vibrator = getSystemService(Vibrator::class.java)\n            vibrator.vibrate(VibrationEffect.createOneShot(duration.toLong(), -1))\n            result.success(true)\n          }\n          else -> result.notImplemented()\n        }\n      }\n  }\n}\n*/\n\n// ── iOS (Swift) ────────────────────────────────────\n/*\n@UIApplicationMain\n@objc class AppDelegate: FlutterAppDelegate {\n  override func application(_ application: UIApplication,\n    didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n    let controller = window?.rootViewController as! FlutterViewController\n    let channel = FlutterMethodChannel(name: \"com.example.app/device\",\n                                       binaryMessenger: controller.binaryMessenger)\n    channel.setMethodCallHandler { call, result in\n      if call.method == \"getDeviceId\" {\n        result(UIDevice.current.identifierForVendor?.uuidString)\n      } else {\n        result(FlutterMethodNotImplemented)\n      }\n    }\n    return super.application(application, didFinishLaunchingWithOptions: options)\n  }\n}\n*/",
+    "code_language": "dart"
+  },
+  {
+    "id": 57,
+    "topic_id": 18,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "How do you write a Flutter plugin from scratch?",
+    "answer": "A Flutter plugin is a Dart package that wraps native platform code (Android + iOS) using platform channels. Publishing a plugin makes it reusable across projects.\n\nPlugin structure:\n• lib/ — Dart API (what app developers use)\n• android/ — Kotlin implementation\n• ios/ — Swift implementation\n• test/ — unit and integration tests\n• example/ — runnable demo app\n\nCreate with: flutter create --template=plugin --platforms=android,ios my_plugin\n\nThe Dart side defines the interface and delegates to native via MethodChannel.",
+    "code_example": "// ── Dart API (lib/my_plugin.dart) ─────────────────\nclass MyPlugin {\n  static const _channel = MethodChannel('com.example/my_plugin');\n\n  // Simple method call\n  static Future<String> getPlatformVersion() async {\n    final version = await _channel.invokeMethod<String>('getPlatformVersion');\n    return version ?? 'Unknown';\n  }\n\n  // Method with arguments and return type\n  static Future<bool> requestPermission(String permission) async {\n    return await _channel.invokeMethod<bool>('requestPermission', {\n      'permission': permission,\n    }) ?? false;\n  }\n}\n\n// ── Android (android/src/main/kotlin/.../MyPlugin.kt) ──\n/*\nclass MyPlugin : FlutterPlugin, MethodCallHandler {\n  private lateinit var channel: MethodChannel\n  private lateinit var context: Context\n\n  override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {\n    context = binding.applicationContext\n    channel = MethodChannel(binding.binaryMessenger, \"com.example/my_plugin\")\n    channel.setMethodCallHandler(this)\n  }\n\n  override fun onMethodCall(call: MethodCall, result: Result) {\n    when (call.method) {\n      \"getPlatformVersion\" -> result.success(\"Android ${Build.VERSION.RELEASE}\")\n      \"requestPermission\" -> {\n        val perm = call.argument<String>(\"permission\")!!\n        // request permission logic...\n        result.success(true)\n      }\n      else -> result.notImplemented()\n    }\n  }\n\n  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {\n    channel.setMethodCallHandler(null)\n  }\n}\n*/\n\n// ── iOS (ios/Classes/MyPlugin.swift) ───────────────\n/*\npublic class MyPlugin: NSObject, FlutterPlugin {\n  public static func register(with registrar: FlutterPluginRegistrar) {\n    let channel = FlutterMethodChannel(\n      name: \"com.example/my_plugin\",\n      binaryMessenger: registrar.messenger()\n    )\n    let instance = MyPlugin()\n    registrar.addMethodCallDelegate(instance, channel: channel)\n  }\n\n  public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {\n    switch call.method {\n    case \"getPlatformVersion\":\n      result(\"iOS \" + UIDevice.current.systemVersion)\n    case \"requestPermission\":\n      result(true)\n    default:\n      result(FlutterMethodNotImplemented)\n    }\n  }\n}\n*/\n\n// ── pubspec.yaml for the plugin ────────────────────\n/*\nflutter:\n  plugin:\n    platforms:\n      android:\n        package: com.example.my_plugin\n        pluginClass: MyPlugin\n      ios:\n        pluginClass: MyPlugin\n*/",
+    "code_language": "dart"
+  },
+  {
+    "id": 107,
+    "topic_id": 18,
+    "order_index": 101,
+    "difficulty": "hard",
+    "question": "Interview scenario #18: How would you handle null safety best practices for error reporting in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: error reporting. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'error reporting';\nvoid discuss() {\n  debugPrint('Scenario 18: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 130,
+    "topic_id": 18,
+    "order_index": 102,
+    "difficulty": "medium",
+    "question": "Interview scenario #41: How would you handle debugging strategy for widget lifecycle in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: widget lifecycle. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'widget lifecycle';\nvoid discuss() {\n  debugPrint('Scenario 41: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 153,
+    "topic_id": 18,
+    "order_index": 103,
+    "difficulty": "easy",
+    "question": "Interview scenario #64: How would you handle error handling for form validation in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: form validation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'form validation';\nvoid discuss() {\n  debugPrint('Scenario 64: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 176,
+    "topic_id": 18,
+    "order_index": 104,
+    "difficulty": "hard",
+    "question": "Interview scenario #87: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 87: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 199,
+    "topic_id": 18,
+    "order_index": 105,
+    "difficulty": "medium",
+    "question": "Interview scenario #110: How would you handle code review readiness for code generation in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 110: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 285,
+    "topic_id": 18,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 1: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss18_1() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 286,
+    "topic_id": 18,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 2: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss18_2() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 287,
+    "topic_id": 18,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 3: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss18_3() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 288,
+    "topic_id": 18,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 4: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss18_4() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 289,
+    "topic_id": 18,
+    "order_index": 110,
+    "difficulty": "hard",
+    "question": "Scenario 5: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss18_5() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

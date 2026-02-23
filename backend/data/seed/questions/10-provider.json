@@ -1,0 +1,132 @@
+[
+  {
+    "id": 22,
+    "topic_id": 10,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "Explain Provider: ChangeNotifier, Consumer, context.watch vs context.read vs context.select.",
+    "answer": "Provider wraps InheritedWidget with a simpler API for DI and state management.\n\nCore components:\n• ChangeNotifier — mutable state class; call notifyListeners() to trigger rebuilds\n• ChangeNotifierProvider — inserts ChangeNotifier into the tree\n• Consumer<T> — rebuilds only its builder subtree when T notifies\n• context.watch<T>() — subscribe; rebuilds the CURRENT widget when T notifies\n• context.read<T>() — one-time read, NO subscription (for callbacks)\n• context.select<T,R>() — subscribe to a specific slice; rebuilds only when that slice changes\n\nRule: read() in callbacks, watch()/Consumer in build().",
+    "code_example": "// 1. ChangeNotifier model\nclass CartNotifier extends ChangeNotifier {\n  final List<Product> _items = [];\n  List<Product> get items => List.unmodifiable(_items);\n  int get count => _items.length;\n  double get total => _items.fold(0, (s, p) => s + p.price);\n\n  void add(Product p) { _items.add(p); notifyListeners(); }\n  void remove(Product p) { _items.remove(p); notifyListeners(); }\n}\n\n// 2. Provide at root\nvoid main() {\n  runApp(\n    MultiProvider(\n      providers: [\n        ChangeNotifierProvider(create: (_) => CartNotifier()),\n        ChangeNotifierProvider(create: (_) => AuthNotifier()),\n      ],\n      child: const MyApp(),\n    ),\n  );\n}\n\n// 3a. context.watch — full widget rebuild\nclass CartBadge extends StatelessWidget {\n  const CartBadge({super.key});\n  @override Widget build(BuildContext context) {\n    final count = context.watch<CartNotifier>().count; // subscribes\n    return Badge(label: Text('$count'), child: const Icon(Icons.cart));\n  }\n}\n\n// 3b. Consumer — only subtree rebuilds\nConsumer<CartNotifier>(\n  builder: (context, cart, child) => Badge(\n    label: Text('${cart.count}'),\n    child: child!, // static child won't rebuild\n  ),\n  child: const Icon(Icons.shopping_cart),\n)\n\n// 3c. context.read — no subscription (callbacks only!)\nElevatedButton(\n  onPressed: () => context.read<CartNotifier>().add(product),\n  child: const Text('Add to Cart'),\n)\n\n// 3d. context.select — granular subscription\nfinal count = context.select<CartNotifier, int>((c) => c.count);\n// Only rebuilds when count changes, not when prices change",
+    "code_language": "dart"
+  },
+  {
+    "id": 49,
+    "topic_id": 10,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "Explain ProxyProvider and how to combine providers.",
+    "answer": "ProxyProvider creates a provider that depends on other providers. It rebuilds when its dependencies change.\n\nUse cases:\n• A service that needs a dependency injected at runtime\n• A provider whose value is derived from another provider\n• Repository that needs an authenticated HTTP client\n\nProxyProvider variants:\n• ProxyProvider<A, T> — depends on 1 provider\n• ProxyProvider2<A, B, T> — depends on 2 providers\n• ChangeNotifierProxyProvider — produces a ChangeNotifier that depends on others",
+    "code_example": "// Setup: ApiService depends on AuthToken\nclass AuthToken extends ChangeNotifier {\n  String? _token;\n  String? get token => _token;\n\n  Future<void> login(String email, String pass) async {\n    _token = await AuthApi.login(email, pass);\n    notifyListeners();\n  }\n}\n\nclass ApiService {\n  final String? authToken;\n  ApiService({this.authToken});\n\n  Future<List<Product>> getProducts() async {\n    // Uses auth token in headers\n    final dio = Dio();\n    if (authToken != null) dio.options.headers['Authorization'] = 'Bearer $authToken';\n    final response = await dio.get('/products');\n    return (response.data as List).map((e) => Product.fromJson(e)).toList();\n  }\n}\n\n// ── ProxyProvider — rebuild ApiService when token changes ──\nMultiProvider(\n  providers: [\n    ChangeNotifierProvider(create: (_) => AuthToken()),\n\n    // ProxyProvider: ApiService is rebuilt whenever AuthToken changes\n    ProxyProvider<AuthToken, ApiService>(\n      update: (context, auth, previousService) => ApiService(\n        authToken: auth.token,\n      ),\n    ),\n\n    // ChangeNotifierProxyProvider: the notifier itself needs a dependency\n    ChangeNotifierProxyProvider<AuthToken, CartNotifier>(\n      create: (_) => CartNotifier(null),\n      update: (context, auth, previous) {\n        return previous!..updateToken(auth.token);\n      },\n    ),\n  ],\n  child: const MyApp(),\n)\n\n// In widget — just read ApiService normally\nfinal api = context.read<ApiService>();\nfinal products = await api.getProducts();",
+    "code_language": "dart"
+  },
+  {
+    "id": 86,
+    "topic_id": 10,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What is the difference between Provider.of, Consumer, and Selector?",
+    "answer": "Three ways to read data from Provider:\n\n1. Provider.of<T>(context)\n   • Direct access\n   • Rebuilds widget when data changes\n   • listen: false to disable rebuilds\n\n2. Consumer<T>\n   • Widget that rebuilds\n   • Only child subtree rebuilds\n   • More granular control\n\n3. Selector<A, S>\n   • Rebuilds only when selected value changes\n   • Better performance\n   • Useful for large objects\n\ncontext.watch<T>() — equivalent to Provider.of\ncontext.read<T>() — equivalent to Provider.of with listen: false",
+    "code_example": "import 'package:provider/provider.dart';\n\nclass Counter with ChangeNotifier {\n  int _count = 0;\n  int get count => _count;\n\n  void increment() {\n    _count++;\n    notifyListeners();\n  }\n}\n\n// ── Provider.of ────────────────────────────\nclass CounterDisplay1 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    // Rebuilds when counter changes\n    final counter = Provider.of<Counter>(context);\n    print('build() called');\n\n    return Text('${counter.count}');\n  }\n}\n\n// With listen: false (no rebuild)\nclass IncrementButton extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    final counter = Provider.of<Counter>(context, listen: false);\n    // Doesn't rebuild when counter changes\n\n    return ElevatedButton(\n      onPressed: counter.increment,\n      child: Text('Increment'),\n    );\n  }\n}\n\n// ── context.watch / context.read ───────────\nclass CounterDisplay2 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    final counter = context.watch<Counter>(); // Same as Provider.of\n    return Text('${counter.count}');\n  }\n}\n\nclass IncrementButton2 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return ElevatedButton(\n      onPressed: () {\n        context.read<Counter>().increment(); // Same as Provider.of(listen: false)\n      },\n      child: Text('Increment'),\n    );\n  }\n}\n\n// ── Consumer ───────────────────────────────\nclass CounterDisplay3 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    print('build() called once');\n\n    return Column(\n      children: [\n        Text('Static text'), // Doesn't rebuild\n        Consumer<Counter>(\n          builder: (context, counter, child) {\n            print('Consumer builder called');\n            return Text('${counter.count}'); // Only this rebuilds\n          },\n        ),\n        Text('More static text'), // Doesn't rebuild\n      ],\n    );\n  }\n}\n\n// Consumer with child optimization\nConsumer<Counter>(\n  builder: (context, counter, child) {\n    return Column(\n      children: [\n        Text('${counter.count}'), // Rebuilds\n        child!, // Doesn't rebuild\n      ],\n    );\n  },\n  child: ExpensiveWidget(), // Built once, reused\n)\n\n// ── Selector ───────────────────────────────\nclass User {\n  String name;\n  int age;\n  String email;\n\n  User(this.name, this.age, this.email);\n}\n\nclass UserProvider with ChangeNotifier {\n  User _user = User('Alice', 30, 'alice@example.com');\n  User get user => _user;\n\n  void updateName(String name) {\n    _user.name = name;\n    notifyListeners();\n  }\n\n  void updateAge(int age) {\n    _user.age = age;\n    notifyListeners();\n  }\n}\n\n// Without Selector: rebuilds on ANY change\nclass NameDisplay1 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    final user = context.watch<UserProvider>().user;\n    print('Rebuilding (even if only age changed)');\n    return Text(user.name);\n  }\n}\n\n// With Selector: rebuilds only when name changes\nclass NameDisplay2 extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return Selector<UserProvider, String>(\n      selector: (context, provider) => provider.user.name,\n      builder: (context, name, child) {\n        print('Rebuilding only when name changes');\n        return Text(name);\n      },\n    );\n  }\n}\n\n// ── Selector with complex selection ────────\nSelector<UserProvider, String>(\n  selector: (context, provider) {\n    // Only rebuild if name OR age changes\n    final user = provider.user;\n    return '${user.name}-${user.age}';\n  },\n  builder: (context, combined, child) {\n    final parts = combined.split('-');\n    return Text('${parts[0]}, age ${parts[1]}');\n  },\n)\n\n// ── Consumer2, Consumer3... ────────────────\nConsumer2<UserProvider, SettingsProvider>(\n  builder: (context, userProvider, settingsProvider, child) {\n    return Text('${userProvider.user.name} - ${settingsProvider.theme}');\n  },\n)\n\n// ── Performance comparison ─────────────────\nclass PerformanceExample extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        // ✗ Bad: entire widget rebuilds\n        Builder(\n          builder: (context) {\n            final counter = context.watch<Counter>();\n            return ExpensiveWidget(count: counter.count);\n          },\n        ),\n\n        // ✓ Good: only Text rebuilds\n        Consumer<Counter>(\n          builder: (context, counter, child) => Text('${counter.count}'),\n        ),\n\n        // ✓ Best: only rebuilds if count changed\n        Selector<Counter, int>(\n          selector: (context, counter) => counter.count,\n          builder: (context, count, child) => Text('$count'),\n        ),\n      ],\n    );\n  }\n}\n\n// ── When to use each ───────────────────────\n// Provider.of / context.watch():\n// • Simple cases\n// • Entire widget depends on data\n// • Quick prototyping\n\n// Consumer:\n// • Part of widget depends on data\n// • Expensive widgets nearby\n// • Clear separation of concerns\n\n// Selector:\n// • Large objects with many properties\n// • Only care about subset of data\n// • Performance-critical\n// • Prevent unnecessary rebuilds",
+    "code_language": "dart"
+  },
+  {
+    "id": 99,
+    "topic_id": 10,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #10: How would you handle code review readiness for code generation in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 10: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 122,
+    "topic_id": 10,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #33: How would you handle state management trade-offs for memory leak prevention in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: memory leak prevention. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'memory leak prevention';\nvoid discuss() {\n  debugPrint('Scenario 33: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 145,
+    "topic_id": 10,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #56: How would you handle API integration for accessibility in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: accessibility. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'accessibility';\nvoid discuss() {\n  debugPrint('Scenario 56: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 168,
+    "topic_id": 10,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #79: How would you handle stream handling for analytics instrumentation in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: analytics instrumentation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'analytics instrumentation';\nvoid discuss() {\n  debugPrint('Scenario 79: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 191,
+    "topic_id": 10,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Interview scenario #102: How would you handle performance optimization for BuildContext usage in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: BuildContext usage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'BuildContext usage';\nvoid discuss() {\n  debugPrint('Scenario 102: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 245,
+    "topic_id": 10,
+    "order_index": 106,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss10_1() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 246,
+    "topic_id": 10,
+    "order_index": 107,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss10_2() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 247,
+    "topic_id": 10,
+    "order_index": 108,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss10_3() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 248,
+    "topic_id": 10,
+    "order_index": 109,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss10_4() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 249,
+    "topic_id": 10,
+    "order_index": 110,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss10_5() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

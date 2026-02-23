@@ -1,0 +1,132 @@
+[
+  {
+    "id": 19,
+    "topic_id": 7,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "Explain Future, async/await, and error handling in Dart.",
+    "answer": "A Future<T> represents a value available at some point. Like a Promise in JS.\n\nStates: uncompleted → completed with value | completed with error\n\nasync/await is syntactic sugar:\n• async marks a function — it returns a Future implicitly\n• await pauses execution until the Future completes\n• try/catch for error handling; finally always runs\n\nDart event loop: single-threaded with microtask queue (high priority, Futures) and event queue (I/O, timers). await yields to the event loop.",
+    "code_example": "// Basic Future\nFuture<String> fetchUser(int id) async {\n  await Future.delayed(const Duration(seconds: 1)); // simulate network\n  if (id <= 0) throw ArgumentError('Invalid id');\n  return 'User #$id';\n}\n\n// Error handling\nFuture<void> loadUser(int id) async {\n  try {\n    final user = await fetchUser(id);\n    print(user);\n  } on ArgumentError catch (e) {\n    print('Bad input: $e');      // specific exception\n  } catch (e, stackTrace) {\n    print('Error: $e');           // catch all\n    // log(stackTrace)\n  } finally {\n    print('Done (always runs)');   // cleanup\n  }\n}\n\n// Parallel: Future.wait\nFuture<void> loadAll() async {\n  final results = await Future.wait([\n    fetchUser(1),\n    fetchUser(2),\n    fetchUser(3),\n  ]); // all 3 run concurrently\n  print(results); // [User #1, User #2, User #3]\n}\n\n// Sequential (use when order matters or each depends on previous)\nFuture<void> sequential() async {\n  final user    = await fetchUser(1);\n  final profile = await fetchProfile(user);\n  final posts   = await fetchPosts(profile.id);\n}\n\n// FutureBuilder in Flutter\nFutureBuilder<String>(\n  future: fetchUser(1),\n  builder: (context, snapshot) {\n    return switch (snapshot.connectionState) {\n      ConnectionState.waiting => const CircularProgressIndicator(),\n      ConnectionState.done when snapshot.hasError =>\n          Text('Error: ${snapshot.error}'),\n      ConnectionState.done => Text(snapshot.data ?? 'No data'),\n      _ => const SizedBox(),\n    };\n  },\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 47,
+    "topic_id": 7,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What is a Completer in Dart and when would you use it?",
+    "answer": "A Completer<T> creates a Future that you can complete manually — useful when you need to bridge callback-based APIs with Futures.\n\nWithout Completer, async/await handles most cases. Use Completer when:\n• Converting callback APIs to Futures\n• Creating a Future whose completion is controlled externally\n• Implementing one-time events that multiple awaiters can subscribe to\n\nCompleter has:\n• .future — the Future to await\n• .complete(value) — resolve with a value\n• .completeError(error) — resolve with an error\n• .isCompleted — check if already completed",
+    "code_example": "// ── Basic usage ────────────────────────────────────\nFuture<String> waitForUser() {\n  final completer = Completer<String>();\n\n  // Simulate callback-based API\n  someCallbackAPI(\n    onSuccess: (data) => completer.complete(data),\n    onError: (err) => completer.completeError(err),\n  );\n\n  return completer.future;\n}\n\n// ── Converting platform channel callback to Future ──\nFuture<String?> pickImage() {\n  final completer = Completer<String?>();\n  _channel.invokeMethod('pickImage').then(\n    (path) => completer.complete(path as String?),\n    onError: (e) => completer.completeError(e),\n  );\n  return completer.future;\n}\n\n// ── One-time initialization guard ──────────────────\nclass DatabaseManager {\n  Completer<Database>? _initCompleter;\n\n  Future<Database> get database async {\n    if (_initCompleter != null) return _initCompleter!.future;\n    _initCompleter = Completer<Database>();\n    try {\n      final db = await openDatabase('app.db');\n      _initCompleter!.complete(db);\n    } catch (e) {\n      _initCompleter!.completeError(e);\n      _initCompleter = null; // allow retry\n    }\n    return _initCompleter!.future;\n  }\n}\n\n// ── Dialog that returns a result ────────────────────\nFuture<bool> showConfirmDialog(BuildContext context, String message) {\n  final completer = Completer<bool>();\n  showDialog(\n    context: context,\n    builder: (_) => AlertDialog(\n      content: Text(message),\n      actions: [\n        TextButton(onPressed: () { Navigator.pop(context); completer.complete(false); }, child: const Text('Cancel')),\n        TextButton(onPressed: () { Navigator.pop(context); completer.complete(true); },  child: const Text('Confirm')),\n      ],\n    ),\n  );\n  return completer.future;\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 71,
+    "topic_id": 7,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "How do you handle multiple concurrent async operations?",
+    "answer": "Multiple approaches for concurrent async operations:\n\n1. Future.wait() — wait for all to complete\n2. Future.any() — wait for first to complete\n3. Stream.merge() — combine multiple streams\n4. Parallel isolates — true parallelism\n\nError handling:\n• Future.wait() fails fast by default\n• Use eagerError: false to wait for all\n• Catch individual futures before combining",
+    "code_example": "// ── Future.wait() — parallel execution ──────\nFuture<void> loadAllData() async {\n  try {\n    final results = await Future.wait([\n      fetchUser(),\n      fetchPosts(),\n      fetchComments(),\n    ]);\n\n    final user = results[0] as User;\n    final posts = results[1] as List<Post>;\n    final comments = results[2] as List<Comment>;\n\n    print('All loaded!');\n  } catch (e) {\n    print('One or more failed: $e');\n  }\n}\n\n// ── Individual error handling ──────────────\nFuture<void> loadWithFallbacks() async {\n  final results = await Future.wait([\n    fetchUser().catchError((_) => User.guest()),\n    fetchPosts().catchError((_) => <Post>[]),\n    fetchComments().catchError((_) => <Comment>[]),\n  ]);\n\n  // All complete, with fallback values on error\n}\n\n// ── Future.any() — first to complete ────────\nFuture<String> fastestServer() async {\n  final result = await Future.any([\n    fetchFromServer('us-east'),\n    fetchFromServer('us-west'),\n    fetchFromServer('eu-central'),\n  ]);\n\n  return result; // Returns first successful result\n}\n\n// ── Sequential vs parallel ─────────────────\n// Sequential (slow)\nFuture<void> sequentialLoad() async {\n  final user = await fetchUser();     // waits\n  final posts = await fetchPosts();   // waits\n  final comments = await fetchComments(); // waits\n  // Total time: sum of all\n}\n\n// Parallel (fast)\nFuture<void> parallelLoad() async {\n  final userFuture = fetchUser();\n  final postsFuture = fetchPosts();\n  final commentsFuture = fetchComments();\n\n  final user = await userFuture;\n  final posts = await postsFuture;\n  final comments = await commentsFuture;\n  // Total time: max of all\n}\n\n// ── With error handling and timeout ────────\nFuture<List<T>> fetchAllWithTimeout<T>({\n  required List<Future<T>> futures,\n  required Duration timeout,\n}) async {\n  try {\n    return await Future.wait(\n      futures.map((f) => f.timeout(timeout)),\n      eagerError: false, // wait for all, even if some fail\n    );\n  } on TimeoutException {\n    throw Exception('Request timeout');\n  }\n}\n\n// ── In FutureBuilder ───────────────────────\nclass Dashboard extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return FutureBuilder<List<dynamic>>(\n      future: Future.wait([\n        fetchUser(),\n        fetchStats(),\n        fetchNotifications(),\n      ]),\n      builder: (context, snapshot) {\n        if (snapshot.connectionState == ConnectionState.waiting) {\n          return CircularProgressIndicator();\n        }\n\n        if (snapshot.hasError) {\n          return Text('Error: ${snapshot.error}');\n        }\n\n        final user = snapshot.data![0] as User;\n        final stats = snapshot.data![1] as Stats;\n        final notifications = snapshot.data![2] as List<Notification>;\n\n        return Column(\n          children: [\n            UserCard(user),\n            StatsWidget(stats),\n            NotificationList(notifications),\n          ],\n        );\n      },\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 96,
+    "topic_id": 7,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #7: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 7: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 119,
+    "topic_id": 7,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #30: How would you handle code review readiness for code generation in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 30: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 142,
+    "topic_id": 7,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #53: How would you handle state management trade-offs for memory leak prevention in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: memory leak prevention. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'memory leak prevention';\nvoid discuss() {\n  debugPrint('Scenario 53: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 165,
+    "topic_id": 7,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #76: How would you handle API integration for accessibility in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: accessibility. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'accessibility';\nvoid discuss() {\n  debugPrint('Scenario 76: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 188,
+    "topic_id": 7,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Interview scenario #99: How would you handle stream handling for analytics instrumentation in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: analytics instrumentation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'analytics instrumentation';\nvoid discuss() {\n  debugPrint('Scenario 99: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 230,
+    "topic_id": 7,
+    "order_index": 106,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss7_1() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 231,
+    "topic_id": 7,
+    "order_index": 107,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss7_2() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 232,
+    "topic_id": 7,
+    "order_index": 108,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss7_3() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 233,
+    "topic_id": 7,
+    "order_index": 109,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss7_4() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 234,
+    "topic_id": 7,
+    "order_index": 110,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss7_5() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

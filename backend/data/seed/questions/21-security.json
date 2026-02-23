@@ -1,0 +1,112 @@
+[
+  {
+    "id": 35,
+    "topic_id": 21,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "What are the key security best practices for Flutter mobile apps?",
+    "answer": "Mobile app security layers:\n\n1. Data at Rest:\n• flutter_secure_storage for tokens/passwords (Keychain/Keystore)\n• SQLCipher for encrypted databases\n• Never SharedPreferences for sensitive data\n\n2. Data in Transit:\n• HTTPS only\n• SSL/Certificate pinning (prevent MITM)\n• Certificate validation\n\n3. Code Security:\n• Code obfuscation (--obfuscate flag)\n• Don't log sensitive data\n• No hardcoded secrets (use .env or remote config)\n\n4. Authentication:\n• Short-lived access tokens + refresh tokens\n• Biometric auth (local_auth package)\n• Jailbreak/root detection\n\n5. OWASP Mobile Top 10: Improper Credential Usage, Insecure Data Storage, Insecure Communication, Insufficient Input/Output Validation",
+    "code_example": "// ── Secure Storage ────────────────────────────────\nconst _storage = FlutterSecureStorage(\n  aOptions: AndroidOptions(encryptedSharedPreferences: true),\n  iOptions: IOSOptions(\n    accessibility: KeychainAccessibility.first_unlock_this_device,\n  ),\n);\n\nclass TokenService {\n  Future<void> save(String access, String refresh) => Future.wait([\n    _storage.write(key: 'access_token', value: access),\n    _storage.write(key: 'refresh_token', value: refresh),\n  ]);\n  Future<String?> getAccess() => _storage.read(key: 'access_token');\n  Future<void> clear() => _storage.deleteAll(); // on logout\n}\n\n// ── SSL Pinning with Dio ────────────────────────────\nDio buildSecureDio() {\n  final dio = Dio();\n  (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {\n    final client = HttpClient();\n    client.badCertificateCallback = (cert, host, port) {\n      // Verify certificate fingerprint\n      final fingerprint = sha256.convert(cert.der).toString();\n      return fingerprint == kExpectedFingerprint; // false = reject\n    };\n    return client;\n  };\n  return dio;\n}\n\n// ── Code obfuscation (build commands) ──────────────\n// flutter build apk --release --obfuscate --split-debug-info=./debug\n// flutter build ipa --release --obfuscate --split-debug-info=./debug\n\n// ── Biometric Authentication ────────────────────────\nfinal _auth = LocalAuthentication();\nFuture<bool> authenticateWithBiometrics() async {\n  final canAuth = await _auth.canCheckBiometrics;\n  if (!canAuth) return false;\n  return _auth.authenticate(\n    localizedReason: 'Authenticate to access your account',\n    options: const AuthenticationOptions(biometricOnly: true),\n  );\n}\n\n// ── Prevent screenshots on sensitive screens ─────────\n@override void initState() {\n  super.initState();\n  FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);\n}\n@override void dispose() {\n  FlutterWindowManager.clearFlags(FlutterWindowManager.FLAG_SECURE);\n  super.dispose();\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 60,
+    "topic_id": 21,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "What is SSL/certificate pinning and how do you implement it in Flutter?",
+    "answer": "Certificate pinning prevents Man-in-the-Middle (MITM) attacks by hardcoding the expected server certificate or public key in the app. Even if an attacker installs a custom CA, the app rejects their certificate.\n\nTwo pinning approaches:\n1. Certificate pinning — pin the full certificate (changes when cert renews ~1 year)\n2. Public key pinning — pin just the public key (survives cert renewals, more flexible)\n\nImplementation in Flutter:\n• Override HttpClient's badCertificateCallback\n• Or use http_certificate_pinning package\n• Or custom Dio adapter\n\nWarning: If you pin incorrectly or the certificate changes without updating the app, your app loses network access. Always include a backup pin.",
+    "code_example": "// ── Approach 1: Dio with custom HttpClient ──────────\nimport 'dart:io';\nimport 'package:dio/adapter.dart';\nimport 'package:crypto/crypto.dart';\n\n// Get server public key hash:\n// openssl s_client -connect api.example.com:443 | openssl x509 -pubkey -noout |\n//   openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64\n\nconst _pinnedPublicKeyHash = 'BBBBBBBBBBBBBBBBBBB='; // base64 SHA256 of public key\n\nDio createPinnedDio() {\n  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'));\n\n  (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate = (client) {\n    client.badCertificateCallback = (X509Certificate cert, String host, int port) {\n      // Extract public key from certificate\n      final publicKey = cert.der;\n      final hash = base64Encode(sha256.convert(publicKey).bytes);\n      return hash == _pinnedPublicKeyHash; // false = reject cert → blocks MITM\n    };\n    return client;\n  };\n\n  return dio;\n}\n\n// ── Approach 2: http_certificate_pinning package ────\nimport 'package:http_certificate_pinning/http_certificate_pinning.dart';\n\nFuture<bool> checkCertificate() async {\n  try {\n    await HttpCertificatePinning.check(\n      serverURL: 'https://api.example.com',\n      headerHttp: {},\n      sha: SHA.SHA256,\n      allowedSHAFingerprints: ['AA:BB:CC:DD:...'], // cert fingerprint\n      timeout: 60,\n    );\n    return true;\n  } on Exception {\n    return false; // pinning failed — MITM detected\n  }\n}\n\n// ── Backup pin strategy ─────────────────────────────\nconst _pins = [\n  'primary-pin-base64=',    // current cert\n  'backup-pin-base64=',     // next cert (rotate before primary expires)\n];\n\nbool _verifyPin(X509Certificate cert) {\n  final hash = base64Encode(sha256.convert(cert.der).bytes);\n  return _pins.contains(hash);\n}\n\n// ── Testing pinning ─────────────────────────────────\n// Use Proxyman or Charles Proxy to intercept HTTPS\n// Without pinning: you can see all traffic\n// With pinning: connection fails → your pinning works",
+    "code_language": "dart"
+  },
+  {
+    "id": 110,
+    "topic_id": 21,
+    "order_index": 101,
+    "difficulty": "hard",
+    "question": "Interview scenario #21: How would you handle debugging strategy for widget lifecycle in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: widget lifecycle. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'widget lifecycle';\nvoid discuss() {\n  debugPrint('Scenario 21: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 133,
+    "topic_id": 21,
+    "order_index": 102,
+    "difficulty": "medium",
+    "question": "Interview scenario #44: How would you handle error handling for form validation in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: form validation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'form validation';\nvoid discuss() {\n  debugPrint('Scenario 44: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 156,
+    "topic_id": 21,
+    "order_index": 103,
+    "difficulty": "easy",
+    "question": "Interview scenario #67: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 67: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 179,
+    "topic_id": 21,
+    "order_index": 104,
+    "difficulty": "hard",
+    "question": "Interview scenario #90: How would you handle code review readiness for code generation in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 90: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 300,
+    "topic_id": 21,
+    "order_index": 105,
+    "difficulty": "medium",
+    "question": "Scenario 1: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss21_1() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 301,
+    "topic_id": 21,
+    "order_index": 106,
+    "difficulty": "hard",
+    "question": "Scenario 2: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss21_2() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 302,
+    "topic_id": 21,
+    "order_index": 107,
+    "difficulty": "easy",
+    "question": "Scenario 3: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss21_3() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 303,
+    "topic_id": 21,
+    "order_index": 108,
+    "difficulty": "medium",
+    "question": "Scenario 4: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss21_4() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 304,
+    "topic_id": 21,
+    "order_index": 109,
+    "difficulty": "hard",
+    "question": "Scenario 5: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss21_5() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

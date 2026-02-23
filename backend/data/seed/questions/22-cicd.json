@@ -1,0 +1,112 @@
+[
+  {
+    "id": 36,
+    "topic_id": 22,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "How do you set up CI/CD for Flutter with GitHub Actions?",
+    "answer": "CI/CD pipeline structure:\n\nCI (every PR):\n1. Checkout → setup Flutter → pub get\n2. dart format --check\n3. flutter analyze\n4. flutter test --coverage\n5. Upload coverage to Codecov\n\nCD (merge to main/release):\n1. Build signed artifact (APK/IPA)\n2. Upload to Firebase App Distribution (beta) or Play Store/App Store (prod)\n\nSecrets management: Store keystore, certificates, API keys as GitHub Secrets. Never commit them.\n\nFastlane: Automate signing, versioning, screenshots, and store submissions.",
+    "code_example": "# .github/workflows/ci.yml\nname: Flutter CI\n\non:\n  pull_request:\n    branches: [main, develop]\n  push:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - uses: subosito/flutter-action@v2\n        with:\n          flutter-version: '3.22.0'\n          cache: true\n\n      - run: flutter pub get\n\n      - name: Check formatting\n        run: dart format --output=none --set-exit-if-changed .\n\n      - name: Analyze\n        run: flutter analyze --fatal-infos\n\n      - name: Test with coverage\n        run: flutter test --coverage\n\n      - name: Upload coverage\n        uses: codecov/codecov-action@v4\n        with:\n          file: coverage/lcov.info\n\n  build-android:\n    needs: test\n    if: github.ref == 'refs/heads/main'\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: subosito/flutter-action@v2\n        with: { flutter-version: '3.22.0', cache: true }\n\n      - name: Decode keystore\n        run: |\n          echo \"${{ secrets.KEYSTORE_B64 }}\" | base64 --decode > android/app/release.jks\n\n      - name: Build release APK\n        env:\n          STORE_PASS: ${{ secrets.KEYSTORE_PASS }}\n          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}\n          KEY_PASS: ${{ secrets.KEY_PASS }}\n        run: flutter build apk --release --obfuscate --split-debug-info=debug-info/\n\n      - name: Deploy to Firebase App Distribution\n        uses: wzieba/Firebase-Distribution-Github-Action@v1\n        with:\n          appId: ${{ secrets.FIREBASE_APP_ID }}\n          token: ${{ secrets.FIREBASE_TOKEN }}\n          groups: beta-testers\n          file: build/app/outputs/flutter-apk/app-release.apk\n          releaseNotes: \"Build from commit ${{ github.sha }}\"",
+    "code_language": "yaml"
+  },
+  {
+    "id": 61,
+    "topic_id": 22,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "What are Flutter flavors and how do you set up dev/staging/production environments?",
+    "answer": "Flavors (called \"schemes\" on iOS, \"build types/product flavors\" on Android) let you build multiple variants of your app from the same codebase — with different:\n• Bundle IDs / package names\n• API endpoints\n• App names and icons\n• Firebase projects\n• Feature flags\n\nThis enables separate dev/staging/prod apps installable side-by-side.\n\nSetup steps:\n1. Configure Android productFlavors in build.gradle\n2. Configure iOS schemes in Xcode\n3. Create Dart entry points per flavor (or use --dart-define)\n4. Use flutter_flavorizr package to automate the setup",
+    "code_example": "// ── Dart side: environment config via --dart-define ──\n// Run: flutter run --dart-define=FLAVOR=dev\n\nclass AppConfig {\n  static const flavor = String.fromEnvironment('FLAVOR', defaultValue: 'dev');\n\n  static const apiUrl = switch (flavor) {\n    'prod'    => 'https://api.example.com',\n    'staging' => 'https://staging.api.example.com',\n    _         => 'https://dev.api.example.com',\n  };\n\n  static const appName = switch (flavor) {\n    'prod'    => 'MyApp',\n    'staging' => 'MyApp Staging',\n    _         => 'MyApp Dev',\n  };\n\n  static bool get isDebug => flavor != 'prod';\n}\n\n// ── Multiple main entry points ──────────────────────\n// lib/main_dev.dart\nvoid main() {\n  AppConfig.setup(flavor: 'dev');\n  runApp(const MyApp());\n}\n\n// lib/main_prod.dart\nvoid main() {\n  AppConfig.setup(flavor: 'prod');\n  runApp(const MyApp());\n}\n\n// ── Android build.gradle (android/app/build.gradle) ─\n/*\nandroid {\n  flavorDimensions += \"environment\"\n  productFlavors {\n    dev {\n      dimension \"environment\"\n      applicationIdSuffix \".dev\"\n      versionNameSuffix \"-dev\"\n      resValue \"string\", \"app_name\", \"MyApp Dev\"\n    }\n    staging {\n      dimension \"environment\"\n      applicationIdSuffix \".staging\"\n      resValue \"string\", \"app_name\", \"MyApp Staging\"\n    }\n    prod {\n      dimension \"environment\"\n      resValue \"string\", \"app_name\", \"MyApp\"\n    }\n  }\n}\n*/\n\n// ── GitHub Actions — build per flavor ──────────────\n/*\n- name: Build dev APK\n  run: flutter build apk --flavor dev --target lib/main_dev.dart\n\n- name: Build prod APK\n  run: flutter build apk --flavor prod --target lib/main_prod.dart --release \\\n    --obfuscate --split-debug-info=debug-info/\n*/\n\n// ── flutter_flavorizr (automates all platform config) ─\n/*\n# pubspec.yaml\nflavorizr:\n  flavors:\n    dev:\n      app:\n        name: \"MyApp Dev\"\n      android:\n        applicationId: \"com.example.myapp.dev\"\n      ios:\n        bundleId: \"com.example.myapp.dev\"\n    prod:\n      app:\n        name: \"MyApp\"\n      android:\n        applicationId: \"com.example.myapp\"\n      ios:\n        bundleId: \"com.example.myapp\"\n\n# dart run flavorizr\n*/",
+    "code_language": "dart"
+  },
+  {
+    "id": 111,
+    "topic_id": 22,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #22: How would you handle performance optimization for BuildContext usage in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: BuildContext usage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'BuildContext usage';\nvoid discuss() {\n  debugPrint('Scenario 22: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 134,
+    "topic_id": 22,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #45: How would you handle testing approach for async loading states in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: async loading states. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'async loading states';\nvoid discuss() {\n  debugPrint('Scenario 45: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 157,
+    "topic_id": 22,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #68: How would you handle null safety best practices for secure storage in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 68: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 180,
+    "topic_id": 22,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #91: How would you handle debugging strategy for platform channels in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: platform channels. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'platform channels';\nvoid discuss() {\n  debugPrint('Scenario 91: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 305,
+    "topic_id": 22,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss22_1() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 306,
+    "topic_id": 22,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss22_2() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 307,
+    "topic_id": 22,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss22_3() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 308,
+    "topic_id": 22,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss22_4() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 309,
+    "topic_id": 22,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss22_5() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

@@ -1,0 +1,192 @@
+[
+  {
+    "id": 6,
+    "topic_id": 2,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "Explain classes, constructors, and named constructors in Dart.",
+    "answer": "Every class in Dart automatically extends Object. Constructor types:\n\n• Default — same name as class, can use initializer shorthand (this.field)\n• Named — ClassName.name(...), for alternative creation paths\n• Factory — can return existing instances or subtypes; used for fromJson patterns\n• Const — for compile-time constant objects\n• Redirecting — delegates to another constructor with :this(...)\n\nInitializer list (: field = value before body) runs before the constructor body — required for initializing final fields.",
+    "code_example": "class User {\n  final String name;\n  final String email;\n  int age;\n\n  // Default constructor with initializer shorthand\n  User(this.name, this.email, {required this.age});\n\n  // Named constructor\n  User.guest() : name = 'Guest', email = '', age = 0;\n\n  // Factory constructor (can return cached/subtype)\n  factory User.fromJson(Map<String, dynamic> json) {\n    return User(\n      json['name'] as String,\n      json['email'] as String,\n      age: json['age'] as int,\n    );\n  }\n\n  // Redirecting constructor\n  User.admin(String email) : this('Admin', email, age: 99);\n\n  // Getter\n  bool get isGuest => name == 'Guest';\n\n  // Setter with validation\n  set displayAge(int value) {\n    if (value >= 0) age = value;\n  }\n\n  Map<String, dynamic> toJson() => {'name': name, 'email': email, 'age': age};\n\n  @override\n  String toString() => 'User($name, $email, age: $age)';\n}\n\n// Usage\nfinal alice = User('Alice', 'alice@mail.com', age: 30);\nfinal guest = User.guest();\nfinal bob   = User.fromJson({'name': 'Bob', 'email': 'b@m.com', 'age': 25});",
+    "code_language": "dart"
+  },
+  {
+    "id": 7,
+    "topic_id": 2,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What is the difference between abstract class, interface, and mixin in Dart?",
+    "answer": "Dart uses a unified class system with keywords that define usage:\n\n• abstract class — cannot be instantiated; can have abstract (no body) and concrete methods. Used as a base class via extends.\n• interface — no keyword; any class can act as an interface via implements. You must implement ALL members (no implementation reuse).\n• mixin — reusable code mixed into classes via with. Can have state, concrete methods, but cannot be instantiated.\n\nKey rules:\n• extends → single inheritance, reuses parent implementation\n• implements → contract only, must reimplement everything\n• with → multiple mixins allowed, copies members into class",
+    "code_example": "// Abstract class\nabstract class Shape {\n  double area();  // abstract — subclasses must implement\n  String describe() => 'Area: ${area().toStringAsFixed(2)}'; // concrete\n}\n\n// Mixin — reusable behavior\nmixin Logging {\n  void log(String msg) => print('[${runtimeType}] $msg');\n}\n\nmixin Validatable {\n  bool isValid(); // abstract in mixin\n  void validateOrThrow() {\n    if (!isValid()) throw StateError('Validation failed');\n  }\n}\n\n// Interface usage via implements\nabstract class Serializable {\n  Map<String, dynamic> toJson();\n}\n\n// Combining everything\nclass Circle extends Shape with Logging, Validatable\n    implements Serializable {\n  final double radius;\n  Circle(this.radius);\n\n  @override double area() => 3.14159 * radius * radius;\n  @override bool isValid() => radius > 0;\n  @override Map<String, dynamic> toJson() => {'radius': radius, 'area': area()};\n}\n\n// 'mixin on' — restricts mixin usage to specific type\nmixin AnimationMixin on StatefulWidget {\n  void startAnimation() {}\n}\n\n// Difference in practice:\n// extends → IS-A, reuse code\n// implements → CAN-DO, fulfill contract\n// with → HAS-A behavior, compose without inheritance",
+    "code_language": "dart"
+  },
+  {
+    "id": 8,
+    "topic_id": 2,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What are extensions in Dart and when would you use them?",
+    "answer": "Extensions (Dart 2.7+) add methods/getters to existing types without modifying or subclassing them.\n\nUse cases:\n• Utility methods on String, int, List, DateTime\n• Adding methods to third-party types you don't own\n• Flutter: widget helper methods for cleaner widget trees\n• Organizing helpers close to the type they extend\n\nLimitations:\n• Cannot add instance variables (only methods, getters, setters, operators)\n• Cannot override existing methods\n• Not visible unless imported",
+    "code_example": "// String extensions\nextension StringX on String {\n  String get capitalized =>\n      isEmpty ? '' : '${this[0].toUpperCase()}${substring(1)}';\n\n  bool get isEmail =>\n      RegExp(r'^[\\w.+-]+@[\\w-]+\\.[\\w.]+$').hasMatch(this);\n\n  String truncate(int max, {String ellipsis = '...'}) =>\n      length <= max ? this : '${substring(0, max)}$ellipsis';\n}\n\n// int/Duration extensions\nextension IntX on int {\n  Duration get seconds      => Duration(seconds: this);\n  Duration get milliseconds => Duration(milliseconds: this);\n  Duration get minutes      => Duration(minutes: this);\n}\n\n// List extensions\nextension ListX<T> on List<T> {\n  T? get firstOrNull => isEmpty ? null : first;\n  List<List<T>> chunked(int size) => [\n    for (var i = 0; i < length; i += size)\n      sublist(i, (i + size).clamp(0, length)),\n  ];\n}\n\n// Flutter Widget extension (DX improvement)\nextension WidgetX on Widget {\n  Widget padAll(double v) => Padding(padding: EdgeInsets.all(v), child: this);\n  Widget center() => Center(child: this);\n  Widget expanded([int flex = 1]) => Expanded(flex: flex, child: this);\n}\n\n// Usage\nprint('hello'.capitalized);       // Hello\nprint(3.seconds);                  // 0:00:03.000000\nprint([1,2,3,4,5].chunked(2));    // [[1,2],[3,4],[5]]\n// Text('Title').padAll(16).center()",
+    "code_language": "dart"
+  },
+  {
+    "id": 40,
+    "topic_id": 2,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "How does operator overloading work in Dart?",
+    "answer": "Dart allows overloading a fixed set of operators by defining them as methods:\n==, <, >, <=, >=, +, -, *, /, ~/, %, ^, &, |, <<, >>, >>>, [], []=, ~, unary-\n\nWhen you override ==, you should also override hashCode to maintain the contract: objects that are equal must have the same hashCode.\n\nUse operator overloading to make custom classes work naturally with arithmetic or comparison operations (e.g. Vector, Money, Version).",
+    "code_example": "class Vector {\n  final double x, y;\n  const Vector(this.x, this.y);\n\n  // Arithmetic operators\n  Vector operator +(Vector other) => Vector(x + other.x, y + other.y);\n  Vector operator -(Vector other) => Vector(x - other.x, y - other.y);\n  Vector operator *(double scalar) => Vector(x * scalar, y * scalar);\n\n  // Comparison\n  bool operator <(Vector other) => magnitude < other.magnitude;\n\n  // Index operator\n  double operator [](int i) {\n    if (i == 0) return x;\n    if (i == 1) return y;\n    throw RangeError('Index must be 0 or 1');\n  }\n\n  // Equality — must also override hashCode\n  @override\n  bool operator ==(Object other) =>\n      other is Vector && x == other.x && y == other.y;\n\n  @override\n  int get hashCode => Object.hash(x, y);\n\n  double get magnitude => (x * x + y * y);\n\n  @override\n  String toString() => 'Vector($x, $y)';\n}\n\n// Usage\nfinal a = Vector(1, 2);\nfinal b = Vector(3, 4);\nprint(a + b);      // Vector(4.0, 6.0)\nprint(b - a);      // Vector(2.0, 2.0)\nprint(a * 3);      // Vector(3.0, 6.0)\nprint(a == Vector(1, 2)); // true\nprint(a[0]);       // 1.0\n\n// Practical: Money class\nclass Money {\n  final int cents;\n  final String currency;\n  const Money(this.cents, this.currency);\n  Money operator +(Money o) {\n    assert(currency == o.currency);\n    return Money(cents + o.cents, currency);\n  }\n  @override String toString() => '$currency ${(cents / 100).toStringAsFixed(2)}';\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 41,
+    "topic_id": 2,
+    "order_index": 5,
+    "difficulty": "hard",
+    "question": "What is the difference between covariant and contravariant types in Dart?",
+    "answer": "Dart generics are invariant by default — List<Dog> is NOT a subtype of List<Animal> even though Dog extends Animal. This prevents type errors at runtime.\n\ncovariant keyword — relaxes type safety on a specific parameter to allow subtype override. Useful when you know the runtime type is correct.\n\nSound type system: Dart uses sound null safety and generics. The type system guarantees no implicit null errors.\n\nKey rules:\n• Function return types are covariant (can return a subtype)\n• Function parameter types are contravariant in theory (but Dart is unsound here for practicality)\n• Use covariant when overriding with a more specific parameter type",
+    "code_example": "class Animal {\n  void eat() {}\n}\nclass Dog extends Animal {\n  void bark() {}\n}\n\n// ── Generic invariance ─────────────────────────────\nList<Dog> dogs = [Dog()];\n// List<Animal> animals = dogs; // ❌ compile error — invariant\nList<Animal> animals = dogs; // ✅ only works because Dart is unsound here (legacy)\n\n// ── covariant keyword ──────────────────────────────\nclass Cage<T extends Animal> {\n  T animal;\n  Cage(this.animal);\n\n  // Without covariant: cannot override parameter with subtype\n  void put(covariant T newAnimal) {\n    animal = newAnimal;\n  }\n}\n\nclass DogCage extends Cage<Dog> {\n  DogCage(super.animal);\n\n  @override\n  void put(Dog dog) { // covariant allows this override\n    super.put(dog);\n    dog.bark();\n  }\n}\n\n// ── Return type covariance (naturally allowed) ──────\nabstract class Repository {\n  Animal find(int id);\n}\nclass DogRepository implements Repository {\n  @override\n  Dog find(int id) => Dog(); // ✅ Dog is a subtype of Animal — allowed\n}\n\n// ── Practical: typed callbacks ──────────────────────\nabstract class EventHandler {\n  void handle(covariant Object event);\n}\nclass TapHandler extends EventHandler {\n  @override\n  void handle(TapEvent event) { // covariant makes this safe\n    print('Tapped at ${event.position}');\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 66,
+    "topic_id": 2,
+    "order_index": 8,
+    "difficulty": "medium",
+    "question": "What are factory constructors and when would you use them?",
+    "answer": "Factory constructors:\n• Use the factory keyword\n• Can return an instance from cache or subclass\n• Don't automatically create a new instance\n• Useful for singletons, caching, or returning subtypes\n\nUse cases:\n1. Singleton pattern\n2. Object pooling/caching\n3. Returning different subtypes\n4. Factory pattern implementation\n5. Constructing from different sources (JSON, etc.)",
+    "code_example": "// ── Singleton pattern ──────────────────────\nclass Database {\n  static final Database _instance = Database._internal();\n\n  factory Database() {\n    return _instance;\n  }\n\n  Database._internal();\n}\n\nvar db1 = Database();\nvar db2 = Database();\nprint(identical(db1, db2)); // true — same instance\n\n// ── Returning subtypes ─────────────────────\nabstract class Animal {\n  factory Animal(String type) {\n    switch (type) {\n      case 'dog': return Dog();\n      case 'cat': return Cat();\n      default: throw ArgumentError('Unknown type');\n    }\n  }\n  void makeSound();\n}\n\nclass Dog implements Animal {\n  @override void makeSound() => print('Woof!');\n}\n\nclass Cat implements Animal {\n  @override void makeSound() => print('Meow!');\n}\n\nvar pet = Animal('dog'); // returns Dog instance\npet.makeSound(); // Woof!\n\n// ── Caching/pooling ────────────────────────\nclass Logger {\n  static final Map<String, Logger> _cache = {};\n  final String name;\n\n  factory Logger(String name) {\n    return _cache.putIfAbsent(name, () => Logger._internal(name));\n  }\n\n  Logger._internal(this.name);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 78,
+    "topic_id": 2,
+    "order_index": 9,
+    "difficulty": "medium",
+    "question": "Explain mixins in Dart and when to use them.",
+    "answer": "Mixins provide a way to reuse code across multiple class hierarchies without traditional inheritance.\n\nKey features:\n• Use mixin keyword (or class that can be mixed in)\n• Apply with with keyword\n• Can use multiple mixins\n• Linear order of application (right to left)\n• Cannot be instantiated directly\n• Can have fields, methods, and state\n\nUse cases:\n• Share behavior across unrelated classes\n• Add functionality without deep inheritance\n• Implement composition over inheritance",
+    "code_example": "// ── Basic mixin ────────────────────────────\nmixin Swimmer {\n  void swim() => print('Swimming...');\n}\n\nmixin Flyer {\n  void fly() => print('Flying...');\n}\n\nmixin Walker {\n  void walk() => print('Walking...');\n}\n\n// ── Using mixins ───────────────────────────\nclass Duck with Swimmer, Walker, Flyer {\n  String name;\n  Duck(this.name);\n}\n\nclass Fish with Swimmer {\n  String species;\n  Fish(this.species);\n}\n\nvar duck = Duck('Donald');\nduck.swim();  // Swimming...\nduck.walk();  // Walking...\nduck.fly();   // Flying...\n\nvar fish = Fish('Salmon');\nfish.swim();  // Swimming...\n// fish.walk(); // ✗ Error: no walk method\n\n// ── Mixin with state ───────────────────────\nmixin Timestamped {\n  DateTime? _createdAt;\n\n  DateTime get createdAt => _createdAt ??= DateTime.now();\n\n  String get age {\n    final diff = DateTime.now().difference(createdAt);\n    return '${diff.inSeconds}s ago';\n  }\n}\n\nclass Post with Timestamped {\n  String content;\n  Post(this.content);\n}\n\nvar post = Post('Hello');\nprint(post.age); // 0s ago\n\n// ── Mixin with on constraint ───────────────\nabstract class Animal {\n  String get sound;\n}\n\nmixin Domesticated on Animal {\n  bool trained = false;\n\n  void train() {\n    trained = true;\n    print('${sound} — I'm trained!');\n  }\n}\n\nclass Dog extends Animal with Domesticated {\n  @override String get sound => 'Woof';\n}\n\nvar dog = Dog();\ndog.train(); // Woof — I'm trained!\n\n// ── Order matters ──────────────────────────\nmixin A {\n  void greet() => print('A');\n}\n\nmixin B {\n  void greet() => print('B');\n}\n\nclass MyClass with A, B {}\n\nMyClass().greet(); // B — rightmost wins\n\n// ── Real-world example: logging ────────────\nmixin LoggerMixin {\n  void log(String message) {\n    print('[${runtimeType}] $message');\n  }\n\n  void logError(Object error, [StackTrace? stack]) {\n    print('[${runtimeType}] ERROR: $error');\n    if (stack != null) print(stack);\n  }\n}\n\nclass UserRepository with LoggerMixin {\n  Future<User> getUser(String id) async {\n    log('Fetching user $id');\n    // ...\n    return User();\n  }\n\n  Future<void> deleteUser(String id) async {\n    try {\n      log('Deleting user $id');\n      // ...\n    } catch (e, stack) {\n      logError(e, stack);\n      rethrow;\n    }\n  }\n}\n\n// ── Flutter example: TickerProvider ────────\nclass MyAnimationWidget extends StatefulWidget {\n  @override State<MyAnimationWidget> createState() => _MyAnimationWidgetState();\n}\n\nclass _MyAnimationWidgetState extends State<MyAnimationWidget>\n    with SingleTickerProviderStateMixin {  // Mixin for animations\n  late AnimationController _controller;\n\n  @override\n  void initState() {\n    super.initState();\n    _controller = AnimationController(\n      vsync: this, // 'this' provides Ticker from mixin\n      duration: Duration(seconds: 1),\n    );\n  }\n\n  @override\n  void dispose() {\n    _controller.dispose();\n    super.dispose();\n  }\n\n  @override Widget build(BuildContext context) => Container();\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 79,
+    "topic_id": 2,
+    "order_index": 10,
+    "difficulty": "hard",
+    "question": "What is the difference between extends, implements, and with in Dart?",
+    "answer": "Three ways to relate classes in Dart:\n\n1. extends — Inheritance\n   • Single inheritance only\n   • Inherits all members\n   • Can override methods\n   • super keyword to access parent\n\n2. implements — Interface\n   • Multiple interfaces allowed\n   • Must implement ALL members\n   • No code reuse\n   • Type compatibility\n\n3. with — Mixins\n   • Multiple mixins allowed\n   • Code reuse without inheritance\n   • Applied left to right\n   • Diamond problem solved\n\nCan combine: class X extends Y with A, B implements C, D",
+    "code_example": "// ── extends — Inheritance ──────────────────\nclass Animal {\n  String name;\n  Animal(this.name);\n\n  void makeSound() => print('Some sound');\n  void sleep() => print('$name is sleeping');\n}\n\nclass Dog extends Animal {\n  Dog(super.name);\n\n  @override\n  void makeSound() => print('Woof!');\n\n  void fetch() => print('$name is fetching');\n}\n\nvar dog = Dog('Rex');\ndog.makeSound(); // Woof! (overridden)\ndog.sleep();     // Rex is sleeping (inherited)\ndog.fetch();     // Rex is fetching (new method)\n\n// ── implements — Interface ─────────────────\nabstract class Flyable {\n  void fly();\n  double get altitude;\n}\n\nabstract class Swimmable {\n  void swim();\n}\n\n// Must implement ALL members\nclass Duck implements Flyable, Swimmable {\n  @override\n  double get altitude => 100.0;\n\n  @override\n  void fly() => print('Duck flying');\n\n  @override\n  void swim() => print('Duck swimming');\n}\n\n// Can implement concrete class as interface\nclass Bird {\n  void chirp() => print('Chirp');\n}\n\nclass Sparrow implements Bird {\n  @override\n  void chirp() => print('Sparrow chirp'); // Must reimplement\n}\n\n// ── with — Mixins ──────────────────────────\nmixin CanFly {\n  void fly() => print('Flying...');\n}\n\nmixin CanSwim {\n  void swim() => print('Swimming...');\n}\n\nclass Penguin with CanSwim {\n  // Gets swim() for free\n}\n\nclass Goose with CanFly, CanSwim {\n  // Gets both fly() and swim()\n}\n\n// ── Combining all three ────────────────────\nabstract class Vehicle {\n  void move();\n}\n\nmixin Electric {\n  int batteryLevel = 100;\n  void charge() => batteryLevel = 100;\n}\n\nmixin Autonomous {\n  bool selfDriving = false;\n  void enableAutopilot() => selfDriving = true;\n}\n\nabstract class Drivable {\n  void drive();\n}\n\nclass Tesla extends Vehicle with Electric, Autonomous implements Drivable {\n  @override\n  void move() => print('Moving electrically');\n\n  @override\n  void drive() => print('Driving${selfDriving ? \" on autopilot\" : \"\"}');\n}\n\nvar car = Tesla();\ncar.charge();           // From Electric mixin\ncar.enableAutopilot();  // From Autonomous mixin\ncar.drive();            // Implemented method\ncar.move();             // Overridden from Vehicle\n\n// ── Order of execution ─────────────────────\nclass A {\n  void greet() => print('A');\n}\n\nmixin B {\n  void greet() => print('B');\n}\n\nmixin C {\n  void greet() => print('C');\n}\n\nclass D extends A with B, C {\n  @override\n  void greet() {\n    super.greet(); // Calls C (last mixin)\n    print('D');\n  }\n}\n\nD().greet();\n// Output:\n// C\n// D\n\n// ── Summary ────────────────────────────────\n// extends  → inherits everything, single parent\n// with     → reuses code, multiple mixins\n// implements → contract only, multiple interfaces\n\nclass Example extends Parent with Mixin1, Mixin2 implements Interface1, Interface2 {\n  // Valid syntax\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 80,
+    "topic_id": 2,
+    "order_index": 11,
+    "difficulty": "medium",
+    "question": "What are extension methods in Dart and how do you use them?",
+    "answer": "Extension methods let you add functionality to existing types without modifying them or creating subclasses.\n\nFeatures:\n• Add methods to any type (even built-in types)\n• Static resolution (compile-time)\n• Cannot override existing methods\n• Can have generic type parameters\n• Scoped by import\n\nUse cases:\n• Add utility methods to core types\n• Domain-specific helpers\n• Cleaner API design\n• Flutter widget helpers",
+    "code_example": "// ── Basic extension ────────────────────────\nextension StringExtensions on String {\n  String capitalize() {\n    if (isEmpty) return this;\n    return '${this[0].toUpperCase()}${substring(1).toLowerCase()}';\n  }\n\n  bool get isEmail => contains('@') && contains('.');\n\n  String truncate(int maxLength) {\n    if (length <= maxLength) return this;\n    return '${substring(0, maxLength)}...';\n  }\n}\n\n// Usage\nvar name = 'alice';\nprint(name.capitalize()); // Alice\n\nvar email = 'test@example.com';\nprint(email.isEmail); // true\n\nvar long = 'This is a very long text';\nprint(long.truncate(10)); // This is a ...\n\n// ── Extension on List ──────────────────────\nextension ListExtensions<T> on List<T> {\n  T? get firstOrNull => isEmpty ? null : first;\n  T? get lastOrNull => isEmpty ? null : last;\n\n  List<T> separate(T separator) {\n    if (isEmpty) return [];\n    return fold<List<T>>(\n      [],\n      (prev, element) => prev.isEmpty\n        ? [element]\n        : [...prev, separator, element],\n    );\n  }\n}\n\nvar empty = <int>[];\nprint(empty.firstOrNull); // null\n\nvar items = ['a', 'b', 'c'];\nprint(items.separate('|')); // [a, |, b, |, c]\n\n// ── Extension on DateTime ──────────────────\nextension DateTimeExtensions on DateTime {\n  bool get isToday {\n    final now = DateTime.now();\n    return year == now.year && month == now.month && day == now.day;\n  }\n\n  bool get isTomorrow {\n    final tomorrow = DateTime.now().add(Duration(days: 1));\n    return year == tomorrow.year &&\n           month == tomorrow.month &&\n           day == tomorrow.day;\n  }\n\n  String get timeAgo {\n    final diff = DateTime.now().difference(this);\n    if (diff.inDays > 0) return '${diff.inDays}d ago';\n    if (diff.inHours > 0) return '${diff.inHours}h ago';\n    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';\n    return 'just now';\n  }\n}\n\nvar now = DateTime.now();\nprint(now.isToday); // true\nprint(now.timeAgo); // just now\n\n// ── Extension on BuildContext (Flutter) ────\nextension BuildContextExtensions on BuildContext {\n  ThemeData get theme => Theme.of(this);\n  TextTheme get textTheme => Theme.of(this).textTheme;\n  MediaQueryData get mediaQuery => MediaQuery.of(this);\n  Size get screenSize => MediaQuery.of(this).size;\n\n  void showSnack(String message) {\n    ScaffoldMessenger.of(this).showSnackBar(\n      SnackBar(content: Text(message)),\n    );\n  }\n\n  Future<T?> push<T>(Widget page) {\n    return Navigator.push<T>(\n      this,\n      MaterialPageRoute(builder: (_) => page),\n    );\n  }\n}\n\n// Usage in widgets\nclass MyWidget extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return ElevatedButton(\n      onPressed: () {\n        context.showSnack('Hello!');\n        context.push(NextPage());\n      },\n      style: ElevatedButton.styleFrom(\n        backgroundColor: context.theme.primaryColor,\n      ),\n      child: Text('Click', style: context.textTheme.titleLarge),\n    );\n  }\n}\n\n// ── Extension with type constraints ────────\nextension IterableNumbers<T extends num> on Iterable<T> {\n  T get sum => reduce((a, b) => (a + b) as T);\n  double get average => sum / length;\n}\n\nvar numbers = [1, 2, 3, 4, 5];\nprint(numbers.sum);     // 15\nprint(numbers.average); // 3.0\n\n// ── Named extensions (for conflicts) ───────\nextension IntParsing on String {\n  int parseInt() => int.parse(this);\n}\n\nextension SafeIntParsing on String {\n  int? tryParseInt() => int.tryParse(this);\n}\n\n'42'.parseInt();     // 42\n'abc'.tryParseInt(); // null\n\n// ── Extension on nullable types ────────────\nextension NullableStringExtensions on String? {\n  bool get isNullOrEmpty => this == null || this!.isEmpty;\n\n  String get orEmpty => this ?? '';\n}\n\nString? nullable;\nprint(nullable.isNullOrEmpty); // true\nprint(nullable.orEmpty);       // ''",
+    "code_language": "dart"
+  },
+  {
+    "id": 91,
+    "topic_id": 2,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #2: How would you handle performance optimization for BuildContext usage in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: BuildContext usage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'BuildContext usage';\nvoid discuss() {\n  debugPrint('Scenario 2: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 114,
+    "topic_id": 2,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #25: How would you handle testing approach for async loading states in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: async loading states. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'async loading states';\nvoid discuss() {\n  debugPrint('Scenario 25: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 137,
+    "topic_id": 2,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #48: How would you handle null safety best practices for secure storage in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 48: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 160,
+    "topic_id": 2,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #71: How would you handle debugging strategy for platform channels in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: platform channels. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'platform channels';\nvoid discuss() {\n  debugPrint('Scenario 71: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 183,
+    "topic_id": 2,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Interview scenario #94: How would you handle error handling for feature flags in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: feature flags. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'feature flags';\nvoid discuss() {\n  debugPrint('Scenario 94: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 205,
+    "topic_id": 2,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss2_1() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 206,
+    "topic_id": 2,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss2_2() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 207,
+    "topic_id": 2,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss2_3() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 208,
+    "topic_id": 2,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss2_4() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 209,
+    "topic_id": 2,
+    "order_index": 110,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss2_5() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

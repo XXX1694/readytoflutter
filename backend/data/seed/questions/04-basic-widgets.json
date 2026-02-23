@@ -1,0 +1,172 @@
+[
+  {
+    "id": 13,
+    "topic_id": 4,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is the difference between Container, SizedBox, Padding, and ColoredBox?",
+    "answer": "Use the simplest widget that meets your needs — Flutter optimizes simpler widget trees.\n\n• SizedBox — constraints only (width/height). Lightest spacer widget.\n• Padding — only adds padding. More efficient than Container for this.\n• ColoredBox — only sets background color. Cheaper than Container.\n• DecoratedBox — decoration (border, shadow, gradient) without size.\n• Container — combines sizing + padding + margin + decoration + transform. Creates multiple intermediary widgets internally. Use only when you need multiple features at once.",
+    "code_example": "// ── Lightweight options (prefer these) ────────────\nconst SizedBox(width: 16, height: 16)  // spacer\nconst SizedBox.expand()                 // fills available space\nconst SizedBox.shrink()                 // 0×0 invisible\n\nPadding(\n  padding: const EdgeInsets.symmetric(horizontal: 16),\n  child: Text('Padded'),\n)\n\nconst ColoredBox(\n  color: Colors.blue,\n  child: Text('Colored'),\n)\n\n// ── Container — when you need multiple properties ──\nContainer(\n  width: 200, height: 100,\n  margin: const EdgeInsets.all(8),\n  padding: const EdgeInsets.all(16),\n  decoration: BoxDecoration(\n    color: Colors.blue.shade100,\n    borderRadius: BorderRadius.circular(12),\n    border: Border.all(color: Colors.blue, width: 2),\n    boxShadow: const [\n      BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),\n    ],\n  ),\n  child: const Text('Box'),\n)\n\n// ── Performance tips ────────────────────────────────\n// ✅ Just padding:\nPadding(padding: const EdgeInsets.all(8), child: child)\n// ❌ Wasteful (Container creates extra widgets):\nContainer(padding: const EdgeInsets.all(8), child: child)",
+    "code_language": "dart"
+  },
+  {
+    "id": 14,
+    "topic_id": 4,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "Explain Row, Column, and Stack with their key properties.",
+    "answer": "Row — horizontal layout (main axis = horizontal)\nColumn — vertical layout (main axis = vertical)\nStack — overlapping layers (z-axis)\n\nRow/Column key properties:\n• mainAxisAlignment: start, end, center, spaceBetween, spaceAround, spaceEvenly\n• crossAxisAlignment: start, end, center, stretch, baseline\n• mainAxisSize: max (fill space), min (wrap children)\n\nStack key properties:\n• alignment — default position for un-positioned children\n• fit — StackFit.loose (children choose size) or StackFit.expand\n• Positioned — absolute positioning within Stack",
+    "code_example": "// Row\nRow(\n  mainAxisAlignment: MainAxisAlignment.spaceBetween,\n  crossAxisAlignment: CrossAxisAlignment.center,\n  children: [\n    const Icon(Icons.star, color: Colors.amber),\n    const Text('Rating'),\n    const Text('4.5', style: TextStyle(fontWeight: FontWeight.bold)),\n  ],\n)\n\n// Column with shrink-wrap\nColumn(\n  mainAxisSize: MainAxisSize.min,\n  crossAxisAlignment: CrossAxisAlignment.start,\n  children: [\n    const Text('Title', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),\n    const SizedBox(height: 8),\n    const Text('Subtitle', style: TextStyle(color: Colors.grey)),\n  ],\n)\n\n// Expanded & Flexible — control how children fill main axis\nRow(\n  children: [\n    Expanded(child: TextField()),         // fills remaining space\n    const SizedBox(width: 8),\n    ElevatedButton(onPressed: () {}, child: const Text('Send')),\n  ],\n)\n// Flexible(flex: 2, child: ...) — proportional sizing\n\n// Stack\nStack(\n  alignment: Alignment.center,\n  children: [\n    // Back layer\n    Image.network('https://picsum.photos/400/200', fit: BoxFit.cover),\n    // Semi-transparent overlay\n    Container(color: Colors.black38),\n    // Absolute position\n    Positioned(\n      bottom: 16, right: 16,\n      child: FloatingActionButton(onPressed: () {}, child: const Icon(Icons.add)),\n    ),\n    // Centered text\n    const Text('Overlay', style: TextStyle(color: Colors.white, fontSize: 24)),\n  ],\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 15,
+    "topic_id": 4,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What is the difference between ListView, GridView, and CustomScrollView?",
+    "answer": "ListView — scrollable list (single axis):\n• ListView() — all children built immediately (small, fixed lists only)\n• ListView.builder() — lazy rendering, efficient for large/infinite lists\n• ListView.separated() — adds separators between items\n\nGridView — 2D scrollable grid:\n• GridView.count() — fixed column count\n• GridView.builder() — lazy, efficient\n• GridView.extent() — fixed max item cross-axis size\n\nCustomScrollView — compose multiple scroll areas as slivers in one coordinated scroll view. Most flexible, most complex. Use SliverAppBar, SliverList, SliverGrid, SliverToBoxAdapter.",
+    "code_example": "// ListView.builder — for any dynamic list\nListView.builder(\n  itemCount: items.length,\n  itemExtent: 72.0,  // ✅ fixed height enables fast scrolling\n  itemBuilder: (context, index) => ListTile(\n    leading: CircleAvatar(child: Text('${index + 1}')),\n    title: Text(items[index].title),\n    subtitle: Text(items[index].subtitle),\n    onTap: () => navigate(items[index]),\n  ),\n)\n\n// ListView.separated — with dividers\nListView.separated(\n  itemCount: items.length,\n  separatorBuilder: (_, __) => const Divider(height: 1),\n  itemBuilder: (context, i) => ItemTile(item: items[i]),\n)\n\n// GridView.builder\nGridView.builder(\n  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n    crossAxisCount: 2,\n    crossAxisSpacing: 8,\n    mainAxisSpacing: 8,\n    childAspectRatio: 0.75,\n  ),\n  itemCount: products.length,\n  itemBuilder: (ctx, i) => ProductCard(product: products[i]),\n)\n\n// CustomScrollView — collapsing header + list\nCustomScrollView(\n  slivers: [\n    SliverAppBar(\n      expandedHeight: 200,\n      pinned: true,\n      floating: true,\n      flexibleSpace: FlexibleSpaceBar(title: const Text('Catalog')),\n    ),\n    SliverToBoxAdapter(\n      child: Padding(padding: const EdgeInsets.all(16),\n        child: Text('Products', style: Theme.of(context).textTheme.headlineSmall)),\n    ),\n    SliverGrid(\n      delegate: SliverChildBuilderDelegate(\n        (ctx, i) => ProductCard(product: products[i]), childCount: products.length,\n      ),\n      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),\n    ),\n  ],\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 44,
+    "topic_id": 4,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "How do you handle forms and validation in Flutter?",
+    "answer": "Flutter's form system uses:\n• Form — wraps form fields; provides a GlobalKey<FormState> to validate/save/reset\n• TextFormField — combines TextField with Form integration; has validator callback\n• FormField<T> — base class for any custom form field\n\nValidation flow:\n1. User taps submit\n2. _formKey.currentState!.validate() — calls all field validators, shows error text\n3. If valid → _formKey.currentState!.save() — calls onSaved callbacks\n4. Collect data and proceed\n\nUse AutovalidateMode.onUserInteraction to validate as user types.",
+    "code_example": "class LoginForm extends StatefulWidget {\n  const LoginForm({super.key});\n  @override State<LoginForm> createState() => _LoginFormState();\n}\n\nclass _LoginFormState extends State<LoginForm> {\n  final _formKey = GlobalKey<FormState>();\n  final _emailCtrl = TextEditingController();\n  final _passCtrl  = TextEditingController();\n  bool _obscure = true;\n\n  @override void dispose() {\n    _emailCtrl.dispose();\n    _passCtrl.dispose();\n    super.dispose();\n  }\n\n  void _submit() {\n    if (!_formKey.currentState!.validate()) return;\n    _formKey.currentState!.save();\n    // Proceed with login\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Form(\n      key: _formKey,\n      autovalidateMode: AutovalidateMode.onUserInteraction,\n      child: Column(\n        children: [\n          TextFormField(\n            controller: _emailCtrl,\n            keyboardType: TextInputType.emailAddress,\n            textInputAction: TextInputAction.next,\n            decoration: const InputDecoration(\n              labelText: 'Email',\n              prefixIcon: Icon(Icons.email_outlined),\n            ),\n            validator: (val) {\n              if (val == null || val.isEmpty) return 'Email is required';\n              if (!RegExp(r'^[\\w.]+@[\\w]+\\.[\\w]+$').hasMatch(val))\n                return 'Enter a valid email';\n              return null; // null = valid\n            },\n            onSaved: (val) => print('Email: $val'),\n          ),\n          const SizedBox(height: 16),\n          TextFormField(\n            controller: _passCtrl,\n            obscureText: _obscure,\n            textInputAction: TextInputAction.done,\n            onFieldSubmitted: (_) => _submit(),\n            decoration: InputDecoration(\n              labelText: 'Password',\n              prefixIcon: const Icon(Icons.lock_outline),\n              suffixIcon: IconButton(\n                icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),\n                onPressed: () => setState(() => _obscure = !_obscure),\n              ),\n            ),\n            validator: (val) {\n              if (val == null || val.length < 8) return 'Min 8 characters';\n              return null;\n            },\n          ),\n          const SizedBox(height: 24),\n          SizedBox(\n            width: double.infinity,\n            child: FilledButton(onPressed: _submit, child: const Text('Sign In')),\n          ),\n        ],\n      ),\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 45,
+    "topic_id": 4,
+    "order_index": 5,
+    "difficulty": "hard",
+    "question": "How does CustomPainter work and when would you use it?",
+    "answer": "CustomPainter gives you direct access to a Canvas to draw anything — shapes, paths, gradients, charts — that built-in widgets cannot achieve.\n\nSteps:\n1. Extend CustomPainter and implement paint() and shouldRepaint()\n2. Use CustomPaint widget, passing your painter\n3. Use Canvas API: drawLine, drawCircle, drawPath, drawRect, drawArc, drawText, drawImage\n\nshouldRepaint() controls when to repaint:\n• Return false if the visual output hasn't changed (performance optimization)\n• Return true only when the painter's properties that affect drawing have changed\n\nUse canvas coordinates — top-left is (0,0), size.width × size.height is available.",
+    "code_example": "class PieChartPainter extends CustomPainter {\n  final List<double> values;\n  final List<Color> colors;\n\n  PieChartPainter({required this.values, required this.colors});\n\n  @override\n  void paint(Canvas canvas, Size size) {\n    final center = Offset(size.width / 2, size.height / 2);\n    final radius = size.shortestSide / 2;\n    final total = values.fold<double>(0, (s, v) => s + v);\n\n    final paint = Paint()..style = PaintingStyle.fill;\n    var startAngle = -3.14159 / 2; // start at top\n\n    for (var i = 0; i < values.length; i++) {\n      final sweepAngle = (values[i] / total) * 2 * 3.14159;\n      paint.color = colors[i % colors.length];\n      canvas.drawArc(\n        Rect.fromCircle(center: center, radius: radius),\n        startAngle, sweepAngle,\n        true, paint, // true = include center point (pie slice)\n      );\n      startAngle += sweepAngle;\n    }\n\n    // Draw center hole (donut chart)\n    paint.color = Colors.white;\n    canvas.drawCircle(center, radius * 0.55, paint);\n  }\n\n  @override\n  bool shouldRepaint(PieChartPainter old) =>\n      values != old.values || colors != old.colors;\n}\n\n// Animated gradient progress ring\nclass RingPainter extends CustomPainter {\n  final double progress; // 0.0 to 1.0\n  final Color color;\n  RingPainter({required this.progress, required this.color});\n\n  @override\n  void paint(Canvas canvas, Size size) {\n    final center = Offset(size.width / 2, size.height / 2);\n    final radius = (size.shortestSide / 2) - 8;\n\n    // Background ring\n    canvas.drawCircle(center, radius, Paint()\n      ..color = color.withOpacity(0.15)\n      ..style = PaintingStyle.stroke\n      ..strokeWidth = 12);\n\n    // Progress arc\n    canvas.drawArc(\n      Rect.fromCircle(center: center, radius: radius),\n      -3.14159 / 2,\n      progress * 2 * 3.14159,\n      false,\n      Paint()\n        ..color = color\n        ..style = PaintingStyle.stroke\n        ..strokeWidth = 12\n        ..strokeCap = StrokeCap.round,\n    );\n  }\n  @override bool shouldRepaint(RingPainter old) => progress != old.progress;\n}\n\n// Widget usage\nCustomPaint(\n  size: const Size(200, 200),\n  painter: RingPainter(progress: 0.75, color: Colors.blue),\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 83,
+    "topic_id": 4,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What is the difference between Expanded and Flexible widgets?",
+    "answer": "Both control how children of Row/Column use available space:\n\nFlexible:\n• Child can be smaller than allocated space\n• flex determines space ratio\n• fit: FlexFit.loose (default) — child can shrink\n• fit: FlexFit.tight — child must fill space\n\nExpanded:\n• Shorthand for Flexible with fit: FlexFit.tight\n• Child MUST fill allocated space\n• More common than Flexible\n\nflex parameter (both):\n• Default is 1\n• Ratio of space compared to siblings\n• flex: 2 gets twice the space of flex: 1",
+    "code_example": "// ── Basic Expanded ─────────────────────────\nRow(\n  children: [\n    Expanded(\n      child: Container(color: Colors.red),\n    ),\n    Expanded(\n      child: Container(color: Colors.blue),\n    ),\n  ],\n)\n// Red and blue each take 50% of width\n\n// ── Expanded with flex ─────────────────────\nRow(\n  children: [\n    Expanded(\n      flex: 1,\n      child: Container(color: Colors.red),\n    ),\n    Expanded(\n      flex: 2,\n      child: Container(color: Colors.blue),\n    ),\n  ],\n)\n// Red gets 1/3, blue gets 2/3\n\n// ── Flexible vs Expanded ───────────────────\nRow(\n  children: [\n    Flexible(\n      child: Container(\n        width: 100, // Can be smaller than allocated\n        color: Colors.red,\n      ),\n    ),\n    Expanded(\n      child: Container(\n        width: 100, // Ignored! Must fill allocated space\n        color: Colors.blue,\n      ),\n    ),\n  ],\n)\n\n// ── Flexible with FlexFit.tight ────────────\nRow(\n  children: [\n    Flexible(\n      fit: FlexFit.tight, // Same as Expanded\n      child: Container(color: Colors.red),\n    ),\n    Flexible(\n      fit: FlexFit.loose, // Default, can shrink\n      child: Container(\n        width: 100,\n        color: Colors.blue,\n      ),\n    ),\n  ],\n)\n\n// ── Common pattern: text overflow ──────────\nRow(\n  children: [\n    Icon(Icons.person),\n    SizedBox(width: 8),\n    Expanded( // Prevents overflow\n      child: Text(\n        'Very long username that might overflow the row',\n        overflow: TextOverflow.ellipsis,\n      ),\n    ),\n    Icon(Icons.arrow_forward),\n  ],\n)\n\n// ── Multiple Expanded with ratios ──────────\nColumn(\n  children: [\n    Expanded(\n      flex: 2, // Header takes 2 parts\n      child: Container(color: Colors.blue),\n    ),\n    Expanded(\n      flex: 5, // Body takes 5 parts\n      child: Container(color: Colors.white),\n    ),\n    Expanded(\n      flex: 1, // Footer takes 1 part\n      child: Container(color: Colors.grey),\n    ),\n  ],\n)\n// Total: 8 parts. Header=25%, Body=62.5%, Footer=12.5%\n\n// ── Spacer (special Expanded) ──────────────\nRow(\n  children: [\n    Text('Left'),\n    Spacer(), // Expanded(child: SizedBox())\n    Text('Right'),\n  ],\n)\n\n// Same as:\nRow(\n  children: [\n    Text('Left'),\n    Expanded(child: SizedBox()),\n    Text('Right'),\n  ],\n)\n\n// ── When NOT to use ────────────────────────\n// ✗ Don't use outside Row/Column/Flex\nContainer(\n  child: Expanded(child: Text('Error!')), // Runtime error\n)\n\n// ✓ Only inside Flex widgets\nRow(\n  children: [\n    Expanded(child: Text('OK')),\n  ],\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 84,
+    "topic_id": 4,
+    "order_index": 7,
+    "difficulty": "medium",
+    "question": "How does LayoutBuilder work and when should you use it?",
+    "answer": "LayoutBuilder provides parent constraints to build child widgets responsively.\n\nKey features:\n• Receives BoxConstraints from parent\n• Builds child based on available space\n• Useful for responsive layouts\n• Rebuilds when constraints change\n\nConstraints:\n• maxWidth, maxHeight — maximum available\n• minWidth, minHeight — minimum required\n• Use to build adaptive UI\n\nSimilar widgets:\n• MediaQuery — entire screen size\n• LayoutBuilder — parent-specific constraints\n• OrientationBuilder — device orientation",
+    "code_example": "// ── Basic LayoutBuilder ────────────────────\nLayoutBuilder(\n  builder: (context, constraints) {\n    print('Max width: ${constraints.maxWidth}');\n    print('Max height: ${constraints.maxHeight}');\n\n    if (constraints.maxWidth > 600) {\n      return DesktopLayout();\n    } else {\n      return MobileLayout();\n    }\n  },\n)\n\n// ── Responsive grid ────────────────────────\nLayoutBuilder(\n  builder: (context, constraints) {\n    final width = constraints.maxWidth;\n    final crossAxisCount = width > 1200 ? 4\n                          : width > 800 ? 3\n                          : width > 600 ? 2\n                          : 1;\n\n    return GridView.builder(\n      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(\n        crossAxisCount: crossAxisCount,\n        crossAxisSpacing: 16,\n        mainAxisSpacing: 16,\n      ),\n      itemBuilder: (ctx, i) => ProductCard(products[i]),\n      itemCount: products.length,\n    );\n  },\n)\n\n// ── Adaptive widget size ───────────────────\nclass ResponsiveCard extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return LayoutBuilder(\n      builder: (context, constraints) {\n        final compact = constraints.maxWidth < 400;\n\n        return Card(\n          child: Padding(\n            padding: EdgeInsets.all(compact ? 8 : 16),\n            child: Column(\n              children: [\n                Text(\n                  'Title',\n                  style: TextStyle(\n                    fontSize: compact ? 16 : 24,\n                  ),\n                ),\n                if (!compact) Text('Subtitle'),\n              ],\n            ),\n          ),\n        );\n      },\n    );\n  }\n}\n\n// ── LayoutBuilder vs MediaQuery ────────────\nclass ComparisonWidget extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    // MediaQuery — entire screen\n    final screenWidth = MediaQuery.of(context).size.width;\n    print('Screen width: $screenWidth');\n\n    return Container(\n      width: 300, // Parent sets constraints\n      child: LayoutBuilder(\n        builder: (context, constraints) {\n          // LayoutBuilder — parent constraints\n          print('Available width: ${constraints.maxWidth}'); // 300\n          return Text('Width: ${constraints.maxWidth}');\n        },\n      ),\n    );\n  }\n}\n\n// ── Nested LayoutBuilder ───────────────────\nContainer(\n  width: 800,\n  child: LayoutBuilder(\n    builder: (context, outerConstraints) {\n      print('Outer: ${outerConstraints.maxWidth}'); // 800\n\n      return Row(\n        children: [\n          Expanded(\n            child: LayoutBuilder(\n              builder: (context, innerConstraints) {\n                print('Inner: ${innerConstraints.maxWidth}'); // ~400\n                return Container(color: Colors.red);\n              },\n            ),\n          ),\n          Expanded(\n            child: Container(color: Colors.blue),\n          ),\n        ],\n      );\n    },\n  ),\n)\n\n// ── Responsive master-detail ───────────────\nclass MasterDetail extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return LayoutBuilder(\n      builder: (context, constraints) {\n        if (constraints.maxWidth > 800) {\n          // Side-by-side on wide screens\n          return Row(\n            children: [\n              Expanded(\n                flex: 1,\n                child: MasterList(),\n              ),\n              VerticalDivider(width: 1),\n              Expanded(\n                flex: 2,\n                child: DetailView(),\n              ),\n            ],\n          );\n        } else {\n          // Stacked on narrow screens\n          return MasterList();\n        }\n      },\n    );\n  }\n}\n\n// ── Constrained vs unconstrained ───────────\nLayoutBuilder(\n  builder: (context, constraints) {\n    if (constraints.hasBoundedWidth) {\n      print('Width is bounded: ${constraints.maxWidth}');\n    } else {\n      print('Width is unbounded (infinite)');\n    }\n\n    return Container(\n      // Use constraints to determine size\n      width: constraints.maxWidth.isFinite\n        ? constraints.maxWidth * 0.8\n        : 300,\n      child: Text('Responsive width'),\n    );\n  },\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 93,
+    "topic_id": 4,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #4: How would you handle error handling for form validation in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: form validation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'form validation';\nvoid discuss() {\n  debugPrint('Scenario 4: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 116,
+    "topic_id": 4,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #27: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 27: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 139,
+    "topic_id": 4,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #50: How would you handle code review readiness for code generation in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 50: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 162,
+    "topic_id": 4,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #73: How would you handle state management trade-offs for memory leak prevention in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: memory leak prevention. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'memory leak prevention';\nvoid discuss() {\n  debugPrint('Scenario 73: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 185,
+    "topic_id": 4,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Interview scenario #96: How would you handle API integration for accessibility in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: accessibility. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'accessibility';\nvoid discuss() {\n  debugPrint('Scenario 96: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 215,
+    "topic_id": 4,
+    "order_index": 106,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss4_1() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 216,
+    "topic_id": 4,
+    "order_index": 107,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss4_2() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 217,
+    "topic_id": 4,
+    "order_index": 108,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss4_3() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 218,
+    "topic_id": 4,
+    "order_index": 109,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss4_4() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 219,
+    "topic_id": 4,
+    "order_index": 110,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss4_5() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

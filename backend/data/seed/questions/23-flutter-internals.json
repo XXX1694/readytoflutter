@@ -1,0 +1,122 @@
+[
+  {
+    "id": 37,
+    "topic_id": 23,
+    "order_index": 1,
+    "difficulty": "hard",
+    "question": "Explain Flutter's three trees: Widget, Element, and RenderObject.",
+    "answer": "Flutter maintains three parallel trees for efficient UI rendering:\n\n1. Widget Tree — immutable blueprints (what you write in build())\n   • Created fresh on every build() call\n   • Lightweight value objects — cheap to recreate\n   • Describes WHAT to show\n\n2. Element Tree — mutable, long-lived instances\n   • Bridges widgets and render objects\n   • Holds widget + mounted state\n   • Performs reconciliation (diffing old vs new widget tree)\n   • Created once; updated when widget changes\n\n3. RenderObject Tree — actual layout, paint, hit-testing\n   • Expensive to create, persists long-term\n   • Handles constraints (layout), sizes, and painting\n   • Updated only when layout/paint properties change\n\nReconciliation: Same type at same position → update element (fast). Different type → unmount old, mount new (creates new RenderObject).\n\nKeys help Flutter identify elements when the position changes (e.g., reordering lists).",
+    "code_example": "// Understanding the three trees:\n\n// What you write (WIDGET TREE):\nScaffold(\n  body: Center(child: Text('Hello')),\n)\n// ↓ Flutter inflates into:\n// ELEMENT TREE:\n// ScaffoldElement\n//   └── CenterElement\n//         └── TextElement → holds reference to RenderParagraph\n\n// RENDER OBJECT TREE:\n// RenderPositionedBox (Center)\n//   └── RenderParagraph (Text) → actual paint logic\n\n// ── Keys: fix identity when position changes ─────────\n// Without keys — Flutter uses position to match elements\n// PROBLEM: Removing first item shifts everything → wrong state!\nColumn(children: [\n  if (showFirst) const StatefulBox(color: Colors.red),  // position 0\n  const StatefulBox(color: Colors.blue),                  // position 1 → 0\n])\n\n// ✅ With ValueKey — Flutter matches by key, not position\nColumn(children: [\n  if (showFirst) const StatefulBox(key: ValueKey('red'), color: Colors.red),\n  const StatefulBox(key: ValueKey('blue'), color: Colors.blue),\n])\n\n// Key types:\n// ValueKey — equality by value (item.id)\nListView.builder(\n  itemBuilder: (ctx, i) => ItemTile(key: ValueKey(items[i].id), item: items[i]),\n)\n\n// ObjectKey — equality by reference\nListTile(key: ObjectKey(userObject))\n\n// UniqueKey — always unique; forces element recreation (resets state)\nAnimatedSwitcher(child: Widget(key: UniqueKey())) // new key = new animation\n\n// GlobalKey — access element/state from anywhere\nfinal _scaffoldKey = GlobalKey<ScaffoldState>();\nScaffold(key: _scaffoldKey, ...)\n_scaffoldKey.currentState?.openDrawer(); // call imperative API\n\n// GlobalKey<FormState> — form validation\nfinal _formKey = GlobalKey<FormState>();\nForm(key: _formKey, child: ...)\nif (_formKey.currentState!.validate()) _formKey.currentState!.save();",
+    "code_language": "dart"
+  },
+  {
+    "id": 62,
+    "topic_id": 23,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "How does Flutter's rendering pipeline work? Explain the frame lifecycle.",
+    "answer": "Flutter's rendering pipeline for each frame (must complete in <16ms for 60fps):\n\n1. Animation tick — Scheduler notifies that a new frame is needed\n2. Build phase — dirty Elements call build(), creating new Widget subtrees\n3. Layout phase — RenderObjects compute sizes and positions (constraints go down, sizes go up)\n4. Paint phase — RenderObjects paint onto Layers (display list)\n5. Compositing — Layer tree composited into a scene\n6. Rasterization — Skia/Impeller rasterizes the scene on the GPU thread\n\nThe layout protocol (constraints go down, sizes go up, parent sets position):\n• Parent passes BoxConstraints (min/max width/height) to child\n• Child determines its own size within constraints\n• Parent positions the child",
+    "code_example": "// ── Layout protocol: constraints down, sizes up ─────\n// Custom RenderObject example\nclass RenderCenteredBox extends RenderBox {\n  RenderBox? _child;\n\n  @override\n  void performLayout() {\n    if (_child == null) {\n      size = constraints.smallest;\n      return;\n    }\n    // Pass constraints to child\n    _child!.layout(constraints.loosen(), parentUsesSize: true);\n    // Set our own size (fill available space)\n    size = constraints.biggest;\n    // Center the child\n    final childParentData = _child!.parentData as BoxParentData;\n    childParentData.offset = Offset(\n      (size.width - _child!.size.width) / 2,\n      (size.height - _child!.size.height) / 2,\n    );\n  }\n\n  @override\n  void paint(PaintingContext context, Offset offset) {\n    if (_child == null) return;\n    final childParentData = _child!.parentData as BoxParentData;\n    context.paintChild(_child!, offset + childParentData.offset);\n  }\n}\n\n// ── Understanding frame scheduling ─────────────────\n// When setState() or notifyListeners() is called:\n// 1. SchedulerBinding.scheduleFrame() — requests next vsync\n// 2. Next vsync arrives → SchedulerBinding.handleBeginFrame()\n// 3. Animations tick\n// 4. SchedulerBinding.handleDrawFrame()\n// 5. BuildOwner.buildScope() — rebuild dirty elements\n// 6. PipelineOwner.flushLayout() — layout dirty render objects\n// 7. PipelineOwner.flushCompositingBits()\n// 8. PipelineOwner.flushPaint() — paint into layers\n// 9. RenderView.compositeFrame() — send to GPU\n\n// ── Debug tools for rendering ──────────────────────\n// Show performance overlay\nMaterialApp(\n  showPerformanceOverlay: true, // UI & GPU frame timing bars\n)\n\n// Highlight repaints (flash red when layer repaints)\ndebugRepaintRainbowEnabled = true;\n\n// Print layout of render tree\ndebugPrintMarkNeedsLayoutStacks = true;\n\n// Show semantic overlay\nSemanticsDebugger(child: MyApp())\n\n// Profile mode is essential — debug mode is 10x slower\n// flutter run --profile",
+    "code_language": "dart"
+  },
+  {
+    "id": 63,
+    "topic_id": 23,
+    "order_index": 3,
+    "difficulty": "hard",
+    "question": "What are slivers in Flutter and how do you build custom scroll effects?",
+    "answer": "Slivers are scroll-aware render objects — they know their scroll offset and can change size/appearance as the user scrolls. They're the building blocks of CustomScrollView.\n\nWhy slivers?\n• Mix different scroll behaviors (collapsing header + list + grid) in one scroll view\n• Efficient — only render what's visible\n• Enable advanced effects: parallax, sticky headers, collapsing toolbars\n\nBuilt-in slivers:\n• SliverAppBar — collapsing/floating/pinned app bar\n• SliverList / SliverFixedExtentList — lazy list\n• SliverGrid — lazy grid\n• SliverToBoxAdapter — embed any widget\n• SliverPadding, SliverFillRemaining, SliverPersistentHeader\n\nCustom slivers with SliverPersistentHeader for sticky section headers.",
+    "code_example": "// ── Full CustomScrollView example ──────────────────\nCustomScrollView(\n  physics: const BouncingScrollPhysics(),\n  slivers: [\n    // Collapsing + parallax app bar\n    SliverAppBar(\n      expandedHeight: 280,\n      pinned: true,     // stays visible when collapsed\n      floating: false,\n      flexibleSpace: FlexibleSpaceBar(\n        title: const Text('Catalog'),\n        titlePadding: const EdgeInsets.all(16),\n        background: Image.network(heroUrl, fit: BoxFit.cover),\n        collapseMode: CollapseMode.parallax,\n      ),\n    ),\n\n    // Sticky section header\n    SliverPersistentHeader(\n      pinned: true,\n      delegate: _StickyHeader('Featured'),\n    ),\n\n    // Lazy grid\n    SliverGrid(\n      delegate: SliverChildBuilderDelegate(\n        (ctx, i) => ProductCard(product: featured[i]),\n        childCount: featured.length,\n      ),\n      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n        crossAxisCount: 2, mainAxisSpacing: 8, crossAxisSpacing: 8,\n      ),\n    ),\n\n    SliverPersistentHeader(pinned: true, delegate: _StickyHeader('All Items')),\n\n    SliverList(\n      delegate: SliverChildBuilderDelegate(\n        (ctx, i) => ItemTile(item: items[i]),\n        childCount: items.length,\n      ),\n    ),\n\n    // Fill remaining space or show \"you're all caught up\"\n    SliverFillRemaining(\n      hasScrollBody: false,\n      child: Center(child: Text('All caught up! 🎉')),\n    ),\n  ],\n)\n\n// ── Custom SliverPersistentHeaderDelegate ───────────\nclass _StickyHeader extends SliverPersistentHeaderDelegate {\n  final String title;\n  _StickyHeader(this.title);\n\n  @override double get minExtent => 48;\n  @override double get maxExtent => 48;\n\n  @override\n  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {\n    return Container(\n      color: overlapsContent\n          ? Theme.of(context).colorScheme.surface.withOpacity(0.95)\n          : Theme.of(context).colorScheme.surface,\n      alignment: Alignment.centerLeft,\n      padding: const EdgeInsets.symmetric(horizontal: 16),\n      child: Text(title,\n        style: Theme.of(context).textTheme.titleMedium?.copyWith(\n          fontWeight: FontWeight.bold,\n        )),\n    );\n  }\n\n  @override bool shouldRebuild(_StickyHeader old) => title != old.title;\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 112,
+    "topic_id": 23,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #23: How would you handle state management trade-offs for navigation guards in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 23: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 135,
+    "topic_id": 23,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #46: How would you handle API integration for pagination strategy in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 46: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 158,
+    "topic_id": 23,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #69: How would you handle stream handling for dependency injection in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 69: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 181,
+    "topic_id": 23,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #92: How would you handle performance optimization for render performance in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: render performance. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'render performance';\nvoid discuss() {\n  debugPrint('Scenario 92: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 310,
+    "topic_id": 23,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss23_1() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 311,
+    "topic_id": 23,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss23_2() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 312,
+    "topic_id": 23,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss23_3() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 313,
+    "topic_id": 23,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss23_4() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 314,
+    "topic_id": 23,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss23_5() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

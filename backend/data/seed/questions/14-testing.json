@@ -1,0 +1,132 @@
+[
+  {
+    "id": 26,
+    "topic_id": 14,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "What are the three types of tests in Flutter and when to use each?",
+    "answer": "Testing pyramid (more → fewer as you go up):\n\nUnit Tests — fastest, most numerous:\n• Single function, class, or method in isolation\n• Mock all dependencies\n• Run with: flutter test test/unit/\n\nWidget Tests — medium speed, medium coverage:\n• Single widget or small widget tree\n• testWidgets() + WidgetTester\n• Can simulate user interactions (tap, scroll, type)\n• Run with: flutter test test/widget/\n\nIntegration Tests — slowest, fewest, highest confidence:\n• Full app flows on real device or emulator\n• Uses integration_test package or patrol\n• Covers E2E user journeys\n\nAlso: Golden Tests — screenshot comparison for catching UI regressions.",
+    "code_example": "// ── Unit Test ─────────────────────────────────────\nimport 'package:flutter_test/flutter_test.dart';\nimport 'package:mocktail/mocktail.dart';\n\nclass MockUserRepo extends Mock implements UserRepository {}\n\nvoid main() {\n  group('UserBloc', () {\n    late UserBloc bloc;\n    late MockUserRepo mockRepo;\n\n    setUp(() {\n      mockRepo = MockUserRepo();\n      bloc = UserBloc(mockRepo);\n    });\n    tearDown(() => bloc.close());\n\n    test('emits [Loading, Success] on fetch', () async {\n      final user = User(id: 1, name: 'Alice');\n      when(() => mockRepo.getUser(1)).thenAnswer((_) async => user);\n\n      bloc.add(const FetchUser(1));\n\n      await expectLater(bloc.stream, emitsInOrder([\n        isA<UserLoading>(),\n        isA<UserSuccess>(),\n      ]));\n    });\n\n    test('emits [Loading, Failure] on error', () async {\n      when(() => mockRepo.getUser(any())).thenThrow(Exception('Network error'));\n      bloc.add(const FetchUser(99));\n      await expectLater(bloc.stream, emitsInOrder([isA<UserLoading>(), isA<UserFailure>()]));\n    });\n  });\n}\n\n// ── Widget Test ────────────────────────────────────\nvoid main() {\n  testWidgets('Counter increments on tap', (tester) async {\n    await tester.pumpWidget(const MaterialApp(home: CounterPage()));\n\n    expect(find.text('0'), findsOneWidget);\n    await tester.tap(find.byIcon(Icons.add));\n    await tester.pump();\n    expect(find.text('1'), findsOneWidget);\n  });\n\n  testWidgets('Shows loading then user name', (tester) async {\n    final mockRepo = MockUserRepo();\n    when(() => mockRepo.getUser(1)).thenAnswer(\n      (_) async => User(id: 1, name: 'Alice'));\n\n    await tester.pumpWidget(MaterialApp(\n      home: UserPage(repo: mockRepo),\n    ));\n    expect(find.byType(CircularProgressIndicator), findsOneWidget);\n\n    await tester.pumpAndSettle(); // wait for futures\n    expect(find.text('Alice'), findsOneWidget);\n  });\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 52,
+    "topic_id": 14,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "How do you write golden tests in Flutter?",
+    "answer": "Golden tests (snapshot tests) compare a widget's rendered output pixel-by-pixel against a saved \"golden\" reference image. They catch unintended visual regressions.\n\nWorkflow:\n1. Write test with matchesGoldenFile()\n2. Run flutter test --update-goldens to generate reference images\n3. Commit the golden files to source control\n4. CI runs tests — fails if pixels differ\n\nGotchas:\n• Golden images are platform-dependent (macOS vs Linux vs Windows render slightly differently)\n• Run goldens on a fixed platform (usually Linux in CI)\n• Use goldenFileComparator to set tolerance for minor anti-aliasing differences",
+    "code_example": "import 'package:flutter_test/flutter_test.dart';\nimport 'package:flutter/material.dart';\n\nvoid main() {\n  // ── Basic golden test ────────────────────────────\n  testWidgets('ProductCard golden', (tester) async {\n    await tester.pumpWidget(\n      MaterialApp(\n        theme: ThemeData(useMaterial3: true),\n        home: Scaffold(\n          body: Center(\n            child: SizedBox(\n              width: 300,\n              child: ProductCard(\n                product: Product(\n                  id: 1,\n                  name: 'Flutter in Action',\n                  price: 39.99,\n                  imageUrl: '', // use local asset for deterministic output\n                ),\n              ),\n            ),\n          ),\n        ),\n      ),\n    );\n\n    // Compare with golden file\n    await expectLater(\n      find.byType(ProductCard),\n      matchesGoldenFile('goldens/product_card.png'),\n    );\n  });\n\n  // ── Golden with different states ─────────────────\n  testWidgets('Button states golden', (tester) async {\n    await tester.pumpWidget(\n      const MaterialApp(\n        home: Scaffold(\n          body: Column(children: [\n            AppButton(label: 'Default', state: ButtonState.idle),\n            AppButton(label: 'Loading', state: ButtonState.loading),\n            AppButton(label: 'Success', state: ButtonState.success),\n          ]),\n        ),\n      ),\n    );\n    await expectLater(find.byType(Column), matchesGoldenFile('goldens/button_states.png'));\n  });\n}\n\n// ── Generate goldens (first time or after intentional change):\n// flutter test --update-goldens\n\n// ── Run goldens:\n// flutter test\n\n// ── CI setup — use Linux for consistency\n// goldenFileComparator: LocalFileComparator (default) or custom with tolerance\nvoid setUpGoldens() {\n  goldenFileComparator = GoldenFileComparator(\n    Uri.parse('test/goldens/'),\n  );\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 73,
+    "topic_id": 14,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "How do you test widgets that depend on InheritedWidgets (Theme, MediaQuery, etc.)?",
+    "answer": "When testing widgets that depend on InheritedWidgets:\n\n1. Wrap in MaterialApp or WidgetsApp for Theme/MediaQuery\n2. Use MediaQuery.withClampedTextScaling() for MediaQuery\n3. Provide mocked InheritedWidgets\n4. Use testWidgets and pumpWidget\n\nCommon inherited dependencies:\n• Theme\n• MediaQuery (size, orientation, padding)\n• Navigator\n• Localizations\n• Provider",
+    "code_example": "import 'package:flutter_test/flutter_test.dart';\n\n// ── Testing widget with Theme ──────────────\ntestWidgets('Button uses primary color', (tester) async {\n  await tester.pumpWidget(\n    MaterialApp(\n      theme: ThemeData(\n        primaryColor: Colors.red,\n      ),\n      home: Scaffold(\n        body: MyButton(),\n      ),\n    ),\n  );\n\n  final button = tester.widget<ElevatedButton>(\n    find.byType(ElevatedButton),\n  );\n\n  expect(button.style?.backgroundColor?.resolve({}), Colors.red);\n});\n\n// ── Testing with MediaQuery ────────────────\ntestWidgets('Layout adapts to screen size', (tester) async {\n  await tester.pumpWidget(\n    MaterialApp(\n      home: MediaQuery(\n        data: const MediaQueryData(\n          size: Size(600, 800),\n          devicePixelRatio: 2.0,\n          textScaleFactor: 1.0,\n        ),\n        child: ResponsiveWidget(),\n      ),\n    ),\n  );\n\n  expect(find.text('Tablet Layout'), findsOneWidget);\n\n  // Change size\n  await tester.pumpWidget(\n    MaterialApp(\n      home: MediaQuery(\n        data: const MediaQueryData(\n          size: Size(400, 800),\n        ),\n        child: ResponsiveWidget(),\n      ),\n    ),\n  );\n\n  expect(find.text('Phone Layout'), findsOneWidget);\n});\n\n// ── Testing with Navigator ─────────────────\ntestWidgets('Navigation works', (tester) async {\n  await tester.pumpWidget(\n    MaterialApp(\n      home: HomePage(),\n      routes: {\n        '/details': (_) => DetailsPage(),\n      },\n    ),\n  );\n\n  // Tap button that navigates\n  await tester.tap(find.text('Go to Details'));\n  await tester.pumpAndSettle(); // Wait for navigation animation\n\n  expect(find.byType(DetailsPage), findsOneWidget);\n\n  // Go back\n  await tester.pageBack();\n  await tester.pumpAndSettle();\n\n  expect(find.byType(HomePage), findsOneWidget);\n});\n\n// ── Testing with Provider ──────────────────\nimport 'package:provider/provider.dart';\n\ntestWidgets('Widget reads from Provider', (tester) async {\n  final mockUser = User(name: 'Test User', age: 25);\n\n  await tester.pumpWidget(\n    MaterialApp(\n      home: Provider<User>.value(\n        value: mockUser,\n        child: UserProfile(),\n      ),\n    ),\n  );\n\n  expect(find.text('Test User'), findsOneWidget);\n  expect(find.text('25'), findsOneWidget);\n});\n\n// ── Testing with ChangeNotifier ────────────\ntestWidgets('Counter increments', (tester) async {\n  final counter = Counter();\n\n  await tester.pumpWidget(\n    MaterialApp(\n      home: ChangeNotifierProvider.value(\n        value: counter,\n        child: CounterPage(),\n      ),\n    ),\n  );\n\n  expect(find.text('0'), findsOneWidget);\n\n  await tester.tap(find.byIcon(Icons.add));\n  await tester.pump(); // Rebuild after state change\n\n  expect(find.text('1'), findsOneWidget);\n  expect(counter.value, 1);\n});\n\n// ── Custom wrapper for common setup ────────\nWidget createTestWidget(Widget child) {\n  return MaterialApp(\n    theme: ThemeData.light(),\n    home: Scaffold(\n      body: child,\n    ),\n  );\n}\n\ntestWidgets('Using helper', (tester) async {\n  await tester.pumpWidget(\n    createTestWidget(MyWidget()),\n  );\n\n  expect(find.byType(MyWidget), findsOneWidget);\n});\n\n// ── Testing InheritedWidget ────────────────\ntestWidgets('Custom InheritedWidget', (tester) async {\n  await tester.pumpWidget(\n    MaterialApp(\n      home: UserData(\n        username: 'Alice',\n        score: 100,\n        child: ScoreDisplay(),\n      ),\n    ),\n  );\n\n  expect(find.text('Alice: 100'), findsOneWidget);\n});",
+    "code_language": "dart"
+  },
+  {
+    "id": 103,
+    "topic_id": 14,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #14: How would you handle error handling for feature flags in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: feature flags. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'feature flags';\nvoid discuss() {\n  debugPrint('Scenario 14: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 126,
+    "topic_id": 14,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #37: How would you handle clean architecture boundaries for internationalization in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: internationalization. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'internationalization';\nvoid discuss() {\n  debugPrint('Scenario 37: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 149,
+    "topic_id": 14,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #60: How would you handle code review readiness for release rollback plan in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: release rollback plan. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'release rollback plan';\nvoid discuss() {\n  debugPrint('Scenario 60: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 172,
+    "topic_id": 14,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #83: How would you handle state management trade-offs for navigation guards in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 83: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 195,
+    "topic_id": 14,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Interview scenario #106: How would you handle API integration for pagination strategy in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 106: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 265,
+    "topic_id": 14,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss14_1() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 266,
+    "topic_id": 14,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss14_2() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 267,
+    "topic_id": 14,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss14_3() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 268,
+    "topic_id": 14,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss14_4() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 269,
+    "topic_id": 14,
+    "order_index": 110,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss14_5() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

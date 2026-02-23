@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "topic_id": 1,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is null safety in Dart and what are nullable vs non-nullable types?",
+    "answer": "Null safety (Dart 2.12+) means variables cannot be null by default — you must explicitly opt-in with the ? suffix.\n\n• Non-nullable: String name = 'Alice'; — must always have a value\n• Nullable: String? name; — can be null\n• Late: late String name; — non-nullable but initialized later\n\nKey operators:\n• ?. (null-aware access): user?.email\n• ?? (null coalescing): name ?? 'Guest'\n• ??= (null assignment): name ??= 'Default'\n• ! (non-null assertion): name! — throws if null at runtime",
+    "code_example": "// Non-nullable — must be initialized\nString name = 'Alice';\n\n// Nullable\nString? email;\nprint(email?.length); // null (safe access)\n\n// Null coalescing\nString display = email ?? 'No email';\n\n// Late initialization\nlate final String config;\nvoid init() {\n  config = loadConfig(); // assigned before use\n}\n\n// Null assertion (use carefully!)\nString? maybeNull = getUser();\nprint(maybeNull!.length); // throws if null\n\n// Conditional assignment\nemail ??= 'default@mail.com';\n\n// Pattern: required in functions\nvoid greet({required String name}) {\n  print('Hello, $name');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 2,
+    "topic_id": 1,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "What are the main data types in Dart?",
+    "answer": "Dart is statically typed with these core types:\n\n• int — 64-bit integer\n• double — 64-bit floating point\n• num — parent of int and double\n• String — immutable UTF-16 string\n• bool — true/false\n• List<T> — ordered, indexed collection\n• Map<K,V> — key-value pairs, keys unique\n• Set<T> — unordered unique elements\n• dynamic — disables type checking (avoid!)\n• Object? — root of the type hierarchy\n• void — no return value\n• Never — function that never returns (throws/loops)",
+    "code_example": "int age = 30;\ndouble salary = 75000.50;\nnum anything = 3; // can be int or double\n\nString name = 'Flutter';\nString interpolated = 'Hello, $name! Age: ${age + 1}';\nString multi = \"\"\"\n  Multi-line\n  string\n\"\"\";\n\nbool isActive = true;\n\nList<String> skills = ['Dart', 'Flutter'];\nskills.add('Firebase');\n\nMap<String, int> scores = {'Alice': 95, 'Bob': 87};\nscores['Carol'] = 92;\n\nSet<String> tags = {'flutter', 'dart'};\ntags.add('dart'); // no duplicate — still 2 items\n\n// Type checking\nprint(age.runtimeType);  // int\nprint(3.14 is double);   // true\nprint(3 is num);          // true",
+    "code_language": "dart"
+  },
+  {
+    "id": 3,
+    "topic_id": 1,
+    "order_index": 3,
+    "difficulty": "easy",
+    "question": "Explain the difference between final and const in Dart.",
+    "answer": "Both prevent reassignment, but differ in when the value is determined:\n\n• final — set once at RUNTIME. Can hold values computed when the app runs.\n• const — compile-time constant. Value must be known at compile time (literals, const expressions).\n\nconst objects are canonicalized — two identical const objects share the same memory instance.\nIn Flutter: use const for widget constructors to enable the framework's optimization (widget tree diffing skips const widgets).",
+    "code_example": "// final — runtime value OK\nfinal name = 'Alice';\nfinal now = DateTime.now(); // ✅ runtime value\n\n// const — compile-time only\nconst pi = 3.14159;\nconst maxItems = 100;\n// const now = DateTime.now(); // ❌ ERROR\n\n// Deeply immutable const collections\nconst colors = ['red', 'green', 'blue'];\n// colors.add('yellow'); // throws — unmodifiable\n\n// Const constructors — Flutter optimization\nconst Text('Hello'); // Flutter reuses this instance\n// Widget tree diff sees const → skips reconciliation\n\n// Canonicalization\nclass Circle {\n  final double radius;\n  const Circle(this.radius);\n}\nconst a = Circle(1.0);\nconst b = Circle(1.0);\nprint(identical(a, b)); // true — same object!\n\n// Best practice in Flutter:\nclass MyWidget extends StatelessWidget {\n  const MyWidget({super.key}); // const constructor\n  @override Widget build(BuildContext context) => const Text('Hi');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 4,
+    "topic_id": 1,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What are arrow functions, anonymous functions, and closures in Dart?",
+    "answer": "Dart supports multiple function styles:\n\n• Named functions — standard declaration with return type\n• Arrow functions — single-expression shorthand using =>\n• Anonymous functions (lambdas) — unnamed, often passed as arguments\n• Closures — functions that capture variables from their enclosing scope\n\nClosures are key to Flutter callbacks, stream handlers, and functional operations on collections.",
+    "code_example": "// Named function\nint add(int a, int b) => a + b;\n\n// Arrow — single expression only\ndouble circle(double r) => 3.14159 * r * r;\n\n// Anonymous function stored in variable\nvar greet = (String name) => 'Hello, $name!';\n\n// Optional named parameters\nvoid log(String msg, {String? level, bool timestamp = true}) {}\nlog('Error', level: 'ERROR');\n\n// Optional positional\nString format(String text, [String prefix = '']) => '$prefix$text';\n\n// Higher-order functions (functions taking/returning functions)\nList<int> nums = [1, 2, 3, 4, 5];\nvar doubled = nums.map((n) => n * 2).toList();  // [2,4,6,8,10]\nvar evens   = nums.where((n) => n.isEven).toList(); // [2,4]\nvar sum     = nums.fold<int>(0, (acc, n) => acc + n); // 15\n\n// Closure — captures surrounding scope\nFunction makeCounter() {\n  int count = 0;            // captured variable\n  return () => ++count;     // closes over 'count'\n}\nvar counter = makeCounter();\nprint(counter()); // 1\nprint(counter()); // 2\n\n// typedef for reusable function types\ntypedef Predicate<T> = bool Function(T);\nPredicate<int> isEven = (n) => n % 2 == 0;",
+    "code_language": "dart"
+  },
+  {
+    "id": 5,
+    "topic_id": 1,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "Explain Dart collections: List, Map, Set and their common operations.",
+    "answer": "Three main collections in dart:core:\n\nList<T> — ordered, indexed, allows duplicates\nMap<K,V> — unordered key-value pairs, unique keys\nSet<T> — unordered, unique elements\n\nAll support collection-if, collection-for, and spread operators for expressive construction.",
+    "code_example": "// ── LIST ──────────────────────────────────────────\nvar fruits = <String>['apple', 'banana', 'cherry'];\nfruits.add('date');\nfruits.remove('banana');\nfruits.sort();\n\n// Functional operations — return new lists\nfinal upper  = fruits.map((f) => f.toUpperCase()).toList();\nfinal long   = fruits.where((f) => f.length > 5).toList();\nfinal total  = [1,2,3].fold<int>(0, (sum, x) => sum + x); // 6\nfinal hasLong = fruits.any((f) => f.length > 6);   // bool\nfinal allUpper = upper.every((f) => f == f.toUpperCase()); // true\n\n// ── MAP ────────────────────────────────────────────\nvar user = <String, dynamic>{'name': 'Alice', 'age': 30};\nuser['email'] = 'alice@mail.com';\nuser.remove('age');\nprint(user.keys);            // (name, email)\nprint(user.containsKey('name')); // true\nfinal mapped = user.map((k, v) => MapEntry(k, '$v'));\n\n// ── SET ────────────────────────────────────────────\nvar a = {1, 2, 3, 4};\nvar b = {3, 4, 5, 6};\nprint(a.union(b));        // {1,2,3,4,5,6}\nprint(a.intersection(b)); // {3,4}\nprint(a.difference(b));   // {1,2}\n\n// ── Collection if/for & spread ─────────────────────\nbool show = true;\nvar list = [\n  'always',\n  if (show) 'conditional',\n  ...['spread1', 'spread2'],\n  for (var i in [1,2,3]) 'item$i',\n];",
+    "code_language": "dart"
+  },
+  {
+    "id": 38,
+    "topic_id": 1,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What are Dart enums and how do enhanced enums work?",
+    "answer": "Dart has two types of enums:\n\nSimple enum — a named set of constant values:\n  enum Direction { north, south, east, west }\n\nEnhanced enum (Dart 2.17+) — enums with fields, methods, and constructors. They behave like classes but with the enum constraint.\n\nAll enums automatically get:\n• .name — the String name of the value\n• .index — the position (0-based)\n• EnumType.values — List of all values\n\nEnhanced enums are ideal for representing rich constants (HTTP methods, status codes, app routes) without a separate class.",
+    "code_example": "// Simple enum\nenum Status { pending, active, suspended, deleted }\n\n// Using simple enum\nStatus userStatus = Status.active;\nprint(userStatus.name);  // 'active'\nprint(userStatus.index); // 1\n\n// Switch (exhaustive with sealed/enum)\nString label = switch (userStatus) {\n  Status.pending   => 'Awaiting review',\n  Status.active    => 'Active',\n  Status.suspended => 'Suspended',\n  Status.deleted   => 'Deleted',\n};\n\n// Enhanced enum (Dart 2.17+)\nenum HttpMethod {\n  get('GET'),\n  post('POST'),\n  put('PUT'),\n  patch('PATCH'),\n  delete('DELETE');\n\n  final String value;\n  const HttpMethod(this.value);\n\n  bool get hasBody => this == post || this == put || this == patch;\n}\n\nenum AppRoute {\n  home('/'),\n  profile('/profile'),\n  settings('/settings');\n\n  final String path;\n  const AppRoute(this.path);\n\n  // Methods on enums\n  bool get requiresAuth => this != home;\n}\n\n// Usage\nprint(HttpMethod.post.value);    // 'POST'\nprint(HttpMethod.post.hasBody);  // true\nprint(AppRoute.settings.path);   // '/settings'\nprint(AppRoute.values.map((r) => r.path)); // (/, /profile, /settings)",
+    "code_language": "dart"
+  },
+  {
+    "id": 39,
+    "topic_id": 1,
+    "order_index": 7,
+    "difficulty": "medium",
+    "question": "Explain Dart 3 Records and Pattern Matching.",
+    "answer": "Records (Dart 3.0+) are anonymous, immutable, fixed-size aggregations of values — like lightweight tuples. Unlike Map, records are statically typed.\n\nSyntax: (value1, value2) for positional, (name: value) for named fields.\n\nPattern matching works with:\n• switch expressions (exhaustive)\n• if-case statements\n• Destructuring in assignments\n\nRecords are great for returning multiple values from a function without creating a class.",
+    "code_example": "// ── Records ─────────────────────────────────────\n// Positional record\n(String, int) getUser() => ('Alice', 30);\nfinal (name, age) = getUser(); // destructure\nprint(name); // Alice\n\n// Named fields\n({String name, int age, String email}) fetchProfile() =>\n    (name: 'Bob', age: 25, email: 'bob@mail.com');\n\nfinal profile = fetchProfile();\nprint(profile.name);  // Bob\nprint(profile.age);   // 25\n\n// Mix of positional and named\n(int, {String label}) = (42, label: 'score');\n\n// Records as map keys (equality by value)\nfinal a = (1, 'hello');\nfinal b = (1, 'hello');\nprint(a == b); // true!\n\n// ── Pattern Matching ───────────────────────────────\nsealed class Shape {}\nclass Circle extends Shape { final double radius; Circle(this.radius); }\nclass Rect extends Shape { final double w, h; Rect(this.w, this.h); }\n\ndouble area(Shape s) => switch (s) {\n  Circle(radius: var r) => 3.14 * r * r,\n  Rect(w: var w, h: var h) => w * h,\n};\n\n// if-case pattern\nvoid handleResult(Object result) {\n  if (result case (String msg, int code) when code >= 400) {\n    print('Error $code: $msg');\n  } else if (result case String s) {\n    print('Success: $s');\n  }\n}\n\n// List patterns\nfinal [first, second, ...rest] = [1, 2, 3, 4, 5];\nprint(first);  // 1\nprint(rest);   // [3, 4, 5]\n\n// Map patterns\nfinal {'name': String name, 'age': int age} = {'name': 'Alice', 'age': 30};",
+    "code_language": "dart"
+  },
+  {
+    "id": 64,
+    "topic_id": 1,
+    "order_index": 10,
+    "difficulty": "easy",
+    "question": "What is the difference between final and const in Dart?",
+    "answer": "Both are immutable, but work differently:\n\n• final: Runtime constant — value set once during execution\n  - Can be initialized with runtime values\n  - Instance variables can be final\n  - Value known at runtime\n\n• const: Compile-time constant — value must be known at compile time\n  - Must be initialized with compile-time constant\n  - Deeply immutable (entire object tree)\n  - Creates canonical instances (same const objects are identical)\n  - Better performance (less memory)\n\nKey differences:\n1. When value is determined (runtime vs compile-time)\n2. Canonicalization (const reuses instances)\n3. Deep vs shallow immutability",
+    "code_example": "// final — runtime constant\nfinal now = DateTime.now();  // ✓ OK\nfinal user = User.fromApi(); // ✓ OK\nfinal list = [1, 2, 3];      // ✓ OK\nlist.add(4);                 // ✓ can modify contents\n\n// const — compile-time constant\nconst pi = 3.14159;          // ✓ OK\nconst name = 'Alice';        // ✓ OK\nconst list = [1, 2, 3];      // ✓ OK\nlist.add(4);                 // ✗ Error: cannot modify\nconst now = DateTime.now();  // ✗ Error: not compile-time constant\n\n// Canonicalization\nconst a = [1, 2];\nconst b = [1, 2];\nprint(identical(a, b)); // true — same instance!\n\nfinal c = [1, 2];\nfinal d = [1, 2];\nprint(identical(c, d)); // false — different instances\n\n// In widgets\nconst Text('Hello');     // Better performance\nText(userName);          // Use non-const for dynamic values",
+    "code_language": "dart"
+  },
+  {
+    "id": 65,
+    "topic_id": 1,
+    "order_index": 11,
+    "difficulty": "medium",
+    "question": "Explain the cascade operator (..) and spread operator (...) in Dart.",
+    "answer": "Cascade operator (..):\n• Allows multiple operations on the same object\n• Returns the original object, not the method result\n• Useful for builder patterns and configuration\n\nSpread operator (...):\n• Unpacks elements from a collection into another\n• ...? for null-safe spreading\n• Useful for combining collections",
+    "code_example": "// ── Cascade operator (..) ──────────────────\nvar paint = Paint()\n  ..color = Colors.red\n  ..strokeWidth = 2.0\n  ..style = PaintingStyle.stroke;\n\n// Without cascade:\nvar paint2 = Paint();\npaint2.color = Colors.red;\npaint2.strokeWidth = 2.0;\npaint2.style = PaintingStyle.stroke;\n\n// Null-aware cascade (?..)\nUser? user;\nuser?..name = 'Bob'\n    ..email = 'bob@example.com';\n\n// ── Spread operator (...) ──────────────────\nvar list1 = [1, 2, 3];\nvar list2 = [0, ...list1, 4]; // [0, 1, 2, 3, 4]\n\n// Null-aware spread\nList<int>? nullableList;\nvar combined = [...?nullableList, 5, 6]; // [5, 6] if null\n\n// Combining maps\nvar defaults = {'theme': 'dark', 'lang': 'en'};\nvar user = {'name': 'Alice', ...defaults}; // merges maps\n\n// In widgets\nColumn(\n  children: [\n    const Text('Header'),\n    ...items.map((item) => ItemWidget(item)),\n    const Text('Footer'),\n  ],\n)",
+    "code_language": "dart"
+  },
+  {
+    "id": 75,
+    "topic_id": 1,
+    "order_index": 12,
+    "difficulty": "easy",
+    "question": "What are collections in Dart and what are their key differences?",
+    "answer": "Dart has three main collection types:\n\n1. List<T> — ordered, indexed, allows duplicates\n   • Access by index: list[0]\n   • Maintains insertion order\n   • Can be fixed or growable\n\n2. Set<T> — unordered, unique elements\n   • No duplicates (automatically filtered)\n   • Fast lookup (O(1) for contains)\n   • No index access\n\n3. Map<K,V> — key-value pairs\n   • Keys must be unique\n   • Fast lookup by key (O(1))\n   • Unordered (use LinkedHashMap for order)\n\nAll support iteration, mapping, filtering with functional methods.",
+    "code_example": "// ── List ──────────────────────────────────\nvar numbers = [1, 2, 3, 2]; // allows duplicates\nnumbers.add(4);\nprint(numbers[0]); // 1\nprint(numbers.length); // 5\n\nvar fixed = List.filled(3, 0); // [0, 0, 0] — fixed length\nvar growable = <int>[]; // can grow\n\n// ── Set ───────────────────────────────────\nvar unique = {1, 2, 3, 2}; // {1, 2, 3} — duplicates removed\nunique.add(4);\nunique.add(2); // ignored, already exists\nprint(unique.contains(2)); // true — fast lookup\nprint(unique.length); // 4\n\n// Convert list to set to remove duplicates\nvar dedupe = [1, 1, 2, 2, 3].toSet(); // {1, 2, 3}\n\n// ── Map ───────────────────────────────────\nvar person = {\n  'name': 'Alice',\n  'age': 30,\n  'city': 'NYC',\n};\nprint(person['name']); // Alice\nperson['email'] = 'alice@example.com';\n\n// Iterate\nperson.forEach((key, value) {\n  print('$key: $value');\n});\n\n// Keys and values\nprint(person.keys);   // (name, age, city, email)\nprint(person.values); // (Alice, 30, NYC, alice@example.com)\n\n// ── Common operations ─────────────────────\nvar list = [1, 2, 3, 4, 5];\n\nlist.map((n) => n * 2);              // [2, 4, 6, 8, 10]\nlist.where((n) => n > 3);            // [4, 5]\nlist.reduce((a, b) => a + b);        // 15\nlist.any((n) => n > 3);              // true\nlist.every((n) => n > 0);            // true\nlist.firstWhere((n) => n > 3);       // 4",
+    "code_language": "dart"
+  },
+  {
+    "id": 76,
+    "topic_id": 1,
+    "order_index": 13,
+    "difficulty": "medium",
+    "question": "What are typedef and function types in Dart?",
+    "answer": "typedef creates type aliases for functions, making code more readable and reusable.\n\nFunction types:\n• Functions are first-class objects\n• Can be assigned to variables\n• Passed as parameters\n• Returned from functions\n\ntypedef benefits:\n• Cleaner code\n• Better documentation\n• Reusable function signatures\n• Type safety",
+    "code_example": "// ── Function types ─────────────────────────\n// Function as variable\nint add(int a, int b) => a + b;\nvar operation = add;\nprint(operation(2, 3)); // 5\n\n// Function type annotation\nint Function(int, int) mathOp = add;\n\n// Anonymous function\nvar multiply = (int a, int b) => a * b;\n\n// ── typedef for function signature ─────────\ntypedef MathOperation = int Function(int a, int b);\n\nMathOperation getOperation(String type) {\n  switch (type) {\n    case 'add': return (a, b) => a + b;\n    case 'subtract': return (a, b) => a - b;\n    default: return (a, b) => a * b;\n  }\n}\n\nvoid calculate(int x, int y, MathOperation op) {\n  print('Result: ${op(x, y)}');\n}\n\ncalculate(10, 5, getOperation('add')); // 15\n\n// ── Callback typedef ───────────────────────\ntypedef OnDataReceived<T> = void Function(T data);\ntypedef OnError = void Function(String error);\n\nclass ApiClient {\n  void fetchData({\n    required OnDataReceived<String> onSuccess,\n    required OnError onError,\n  }) {\n    try {\n      final data = 'API Response';\n      onSuccess(data);\n    } catch (e) {\n      onError(e.toString());\n    }\n  }\n}\n\nApiClient().fetchData(\n  onSuccess: (data) => print('Got: $data'),\n  onError: (err) => print('Error: $err'),\n);\n\n// ── Generic typedef ────────────────────────\ntypedef Parser<T> = T Function(String input);\n\nParser<int> intParser = (s) => int.parse(s);\nParser<double> doubleParser = (s) => double.parse(s);\n\nprint(intParser('42'));    // 42\nprint(doubleParser('3.14')); // 3.14\n\n// ── Predicate typedef ──────────────────────\ntypedef Predicate<T> = bool Function(T value);\n\nList<T> filter<T>(List<T> items, Predicate<T> test) {\n  return items.where(test).toList();\n}\n\nvar numbers = [1, 2, 3, 4, 5];\nvar even = filter(numbers, (n) => n % 2 == 0); // [2, 4]",
+    "code_language": "dart"
+  },
+  {
+    "id": 77,
+    "topic_id": 1,
+    "order_index": 14,
+    "difficulty": "easy",
+    "question": "How do named and optional parameters work in Dart?",
+    "answer": "Dart supports two types of optional parameters:\n\n1. Named parameters — {param}\n   • Called by name: func(param: value)\n   • Can be marked required\n   • Any order when calling\n\n2. Positional optional — [param]\n   • Called by position\n   • Must be at end\n   • Can have defaults\n\nDefault values can be provided for both types.",
+    "code_example": "// ── Named parameters ──────────────────────\nvoid greet({String name = 'Guest', int age = 0}) {\n  print('Hello $name, age $age');\n}\n\ngreet();                        // Hello Guest, age 0\ngreet(name: 'Alice');           // Hello Alice, age 0\ngreet(age: 30, name: 'Bob');    // Any order\n\n// ── Required named parameters ──────────────\nvoid createUser({\n  required String email,\n  required String password,\n  String? nickname,\n}) {\n  print('User: $email');\n}\n\ncreateUser(\n  email: 'test@example.com',\n  password: 'secret',\n); // ✓ OK\n\n// createUser(); // ✗ Error: email and password required\n\n// ── Positional optional parameters ─────────\nvoid log(String message, [String level = 'INFO', int code = 0]) {\n  print('[$level] $message (code: $code)');\n}\n\nlog('Server started');                    // [INFO] Server started (code: 0)\nlog('Error occurred', 'ERROR');           // [ERROR] Error occurred (code: 0)\nlog('Critical', 'FATAL', 500);            // [FATAL] Critical (code: 500)\n\n// ── Cannot mix named and positional optional ──\n// void invalid(String a, [String b], {String c}); // ✗ Error\n\n// ── Common pattern: config objects ─────────\nclass Button {\n  final String label;\n  final Color color;\n  final VoidCallback? onPressed;\n\n  Button({\n    required this.label,\n    this.color = Colors.blue,\n    this.onPressed,\n  });\n}\n\nButton(label: 'Submit', onPressed: () => print('Clicked'));\n\n// ── Flutter widget style ───────────────────\nWidget buildCard({\n  required String title,\n  required String subtitle,\n  Widget? trailing,\n  VoidCallback? onTap,\n}) {\n  return ListTile(\n    title: Text(title),\n    subtitle: Text(subtitle),\n    trailing: trailing,\n    onTap: onTap,\n  );\n}\n\nbuildCard(\n  title: 'Item',\n  subtitle: 'Description',\n  trailing: Icon(Icons.arrow_forward),\n);",
+    "code_language": "dart"
+  },
+  {
+    "id": 90,
+    "topic_id": 1,
+    "order_index": 101,
+    "difficulty": "easy",
+    "question": "Interview scenario #1: How would you handle debugging strategy for widget lifecycle in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: widget lifecycle. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'widget lifecycle';\nvoid discuss() {\n  debugPrint('Scenario 1: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 113,
+    "topic_id": 1,
+    "order_index": 102,
+    "difficulty": "hard",
+    "question": "Interview scenario #24: How would you handle error handling for form validation in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: form validation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'form validation';\nvoid discuss() {\n  debugPrint('Scenario 24: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 136,
+    "topic_id": 1,
+    "order_index": 103,
+    "difficulty": "medium",
+    "question": "Interview scenario #47: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 47: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 159,
+    "topic_id": 1,
+    "order_index": 104,
+    "difficulty": "easy",
+    "question": "Interview scenario #70: How would you handle code review readiness for code generation in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 70: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 182,
+    "topic_id": 1,
+    "order_index": 105,
+    "difficulty": "hard",
+    "question": "Interview scenario #93: How would you handle state management trade-offs for memory leak prevention in a Flutter app?",
+    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: memory leak prevention. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'memory leak prevention';\nvoid discuss() {\n  debugPrint('Scenario 93: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 200,
+    "topic_id": 1,
+    "order_index": 106,
+    "difficulty": "hard",
+    "question": "Scenario 1: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss1_1() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 201,
+    "topic_id": 1,
+    "order_index": 107,
+    "difficulty": "easy",
+    "question": "Scenario 2: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss1_2() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 202,
+    "topic_id": 1,
+    "order_index": 108,
+    "difficulty": "medium",
+    "question": "Scenario 3: How would you approach API resilience for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
+    "code_example": "void discuss1_3() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 203,
+    "topic_id": 1,
+    "order_index": 109,
+    "difficulty": "hard",
+    "question": "Scenario 4: How would you approach testing depth for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
+    "code_example": "void discuss1_4() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 204,
+    "topic_id": 1,
+    "order_index": 110,
+    "difficulty": "easy",
+    "question": "Scenario 5: How would you approach offline strategy for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
+    "code_example": "void discuss1_5() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

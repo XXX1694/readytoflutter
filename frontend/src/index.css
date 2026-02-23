@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f4f9ff;
+    color: #0f172a;
+  }
+  .dark body {
+    background: #0b0b0c;
+    color: #e2e8f0;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #e2e8f0; }
+  ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  .dark ::-webkit-scrollbar-track { background: #0f172a; }
+  .dark ::-webkit-scrollbar-thumb { background: #334155; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+}
+
+@layer components {
+  .level-badge-junior  { @apply bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30; }
+  .level-badge-mid     { @apply bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30; }
+  .level-badge-senior  { @apply bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30; }
+
+  .diff-easy   { @apply bg-cyan-500/10 text-cyan-700 dark:text-cyan-300; }
+  .diff-medium { @apply bg-blue-500/10 text-blue-700 dark:text-blue-300; }
+  .diff-hard   { @apply bg-slate-500/10 text-slate-700 dark:text-slate-300; }
+
+  .status-not_started  { @apply bg-gray-700 text-gray-400; }
+  .status-in_progress  { @apply bg-blue-500/20 text-blue-700 dark:text-blue-300; }
+  .status-completed    { @apply bg-cyan-500/20 text-cyan-700 dark:text-cyan-300; }
+}
+
+/* Prism code block overrides */
+pre[class*="language-"] {
+  margin: 0 !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  line-height: 1.7 !important;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.dark pre[class*="language-"] {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #1e293b !important;
+}
+
+code[class*="language-"] {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+}
+
+/* Smooth transitions */
+* { transition-property: background-color, border-color, color, opacity; transition-duration: 150ms; }
+
+/* Answer text formatting */
+.answer-text {
+  white-space: pre-wrap;
+  line-height: 1.8;
+}

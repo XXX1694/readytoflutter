@@ -1,0 +1,132 @@
+[
+  {
+    "id": 20,
+    "topic_id": 8,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "What are Streams in Dart? Explain single-subscription vs broadcast streams.",
+    "answer": "A Stream<T> delivers a sequence of async events over time. Like an async iterator.\n\nSingle-subscription (default):\n• Only ONE listener at a time\n• Can pause/resume the producer\n• Use for: file reading, HTTP body, socket\n\nBroadcast:\n• MULTIPLE simultaneous listeners\n• Cannot pause producer\n• Use for: user input events, pub/sub, ChangeNotifier-style\n\nStreamController — creates and exposes a stream you can push events into.\nasync* generator — simplest way to create streams with yield.",
+    "code_example": "// ── async* generator ──────────────────────────────\nStream<int> countDown(int from) async* {\n  for (var i = from; i >= 0; i--) {\n    await Future.delayed(const Duration(seconds: 1));\n    yield i;\n  }\n}\n\n// ── StreamController ────────────────────────────────\nclass EventBus {\n  static final _ctrl = StreamController<String>.broadcast();\n  static Stream<String> get events => _ctrl.stream;\n  static void emit(String event) => _ctrl.add(event);\n  static void dispose() => _ctrl.close();\n}\n\n// ── Transformations ─────────────────────────────────\nStream.fromIterable([1, 2, 3, 4, 5, 6])\n  .where((n) => n.isEven)          // 2, 4, 6\n  .map((n) => n * 10)              // 20, 40, 60\n  .take(2)                          // 20, 40\n  .listen(print);\n\n// ── StreamBuilder in Flutter ────────────────────────\nStreamBuilder<int>(\n  stream: countDown(10),\n  builder: (context, snapshot) {\n    return switch (snapshot.connectionState) {\n      ConnectionState.waiting => const Text('Starting...'),\n      ConnectionState.active  => Text('T-${snapshot.data}'),\n      ConnectionState.done    => const Text('Launched!'),\n      _                       => const SizedBox(),\n    };\n  },\n)\n\n// ── ALWAYS cancel subscriptions in dispose! ──────────\nclass _MyState extends State<MyWidget> {\n  late StreamSubscription<int> _sub;\n\n  @override void initState() {\n    super.initState();\n    _sub = myStream.listen((v) => setState(() {}));\n  }\n\n  @override void dispose() {\n    _sub.cancel(); // ✅ prevent memory leak\n    super.dispose();\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 48,
+    "topic_id": 8,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "How do you use StreamController and explain stream transformations?",
+    "answer": "StreamController gives you a stream + a sink to push events into.\n\nTransformations (all return a new Stream):\n• map() — transform each event\n• where() — filter events\n• take(n) / skip(n) — limit or skip events\n• distinct() — skip duplicate consecutive events\n• debounceTime() — wait for silence (rxdart)\n• throttle() — rate limit\n• switchMap() — cancel previous inner stream when new event arrives\n• asyncMap() — map with async operations\n• expand() — one-to-many transform\n• scan() — accumulate (like fold but streaming)",
+    "code_example": "// ── StreamController ────────────────────────────────\nclass SearchBloc {\n  final _queryCtrl = StreamController<String>();\n  Sink<String> get querySink => _queryCtrl.sink;\n\n  // Debounce: wait 300ms after last keystroke\n  late final Stream<List<Result>> results = _queryCtrl.stream\n      .where((q) => q.length >= 2)          // skip short queries\n      .distinct()                             // skip unchanged queries\n      .asyncMap((q) => searchApi(q))         // async fetch\n      .handleError((e) { print(e); return []; });\n\n  void dispose() => _queryCtrl.close();\n}\n\n// ── StreamTransformer ────────────────────────────────\nclass ThrottleTransformer<T> extends StreamTransformerBase<T, T> {\n  final Duration duration;\n  ThrottleTransformer(this.duration);\n\n  @override\n  Stream<T> bind(Stream<T> stream) async* {\n    DateTime? lastEmit;\n    await for (final event in stream) {\n      final now = DateTime.now();\n      if (lastEmit == null || now.difference(lastEmit) >= duration) {\n        lastEmit = now;\n        yield event;\n      }\n    }\n  }\n}\n\n// ── Merging streams ─────────────────────────────────\nimport 'dart:async';\n\nStream<int> merge(List<Stream<int>> streams) async* {\n  final ctrl = StreamController<int>();\n  var active = streams.length;\n  for (final s in streams) {\n    s.listen(\n      ctrl.add,\n      onError: ctrl.addError,\n      onDone: () { if (--active == 0) ctrl.close(); },\n    );\n  }\n  yield* ctrl.stream;\n}\n\n// ── scan() — running accumulator ─────────────────────\nextension ScanExtension<T> on Stream<T> {\n  Stream<S> scan<S>(S initial, S Function(S acc, T event) accumulator) async* {\n    var acc = initial;\n    await for (final event in this) {\n      acc = accumulator(acc, event);\n      yield acc;\n    }\n  }\n}\n\n// Example: running total of cart additions\nStream<double> runningTotal(Stream<double> prices) =>\n    prices.scan<double>(0, (total, price) => total + price);",
+    "code_language": "dart"
+  },
+  {
+    "id": 85,
+    "topic_id": 8,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What is the difference between single-subscription and broadcast streams?",
+    "answer": "Two types of streams in Dart:\n\n1. Single-subscription stream:\n   • Default type\n   • Only one listener allowed\n   • Stores events if no listener\n   • Created with Stream() or async*\n\n2. Broadcast stream:\n   • Multiple listeners allowed\n   • Doesn't store events (lose if no listener)\n   • Created with StreamController.broadcast()\n   • Use for events, notifications\n\nConverting:\n• asBroadcastStream() converts single → broadcast\n• Cannot convert broadcast → single",
+    "code_example": "// ── Single-subscription stream ─────────────\nStream<int> countStream() async* {\n  for (var i = 1; i <= 5; i++) {\n    await Future.delayed(Duration(seconds: 1));\n    yield i;\n  }\n}\n\nvar stream = countStream();\n\n// First listener\nstream.listen((value) => print('Listener 1: $value'));\n\n// ✗ Error: stream already has a listener\n// stream.listen((value) => print('Listener 2: $value'));\n\n// ── Broadcast stream ───────────────────────\nfinal controller = StreamController<int>.broadcast();\n\n// Multiple listeners OK\ncontroller.stream.listen((value) => print('Listener 1: $value'));\ncontroller.stream.listen((value) => print('Listener 2: $value'));\ncontroller.stream.listen((value) => print('Listener 3: $value'));\n\ncontroller.add(42);\n// Output:\n// Listener 1: 42\n// Listener 2: 42\n// Listener 3: 42\n\ncontroller.close();\n\n// ── Converting to broadcast ────────────────\nvar singleStream = countStream();\nvar broadcastStream = singleStream.asBroadcastStream();\n\nbroadcastStream.listen((v) => print('A: $v'));\nbroadcastStream.listen((v) => print('B: $v'));\n// Both listeners receive all events\n\n// ── Event storage difference ───────────────\n// Single-subscription: stores events\nvar single = StreamController<int>();\nsingle.add(1);\nsingle.add(2);\n// Events stored, will be delivered when listener subscribes\nsingle.stream.listen(print); // Prints: 1, 2\n\n// Broadcast: doesn't store\nvar broadcast = StreamController<int>.broadcast();\nbroadcast.add(1);\nbroadcast.add(2);\n// No listener, events lost\nbroadcast.stream.listen(print); // Prints nothing (events already gone)\n\n// ── Real-world: event bus ──────────────────\nclass EventBus {\n  final _controller = StreamController<AppEvent>.broadcast();\n\n  Stream<AppEvent> get events => _controller.stream;\n\n  void fire(AppEvent event) {\n    _controller.add(event);\n  }\n\n  void dispose() {\n    _controller.close();\n  }\n}\n\n// Multiple widgets can listen\nfinal eventBus = EventBus();\n\n// Widget 1\neventBus.events.listen((event) {\n  if (event is UserLoggedIn) {\n    print('User logged in: ${event.username}');\n  }\n});\n\n// Widget 2\neventBus.events.listen((event) {\n  if (event is UserLoggedIn) {\n    print('Refresh UI');\n  }\n});\n\neventBus.fire(UserLoggedIn('Alice'));\n\n// ── StreamBuilder with broadcast ───────────\nclass NotificationWidget extends StatelessWidget {\n  final notificationStream = StreamController<String>.broadcast();\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        StreamBuilder<String>(\n          stream: notificationStream.stream,\n          builder: (context, snapshot) {\n            if (!snapshot.hasData) return SizedBox();\n            return Text(snapshot.data!);\n          },\n        ),\n        StreamBuilder<String>(\n          stream: notificationStream.stream,\n          builder: (context, snapshot) {\n            if (!snapshot.hasData) return SizedBox();\n            return Icon(Icons.notification_important);\n          },\n        ),\n      ],\n    );\n  }\n}\n\n// ── When to use each ───────────────────────\n// Single-subscription:\n// • File reading\n// • HTTP request/response\n// • One-time data sequences\n// • Database queries\n\n// Broadcast:\n// • UI events (button clicks)\n// • WebSocket messages\n// • App-wide notifications\n// • Multiple observers pattern",
+    "code_language": "dart"
+  },
+  {
+    "id": 97,
+    "topic_id": 8,
+    "order_index": 101,
+    "difficulty": "medium",
+    "question": "Interview scenario #8: How would you handle null safety best practices for secure storage in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 8: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 120,
+    "topic_id": 8,
+    "order_index": 102,
+    "difficulty": "easy",
+    "question": "Interview scenario #31: How would you handle debugging strategy for platform channels in a Flutter app?",
+    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: platform channels. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'platform channels';\nvoid discuss() {\n  debugPrint('Scenario 31: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 143,
+    "topic_id": 8,
+    "order_index": 103,
+    "difficulty": "hard",
+    "question": "Interview scenario #54: How would you handle error handling for feature flags in a Flutter app?",
+    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: feature flags. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'feature flags';\nvoid discuss() {\n  debugPrint('Scenario 54: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 166,
+    "topic_id": 8,
+    "order_index": 104,
+    "difficulty": "medium",
+    "question": "Interview scenario #77: How would you handle clean architecture boundaries for internationalization in a Flutter app?",
+    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: internationalization. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'internationalization';\nvoid discuss() {\n  debugPrint('Scenario 77: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 189,
+    "topic_id": 8,
+    "order_index": 105,
+    "difficulty": "easy",
+    "question": "Interview scenario #100: How would you handle code review readiness for release rollback plan in a Flutter app?",
+    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: release rollback plan. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'release rollback plan';\nvoid discuss() {\n  debugPrint('Scenario 100: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 235,
+    "topic_id": 8,
+    "order_index": 106,
+    "difficulty": "easy",
+    "question": "Scenario 1: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss8_1() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 236,
+    "topic_id": 8,
+    "order_index": 107,
+    "difficulty": "medium",
+    "question": "Scenario 2: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss8_2() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 237,
+    "topic_id": 8,
+    "order_index": 108,
+    "difficulty": "hard",
+    "question": "Scenario 3: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss8_3() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 238,
+    "topic_id": 8,
+    "order_index": 109,
+    "difficulty": "easy",
+    "question": "Scenario 4: How would you approach performance tuning for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
+    "code_example": "void discuss8_4() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 239,
+    "topic_id": 8,
+    "order_index": 110,
+    "difficulty": "medium",
+    "question": "Scenario 5: How would you approach state updates for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
+    "code_example": "void discuss8_5() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]

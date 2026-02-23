@@ -1,0 +1,132 @@
+[
+  {
+    "id": 17,
+    "topic_id": 6,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "How does setState work and what are its performance implications?",
+    "answer": "setState() marks the State as dirty and schedules rebuild of build() for the next frame.\n\nPerformance: setState() rebuilds the ENTIRE subtree under the widget calling it. This is wasteful if only a small portion of the UI changed.\n\nOptimization strategies:\n• Extract unchanged subtrees into separate widgets (especially const widgets)\n• Keep stateful widgets small and focused — only wrap what actually changes\n• Use const constructors on children — Flutter skips unchanged const subtrees\n• Check mounted before calling setState after async operations",
+    "code_example": "class CartPage extends StatefulWidget {\n  const CartPage({super.key});\n  @override State<CartPage> createState() => _CartPageState();\n}\n\nclass _CartPageState extends State<CartPage> {\n  final List<Item> _items = [];\n  bool _loading = false;\n\n  // ✅ setState only around the changing data\n  void _add(Item item) => setState(() => _items.add(item));\n  void _remove(Item item) => setState(() => _items.remove(item));\n\n  Future<void> _load() async {\n    setState(() => _loading = true);\n    final items = await fetchItems();\n    if (!mounted) return;              // ✅ check after async gap\n    setState(() {\n      _items.addAll(items);\n      _loading = false;\n    });\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    if (_loading) return const Center(child: CircularProgressIndicator());\n    return Column(\n      children: [\n        // ✅ const — never rebuilds even when _items changes\n        const CartHeader(),\n        // ✅ Extracted — only this part rebuilds with _items\n        Expanded(\n          child: ListView.builder(\n            itemCount: _items.length,\n            itemBuilder: (_, i) => ItemTile(item: _items[i]),\n          ),\n        ),\n        // Passes data explicitly — rebuilds only when _items changes\n        CartTotal(items: _items),\n      ],\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 18,
+    "topic_id": 6,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What is InheritedWidget and how does it work?",
+    "answer": "InheritedWidget is the fundamental mechanism for efficient state propagation down the widget tree. It's the foundation for Provider, Riverpod, and Theme.of(context).\n\nHow it works:\n1. InheritedWidget sits in the tree above widgets that need the data\n2. Descendants call context.dependOnInheritedWidgetOfExactType<T>() to subscribe\n3. When the InheritedWidget is rebuilt with new data, only subscribed descendants rebuild\n4. updateShouldNotify() controls which changes trigger rebuilds\n\nThis is O(1) lookup — Flutter stores InheritedWidgets in a hash map per Element.",
+    "code_example": "// Define InheritedWidget\nclass AppTheme extends InheritedWidget {\n  final Color primary;\n  final double fontSize;\n\n  const AppTheme({\n    super.key,\n    required this.primary,\n    required this.fontSize,\n    required super.child,\n  });\n\n  // Convenience accessor — subscribes to changes\n  static AppTheme of(BuildContext context) {\n    final result = context.dependOnInheritedWidgetOfExactType<AppTheme>();\n    assert(result != null, 'AppTheme not found in context');\n    return result!;\n  }\n\n  // Return true to rebuild dependents when data changes\n  @override\n  bool updateShouldNotify(AppTheme old) =>\n      primary != old.primary || fontSize != old.fontSize;\n}\n\n// Provide it high in the tree\nclass App extends StatefulWidget {\n  const App({super.key});\n  @override State<App> createState() => _AppState();\n}\nclass _AppState extends State<App> {\n  Color _primary = Colors.blue;\n\n  @override Widget build(BuildContext context) {\n    return AppTheme(\n      primary: _primary, fontSize: 16,\n      child: MaterialApp(\n        home: Scaffold(body: Column(children: [\n          const TitleWidget(),          // subscribes to AppTheme\n          ElevatedButton(\n            onPressed: () => setState(() => _primary = Colors.red),\n            child: const Text('Change'),\n          ),\n        ])),\n      ),\n    );\n  }\n}\n\nclass TitleWidget extends StatelessWidget {\n  const TitleWidget({super.key});\n  @override Widget build(BuildContext context) {\n    final theme = AppTheme.of(context); // subscribes, rebuilds on change\n    return Text('Title', style: TextStyle(color: theme.primary, fontSize: theme.fontSize));\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 70,
+    "topic_id": 6,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What is InheritedWidget and how does it work?",
+    "answer": "InheritedWidget:\n• Base class for widgets that propagate data down the tree\n• Efficient way to share data with descendants without passing through constructors\n• Widgets can \"subscribe\" to changes using context.dependOnInheritedWidgetOfExactType\n• Foundation for Provider, Theme, MediaQuery, etc.\n\nHow it works:\n1. Create InheritedWidget subclass\n2. Override updateShouldNotify() to control rebuilds\n3. Descendants use of(context) to access data\n4. Flutter automatically rebuilds dependents when data changes",
+    "code_example": "// ── InheritedWidget definition ─────────────\nclass UserData extends InheritedWidget {\n  final String username;\n  final int score;\n\n  const UserData({\n    required this.username,\n    required this.score,\n    required super.child,\n    super.key,\n  });\n\n  // Access method (convention)\n  static UserData? of(BuildContext context) {\n    return context.dependOnInheritedWidgetOfExactType<UserData>();\n  }\n\n  @override\n  bool updateShouldNotify(UserData oldWidget) {\n    // Return true if dependents should rebuild\n    return username != oldWidget.username || score != oldWidget.score;\n  }\n}\n\n// ── Wrapper with state ─────────────────────\nclass UserProvider extends StatefulWidget {\n  final Widget child;\n\n  const UserProvider({required this.child, super.key});\n\n  @override State<UserProvider> createState() => _UserProviderState();\n}\n\nclass _UserProviderState extends State<UserProvider> {\n  String username = 'Guest';\n  int score = 0;\n\n  void updateUser(String name) {\n    setState(() {\n      username = name;\n    });\n  }\n\n  void addScore(int points) {\n    setState(() {\n      score += points;\n    });\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return UserData(\n      username: username,\n      score: score,\n      child: widget.child,\n    );\n  }\n}\n\n// ── Usage in app ───────────────────────────\nvoid main() {\n  runApp(\n    UserProvider(\n      child: MaterialApp(home: HomePage()),\n    ),\n  );\n}\n\n// ── Consuming widget ───────────────────────\nclass ScoreDisplay extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    // This widget will rebuild when UserData changes\n    final userData = UserData.of(context);\n\n    return Text(\n      '${userData?.username}: ${userData?.score}',\n      style: TextStyle(fontSize: 24),\n    );\n  }\n}\n\n// ── Note: This is simplified ───────────────\n// Real-world: use Provider package or Riverpod\n// InheritedWidget is low-level building block",
+    "code_language": "dart"
+  },
+  {
+    "id": 95,
+    "topic_id": 6,
+    "order_index": 101,
+    "difficulty": "hard",
+    "question": "Interview scenario #6: How would you handle API integration for pagination strategy in a Flutter app?",
+    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 6: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 118,
+    "topic_id": 6,
+    "order_index": 102,
+    "difficulty": "medium",
+    "question": "Interview scenario #29: How would you handle stream handling for dependency injection in a Flutter app?",
+    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 29: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 141,
+    "topic_id": 6,
+    "order_index": 103,
+    "difficulty": "easy",
+    "question": "Interview scenario #52: How would you handle performance optimization for render performance in a Flutter app?",
+    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: render performance. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'render performance';\nvoid discuss() {\n  debugPrint('Scenario 52: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 164,
+    "topic_id": 6,
+    "order_index": 104,
+    "difficulty": "hard",
+    "question": "Interview scenario #75: How would you handle testing approach for CI reliability in a Flutter app?",
+    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: CI reliability. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'CI reliability';\nvoid discuss() {\n  debugPrint('Scenario 75: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 187,
+    "topic_id": 6,
+    "order_index": 105,
+    "difficulty": "medium",
+    "question": "Interview scenario #98: How would you handle null safety best practices for error reporting in a Flutter app?",
+    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: error reporting. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
+    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'error reporting';\nvoid discuss() {\n  debugPrint('Scenario 98: $focusArea');\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 225,
+    "topic_id": 6,
+    "order_index": 106,
+    "difficulty": "medium",
+    "question": "Scenario 1: How would you approach security checks for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
+    "code_example": "void discuss6_1() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 226,
+    "topic_id": 6,
+    "order_index": 107,
+    "difficulty": "hard",
+    "question": "Scenario 2: How would you approach release process for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
+    "code_example": "void discuss6_2() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 227,
+    "topic_id": 6,
+    "order_index": 108,
+    "difficulty": "easy",
+    "question": "Scenario 3: How would you approach UX polish for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
+    "code_example": "void discuss6_3() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 228,
+    "topic_id": 6,
+    "order_index": 109,
+    "difficulty": "medium",
+    "question": "Scenario 4: How would you approach architecture trade-offs for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
+    "code_example": "void discuss6_4() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 229,
+    "topic_id": 6,
+    "order_index": 110,
+    "difficulty": "hard",
+    "question": "Scenario 5: How would you approach debugging flow for this topic?",
+    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
+    "code_example": "void discuss6_5() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
+    "code_language": "dart"
+  }
+]
