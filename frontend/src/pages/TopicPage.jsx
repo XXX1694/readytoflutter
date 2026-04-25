@@ -1,132 +1,252 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTopic } from '../api/api.js';
+import { ArrowLeft, Brain, Target, Printer } from 'lucide-react';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { useTopic } from '../lib/queries.js';
+import { usePrefs } from '../store/prefs.js';
 import QuestionCard from '../components/QuestionCard.jsx';
+import { useLang } from '../i18n/LangContext.jsx';
+import { useT } from '../i18n/ui.js';
+import { useContent } from '../i18n/content.js';
+import { Button, Pill, ProgressBar, FullPageLoader, Eyebrow, TopicGlyph, levelTone } from '../ui/index.js';
+import { cn } from '../lib/cn.js';
 
-const LEVEL_CONFIG = {
-  junior: { badge: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300', label: 'Junior' },
-  mid:    { badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300', label: 'Mid-Level' },
-  senior: { badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300', label: 'Senior' },
-};
+const FILTERS = ['all', 'not_started', 'in_progress', 'completed'];
 
 export default function TopicPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [topic, setTopic] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const { lang } = useLang();
+  const t = useT(lang);
+  const { topicTitle, topicDesc } = useContent(lang);
 
-  const loadTopic = () => {
-    setLoading(true);
-    getTopic(slug)
-      .then(setTopic)
-      .catch(() => navigate('/'))
-      .finally(() => setLoading(false));
+  const filter = usePrefs((s) => s.topicFilter);
+  const setFilter = usePrefs((s) => s.setTopicFilter);
+
+  const { data: topic, isLoading, error } = useTopic(slug);
+
+  // Keyboard navigation: which question is "focused" + open
+  const [cursor, setCursor] = useState(0);
+  const [openId, setOpenId] = useState(null);
+  const refs = useRef(new Map());
+
+  // Redirect home if topic missing
+  useEffect(() => {
+    if (error) {
+      const id = setTimeout(() => navigate('/'), 1800);
+      return () => clearTimeout(id);
+    }
+  }, [error, navigate]);
+
+  const questions = topic?.questions || [];
+  const filtered = useMemo(() => {
+    return questions.filter((q) => {
+      if (filter === 'all') return true;
+      if (filter === 'not_started') return !q.status || q.status === 'not_started';
+      return q.status === filter;
+    });
+  }, [questions, filter]);
+
+  const counts = useMemo(() => ({
+    all: questions.length,
+    not_started: questions.filter((q) => !q.status || q.status === 'not_started').length,
+    in_progress: questions.filter((q) => q.status === 'in_progress').length,
+    completed: questions.filter((q) => q.status === 'completed').length,
+  }), [questions]);
+
+  // Reset cursor if filter list shrinks below it
+  useEffect(() => {
+    if (cursor >= filtered.length) setCursor(0);
+  }, [filtered.length, cursor]);
+
+  const scrollIntoView = (id) => {
+    const el = refs.current.get(id);
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    loadTopic();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  useHotkeys('j, ArrowDown', (e) => {
+    e.preventDefault();
+    if (!filtered.length) return;
+    const next = Math.min(cursor + 1, filtered.length - 1);
+    setCursor(next);
+    scrollIntoView(filtered[next].id);
+  }, { preventDefault: true });
 
-  if (loading) {
+  useHotkeys('k, ArrowUp', (e) => {
+    e.preventDefault();
+    if (!filtered.length) return;
+    const next = Math.max(cursor - 1, 0);
+    setCursor(next);
+    scrollIntoView(filtered[next].id);
+  }, { preventDefault: true });
+
+  useHotkeys('space', (e) => {
+    if (!filtered.length) return;
+    e.preventDefault();
+    const q = filtered[cursor];
+    setOpenId((prev) => (prev === q.id ? null : q.id));
+  }, { preventDefault: true });
+
+  if (isLoading) return <FullPageLoader label={t.loadingTopic} />;
+  if (error || !topic) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-8 h-8 border-2 border-flutter-blue border-t-transparent rounded-full animate-spin" />
+      <div className="flex h-full items-center justify-center px-4">
+        <div className="flex max-w-md flex-col items-center gap-3 text-center">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-coral">404</span>
+          <p className="font-display text-2xl text-ink">{t.topicNotFound}</p>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            {t.redirectingHome}
+          </p>
+        </div>
       </div>
     );
   }
 
-  if (!topic) return null;
-
-  const cfg = LEVEL_CONFIG[topic.level];
-  const questions = topic.questions || [];
-
-  const filtered = questions.filter(q => {
-    if (filter === 'all') return true;
-    if (filter === 'not_started') return !q.status || q.status === 'not_started';
-    return q.status === filter;
-  });
-
-  const completedCount = questions.filter(q => q.status === 'completed').length;
+  const completedCount = questions.filter((q) => q.status === 'completed').length;
   const pct = questions.length > 0 ? Math.round((completedCount / questions.length) * 100) : 0;
+  const levelT = t[topic.level];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      {/* Breadcrumb */}
-      <button
-        onClick={() => navigate('/')}
-        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-4 sm:mb-6 transition-colors"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Dashboard
-      </button>
+    <div className="bg-page">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        {/* Breadcrumb */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="mb-5 -ml-2 text-muted hover:text-ink"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          {t.backToDashboard}
+        </Button>
 
-      {/* Topic header */}
-      <div className="flex items-start gap-3 sm:gap-4 mb-6">
-        <span className="text-3xl sm:text-4xl">{topic.icon}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-100">{topic.title}</h1>
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
-              {cfg.label}
+        {/* Header */}
+        <header className="mb-8 flex flex-col gap-4 border-b-1.5 border-ink pb-6">
+          <div className="flex items-start gap-4">
+            <TopicGlyph topic={topic} size="lg" />
+            <div className="min-w-0 flex-1">
+              <Eyebrow accent="brand">{levelT.short}</Eyebrow>
+              <h1 className="mt-2 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-4xl lg:text-display-xs">
+                {topicTitle(topic)}
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-2 sm:text-base">
+                {topicDesc(topic)}
+              </p>
+            </div>
+            <Pill tone={levelTone[topic.level]} size="md" className="shrink-0">
+              {levelT.short}
+            </Pill>
+          </div>
+
+          {/* Progress */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <ProgressBar
+              value={completedCount}
+              max={questions.length}
+              size="sm"
+              tone={pct === 100 ? 'mint' : 'gradient'}
+              className="max-w-md"
+            />
+            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+              {completedCount}/{questions.length} · {pct}%
             </span>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">{topic.description}</p>
-          {/* Progress */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-3">
-            <div className="flex-1 max-w-xs h-1.5 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
-              <div
-                className="h-full bg-flutter-sky rounded-full transition-all"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400">{completedCount}/{questions.length} completed ({pct}%)</span>
+
+          {/* Drill this topic */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="brand"
+              size="sm"
+              onClick={() => navigate(`/study?topic=${topic.slug}&label=${encodeURIComponent(topicTitle(topic))}`)}
+            >
+              <Brain className="h-3.5 w-3.5" />
+              {lang === 'ru' ? 'Повторение' : 'Drill'}
+            </Button>
+            <Button
+              variant="codex"
+              size="sm"
+              onClick={() => navigate(`/mock?topic=${topic.slug}`)}
+            >
+              <Target className="h-3.5 w-3.5" />
+              {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/print`, '_blank', 'noopener')}
+              className="text-muted hover:text-ink"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              {lang === 'ru' ? 'Печать / PDF' : 'Print / PDF'}
+            </Button>
           </div>
+        </header>
+
+        {/* Filters */}
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          {FILTERS.map((f) => {
+            const label = {
+              all: t.filterAll,
+              not_started: t.filterTodo,
+              in_progress: t.filterInProgress,
+              completed: t.filterDone,
+            }[f];
+            const active = filter === f;
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                aria-pressed={active}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md border-1.5 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-all',
+                  active
+                    ? 'border-ink bg-ink text-paper shadow-codex-sm'
+                    : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+                )}
+              >
+                <span>{label}</span>
+                <span className={cn('tabular-nums', active ? 'text-paper/70' : 'text-muted-2')}>
+                  {counts[f]}
+                </span>
+              </button>
+            );
+          })}
+          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-2 sm:inline-flex">
+            <kbd className="rounded border border-rule-strong px-1 py-0.5">J</kbd>
+            <kbd className="rounded border border-rule-strong px-1 py-0.5">K</kbd>
+            <span>· nav</span>
+            <kbd className="rounded border border-rule-strong px-1 py-0.5">Space</kbd>
+            <span>· open</span>
+          </span>
         </div>
-      </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6">
-        {[
-          { key: 'all',          label: `All (${questions.length})` },
-          { key: 'not_started',  label: `To Do (${questions.filter(q => !q.status || q.status === 'not_started').length})` },
-          { key: 'in_progress',  label: `In Progress (${questions.filter(q => q.status === 'in_progress').length})` },
-          { key: 'completed',    label: `Done (${completedCount})` },
-        ].map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-              filter === f.key
-                ? 'bg-flutter-blue text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Questions */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-            <p className="text-4xl mb-3">🎉</p>
-            <p className="text-sm">No questions in this category.</p>
-          </div>
-        ) : (
-          filtered.map((q, i) => (
-            <QuestionCard
-              key={q.id}
-              question={q}
-              index={questions.indexOf(q)}
-              onProgressChange={loadTopic}
-            />
-          ))
-        )}
+        {/* Questions list */}
+        <div className="space-y-3">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <span className="text-4xl" aria-hidden>🎉</span>
+              <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
+                {t.noQuestionsInCategory}
+              </p>
+            </div>
+          ) : (
+            filtered.map((q, i) => (
+              <QuestionCard
+                key={q.id}
+                ref={(el) => {
+                  if (el) refs.current.set(q.id, el);
+                  else refs.current.delete(q.id);
+                }}
+                question={q}
+                index={questions.indexOf(q)}
+                expanded={openId === q.id}
+                onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
+                focused={cursor === i}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -40,103 +40,53 @@
     "code_language": "dart"
   },
   {
-    "id": 106,
+    "id": 1701,
     "topic_id": 17,
-    "order_index": 101,
+    "order_index": 5,
     "difficulty": "medium",
-    "question": "Interview scenario #17: How would you handle clean architecture boundaries for internationalization in a Flutter app?",
-    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: internationalization. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'internationalization';\nvoid discuss() {\n  debugPrint('Scenario 17: $focusArea');\n}",
+    "question": "How do you traverse a binary tree (DFS/BFS) and what are the patterns for common tree problems?",
+    "answer": "Trees are second nature in interviews. The two traversal families cover most questions:\n\nDFS (Depth-First Search) — go deep before wide. Three orderings:\n• Pre-order   — visit node, then left, then right (e.g. clone a tree)\n• In-order    — left, then node, then right (sorted order on a BST)\n• Post-order  — left, right, then node (e.g. delete tree, compute sums bottom-up)\n\nBFS (Breadth-First Search) — level by level. Use a queue. Best for shortest path, level-order, finding the closest match.\n\nImplementation choices:\n• DFS — easy as recursion; in deep or pathological trees use an explicit stack to avoid Dart's recursion-limit\n• BFS — always iterative with a Queue (`ListQueue` from dart:collection)\n\nCommon problems that map to one of these:\n• Max/min depth → BFS (early stop on min depth) or post-order DFS\n• Same tree / mirror tree → simultaneous pre-order DFS\n• BST validate → in-order DFS with running prev pointer (sorted check)\n• Lowest common ancestor → post-order DFS\n• Serialize/deserialize → pre-order DFS with null markers\n• Right side view / level averages → BFS with level snapshots",
+    "code_example": "class TreeNode {\n  int val;\n  TreeNode? left, right;\n  TreeNode(this.val, [this.left, this.right]);\n}\n\n// ── DFS — recursive, in-order ──\nvoid inOrder(TreeNode? node, void Function(int) visit) {\n  if (node == null) return;\n  inOrder(node.left, visit);\n  visit(node.val);\n  inOrder(node.right, visit);\n}\n\n// ── DFS — iterative with explicit stack (safe on deep trees) ──\nList<int> preOrderIterative(TreeNode? root) {\n  final result = <int>[];\n  if (root == null) return result;\n  final stack = <TreeNode>[root];\n  while (stack.isNotEmpty) {\n    final node = stack.removeLast();\n    result.add(node.val);\n    if (node.right != null) stack.add(node.right!);  // push right first → left popped first\n    if (node.left != null)  stack.add(node.left!);\n  }\n  return result;\n}\n\n// ── BFS — level order ──\nimport 'dart:collection';\nList<List<int>> levelOrder(TreeNode? root) {\n  final result = <List<int>>[];\n  if (root == null) return result;\n  final q = ListQueue<TreeNode>()..add(root);\n  while (q.isNotEmpty) {\n    final levelSize = q.length;\n    final level = <int>[];\n    for (var i = 0; i < levelSize; i++) {\n      final node = q.removeFirst();\n      level.add(node.val);\n      if (node.left  != null) q.add(node.left!);\n      if (node.right != null) q.add(node.right!);\n    }\n    result.add(level);\n  }\n  return result;\n}\n\n// ── Validate BST — in-order monotonic check ──\nbool isValidBst(TreeNode? root) {\n  int? prev;\n  bool dfs(TreeNode? n) {\n    if (n == null) return true;\n    if (!dfs(n.left)) return false;\n    if (prev != null && n.val <= prev!) return false;\n    prev = n.val;\n    return dfs(n.right);\n  }\n  return dfs(root);\n}\n\n// ── Max depth — post-order DFS ──\nint maxDepth(TreeNode? n) =>\n    n == null ? 0 : 1 + max(maxDepth(n.left), maxDepth(n.right));\n\n// ── Lowest Common Ancestor — post-order DFS ──\nTreeNode? lca(TreeNode? root, TreeNode a, TreeNode b) {\n  if (root == null || identical(root, a) || identical(root, b)) return root;\n  final l = lca(root.left, a, b);\n  final r = lca(root.right, a, b);\n  if (l != null && r != null) return root;\n  return l ?? r;\n}",
     "code_language": "dart"
   },
   {
-    "id": 129,
+    "id": 1702,
     "topic_id": 17,
-    "order_index": 102,
-    "difficulty": "easy",
-    "question": "Interview scenario #40: How would you handle code review readiness for release rollback plan in a Flutter app?",
-    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: release rollback plan. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'release rollback plan';\nvoid discuss() {\n  debugPrint('Scenario 40: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 152,
-    "topic_id": 17,
-    "order_index": 103,
+    "order_index": 6,
     "difficulty": "hard",
-    "question": "Interview scenario #63: How would you handle state management trade-offs for navigation guards in a Flutter app?",
-    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 63: $focusArea');\n}",
+    "question": "What are the canonical graph algorithms (BFS shortest path, Dijkstra, Topological sort)?",
+    "answer": "Graph problems repeat in interviews. Three algorithms cover most of them:\n\nBFS shortest path (unweighted graph):\n• Use a queue. Track distance per node. When you pop a node, all nodes one step further go in next.\n• Time O(V + E), space O(V)\n• Examples: shortest steps in a grid, fewest transformations, web of friends\n\nDijkstra (non-negative weights):\n• Like BFS but with a priority queue keyed by accumulated cost\n• Don't use it on graphs with negative weights — use Bellman-Ford\n• Time O((V + E) log V) with a binary heap\n• Examples: routing with travel times, cheapest flight\n\nTopological sort (DAG only):\n• Linear ordering where each edge u→v puts u before v\n• Two algorithms: Kahn's (BFS-based, with in-degrees) and DFS-based (post-order reverse)\n• Detect cycles: if you can't produce all nodes, there's a cycle\n• Examples: build/dependency order, course prerequisites, task scheduling\n\nDart specific notes:\n• `dart:collection` ships ListQueue (BFS) but no priority queue — use the `collection` pub package's `HeapPriorityQueue` for Dijkstra\n• Adjacency: `Map<Node, List<Edge>>` is idiomatic for sparse graphs",
+    "code_example": "import 'dart:collection';\nimport 'package:collection/collection.dart';   // HeapPriorityQueue\n\n// ── BFS shortest path on unweighted graph ──\nint? shortestPath(Map<int, List<int>> graph, int start, int end) {\n  if (start == end) return 0;\n  final visited = <int>{start};\n  final q = ListQueue<(int, int)>()..add((start, 0));\n  while (q.isNotEmpty) {\n    final (node, dist) = q.removeFirst();\n    for (final neighbor in graph[node] ?? const []) {\n      if (visited.add(neighbor)) {\n        if (neighbor == end) return dist + 1;\n        q.add((neighbor, dist + 1));\n      }\n    }\n  }\n  return null;\n}\n\n// ── Dijkstra — shortest path with weights ──\nMap<int, int> dijkstra(Map<int, List<(int, int)>> graph, int start) {\n  final dist = <int, int>{start: 0};\n  final pq = HeapPriorityQueue<(int, int)>((a, b) => a.$2.compareTo(b.$2));\n  pq.add((start, 0));\n\n  while (pq.isNotEmpty) {\n    final (node, d) = pq.removeFirst();\n    if (d > (dist[node] ?? 1 << 62)) continue;       // stale entry\n    for (final (neighbor, weight) in graph[node] ?? const []) {\n      final next = d + weight;\n      if (next < (dist[neighbor] ?? 1 << 62)) {\n        dist[neighbor] = next;\n        pq.add((neighbor, next));\n      }\n    }\n  }\n  return dist;\n}\n\n// ── Topological sort — Kahn's algorithm ──\nList<int>? topologicalSort(int n, List<List<int>> edges) {\n  final inDegree = List<int>.filled(n, 0);\n  final adj = List.generate(n, (_) => <int>[]);\n  for (final e in edges) {\n    adj[e[0]].add(e[1]);\n    inDegree[e[1]]++;\n  }\n  final q = ListQueue<int>();\n  for (var i = 0; i < n; i++) {\n    if (inDegree[i] == 0) q.add(i);\n  }\n  final order = <int>[];\n  while (q.isNotEmpty) {\n    final node = q.removeFirst();\n    order.add(node);\n    for (final next in adj[node]) {\n      if (--inDegree[next] == 0) q.add(next);\n    }\n  }\n  return order.length == n ? order : null;          // null = cycle\n}\n\n// Course schedule example\nvoid main() {\n  final order = topologicalSort(4, [[0, 1], [0, 2], [1, 3], [2, 3]]);\n  print(order); // [0, 1, 2, 3] or [0, 2, 1, 3]\n}",
     "code_language": "dart"
   },
   {
-    "id": 175,
+    "id": 1703,
     "topic_id": 17,
-    "order_index": 104,
-    "difficulty": "medium",
-    "question": "Interview scenario #86: How would you handle API integration for pagination strategy in a Flutter app?",
-    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 86: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 198,
-    "topic_id": 17,
-    "order_index": 105,
-    "difficulty": "easy",
-    "question": "Interview scenario #109: How would you handle stream handling for dependency injection in a Flutter app?",
-    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 109: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 280,
-    "topic_id": 17,
-    "order_index": 106,
-    "difficulty": "easy",
-    "question": "Scenario 1: How would you approach release process for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
-    "code_example": "void discuss17_1() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 281,
-    "topic_id": 17,
-    "order_index": 107,
-    "difficulty": "medium",
-    "question": "Scenario 2: How would you approach UX polish for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
-    "code_example": "void discuss17_2() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 282,
-    "topic_id": 17,
-    "order_index": 108,
+    "order_index": 7,
     "difficulty": "hard",
-    "question": "Scenario 3: How would you approach architecture trade-offs for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
-    "code_example": "void discuss17_3() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "question": "How do you recognize when a problem is dynamic programming, and how do you go from recursion to DP?",
+    "answer": "DP applies when:\n1. The problem has OPTIMAL SUBSTRUCTURE — the answer is built from answers to smaller subproblems\n2. Subproblems OVERLAP — naïve recursion would re-solve the same input many times\n\nIf both hold, you can either memoize (top-down) or fill a table (bottom-up). If only #1 holds, you have a divide-and-conquer problem (mergesort), not DP.\n\nThe upgrade path:\n1. Write the recursive brute force first. Don't optimize. Get correctness on a small input.\n2. Identify the STATE — the minimal info that decides the answer (often: indices, remaining capacity, last-picked-element)\n3. Add a `memo` map keyed by that state — top-down DP. Same code, exponential→polynomial.\n4. Optionally rewrite as a table (bottom-up) — same complexity, no recursion stack, often easier to reason about iteration order.\n5. Optimize space — many DPs only need the last 1–2 rows of the table.\n\nClassic problems:\n• Knapsack (0/1 and unbounded)\n• Longest common subsequence / Edit distance\n• Coin change (count or min coins)\n• Climbing stairs / Fibonacci variants\n• Word break / palindrome partitioning\n• Best time to buy/sell stock — k transactions\n\nInterview tip: state the state and the recurrence in words BEFORE writing code. \"dp[i][w] = the best value using items 0..i with capacity w\" — that single sentence is often what they want to hear.",
+    "code_example": "// ── Brute recursion — exponential ──\nint coinChangeBrute(List<int> coins, int amount) {\n  if (amount == 0) return 0;\n  if (amount < 0)  return -1;\n  var best = -1;\n  for (final c in coins) {\n    final sub = coinChangeBrute(coins, amount - c);\n    if (sub == -1) continue;\n    if (best == -1 || sub + 1 < best) best = sub + 1;\n  }\n  return best;\n}\n\n// ── Step 1 → memoize (top-down DP) — O(amount × coins.length) ──\nint coinChangeMemo(List<int> coins, int amount) {\n  final memo = <int, int>{};\n  int helper(int rem) {\n    if (rem == 0) return 0;\n    if (rem < 0)  return -1;\n    if (memo.containsKey(rem)) return memo[rem]!;\n    var best = -1;\n    for (final c in coins) {\n      final sub = helper(rem - c);\n      if (sub == -1) continue;\n      if (best == -1 || sub + 1 < best) best = sub + 1;\n    }\n    return memo[rem] = best;\n  }\n  return helper(amount);\n}\n\n// ── Step 2 → tabulate (bottom-up DP) — same complexity, no recursion ──\nint coinChangeDP(List<int> coins, int amount) {\n  // dp[i] = min coins to make amount i; sentinel = infinity\n  final dp = List<int>.filled(amount + 1, amount + 1);\n  dp[0] = 0;\n  for (var i = 1; i <= amount; i++) {\n    for (final c in coins) {\n      if (c <= i) dp[i] = min(dp[i], dp[i - c] + 1);\n    }\n  }\n  return dp[amount] > amount ? -1 : dp[amount];\n}\n\n// ── Edit distance — 2D DP ──\nint editDistance(String a, String b) {\n  final m = a.length, n = b.length;\n  final dp = List.generate(m + 1, (_) => List<int>.filled(n + 1, 0));\n  for (var i = 0; i <= m; i++) dp[i][0] = i;\n  for (var j = 0; j <= n; j++) dp[0][j] = j;\n  for (var i = 1; i <= m; i++) {\n    for (var j = 1; j <= n; j++) {\n      if (a[i - 1] == b[j - 1]) {\n        dp[i][j] = dp[i - 1][j - 1];\n      } else {\n        dp[i][j] = 1 + min(min(\n          dp[i - 1][j],     // delete\n          dp[i][j - 1]),    // insert\n          dp[i - 1][j - 1]); // replace\n      }\n    }\n  }\n  return dp[m][n];\n}\n\n// ── Space optimization — many DPs only need the last row ──\nint coinChange1D(List<int> coins, int amount) {\n  final dp = List<int>.filled(amount + 1, amount + 1)..[0] = 0;\n  for (var i = 1; i <= amount; i++) {\n    for (final c in coins) if (c <= i) dp[i] = min(dp[i], dp[i - c] + 1);\n  }\n  return dp[amount] > amount ? -1 : dp[amount];\n}",
     "code_language": "dart"
   },
   {
-    "id": 283,
+    "id": 1704,
     "topic_id": 17,
-    "order_index": 109,
-    "difficulty": "easy",
-    "question": "Scenario 4: How would you approach debugging flow for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
-    "code_example": "void discuss17_4() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 284,
-    "topic_id": 17,
-    "order_index": 110,
+    "order_index": 8,
     "difficulty": "medium",
-    "question": "Scenario 5: How would you approach performance tuning for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
-    "code_example": "void discuss17_5() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "question": "When and how do you use a HashMap, HashSet, or LinkedHashMap in Dart?",
+    "answer": "Map and Set in Dart are DEFAULT-ORDERED (LinkedHash) — they preserve insertion order. That makes them strictly more predictable than the unordered hash structures in some other languages, at a tiny per-op cost. Knowing the variants matters when correctness depends on order or when you need raw speed.\n\nVariants:\n• `<K, V>{}` / `Map.from`           — LinkedHashMap, insertion-ordered, default\n• `HashMap<K, V>()` (dart:collection) — unordered, slightly faster\n• `LinkedHashMap` — explicit insertion-ordered\n• `SplayTreeMap` — sorted by key (O(log n) ops)\n• `<T>{}` / `Set.from`               — LinkedHashSet, insertion-ordered, default\n• `HashSet<T>()` — unordered\n• `SplayTreeSet` — sorted\n\nWhen to pick:\n• Counting / dedup / lookup tables → default Map / Set is plenty (LinkedHash)\n• You need to iterate in sorted order without paying re-sort costs → SplayTreeMap/Set\n• You don't care about order and want a tiny perf win → HashMap/HashSet\n• You need a fixed iteration order tied to insertion → LinkedHashMap (the default; explicit when documenting intent)\n\nGotcha — using a custom class as a Map key:\n• Without overriding == and hashCode, identity equality is used (two equal-looking objects with different references won't match)\n• Override BOTH and keep them consistent — equal objects must hash to the same bucket\n• Or use freezed / equatable to generate them",
+    "code_example": "import 'dart:collection';\n\n// ── Counting characters — LinkedHashMap (default) ──\nMap<String, int> countChars(String s) {\n  final counts = <String, int>{};\n  for (final c in s.split('')) {\n    counts.update(c, (v) => v + 1, ifAbsent: () => 1);\n  }\n  return counts;\n}\n\n// ── Group by — using fold and putIfAbsent ──\nMap<String, List<User>> groupByCity(List<User> users) {\n  final out = <String, List<User>>{};\n  for (final u in users) {\n    out.putIfAbsent(u.city, () => <User>[]).add(u);\n  }\n  return out;\n}\n\n// ── HashSet — fast membership test, no order ──\nbool hasDuplicate(List<int> nums) {\n  final seen = HashSet<int>();\n  for (final n in nums) {\n    if (!seen.add(n)) return true;\n  }\n  return false;\n}\n\n// ── SplayTreeMap — sorted iteration ──\nfinal sorted = SplayTreeMap<int, String>()\n  ..[10] = 'ten'\n  ..[1]  = 'one'\n  ..[5]  = 'five';\nprint(sorted.keys); // (1, 5, 10)\n\n// ── Custom class as a Map key — must override == and hashCode ──\nclass Point {\n  final int x, y;\n  const Point(this.x, this.y);\n\n  @override bool operator ==(Object other) =>\n      other is Point && other.x == x && other.y == y;\n  @override int get hashCode => Object.hash(x, y);\n}\n\nfinal cache = <Point, double>{};\ncache[const Point(1, 2)] = 9.0;\nprint(cache[const Point(1, 2)]); // 9.0 (matches by value)\n\n// ── LRU cache via LinkedHashMap (move-to-front on access) ──\nclass LruCache<K, V> {\n  final int _maxSize;\n  final _store = <K, V>{};\n  LruCache(this._maxSize);\n\n  V? get(K key) {\n    final v = _store.remove(key);          // remove\n    if (v != null) _store[key] = v;        // re-insert at end\n    return v;\n  }\n\n  void put(K key, V value) {\n    _store.remove(key);\n    _store[key] = value;\n    if (_store.length > _maxSize) {\n      _store.remove(_store.keys.first);    // evict oldest insertion\n    }\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 1705,
+    "topic_id": 17,
+    "order_index": 9,
+    "difficulty": "medium",
+    "question": "When is recursion in Dart safe, and when must you switch to an explicit iterative approach?",
+    "answer": "The Dart VM has a finite call stack — typically a few thousand frames in production, larger in debug. Recursion that goes deeper than the stack tolerates throws `StackOverflowError`. Some functions are also fine with mutual recursion but become problematic when input shape pushes recursion to extremes.\n\nWhen recursion is safe:\n• Tree traversals where the tree is balanced (depth ~ log n)\n• Algorithms with depth bounded by a small constant (e.g. parse expressions, walk JSON)\n• Functional pipelines on small inputs\n\nWhen recursion is NOT safe:\n• Linked-list traversal that may exceed thousands of nodes — depth is O(n), n unbounded\n• File system or directory walks on real filesystems with deep nesting\n• Graph traversal with no upper bound on path length\n\nSwap to iteration with:\n• An explicit stack (`List<T>` works as a stack via add/removeLast) for DFS\n• A `ListQueue` for BFS\n• Tail-call shape: collect intermediate results in a loop with an accumulator\n\nDart does NOT do tail-call optimization. Even a perfectly tail-recursive function can overflow the stack — switch to a loop, do not rely on TCO.\n\nA good interview cue: when the input size could be \"the whole user's filesystem\", \"a chat message thread of unknown length\", \"all rows in a CSV\" — go iterative from the start.",
+    "code_example": "// ── ❌ Recursive linked-list reverse — overflows on long lists ──\nListNode? reverseRecursive(ListNode? node, [ListNode? prev]) {\n  if (node == null) return prev;\n  final next = node.next;\n  node.next = prev;\n  return reverseRecursive(next, node);            // even though tail position\n}\n\n// ── ✅ Iterative — O(n) time, O(1) space, stack-safe ──\nListNode? reverseIterative(ListNode? head) {\n  ListNode? prev;\n  var cur = head;\n  while (cur != null) {\n    final next = cur.next;\n    cur.next = prev;\n    prev = cur;\n    cur = next;\n  }\n  return prev;\n}\n\n// ── ❌ Recursive directory walk — explodes on deep filesystems ──\nList<File> walkRecursive(Directory dir) {\n  final out = <File>[];\n  for (final entity in dir.listSync()) {\n    if (entity is File) out.add(entity);\n    if (entity is Directory) out.addAll(walkRecursive(entity));\n  }\n  return out;\n}\n\n// ── ✅ Iterative with explicit stack ──\nIterable<File> walkIterative(Directory root) sync* {\n  final stack = <Directory>[root];\n  while (stack.isNotEmpty) {\n    final dir = stack.removeLast();\n    for (final entity in dir.listSync()) {\n      if (entity is File) yield entity;\n      if (entity is Directory) stack.add(entity);\n    }\n  }\n}\n\n// ── Convert recursive DP to iterative table ──\n// Recursive Fibonacci with memoization is fine for small n; for big n,\n// the table form is both faster and stack-safe.\nint fibTable(int n) {\n  if (n <= 1) return n;\n  var a = 0, b = 1;\n  for (var i = 2; i <= n; i++) {\n    final next = a + b;\n    a = b;\n    b = next;\n  }\n  return b;\n}",
     "code_language": "dart"
   }
 ]

@@ -60,6 +60,26 @@
     "code_language": "dart"
   },
   {
+    "id": 401,
+    "topic_id": 4,
+    "order_index": 8,
+    "difficulty": "easy",
+    "question": "What are the Material 3 button widgets and when do you pick each?",
+    "answer": "Material 3 ships five button styles, each with a specific role on the page. Picking the right one is the difference between a clear UI and visual noise.\n\nFilledButton (highest emphasis):\n• Solid background, used for the PRIMARY action on a screen\n• Examples: \"Sign up\", \"Continue\", \"Pay now\"\n\nFilledButton.tonal (high-emphasis but secondary):\n• Tinted background, used for important actions that aren't the primary\n• Good when the screen has two important options and you don't want them visually competing\n\nElevatedButton (legacy primary):\n• Drop shadow, originally THE primary button style in Material 2\n• In Material 3, prefer FilledButton — ElevatedButton is for cases where elevation specifically matches the material\n\nOutlinedButton (medium emphasis):\n• Outlined, transparent fill — the secondary button on a page\n• Cancel/Back/Skip alongside a FilledButton\n\nTextButton (lowest emphasis):\n• Text only, no border or background\n• \"Forgot password?\", \"Learn more\", in-line actions in cards\n\nIconButton:\n• Square button containing only an icon\n• Use `IconButton.filled`, `.filledTonal`, `.outlined` for the matching emphasis levels\n\nRules of thumb:\n• At most ONE FilledButton per screen — that's the primary action\n• Use the same button type for consistent CTAs across screens\n• Don't sprinkle ElevatedButton everywhere — Material 3 favors flatter UI",
+    "code_example": "// Primary action — only one per screen\nFilledButton(\n  onPressed: _signUp,\n  child: const Text('Create account'),\n);\n\n// Tonal — second important action\nFilledButton.tonal(\n  onPressed: _signInWithGoogle,\n  child: const Text('Continue with Google'),\n);\n\n// Outlined — secondary\nOutlinedButton(\n  onPressed: () => Navigator.pop(context),\n  child: const Text('Cancel'),\n);\n\n// Text — quiet actions\nTextButton(\n  onPressed: _resetPassword,\n  child: const Text('Forgot password?'),\n);\n\n// IconButton with emphasis\nIconButton.filled(\n  onPressed: _bookmark,\n  icon: const Icon(Icons.bookmark_outline),\n);\nIconButton.outlined(onPressed: _share, icon: const Icon(Icons.share));\nIconButton(onPressed: _close, icon: const Icon(Icons.close));   // plain\n\n// Loading state — disable + replace label\nclass _SignInButtonState extends State<SignInButton> {\n  bool _busy = false;\n  Future<void> _run() async {\n    if (_busy) return;\n    setState(() => _busy = true);\n    try { await api.signIn(); } finally {\n      if (mounted) setState(() => _busy = false);\n    }\n  }\n  @override Widget build(_) => FilledButton(\n    onPressed: _busy ? null : _run,\n    child: _busy\n        ? const SizedBox(\n            width: 18, height: 18,\n            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))\n        : const Text('Sign in'),\n  );\n}\n\n// Theming — set defaults app-wide\nMaterialApp(\n  theme: ThemeData(\n    useMaterial3: true,\n    filledButtonTheme: FilledButtonThemeData(\n      style: FilledButton.styleFrom(\n        minimumSize: const Size.fromHeight(48),\n        textStyle: const TextStyle(fontWeight: FontWeight.w600),\n      ),\n    ),\n  ),\n);",
+    "code_language": "dart"
+  },
+  {
+    "id": 402,
+    "topic_id": 4,
+    "order_index": 9,
+    "difficulty": "easy",
+    "question": "How do you display images in Flutter — assets, network, memory, file?",
+    "answer": "Flutter's `Image` widget renders any image source via constructors that match the input.\n\nImage.asset — bundled with the app:\n• Add to pubspec.yaml under `flutter: assets:`\n• Supports @1x, @2x, @3x variants for resolution-aware loading\n• No network needed; instant\n\nImage.network — fetched at runtime:\n• Includes basic in-memory cache only; for offline + disk cache use `cached_network_image`\n• `errorBuilder` for fallback when the URL fails\n\nImage.memory — render bytes you already have:\n• Useful for downloaded blobs, captured screenshots, base64-decoded images\n\nImage.file — local files (path_provider, picked images):\n• Mobile/desktop only; not on web\n\nKey props for any source:\n• `fit: BoxFit.cover/contain/fill/...` — how the image fits its box\n• `width / height` — display size; combine with `cacheWidth / cacheHeight` to avoid decoding the full source for a thumbnail\n• `loadingBuilder` for progressive loading spinners\n• `semanticLabel` for accessibility\n\nFor SVGs use `flutter_svg` (Image doesn't render SVG); for animated formats (Lottie, Rive) use the dedicated packages.",
+    "code_example": "// pubspec.yaml\n// flutter:\n//   assets:\n//     - assets/logo.png\n//     - assets/illustrations/empty_state.png\n\n// Asset — instant, bundled\nImage.asset('assets/logo.png', width: 96, height: 96);\n\n// Network — basic in-memory cache, with fallback\nImage.network(\n  'https://cdn.example.com/avatar.jpg',\n  width: 64, height: 64, fit: BoxFit.cover,\n  cacheWidth: 128, cacheHeight: 128,        // ✅ decode at thumbnail size\n  loadingBuilder: (ctx, child, progress) {\n    if (progress == null) return child;\n    return const ColoredBox(color: Color(0xFFEEEEEE));\n  },\n  errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),\n);\n\n// Production-grade network image — cached_network_image\nimport 'package:cached_network_image/cached_network_image.dart';\nCachedNetworkImage(\n  imageUrl: url,\n  width: 64, height: 64, fit: BoxFit.cover,\n  memCacheWidth: 128, memCacheHeight: 128,\n  placeholder: (_, __) => const ColoredBox(color: Color(0xFFEEEEEE)),\n  errorWidget: (_, __, ___) => const Icon(Icons.broken_image),\n);\n\n// Memory — render bytes\nFuture<Uint8List> _bytes;\nImage.memory(await _bytes, fit: BoxFit.cover);\n\n// File — picked image\nimport 'package:image_picker/image_picker.dart';\nfinal x = await ImagePicker().pickImage(source: ImageSource.camera);\nif (x != null) {\n  Image.file(File(x.path), width: 200, fit: BoxFit.cover);\n}\n\n// SVG — flutter_svg\nimport 'package:flutter_svg/flutter_svg.dart';\nSvgPicture.asset('assets/icons/star.svg', width: 24, height: 24);\n\n// FadeInImage — placeholder that swaps in when network image arrives\nFadeInImage.assetNetwork(\n  placeholder: 'assets/placeholder_blur.png',\n  image: 'https://cdn.example.com/photo.jpg',\n  fit: BoxFit.cover,\n);\n\n// ── Performance reminders ──\n// • cacheWidth/cacheHeight prevents decoding a 4000×4000 image into RAM for a 100×100 tile\n// • Wrap heavy images in RepaintBoundary so neighbouring repaints don't trigger them\n// • Use precacheImage during navigation to warm caches before the destination paints",
+    "code_language": "dart"
+  },
+  {
     "id": 84,
     "topic_id": 4,
     "order_index": 7,
@@ -67,106 +87,6 @@
     "question": "How does LayoutBuilder work and when should you use it?",
     "answer": "LayoutBuilder provides parent constraints to build child widgets responsively.\n\nKey features:\n• Receives BoxConstraints from parent\n• Builds child based on available space\n• Useful for responsive layouts\n• Rebuilds when constraints change\n\nConstraints:\n• maxWidth, maxHeight — maximum available\n• minWidth, minHeight — minimum required\n• Use to build adaptive UI\n\nSimilar widgets:\n• MediaQuery — entire screen size\n• LayoutBuilder — parent-specific constraints\n• OrientationBuilder — device orientation",
     "code_example": "// ── Basic LayoutBuilder ────────────────────\nLayoutBuilder(\n  builder: (context, constraints) {\n    print('Max width: ${constraints.maxWidth}');\n    print('Max height: ${constraints.maxHeight}');\n\n    if (constraints.maxWidth > 600) {\n      return DesktopLayout();\n    } else {\n      return MobileLayout();\n    }\n  },\n)\n\n// ── Responsive grid ────────────────────────\nLayoutBuilder(\n  builder: (context, constraints) {\n    final width = constraints.maxWidth;\n    final crossAxisCount = width > 1200 ? 4\n                          : width > 800 ? 3\n                          : width > 600 ? 2\n                          : 1;\n\n    return GridView.builder(\n      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(\n        crossAxisCount: crossAxisCount,\n        crossAxisSpacing: 16,\n        mainAxisSpacing: 16,\n      ),\n      itemBuilder: (ctx, i) => ProductCard(products[i]),\n      itemCount: products.length,\n    );\n  },\n)\n\n// ── Adaptive widget size ───────────────────\nclass ResponsiveCard extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return LayoutBuilder(\n      builder: (context, constraints) {\n        final compact = constraints.maxWidth < 400;\n\n        return Card(\n          child: Padding(\n            padding: EdgeInsets.all(compact ? 8 : 16),\n            child: Column(\n              children: [\n                Text(\n                  'Title',\n                  style: TextStyle(\n                    fontSize: compact ? 16 : 24,\n                  ),\n                ),\n                if (!compact) Text('Subtitle'),\n              ],\n            ),\n          ),\n        );\n      },\n    );\n  }\n}\n\n// ── LayoutBuilder vs MediaQuery ────────────\nclass ComparisonWidget extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    // MediaQuery — entire screen\n    final screenWidth = MediaQuery.of(context).size.width;\n    print('Screen width: $screenWidth');\n\n    return Container(\n      width: 300, // Parent sets constraints\n      child: LayoutBuilder(\n        builder: (context, constraints) {\n          // LayoutBuilder — parent constraints\n          print('Available width: ${constraints.maxWidth}'); // 300\n          return Text('Width: ${constraints.maxWidth}');\n        },\n      ),\n    );\n  }\n}\n\n// ── Nested LayoutBuilder ───────────────────\nContainer(\n  width: 800,\n  child: LayoutBuilder(\n    builder: (context, outerConstraints) {\n      print('Outer: ${outerConstraints.maxWidth}'); // 800\n\n      return Row(\n        children: [\n          Expanded(\n            child: LayoutBuilder(\n              builder: (context, innerConstraints) {\n                print('Inner: ${innerConstraints.maxWidth}'); // ~400\n                return Container(color: Colors.red);\n              },\n            ),\n          ),\n          Expanded(\n            child: Container(color: Colors.blue),\n          ),\n        ],\n      );\n    },\n  ),\n)\n\n// ── Responsive master-detail ───────────────\nclass MasterDetail extends StatelessWidget {\n  @override Widget build(BuildContext context) {\n    return LayoutBuilder(\n      builder: (context, constraints) {\n        if (constraints.maxWidth > 800) {\n          // Side-by-side on wide screens\n          return Row(\n            children: [\n              Expanded(\n                flex: 1,\n                child: MasterList(),\n              ),\n              VerticalDivider(width: 1),\n              Expanded(\n                flex: 2,\n                child: DetailView(),\n              ),\n            ],\n          );\n        } else {\n          // Stacked on narrow screens\n          return MasterList();\n        }\n      },\n    );\n  }\n}\n\n// ── Constrained vs unconstrained ───────────\nLayoutBuilder(\n  builder: (context, constraints) {\n    if (constraints.hasBoundedWidth) {\n      print('Width is bounded: ${constraints.maxWidth}');\n    } else {\n      print('Width is unbounded (infinite)');\n    }\n\n    return Container(\n      // Use constraints to determine size\n      width: constraints.maxWidth.isFinite\n        ? constraints.maxWidth * 0.8\n        : 300,\n      child: Text('Responsive width'),\n    );\n  },\n)",
-    "code_language": "dart"
-  },
-  {
-    "id": 93,
-    "topic_id": 4,
-    "order_index": 101,
-    "difficulty": "easy",
-    "question": "Interview scenario #4: How would you handle error handling for form validation in a Flutter app?",
-    "answer": "Catch expected failures at boundaries, map technical exceptions to user-friendly messages, and keep stack traces for diagnostics.\n\nFocus area: form validation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "Future<String> safeLoad() async {\n  try {\n    return await Future.value('ok');\n  } catch (e, st) {\n    debugPrint('error: $e\n$st');\n    return 'fallback';\n  }\n}\n\n// Focus area\nconst String focusArea = 'form validation';\nvoid discuss() {\n  debugPrint('Scenario 4: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 116,
-    "topic_id": 4,
-    "order_index": 102,
-    "difficulty": "hard",
-    "question": "Interview scenario #27: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
-    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 27: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 139,
-    "topic_id": 4,
-    "order_index": 103,
-    "difficulty": "medium",
-    "question": "Interview scenario #50: How would you handle code review readiness for code generation in a Flutter app?",
-    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 50: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 162,
-    "topic_id": 4,
-    "order_index": 104,
-    "difficulty": "easy",
-    "question": "Interview scenario #73: How would you handle state management trade-offs for memory leak prevention in a Flutter app?",
-    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: memory leak prevention. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'memory leak prevention';\nvoid discuss() {\n  debugPrint('Scenario 73: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 185,
-    "topic_id": 4,
-    "order_index": 105,
-    "difficulty": "hard",
-    "question": "Interview scenario #96: How would you handle API integration for accessibility in a Flutter app?",
-    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: accessibility. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'accessibility';\nvoid discuss() {\n  debugPrint('Scenario 96: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 215,
-    "topic_id": 4,
-    "order_index": 106,
-    "difficulty": "hard",
-    "question": "Scenario 1: How would you approach testing depth for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
-    "code_example": "void discuss4_1() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 216,
-    "topic_id": 4,
-    "order_index": 107,
-    "difficulty": "easy",
-    "question": "Scenario 2: How would you approach offline strategy for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
-    "code_example": "void discuss4_2() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 217,
-    "topic_id": 4,
-    "order_index": 108,
-    "difficulty": "medium",
-    "question": "Scenario 3: How would you approach security checks for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
-    "code_example": "void discuss4_3() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 218,
-    "topic_id": 4,
-    "order_index": 109,
-    "difficulty": "hard",
-    "question": "Scenario 4: How would you approach release process for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
-    "code_example": "void discuss4_4() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 219,
-    "topic_id": 4,
-    "order_index": 110,
-    "difficulty": "easy",
-    "question": "Scenario 5: How would you approach UX polish for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
-    "code_example": "void discuss4_5() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
     "code_language": "dart"
   }
 ]

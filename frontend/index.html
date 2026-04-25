@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💙</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReadyToFlutter — Interview Prep</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+    <meta name="theme-color" content="#0175C2" />
+    <title>ReadyToFlutter — Codex</title>
+    <!--
+      Theme is hydrated synchronously by src/store/prefs.js before React mounts,
+      so the .dark class lands on <html> in time to avoid FOUC. Fonts are
+      self-hosted via @fontsource-variable (loaded from src/index.css).
+    -->
   </head>
-  <body class="bg-gray-950 text-gray-100 font-sans antialiased">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

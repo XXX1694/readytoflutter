@@ -22,7 +22,7 @@
   {
     "id": 71,
     "topic_id": 7,
-    "order_index": 6,
+    "order_index": 3,
     "difficulty": "medium",
     "question": "How do you handle multiple concurrent async operations?",
     "answer": "Multiple approaches for concurrent async operations:\n\n1. Future.wait() — wait for all to complete\n2. Future.any() — wait for first to complete\n3. Stream.merge() — combine multiple streams\n4. Parallel isolates — true parallelism\n\nError handling:\n• Future.wait() fails fast by default\n• Use eagerError: false to wait for all\n• Catch individual futures before combining",
@@ -30,103 +30,63 @@
     "code_language": "dart"
   },
   {
-    "id": 96,
+    "id": 701,
     "topic_id": 7,
-    "order_index": 101,
-    "difficulty": "easy",
-    "question": "Interview scenario #7: How would you handle clean architecture boundaries for offline-first sync in a Flutter app?",
-    "answer": "Keep UI, domain, and data layers independent; dependencies should point inward to make the core testable and stable.\n\nFocus area: offline-first sync. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "abstract class GetProfile {\n  Future<String> call(String id);\n}\n\n// Focus area\nconst String focusArea = 'offline-first sync';\nvoid discuss() {\n  debugPrint('Scenario 7: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 119,
-    "topic_id": 7,
-    "order_index": 102,
-    "difficulty": "hard",
-    "question": "Interview scenario #30: How would you handle code review readiness for code generation in a Flutter app?",
-    "answer": "Submit small focused changes, document non-obvious decisions, and include tests that prove behavior before and after.\n\nFocus area: code generation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "/// Explains why this fallback exists for older API versions.\nString normalizeName(String input) => input.trim();\n\n// Focus area\nconst String focusArea = 'code generation';\nvoid discuss() {\n  debugPrint('Scenario 30: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 142,
-    "topic_id": 7,
-    "order_index": 103,
+    "order_index": 4,
     "difficulty": "medium",
-    "question": "Interview scenario #53: How would you handle state management trade-offs for memory leak prevention in a Flutter app?",
-    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: memory leak prevention. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'memory leak prevention';\nvoid discuss() {\n  debugPrint('Scenario 53: $focusArea');\n}",
+    "question": "Explain Dart's event loop, microtask queue, and event queue.",
+    "answer": "Dart is single-threaded per isolate. Concurrency comes from an event loop that drains two queues, in this priority order:\n\n1) Microtask queue — high priority, drained completely before any event-queue work\n   - Populated by: `scheduleMicrotask`, `Future.microtask`, the resolution of synchronous Futures, `Future.value(x)` (often), DOM-like callbacks on web\n   - Use sparingly — too many microtasks starve I/O and animations\n\n2) Event queue — lower priority\n   - Populated by: `Future.delayed`, Timer ticks, network I/O, file I/O, platform messages, user input\n   - One event runs to completion, then microtasks drain, then the next event runs\n\nWhat `await` actually does:\n• Pauses the async function\n• Schedules the continuation as a microtask after the awaited Future completes\n• Yields control back to the event loop, which can drain other microtasks before resuming\n\nPractical implications:\n• `await Future.value(42)` does NOT block — it returns 42 \"after\" letting any pending microtasks run\n• `Future.delayed(Duration.zero)` is the canonical way to yield to the event queue (lower priority than microtasks)\n• Heavy synchronous work between awaits still blocks the UI; the event loop can't preempt synchronous code\n• For real parallelism (image processing, big sorts), spawn an isolate — the event loop on the main isolate stays free",
+    "code_example": "// Order observation\nvoid main() {\n  print('1');\n  Future(() => print('2 - event'));\n  scheduleMicrotask(() => print('3 - microtask'));\n  Future.microtask(() => print('4 - microtask'));\n  print('5');\n}\n// Output:\n// 1\n// 5             ← rest of synchronous code\n// 3 - microtask  ← microtasks drain first\n// 4 - microtask\n// 2 - event      ← then event queue\n\n// ── await yields a microtask ──\nFuture<void> demo() async {\n  print('a');\n  await Future.value(1);          // resume scheduled as microtask\n  print('b');\n}\nFuture<void> main2() async {\n  demo();                         // a printed\n  print('c');                     // c printed (synchronous)\n  await Future.value();           // yield once\n  print('d');                     // b runs first, then d\n}\n// Output: a, c, b, d\n\n// ── Yield to event queue (rarely needed) ──\nFuture<void> letUiBreathe() async {\n  await Future<void>.delayed(Duration.zero);   // ✅ event-queue yield\n  // microtasks drain, then this returns\n}\n\n// ── Don't starve the loop with microtasks ──\nvoid bad() {\n  // ❌ This loop never lets the event queue (input, timers, network) run\n  Future.microtask(bad);\n}\nvoid better() {\n  // ✅ Schedules through event queue — UI stays responsive\n  Future.delayed(Duration.zero, better);\n}\n\n// ── Heavy work between awaits — still blocking ──\nFuture<void> heavy() async {\n  await Future<void>.value();                  // yield (microtask)\n  for (var i = 0; i < 1 << 24; i++) sum += i;  // ❌ blocks UI thread for hundreds of ms\n  await save(sum);\n}\n// Move CPU work to an isolate: await Isolate.run(_compute);",
     "code_language": "dart"
   },
   {
-    "id": 165,
+    "id": 702,
     "topic_id": 7,
-    "order_index": 104,
-    "difficulty": "easy",
-    "question": "Interview scenario #76: How would you handle API integration for accessibility in a Flutter app?",
-    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: accessibility. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'accessibility';\nvoid discuss() {\n  debugPrint('Scenario 76: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 188,
-    "topic_id": 7,
-    "order_index": 105,
-    "difficulty": "hard",
-    "question": "Interview scenario #99: How would you handle stream handling for analytics instrumentation in a Flutter app?",
-    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: analytics instrumentation. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'analytics instrumentation';\nvoid discuss() {\n  debugPrint('Scenario 99: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 230,
-    "topic_id": 7,
-    "order_index": 106,
-    "difficulty": "hard",
-    "question": "Scenario 1: How would you approach release process for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
-    "code_example": "void discuss7_1() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 231,
-    "topic_id": 7,
-    "order_index": 107,
-    "difficulty": "easy",
-    "question": "Scenario 2: How would you approach UX polish for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For UX polish, discuss monitoring and validation in production.",
-    "code_example": "void discuss7_2() {\n  const focus = \"UX polish\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 232,
-    "topic_id": 7,
-    "order_index": 108,
+    "order_index": 5,
     "difficulty": "medium",
-    "question": "Scenario 3: How would you approach architecture trade-offs for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For architecture trade-offs, discuss monitoring and validation in production.",
-    "code_example": "void discuss7_3() {\n  const focus = \"architecture trade-offs\";\n  print(\"Discuss: \" + focus);\n}",
+    "question": "How do timeouts and retries work for Futures?",
+    "answer": "Robust async code accepts that things take too long or fail transiently. Two simple primitives cover most needs:\n\nTimeout — `future.timeout(duration, onTimeout: ...)`:\n• Returns a new Future that completes with a TimeoutException if the source doesn't complete in time\n• `onTimeout` lets you supply a fallback value instead of throwing\n• The original work is NOT cancelled — Dart Futures aren't cancellable. The timeout just stops waiting.\n\nRetries:\n• No built-in helper, but a small loop with exponential backoff is the right shape\n• Cap retries (typically 3–5) and the backoff (e.g. 1s, 2s, 4s, 8s, 16s with jitter)\n• Retry only on RETRYABLE errors — TimeoutException, network errors, 5xx responses. NEVER on 4xx — those are permanent.\n• Add jitter to avoid thundering herds when many clients retry simultaneously\n\nFor production-grade behavior, use the `retry` package (`retry: ^3.x`) or write a small wrapper. Combine with timeout to bound total time.\n\nKey gotcha: chaining `.timeout()` on a Future you're awaiting only times out THAT awaiter. If the underlying network operation can't be cancelled (e.g. a Dio request), the request continues in the background; if it eventually completes after timeout, its result is dropped (or its error becomes an unhandled error). Use a real cancellation mechanism (Dio's CancelToken) when you need the work itself to stop.",
+    "code_example": "// ── Timeout with fallback ──\nFuture<List<Hit>> loadResults(String q) async {\n  return api.search(q).timeout(\n    const Duration(seconds: 5),\n    onTimeout: () => const <Hit>[],     // graceful fallback\n  );\n}\n\n// ── Timeout that throws ──\nFuture<User> loadUser(int id) async {\n  try {\n    return await api.user(id).timeout(const Duration(seconds: 5));\n  } on TimeoutException {\n    throw const SlowNetworkException();\n  }\n}\n\n// ── Retry with exponential backoff + jitter ──\nimport 'dart:math';\nFuture<T> retry<T>(\n  Future<T> Function() task, {\n  int maxAttempts = 4,\n  Duration baseDelay = const Duration(milliseconds: 300),\n  bool Function(Object e)? retryIf,\n}) async {\n  var attempt = 0;\n  while (true) {\n    attempt++;\n    try {\n      return await task();\n    } catch (e) {\n      final retryable = retryIf?.call(e) ?? _defaultRetryable(e);\n      if (!retryable || attempt >= maxAttempts) rethrow;\n      final exp = baseDelay * (1 << (attempt - 1));        // 300ms, 600ms, 1200ms\n      final jitter = Duration(milliseconds: Random().nextInt(200));\n      await Future<void>.delayed(exp + jitter);\n    }\n  }\n}\n\nbool _defaultRetryable(Object e) =>\n    e is TimeoutException ||\n    (e is DioException && (e.response?.statusCode ?? 0) >= 500) ||\n    (e is SocketException);\n\n// Usage — combine retry with timeout\nfinal posts = await retry(() =>\n  api.posts().timeout(const Duration(seconds: 4)),\n);\n\n// ── Cancellation when you really need to STOP the underlying work ──\nimport 'package:dio/dio.dart';\nfinal cancel = CancelToken();\nfinal req = api.search('flutter', cancelToken: cancel);\n// User navigates away:\ncancel.cancel('user left page');\n// req throws DioException(type: cancel) — and the underlying request is killed.\n\n// ── ❌ Anti-pattern: retry on 4xx ──\n// retryIf: (e) => e is DioException, // ❌ retries on 401/404/422\n// 4xx errors don't get better with another try; they signal a bug or stale state.",
     "code_language": "dart"
   },
   {
-    "id": 233,
+    "id": 703,
     "topic_id": 7,
-    "order_index": 109,
-    "difficulty": "hard",
-    "question": "Scenario 4: How would you approach debugging flow for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For debugging flow, discuss monitoring and validation in production.",
-    "code_example": "void discuss7_4() {\n  const focus = \"debugging flow\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 234,
-    "topic_id": 7,
-    "order_index": 110,
+    "order_index": 6,
     "difficulty": "easy",
-    "question": "Scenario 5: How would you approach performance tuning for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For performance tuning, discuss monitoring and validation in production.",
-    "code_example": "void discuss7_5() {\n  const focus = \"performance tuning\";\n  print(\"Discuss: \" + focus);\n}",
+    "question": "What is fire-and-forget and when is it safe to use unawaited()?",
+    "answer": "A \"fire-and-forget\" Future is one whose result you don't await — analytics events, log writes, prefetches in the background. The Dart analyzer warns about this with `unawaited_futures` because forgetting to await a Future is a common bug source. `unawaited(future)` is the explicit \"yes, I really mean to drop this\" annotation.\n\nWhat you give up by not awaiting:\n• Errors thrown by the Future become \"unhandled async errors\" — they disappear or, worse, crash the app on Flutter\n• You no longer know when (or whether) the work finished\n• You can't compose downstream actions on the result\n\nGuidelines:\n• Always attach a `.catchError` to a fire-and-forget call, OR wrap it so errors are captured by your global handler\n• Don't fire-and-forget anything user-facing (the user can't tell whether the action succeeded)\n• Don't fire-and-forget side effects with ordering (e.g., \"log A then B\") — order is not guaranteed\n• In a State, ALWAYS check `mounted` before touching state in the eventual callback\n\nSafe candidates: analytics, logging, cache warm-up, telemetry, optional prefetches. Unsafe: writes the user expects to persist, navigation, error-recovery work that depends on the result.",
+    "code_example": "import 'dart:async';                       // unawaited()\n\n// ── Analytics — safe to fire-and-forget if errors are absorbed ──\nvoid recordView(String screen) {\n  unawaited(\n    analytics.track('view', {'screen': screen})\n        .catchError((e) => log('analytics drop: $e')),\n  );\n}\n\n// ── Cache prefetch — no user-facing dependency ──\nvoid warmCache(int productId) {\n  unawaited(\n    api.fetchProduct(productId)\n        .then((p) => cache.put(p))\n        .catchError((_) {}),                // nothing to do on error\n  );\n}\n\n// ── ❌ Anti-pattern — silently dropping a critical write ──\nvoid checkout(Cart c) {\n  // ❌ analyzer warns; the user thinks it succeeded but it might have failed\n  api.placeOrder(c);\n}\n// ✅ The user is blocked on this — await it and surface errors\nFuture<void> checkoutSafe(Cart c) async {\n  try {\n    await api.placeOrder(c);\n  } on DioException catch (e) {\n    showError(e);\n    rethrow;\n  }\n}\n\n// ── In a State — guard with mounted ──\nvoid _logCloseAsync() {\n  unawaited(api.recordClose().catchError((_) {}));\n  // Don't touch setState() here — there's no caller to await.\n}\n\n// ── Lint config: enforce explicit unawaited ──\n// analysis_options.yaml\n// linter:\n//   rules:\n//     unawaited_futures: true\n//\n// Then any await-less Future raises a warning unless wrapped in unawaited(...)",
+    "code_language": "dart"
+  },
+  {
+    "id": 704,
+    "topic_id": 7,
+    "order_index": 7,
+    "difficulty": "medium",
+    "question": "How do .then(), .catchError(), and chaining compare to async/await?",
+    "answer": "Both styles produce the same Future. They differ in readability and a few tricky semantics.\n\n.then() / .catchError():\n• Each call chains a continuation. `.then` runs on success; `.catchError` runs on error\n• `.whenComplete(fn)` runs on either, like try/finally\n• Prone to deeply nested chains for sequential operations\n• Useful when you don't want to mark a function async (rare)\n\nasync/await:\n• Linear, top-to-bottom code; try/catch reads naturally\n• Stack traces are usually clearer (the original throw site is preserved)\n• Wraps the function's return in a Future automatically; you can't accidentally forget to return it\n• Almost always the right default in modern Dart\n\nSemantics that catch people:\n• `.catchError` only catches errors from the SOURCE Future plus any earlier `.then` callbacks. A NEW `.then` after `.catchError` runs on success of the recovered chain.\n• `.catchError` returns the same generic type — you must return a value of type T inside it; otherwise the chain may break\n• `await` rethrows; `.catchError` swallows unless you rethrow\n• Mixing styles is fine but easy to get confused — pick one inside a function\n\nIf you find yourself building a long chain of `.then(.then(.then`, rewrite the function as async/await. There is essentially no performance difference.",
+    "code_example": "// ── Same logic, both styles ──\n\n// .then chain\nFuture<Profile> loadProfileChain(String id) {\n  return api.user(id)\n      .then((u) => api.profile(u.id))\n      .then((p) => augment(p))\n      .catchError((e, s) {\n        log('loadProfile failed: $e');\n        return Profile.empty();         // recovered value flows down\n      });\n}\n\n// async/await — clearer for anything beyond two steps\nFuture<Profile> loadProfileAwait(String id) async {\n  try {\n    final user    = await api.user(id);\n    final profile = await api.profile(user.id);\n    return augment(profile);\n  } catch (e, s) {\n    log('loadProfile failed: $e');\n    return Profile.empty();\n  }\n}\n\n// ── Subtle: order of catchError matters ──\nFuture<int> trickyCatch() {\n  return computeSomething()\n      .then((v) => v + 1)             // throws if v is null\n      .catchError((e) {\n        return 0;                     // ✅ recovers and the next .then sees 0\n      })\n      .then((v) => v * 2);            // runs on success OR after recovery\n}\n\n// ── ❌ Anti-pattern: catchError outside the chain you wanted to catch ──\nFuture<int> swallowed() async {\n  // catchError attached AFTER await — the throw above isn't caught here\n  final v = await computeSomething();\n  return v.catchError((_) => 0);      // ❌ doesn't compile / doesn't run as expected\n}\n\n// ── whenComplete — like finally ──\nFuture<T> withSpinner<T>(Future<T> Function() task) {\n  showSpinner();\n  return task().whenComplete(hideSpinner); // hides on success and on error\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 705,
+    "topic_id": 7,
+    "order_index": 8,
+    "difficulty": "medium",
+    "question": "What is FutureBuilder and what are its common pitfalls?",
+    "answer": "FutureBuilder<T> rebuilds itself based on the state of a Future. It's the \"hello, async\" widget of Flutter — and the source of more bad code than almost any other.\n\nIt does:\n• Listens to the supplied Future, rebuilds via `connectionState` and `data`/`error`\n• Plays nicely with build()-driven UI for one-shot async data\n• Initial data via `initialData` parameter\n\nWhat it doesn't do:\n• Cache. EVERY rebuild that creates a new Future restarts the whole load. If the parent rebuilds for any reason, FutureBuilder re-fetches.\n• Cancel. There's no way to cancel the underlying work; if your parent rebuilds before completion, the old Future still runs.\n• Manage lifetime. The Future lives in the surrounding State.\n\nCommon pitfalls:\n• Calling the API directly inside `build()` — every rebuild kicks off a new call. Always store the Future in a `late final` field of a StatefulWidget or in a Notifier.\n• Forgetting initialData and seeing the loading flicker every time the parent rebuilds\n• Not handling all three states (waiting / done with data / done with error) — error and \"done with null\" are different\n• Treating it like a state-management tool. For complex flows use Riverpod's AsyncNotifier, BLoC, or a Notifier — they handle caching, cancellation, and refresh.\n\nIn 2025-era code, AsyncNotifier or a focused Notifier+state is usually a better choice than FutureBuilder beyond the most trivial fetch-once-and-show pattern.",
+    "code_example": "// ── ❌ Anti-pattern — fetch on every rebuild ──\nclass BadProfile extends StatelessWidget {\n  const BadProfile({super.key, required this.id});\n  final String id;\n  @override\n  Widget build(BuildContext context) {\n    return FutureBuilder<User>(\n      future: api.user(id),                // ❌ new Future every build\n      builder: (_, snap) => Text(snap.data?.name ?? '...'),\n    );\n  }\n}\n\n// ── ✅ Capture the Future once in State ──\nclass Profile extends StatefulWidget {\n  const Profile({super.key, required this.id});\n  final String id;\n  @override State<Profile> createState() => _ProfileState();\n}\n\nclass _ProfileState extends State<Profile> {\n  late Future<User> _user;\n\n  @override\n  void initState() {\n    super.initState();\n    _user = api.user(widget.id);\n  }\n\n  // React to id change from parent\n  @override\n  void didUpdateWidget(covariant Profile old) {\n    super.didUpdateWidget(old);\n    if (old.id != widget.id) {\n      _user = api.user(widget.id);          // refetch only when id changes\n    }\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return FutureBuilder<User>(\n      future: _user,\n      builder: (_, snap) {\n        return switch (snap.connectionState) {\n          ConnectionState.waiting => const _Spinner(),\n          ConnectionState.done when snap.hasError => _Error(error: snap.error!),\n          ConnectionState.done when snap.hasData  => _UserCard(user: snap.data!),\n          _ => const SizedBox.shrink(),\n        };\n      },\n    );\n  }\n}\n\n// ── Refresh-on-pull pattern — set a new Future and let the builder pick it up ──\nFuture<void> _refresh() async {\n  setState(() => _user = api.user(widget.id));\n  await _user;                              // wait for the indicator to release\n}\n\nRefreshIndicator(onRefresh: _refresh, child: ...);\n\n// ── In modern Riverpod code, prefer this ──\nfinal userProvider = FutureProvider.family<User, String>(\n  (ref, id) async => ref.watch(apiProvider).user(id),\n);\n\nclass ProfileR extends ConsumerWidget {\n  const ProfileR({super.key, required this.id});\n  final String id;\n  @override\n  Widget build(BuildContext context, WidgetRef ref) {\n    return ref.watch(userProvider(id)).when(\n      data: (u) => _UserCard(user: u),\n      loading: () => const _Spinner(),\n      error: (e, _) => _Error(error: e),\n    );\n  }\n}",
+    "code_language": "dart"
+  },
+  {
+    "id": 706,
+    "topic_id": 7,
+    "order_index": 9,
+    "difficulty": "hard",
+    "question": "How do you serialize concurrent access to a shared resource in Dart?",
+    "answer": "Even though Dart is single-threaded per isolate, async functions interleave at every `await`. Two methods that look like they touch the same resource sequentially can actually be running in alternation, causing classic race conditions: lost writes, double-fires, inconsistent state.\n\nTypical races:\n• Auth refresh: two requests get 401, both call /refresh, both write back tokens\n• File write: two saves to the same file race; the OS sees interleaved writes\n• Cache fill: two callers ask for the same key while empty, both call the network, both fill the cache (wasted work)\n\nTechniques:\n\n1) Single-flight pattern — share an in-flight Future:\n• Keep a `Future<T>?` field. If it's non-null, return it. Otherwise start the work and store it. Clear when done.\n• Trivial to implement; covers the auth-refresh / cache-fill cases\n\n2) Mutex / Lock — `package:synchronized`:\n• `Lock` provides `synchronized<T>(action)` — guarantees that only one action runs at a time\n• Use when you need actual serial ordering (e.g. database write transactions)\n\n3) Queue / drain — collect requests, process one at a time:\n• A small Stream + listen pattern; useful for ordered side effects (\"send these analytics events one after another\")\n\n4) Optimistic concurrency — version your state:\n• Read with a revision; write only if revision matches. Useful in distributed scenarios.\n\nDon't reach for isolates here. Isolates solve a different problem (CPU work). For event-loop interleaving, an in-process lock is the right tool.",
+    "code_example": "import 'dart:async';\nimport 'package:synchronized/synchronized.dart';\n\n// ── 1) Single-flight refresh ──\nclass TokenManager {\n  Future<Tokens>? _refreshing;\n  Tokens current = Tokens.empty();\n\n  Future<Tokens> refresh() {\n    // ✅ If a refresh is in flight, share its result\n    return _refreshing ??= _doRefresh().whenComplete(() {\n      _refreshing = null;\n    });\n  }\n\n  Future<Tokens> _doRefresh() async {\n    final next = await api.refresh(current.refreshToken);\n    current = next;\n    return next;\n  }\n}\n\n// ── 2) Lock — serialize a sequence of writes ──\nclass DraftStore {\n  final _lock = Lock();\n  Draft _draft = Draft.empty();\n\n  Future<void> applyEdit(Edit edit) {\n    return _lock.synchronized(() async {\n      final next = await applyTo(_draft, edit);\n      await persistToDisk(next);\n      _draft = next;\n    });\n  }\n}\n// Two concurrent applyEdit() calls run one after the other inside the lock.\n\n// ── 3) Drain queue — events processed in order ──\nclass AnalyticsDrain {\n  final _ctrl = StreamController<AnalyticsEvent>();\n  AnalyticsDrain() { _ctrl.stream.asyncMap(_send).listen((_) {}); }\n  void log(AnalyticsEvent e) => _ctrl.add(e);\n  Future<void> _send(AnalyticsEvent e) async {\n    try { await api.send(e); } catch (_) { /* drop */ }\n  }\n  void dispose() => _ctrl.close();\n}\n\n// ── 4) Optimistic concurrency — version field ──\nclass Tasks {\n  Future<bool> rename(int id, String name, int expectedRev) async {\n    final updated = await db.update(\n      'tasks',\n      {'name': name, 'rev': expectedRev + 1},\n      where: 'id = ? AND rev = ?', whereArgs: [id, expectedRev],\n    );\n    return updated == 1;            // false ⇒ someone else won; refetch\n  }\n}\n\n// ── ❌ Anti-pattern — checking with await between read and write ──\nFuture<int> nextId() async {\n  // ❌ Two callers race here:\n  final cur = await store.lastId();\n  await store.setLastId(cur + 1);   // both write the same value\n  return cur + 1;\n}\n// ✅ Wrap in a lock or use atomic increment in the storage layer.",
     "code_language": "dart"
   }
 ]

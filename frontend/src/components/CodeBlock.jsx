@@ -1,67 +1,96 @@
 import { useEffect, useRef, useState } from 'react';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-dart';
-import 'prismjs/components/prism-yaml';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-kotlin';
-import 'prismjs/components/prism-swift';
+import { Copy, Check, Play } from 'lucide-react';
+import { toast } from 'sonner';
+import { highlightCode } from '../lib/highlighter.js';
+import { usePrefs } from '../store/prefs.js';
+import { useLang } from '../i18n/LangContext.jsx';
+import { cn } from '../lib/cn.js';
 
-export default function CodeBlock({ code, language = 'dart' }) {
-  const ref = useRef(null);
+export default function CodeBlock({ code, language = 'dart', className }) {
+  const theme = usePrefs((s) => s.theme);
+  const { lang } = useLang();
+  const [html, setHtml] = useState(null);
   const [copied, setCopied] = useState(false);
+  const cancelled = useRef(false);
 
   useEffect(() => {
-    if (ref.current) Prism.highlightElement(ref.current);
-  }, [code, language]);
+    cancelled.current = false;
+    highlightCode(code, language, theme === 'dark')
+      .then((h) => { if (!cancelled.current) setHtml(h); })
+      .catch(() => { if (!cancelled.current) setHtml(null); });
+    return () => { cancelled.current = true; };
+  }, [code, language, theme]);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
   };
 
-  const langMap = { dart: 'Dart', yaml: 'YAML', bash: 'Bash', json: 'JSON', kotlin: 'Kotlin', swift: 'Swift' };
+  // DartPad doesn't accept code via URL params (length limits), but copy +
+  // open-in-new-tab is a clean fallback: the snippet is on the clipboard the
+  // moment the user lands on dartpad.dev — paste runs.
+  const openInDartPad = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success(
+        lang === 'ru'
+          ? 'Код скопирован — вставь в DartPad'
+          : 'Code copied — paste into DartPad',
+      );
+    } catch {
+      toast.message(lang === 'ru' ? 'Открываем DartPad…' : 'Opening DartPad…');
+    }
+    window.open('https://dartpad.dev/', '_blank', 'noopener,noreferrer');
+  };
+
+  const isDart = language === 'dart';
 
   return (
-    <div className="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-          </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">{langMap[language] ?? language}</span>
-        </div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors py-0.5 px-2 rounded"
-        >
-          {copied ? (
-            <>
-              <svg className="w-3.5 h-3.5 text-flutter-blue dark:text-flutter-sky" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-flutter-blue dark:text-flutter-sky">Copied!</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Copy
-            </>
+    <div
+      className={cn(
+        'group relative overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-sm',
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 border-b-1.5 border-ink bg-paper px-3 py-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+          {language}
+        </span>
+        <div className="flex items-center gap-1">
+          {isDart && (
+            <button
+              type="button"
+              onClick={openInDartPad}
+              aria-label={lang === 'ru' ? 'Открыть в DartPad' : 'Open in DartPad'}
+              title={lang === 'ru' ? 'Скопировать и открыть DartPad' : 'Copy + open DartPad'}
+              className="inline-flex h-6 items-center gap-1 rounded px-1.5 font-mono text-[10px] uppercase text-brand transition-colors hover:bg-brand/10"
+            >
+              <Play className="h-3 w-3" />
+              DartPad
+            </button>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={copy}
+            aria-label="Copy code"
+            className="inline-flex h-6 items-center gap-1 rounded px-1.5 font-mono text-[10px] uppercase text-muted transition-colors hover:bg-paper-2 hover:text-ink"
+          >
+            {copied ? <Check className="h-3 w-3 text-mint" /> : <Copy className="h-3 w-3" />}
+            {copied ? (lang === 'ru' ? 'Скоп.' : 'Copied') : (lang === 'ru' ? 'Копир.' : 'Copy')}
+          </button>
+        </div>
       </div>
-
-      {/* Code */}
-      <div className="overflow-x-auto">
-        <pre className={`language-${language}`} style={{ margin: 0, borderRadius: 0, border: 'none' }}>
-          <code ref={ref} className={`language-${language}`}>{code}</code>
-        </pre>
+      <div className="overflow-x-auto text-[13px] leading-relaxed [&_pre]:!bg-transparent [&_pre]:p-3 sm:text-sm sm:[&_pre]:p-4">
+        {html ? (
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        ) : (
+          <pre className="font-mono p-3 sm:p-4">{code}</pre>
+        )}
       </div>
     </div>
   );

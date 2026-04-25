@@ -151,6 +151,26 @@ function init() {
   seedIfEmpty();
   removeGeneralQuestions();
   normalizeExistingQuestions();
+  stripTopicIcons();
+  dropKnownDuplicates();
+}
+
+// Idempotent: clears legacy emoji icons. Safe to run on every boot.
+function stripTopicIcons() {
+  sqlite.prepare("UPDATE topics SET icon = '' WHERE icon IS NOT NULL AND icon != ''").run();
+}
+
+// Drop intra-topic duplicate questions that crept in during seed authoring.
+// Listed by id so the migration is precise and idempotent.
+const KNOWN_DUPLICATE_IDS = [67, 70];
+function dropKnownDuplicates() {
+  const tx = sqlite.transaction(() => {
+    for (const id of KNOWN_DUPLICATE_IDS) {
+      sqlite.prepare('DELETE FROM progress WHERE question_id = ?').run(id);
+      sqlite.prepare('DELETE FROM questions WHERE id = ?').run(id);
+    }
+  });
+  tx();
 }
 
 function readSeedData() {

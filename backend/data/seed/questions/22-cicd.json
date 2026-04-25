@@ -20,93 +20,73 @@
     "code_language": "dart"
   },
   {
-    "id": 111,
+    "id": 2201,
     "topic_id": 22,
-    "order_index": 101,
-    "difficulty": "easy",
-    "question": "Interview scenario #22: How would you handle performance optimization for BuildContext usage in a Flutter app?",
-    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: BuildContext usage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'BuildContext usage';\nvoid discuss() {\n  debugPrint('Scenario 22: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 134,
-    "topic_id": 22,
-    "order_index": 102,
-    "difficulty": "hard",
-    "question": "Interview scenario #45: How would you handle testing approach for async loading states in a Flutter app?",
-    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: async loading states. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'async loading states';\nvoid discuss() {\n  debugPrint('Scenario 45: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 157,
-    "topic_id": 22,
-    "order_index": 103,
+    "order_index": 3,
     "difficulty": "medium",
-    "question": "Interview scenario #68: How would you handle null safety best practices for secure storage in a Flutter app?",
-    "answer": "Model optional data explicitly with nullable types, avoid overusing !, and handle nulls close to data boundaries.\n\nFocus area: secure storage. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "String labelFor(String? value) {\n  return value?.trim().isNotEmpty == true ? value! : 'Unknown';\n}\n\n// Focus area\nconst String focusArea = 'secure storage';\nvoid discuss() {\n  debugPrint('Scenario 68: $focusArea');\n}",
-    "code_language": "dart"
+    "question": "How do you sign Android and iOS builds in CI without leaking the keys?",
+    "answer": "Signing is the single highest-stakes secret in mobile CI. Lose the upload key and you can't publish updates; leak the .p12 and someone can ship a malicious update under your identity. The discipline is: keys stay encrypted at rest, decoded at build time into a temporary file, and shredded when the job ends.\n\nAndroid:\n• Generate a release keystore (.jks) once, store it Base64-encoded in GitHub Secrets / your CI's secret store\n• A keystore.properties file holds storeFile, storePassword, keyAlias, keyPassword — generated on the fly in CI from secrets\n• `signingConfigs.release` in build.gradle reads from keystore.properties\n• Use Play App Signing — let Google hold the upload key. You sign with an upload key, Google re-signs with the actual app signing key. Lose the upload key and you can recover via Play Console.\n\niOS:\n• Two artifacts: a Distribution Certificate (.p12) and a Provisioning Profile (.mobileprovision)\n• fastlane match is the standard — store both, encrypted, in a private git repo; CI calls `fastlane match appstore --readonly`\n• Alternative: store .p12 + profile as Base64 in CI secrets, decode in a temp keychain that's deleted after build\n\nAlways:\n• Mark the secrets as masked in CI output\n• Restrict who can read or rotate them; keep an audit log\n• Rotate after any team member with access leaves\n• Do not commit keystore.properties or .p12 — put them in .gitignore explicitly",
+    "code_example": "# .github/workflows/release.yml — Android signing\njobs:\n  build-android:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: subosito/flutter-action@v2\n        with: { flutter-version: '3.22.0' }\n\n      - name: Decode keystore\n        run: echo \"${{ secrets.KEYSTORE_BASE64 }}\" | base64 --decode > android/app/release.jks\n\n      - name: Write keystore.properties\n        run: |\n          cat > android/key.properties <<EOF\n          storeFile=release.jks\n          storePassword=${{ secrets.KEYSTORE_PASSWORD }}\n          keyAlias=${{ secrets.KEY_ALIAS }}\n          keyPassword=${{ secrets.KEY_PASSWORD }}\n          EOF\n\n      - name: Build app bundle\n        run: flutter build appbundle --release --obfuscate --split-debug-info=symbols/\n\n      - name: Cleanup\n        if: always()\n        run: |\n          rm -f android/app/release.jks android/key.properties\n\n# build.gradle reads the properties\n# def keystoreProps = new Properties()\n# keystoreProps.load(new FileInputStream(rootProject.file(\"key.properties\")))\n# signingConfigs { release { storeFile file(keystoreProps['storeFile']); ... } }\n\n# ── iOS: fastlane match — recommended ────────────\n# Fastfile\n# lane :ci_release do\n#   setup_ci   # creates a temporary keychain\n#   match(type: 'appstore', readonly: true,\n#         git_url: 'git@github.com:acme/match-certs.git')\n#   build_app(scheme: 'Runner', export_method: 'app-store')\n# end\n\n# CI step:\n#   - run: bundle exec fastlane ios ci_release\n#     env:\n#       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}\n#       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_API_KEY }}\n#       MATCH_KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}",
+    "code_language": "yaml"
   },
   {
-    "id": 180,
+    "id": 2202,
     "topic_id": 22,
-    "order_index": 104,
-    "difficulty": "easy",
-    "question": "Interview scenario #91: How would you handle debugging strategy for platform channels in a Flutter app?",
-    "answer": "Start with reproducible steps, isolate the failing widget or service, inspect logs with meaningful context, then confirm the fix with tests.\n\nFocus area: platform channels. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "void debugFlow(String step) {\n  assert(step.isNotEmpty);\n  debugPrint('[debug] step: $step');\n}\n\n// Focus area\nconst String focusArea = 'platform channels';\nvoid discuss() {\n  debugPrint('Scenario 91: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 305,
-    "topic_id": 22,
-    "order_index": 105,
-    "difficulty": "hard",
-    "question": "Scenario 1: How would you approach state updates for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For state updates, discuss monitoring and validation in production.",
-    "code_example": "void discuss22_1() {\n  const focus = \"state updates\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 306,
-    "topic_id": 22,
-    "order_index": 106,
-    "difficulty": "easy",
-    "question": "Scenario 2: How would you approach API resilience for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
-    "code_example": "void discuss22_2() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 307,
-    "topic_id": 22,
-    "order_index": 107,
+    "order_index": 4,
     "difficulty": "medium",
-    "question": "Scenario 3: How would you approach testing depth for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
-    "code_example": "void discuss22_3() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
+    "question": "How do you manage app versioning in Flutter — version, build number, semver?",
+    "answer": "Three numbers travel together in every build: the public version, the build number, and the semantic intent of the change. They serve different audiences.\n\npubspec.yaml `version` field — `1.4.2+87`:\n• `1.4.2` is the public version (semver-style: major.minor.patch). Visible in stores, in About screens.\n• `+87` is the build number — strictly increasing integer. Stores require it to be higher than any previously uploaded build.\n• Flutter expands this into Android `versionName`/`versionCode` and iOS `CFBundleShortVersionString`/`CFBundleVersion`\n\nRules to live by:\n• Build number must always go up. The cleanest source is the CI build counter (GitHub Actions `${{ github.run_number }}`) or a monotonic timestamp\n• Don't let two CI runs produce the same build number — even on a re-run\n• Public version follows semver intent: bump patch for fixes, minor for additive features, major for breaking UX/API changes that users care about\n• On hotfixes branched from a tagged release, bump only the patch and the build number — don't accidentally release `1.5.0+old` ahead of `1.4.2`\n\nDriving it from one source:\n• Manual: edit pubspec.yaml on every release. Simple, fragile.\n• `flutter build --build-name=1.4.2 --build-number=$RUN_NUMBER` overrides pubspec at build time. Recommended for CI.\n• Generated build-info file in code so the running app can show its own version (`PackageInfo.fromPlatform()`).",
+    "code_example": "# pubspec.yaml\nversion: 1.4.2+87\n# major.minor.patch+build_number\n#  ↓             ↓\n#  Android versionName     versionCode = 87\n#  iOS CFBundleShortVer    CFBundleVersion\n\n# .github/workflows/release.yml\nname: Release\non:\n  push:\n    tags: ['v*']      # e.g. v1.4.2 triggers a release build\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: subosito/flutter-action@v2\n        with: { flutter-version: '3.22.0' }\n\n      - name: Derive version\n        id: ver\n        run: |\n          # Strip leading 'v' from the tag\n          VERSION=\"${GITHUB_REF_NAME#v}\"\n          BUILD=\"${{ github.run_number }}\"\n          echo \"version=$VERSION\"   >> \"$GITHUB_OUTPUT\"\n          echo \"build=$BUILD\"       >> \"$GITHUB_OUTPUT\"\n\n      - name: Build (override pubspec values)\n        run: |\n          flutter build appbundle --release \\\n            --build-name=${{ steps.ver.outputs.version }} \\\n            --build-number=${{ steps.ver.outputs.build }} \\\n            --obfuscate --split-debug-info=symbols/\n\n# ── Read version inside the app at runtime ──────────\n# import 'package:package_info_plus/package_info_plus.dart';\n#\n# final info = await PackageInfo.fromPlatform();\n# print('${info.version}+${info.buildNumber}');  // 1.4.2+87",
+    "code_language": "yaml"
   },
   {
-    "id": 308,
+    "id": 2203,
     "topic_id": 22,
-    "order_index": 108,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "How do you automate Play Store and App Store releases from CI?",
+    "answer": "Both stores expose APIs for unattended uploads. Reaching them safely from CI is the standard final step of a release pipeline.\n\nGoogle Play:\n• Generate a service account in Google Cloud, grant it Play Console access\n• Download its JSON key — store as a CI secret\n• Use `fastlane supply` or the Gradle `play-publisher` plugin to upload an .aab and bump tracks (internal → alpha → beta → production)\n• Tracks let you stage rollouts: upload to internal first, promote when smoke tests pass, then ramp production from 1% → 10% → 100%\n\nApple App Store:\n• Generate an App Store Connect API Key (.p8 + key id + issuer id) — replaces username/password / 2FA pain\n• Use `fastlane pilot` to upload to TestFlight, `deliver` to push metadata + binary to App Store, `submit_to_app_review` to start review\n• TestFlight build availability typically takes 5–30 minutes after upload\n• App Store metadata (screenshots, descriptions, what's new) can be checked into the repo (fastlane metadata) so each release ships with version-controlled copy\n\nGuardrails:\n• Always upload to internal/TestFlight first; gate prod promotion on a manual approval step or a green smoke job\n• On a build pulled from review, your CI should be able to re-promote a previous artifact rather than rebuild — keep .aab/.ipa artifacts retained for at least 90 days\n• Never let a CI matrix accidentally upload the same build to production twice; idempotency check on the build number is cheap insurance",
+    "code_example": "# fastlane/Fastfile\ndefault_platform(:android)\n\nplatform :android do\n  desc 'Upload AAB to Play Console internal track'\n  lane :internal do\n    upload_to_play_store(\n      track: 'internal',\n      aab: '../build/app/outputs/bundle/release/app-release.aab',\n      json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON'],\n      release_status: 'completed',\n    )\n  end\n\n  desc 'Promote internal → production with staged rollout'\n  lane :promote do |options|\n    upload_to_play_store(\n      track: 'internal', track_promote_to: 'production',\n      rollout: options[:rollout] || '0.1',  # 10%\n      json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON'],\n    )\n  end\nend\n\nplatform :ios do\n  desc 'Upload IPA to TestFlight'\n  lane :beta do\n    api_key = app_store_connect_api_key(\n      key_id: ENV['ASC_KEY_ID'],\n      issuer_id: ENV['ASC_ISSUER_ID'],\n      key_content: ENV['ASC_API_KEY_P8'],\n    )\n    upload_to_testflight(\n      api_key: api_key,\n      ipa: '../build/ios/ipa/Runner.ipa',\n      skip_waiting_for_build_processing: true,\n    )\n  end\nend\n\n# .github/workflows/release.yml — release stage\n# - run: bundle exec fastlane android internal\n# - run: bundle exec fastlane ios beta\n# - name: Manual approval for prod ramp\n#   uses: trstringer/manual-approval@v1\n#   with: { approvers: alice,bob }\n# - run: bundle exec fastlane android promote rollout:0.1",
+    "code_language": "ruby"
+  },
+  {
+    "id": 2204,
+    "topic_id": 22,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "How do you set up beta distribution with Firebase App Distribution and TestFlight?",
+    "answer": "Beta channels are how you get a build into the hands of real users without going through the public store review and ramp. Each platform has a different best-practice channel.\n\niOS — TestFlight (Apple-only, no alternative):\n• Internal testers: up to 100, no review needed, instant access — invite by Apple ID\n• External testers: up to 10,000, requires Apple's beta review (~24h on first build, automatic on subsequent ones in the same group)\n• Build expires after 90 days, so testers always have a fresh artifact\n• Crash reports flow into Xcode Organizer / your APM\n\nAndroid — Firebase App Distribution OR Play Console internal/closed testing:\n• Firebase App Distribution: by-email invitations, OTA updates, supports APKs (faster turnaround for ad-hoc testing)\n• Play Console internal track: tied to the store identity — closer to what users actually get; required if you want Play Integrity attestations to work in beta\n• Many teams run both — Firebase for engineering smoke tests, Play internal for product/QA\n\nProcess hygiene:\n• Auto-publish every main-branch build to a private internal channel — catches build issues before they touch a tester\n• Promote tagged release builds to a wider beta group; keep release notes per build\n• Wire crash reports / analytics back to a build_id so you can correlate beta crashes to commits\n• Have a recovery path: if a beta is broken, you can roll back testers to an older artifact without going through a full release",
+    "code_example": "# fastlane/Fastfile — Firebase App Distribution\nplatform :android do\n  desc 'Distribute APK to internal smoke channel'\n  lane :smoke do\n    firebase_app_distribution(\n      app: ENV['FIREBASE_ANDROID_APP_ID'],   # 1:NNN:android:xxx\n      service_credentials_file: 'firebase-cd.json',\n      android_artifact_path: '../build/app/outputs/flutter-apk/app-release.apk',\n      android_artifact_type: 'APK',\n      groups: 'engineering-smoke',\n      release_notes_file: 'release_notes.txt',\n    )\n  end\nend\n\n# .github/workflows/beta.yml\nname: Beta\non:\n  push:\n    branches: [main]\n\njobs:\n  android-beta:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: subosito/flutter-action@v2\n        with: { flutter-version: '3.22.0' }\n      - run: flutter build apk --release --obfuscate --split-debug-info=symbols/\n      - name: Distribute to Firebase\n        uses: wzieba/Firebase-Distribution-Github-Action@v1\n        with:\n          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}\n          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SA_JSON }}\n          groups: engineering-smoke\n          file: build/app/outputs/flutter-apk/app-release.apk\n          releaseNotes: |\n            Build: ${{ github.sha }}\n            Branch: ${{ github.ref_name }}\n\n  ios-testflight:\n    runs-on: macos-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: subosito/flutter-action@v2\n        with: { flutter-version: '3.22.0' }\n      - name: Build IPA\n        run: flutter build ipa --release --obfuscate --split-debug-info=symbols/\n      - name: Upload to TestFlight\n        uses: apple-actions/upload-testflight-build@v1\n        with:\n          app-path: build/ios/ipa/Runner.ipa\n          issuer-id: ${{ secrets.ASC_ISSUER_ID }}\n          api-key-id: ${{ secrets.ASC_KEY_ID }}\n          api-private-key: ${{ secrets.ASC_API_KEY_P8 }}",
+    "code_language": "yaml"
+  },
+  {
+    "id": 2205,
+    "topic_id": 22,
+    "order_index": 7,
     "difficulty": "hard",
-    "question": "Scenario 4: How would you approach offline strategy for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
-    "code_example": "void discuss22_4() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
+    "question": "How do you avoid flaky integration tests in Flutter CI?",
+    "answer": "Integration tests on emulators in CI are notorious for flakes that block green builds for reasons unrelated to your code. The solution is a mix of test design (eliminate timing assumptions) and infra design (eliminate environment surprises).\n\nDesign the tests:\n• Never `Future.delayed` to wait for UI — use `await tester.pumpAndSettle()` for animations, or pump until a finder appears with a polling helper. Sleeps are the #1 source of flake.\n• Replace network with deterministic test doubles. The test should not depend on a real backend, ever. Use a recorded fixture or an in-process fake server (`shelf` works well).\n• Stub time. If your code reads `DateTime.now()` or starts timers, expose a Clock abstraction and inject a fake; otherwise tests behave differently at midnight.\n• Make IDs stable. Use Keys for finder-by-id rather than text. Translations and rebuilds break text-based finders.\n• Reset state between tests. Wipe localStorage/secure storage in setUp; set a fresh ProviderScope (Riverpod) or recreate the Cubits.\n\nDesign the infra:\n• Use one device per test, not parallel devices on the same emulator — emulators sharing GPU on CI runners stutter\n• Boot the emulator with `-no-snapshot-save -no-window -no-boot-anim -gpu swiftshader_indirect` for headless reliability\n• Pre-warm: open a dummy Flutter app once before running the suite to avoid first-build cold-start variance\n• Quarantine flakes: tag a test `@Tags(['flaky'])` and run it nightly with retries instead of blocking PRs\n• Capture screenshots and logs on failure — re-running blindly hides flake patterns",
+    "code_example": "// integration_test/cart_flow_test.dart\nimport 'package:flutter/material.dart';\nimport 'package:flutter_test/flutter_test.dart';\nimport 'package:integration_test/integration_test.dart';\nimport 'package:my_app/main.dart' as app;\nimport 'helpers.dart';\n\nvoid main() {\n  IntegrationTestWidgetsFlutterBinding.ensureInitialized();\n\n  setUp(() async {\n    await wipeStorage();   // ✅ deterministic starting state\n    fakeServer.reset();    // ✅ in-process fake API\n    Clock.fakeNow(DateTime(2026, 1, 1)); // ✅ stable clock\n  });\n\n  testWidgets('add to cart and checkout', (tester) async {\n    app.main();\n    // ✅ Wait for first frame, then idle frames — never an arbitrary delay\n    await tester.pumpAndSettle();\n\n    // ✅ Find by Key, not by user-visible text — translations/format won't break it\n    await tester.tap(find.byKey(const ValueKey('product-42')));\n    await pumpUntilFound(tester, find.byKey(const ValueKey('add-to-cart')));\n    await tester.tap(find.byKey(const ValueKey('add-to-cart')));\n    await tester.pumpAndSettle();\n\n    expect(find.byKey(const ValueKey('cart-badge-1')), findsOneWidget);\n  });\n}\n\n// helpers.dart\nFuture<void> pumpUntilFound(\n  WidgetTester t, Finder f, {\n  Duration step = const Duration(milliseconds: 100),\n  Duration timeout = const Duration(seconds: 10),\n}) async {\n  final end = DateTime.now().add(timeout);\n  while (DateTime.now().isBefore(end)) {\n    await t.pump(step);\n    if (f.evaluate().isNotEmpty) return;\n  }\n  fail('timed out waiting for $f');\n}\n\n// ── CI runner — headless, deterministic emulator ──\n// macos-latest GitHub runner; reactivecircus/android-emulator-runner@v2\n# - uses: reactivecircus/android-emulator-runner@v2\n#   with:\n#     api-level: 33\n#     arch: x86_64\n#     emulator-options: -no-window -no-boot-anim -no-snapshot-save -gpu swiftshader_indirect -accel on\n#     disable-animations: true\n#     script: flutter test integration_test --device-id emulator-5554",
     "code_language": "dart"
   },
   {
-    "id": 309,
+    "id": 2206,
     "topic_id": 22,
-    "order_index": 109,
-    "difficulty": "easy",
-    "question": "Scenario 5: How would you approach security checks for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
-    "code_example": "void discuss22_5() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
+    "order_index": 8,
+    "difficulty": "medium",
+    "question": "What is fastlane and what does it actually buy you over a hand-rolled CI script?",
+    "answer": "fastlane is a Ruby tool that turns the long, error-prone sequences of cert/profile/build/upload commands into named lanes. You write a Fastfile once, then `fastlane release` does the right thing on any machine — local, CI, or a teammate's laptop.\n\nWhat lanes wrap:\n• `match` — synchronizes signing certs and provisioning profiles across the team via an encrypted git repo\n• `gym` — builds an iOS .ipa with the right scheme, configuration, export options\n• `pilot` / `upload_to_testflight` — uploads to TestFlight and waits for processing\n• `supply` / `upload_to_play_store` — uploads .aab/.apk to Play and manages tracks\n• `deliver` — manages App Store metadata, screenshots, what's new\n• `screengrab` / `snapshot` — automated localized screenshots\n\nWhat you actually buy:\n• Reproducibility: any clean machine with the right secrets can produce the same artifact\n• Auditability: lanes are checked into the repo, code-reviewed like any other code\n• Smaller-blast-radius secrets: fastlane can use App Store Connect API keys (no human 2FA), match (read-only mode in CI)\n• Recovery patterns: lanes that re-promote already-built artifacts, lanes that roll back, lanes that bisect a regression by version\n\nWhen NOT to bother:\n• A solo project shipping monthly — bash + `flutter build` + a couple of GitHub actions is enough\n• If you're already on Bitrise/Codemagic that abstracts this — adding fastlane doubles the layers without much benefit",
+    "code_example": "# fastlane/Fastfile\ndefault_platform(:ios)\n\nbefore_all do\n  ensure_git_status_clean\n  ensure_git_branch(branch: 'main')\nend\n\nplatform :ios do\n  desc 'Sync signing — read-only in CI'\n  lane :certs do\n    match(type: 'appstore', readonly: ENV['CI'] == 'true')\n  end\n\n  desc 'Build, archive, upload to TestFlight'\n  lane :beta do\n    certs\n    increment_build_number(build_number: ENV['CI_BUILD_NUMBER'] || latest_testflight_build_number + 1)\n    build_app(\n      scheme: 'Runner',\n      export_method: 'app-store',\n      output_directory: 'build/ios/ipa',\n    )\n    upload_to_testflight(\n      skip_waiting_for_build_processing: true,\n    )\n  end\n\n  desc 'Promote latest TestFlight build to App Store, with phased release'\n  lane :release do\n    deliver(\n      submit_for_review: true,\n      automatic_release: false,\n      phased_release: true,                 # 1% / 2% / 5% / 10% / 20% / 50% / 100%\n      force: true,                          # skip metadata HTML preview\n      precheck_include_in_app_purchases: true,\n      submission_information: { add_id_info_uses_idfa: false },\n    )\n  end\nend\n\n# Usage\n# bundle exec fastlane ios beta             # nightly\n# bundle exec fastlane ios release          # tagged release\n# Override env: ASC_KEY_ID / ASC_ISSUER_ID / ASC_API_KEY_P8 set in CI",
+    "code_language": "ruby"
+  },
+  {
+    "id": 2207,
+    "topic_id": 22,
+    "order_index": 9,
+    "difficulty": "hard",
+    "question": "How do you do staged rollouts and quick rollbacks safely?",
+    "answer": "Mobile releases ship to thousands of devices in minutes once you push the button. A staged rollout caps the blast radius if something is broken; a clean rollback path lets you stop bleeding fast.\n\nStaged rollouts:\n• Play Console — production track supports percentage rollouts (1% → 5% → 20% → 50% → 100%). Bake at each stage for at least 24h while watching crashlytics + key metrics.\n• App Store — Phased Release ramps 1/2/5/10/20/50/100% over 7 days. You can pause from App Store Connect at any stage.\n• Both let you halt and resume. Use the pause button when in doubt — the cost of a 12h delay is negligible.\n\nWhat to monitor during a rollout:\n• Crash-free user rate vs. previous version (set a guardrail: <0.5% drop is fine, >1% drop pause)\n• Critical funnel metrics: sign-in success, checkout completion, push opt-in\n• Backend errors that spiked with the rollout\n• Reviews / support tickets in real time\n\nRollback options (in order of preference):\n• Halt the staged rollout — Play Console immediately stops new users from getting the bad build; Phased Release pauses the ramp\n• Server-side feature flag — hide the bad feature without an app update. Always ship risky features behind a remote flag.\n• Re-release the previous build with a new version number — slow (review queue), but works. Keep the previous artifact warm in CI for 30+ days.\n• Force-update screen — the app calls a config endpoint that says \"please update\". The current build still runs but a soft block escalates to hard if needed.\n\nGuardrail: ship every release behind at least one feature flag for the new code paths. \"Roll back\" by toggling the flag is 1000x faster and safer than re-releasing.",
+    "code_example": "# Play Console — staged rollout via fastlane\nlane :promote do |opts|\n  rollout = opts[:rollout] || '0.05'   # 5% by default\n  upload_to_play_store(\n    track: 'production',\n    track_promote_to: nil,             # already on production from internal\n    release_status: 'inProgress',      # required for staged rollouts\n    rollout: rollout,\n    json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON'],\n  )\nend\n\n# Halt a staged rollout immediately\nlane :halt do\n  upload_to_play_store(\n    track: 'production',\n    release_status: 'halted',\n    json_key_data: ENV['PLAY_SERVICE_ACCOUNT_JSON'],\n  )\nend\n\n// ── Server-side feature flag — fastest \"rollback\" ──\n// Use a remote config (Firebase Remote Config, GrowthBook, LaunchDarkly).\nclass FeatureFlags {\n  static Future<bool> get newCheckoutEnabled async {\n    final remote = FirebaseRemoteConfig.instance;\n    await remote.fetchAndActivate();\n    return remote.getBool('checkout_v2_enabled');   // toggle in console = instant kill\n  }\n}\n\nWidget build(BuildContext context) {\n  return FutureBuilder<bool>(\n    future: FeatureFlags.newCheckoutEnabled,\n    builder: (_, snap) => snap.data == true\n        ? const NewCheckoutFlow()\n        : const LegacyCheckoutFlow(),\n  );\n}\n\n# ── Force-update gate (used as a last resort) ─────\n# Server returns: { \"min_supported_build\": 90 }\n# App on build 87 < 90 → show a blocking screen with a store link\n#\n# Prefer fixing the bug; force-update should be an emergency button you rarely press.",
+    "code_language": "ruby"
   }
 ]

@@ -60,16 +60,6 @@
     "code_language": "dart"
   },
   {
-    "id": 67,
-    "topic_id": 3,
-    "order_index": 7,
-    "difficulty": "medium",
-    "question": "What is BuildContext and why is it important?",
-    "answer": "BuildContext:\n• Represents the location of a widget in the widget tree\n• Handle to the widget's position in the tree hierarchy\n• Used to access inherited widgets and theme data\n• Each widget has its own BuildContext\n\nImportant uses:\n1. Accessing InheritedWidgets (Theme, MediaQuery, Provider, etc.)\n2. Navigation (Navigator.of(context))\n3. Showing dialogs/snackbars\n4. Finding ancestor/descendant widgets\n\nCommon pitfalls:\n• Using BuildContext after async gaps (use mounted check)\n• Accessing context before widget is built\n• Confused context when using Builder widgets",
-    "code_example": "class MyWidget extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    // context represents THIS widget's position in tree\n\n    // ── Accessing InheritedWidgets ──────────\n    final theme = Theme.of(context);\n    final size = MediaQuery.of(context).size;\n    final navigator = Navigator.of(context);\n\n    // ── Navigation ──────────────────────────\n    return ElevatedButton(\n      onPressed: () {\n        Navigator.of(context).push(\n          MaterialPageRoute(builder: (_) => NextPage()),\n        );\n      },\n      child: Text('Next'),\n    );\n  }\n}\n\n// ── Common mistake: wrong context ──────────\nclass MyPage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    // This context is MyPage's context\n    return Scaffold(\n      appBar: AppBar(title: Text('Home')),\n      body: ElevatedButton(\n        onPressed: () {\n          // ✗ Wrong: tries to find Scaffold in MyPage ancestors\n          Scaffold.of(context).openDrawer();\n        },\n        child: Text('Open'),\n      ),\n    );\n  }\n}\n\n// ── Fix with Builder ──────────────────────\nclass MyPage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: Text('Home')),\n      body: Builder(\n        builder: (scaffoldContext) {\n          // scaffoldContext is inside Scaffold\n          return ElevatedButton(\n            onPressed: () {\n              // ✓ Correct: scaffoldContext has Scaffold as ancestor\n              Scaffold.of(scaffoldContext).openDrawer();\n            },\n            child: Text('Open'),\n          );\n        },\n      ),\n    );\n  }\n}\n\n// ── Async pitfall ─────────────────────────\nclass MyWidget extends StatefulWidget {\n  @override State<MyWidget> createState() => _MyWidgetState();\n}\n\nclass _MyWidgetState extends State<MyWidget> {\n  Future<void> loadData() async {\n    await Future.delayed(Duration(seconds: 2));\n\n    // ✗ Dangerous: widget might be disposed\n    if (context.mounted) {  // ✓ Check mounted first\n      Navigator.of(context).pop();\n    }\n  }\n\n  @override Widget build(BuildContext context) => Container();\n}",
-    "code_language": "dart"
-  },
-  {
     "id": 68,
     "topic_id": 3,
     "order_index": 8,
@@ -97,106 +87,6 @@
     "question": "Explain Keys in Flutter and when they are necessary.",
     "answer": "Keys help Flutter identify widgets uniquely in the widget tree.\n\nTypes of Keys:\n• ValueKey — based on value\n• ObjectKey — based on object identity\n• UniqueKey — always unique\n• GlobalKey — access widget state anywhere\n• PageStorageKey — preserve scroll position\n\nWhen you NEED keys:\n• Reordering stateful widgets\n• Modifying collection of widgets\n• Preserving state when widget moves\n• Accessing widget state from outside\n\nFlutter's diffing algorithm uses keys to match old/new widgets.",
     "code_example": "// ── Problem: Without keys ──────────────────\nclass StatefulTile extends StatefulWidget {\n  final String title;\n  const StatefulTile(this.title, {super.key});\n\n  @override State<StatefulTile> createState() => _StatefulTileState();\n}\n\nclass _StatefulTileState extends State<StatefulTile> {\n  bool selected = false;\n\n  @override Widget build(BuildContext context) {\n    return ListTile(\n      title: Text(widget.title),\n      selected: selected,\n      onTap: () => setState(() => selected = !selected),\n    );\n  }\n}\n\nclass BadList extends StatefulWidget {\n  @override State<BadList> createState() => _BadListState();\n}\n\nclass _BadListState extends State<BadList> {\n  List<String> items = ['A', 'B', 'C'];\n\n  void removeFirst() {\n    setState(() => items.removeAt(0));\n  }\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        ...items.map((item) => StatefulTile(item)), // ✗ No keys\n        ElevatedButton(\n          onPressed: removeFirst,\n          child: Text('Remove First'),\n        ),\n      ],\n    );\n  }\n}\n\n// Problem: If you select 'B', then remove 'A',\n// the selection stays on second position (now 'C')\n// because Flutter matches widgets by type and position\n\n// ── Solution: With keys ────────────────────\nclass _GoodListState extends State<GoodList> {\n  List<String> items = ['A', 'B', 'C'];\n\n  void removeFirst() {\n    setState(() => items.removeAt(0));\n  }\n\n  @override Widget build(BuildContext context) {\n    return Column(\n      children: [\n        ...items.map((item) =>\n          StatefulTile(item, key: ValueKey(item)) // ✓ With keys\n        ),\n        ElevatedButton(\n          onPressed: removeFirst,\n          child: Text('Remove First'),\n        ),\n      ],\n    );\n  }\n}\n\n// Now Flutter correctly tracks each widget by its key\n\n// ── ValueKey ───────────────────────────────\n// Use when value uniquely identifies widget\nListView(\n  children: users.map((user) =>\n    UserTile(user, key: ValueKey(user.id))\n  ).toList(),\n)\n\n// ── ObjectKey ──────────────────────────────\n// Use when object itself is unique\nListView(\n  children: items.map((item) =>\n    ItemWidget(item, key: ObjectKey(item))\n  ).toList(),\n)\n\n// ── UniqueKey ──────────────────────────────\n// Always creates new key (forces rebuild)\nWidget build(BuildContext context) {\n  return Container(\n    key: UniqueKey(), // New widget every build\n    child: Text('Always rebuilds'),\n  );\n}\n\n// ── GlobalKey ──────────────────────────────\n// Access widget state from anywhere\nclass MyForm extends StatelessWidget {\n  final formKey = GlobalKey<FormState>();\n\n  void submit() {\n    if (formKey.currentState!.validate()) {\n      formKey.currentState!.save();\n      print('Form is valid!');\n    }\n  }\n\n  @override Widget build(BuildContext context) {\n    return Form(\n      key: formKey,\n      child: Column(\n        children: [\n          TextFormField(\n            validator: (v) => v!.isEmpty ? 'Required' : null,\n          ),\n          ElevatedButton(\n            onPressed: submit,\n            child: Text('Submit'),\n          ),\n        ],\n      ),\n    );\n  }\n}\n\n// ── PageStorageKey ─────────────────────────\n// Preserve scroll position when switching tabs\nListView(\n  key: PageStorageKey('my-list'),\n  children: items.map((item) => ListTile(title: Text(item))).toList(),\n)\n\n// ── When NOT to use keys ───────────────────\n// • Static widget trees\n// • Stateless widgets that don't move\n// • Performance: keys have overhead",
-    "code_language": "dart"
-  },
-  {
-    "id": 92,
-    "topic_id": 3,
-    "order_index": 101,
-    "difficulty": "hard",
-    "question": "Interview scenario #3: How would you handle state management trade-offs for navigation guards in a Flutter app?",
-    "answer": "Choose the simplest solution that fits scale: local state for small screens, Provider/Riverpod/BLoC for shared or asynchronous flows.\n\nFocus area: navigation guards. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "final counter = ValueNotifier<int>(0);\n\nvoid increment() => counter.value++;\n\n// Focus area\nconst String focusArea = 'navigation guards';\nvoid discuss() {\n  debugPrint('Scenario 3: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 115,
-    "topic_id": 3,
-    "order_index": 102,
-    "difficulty": "medium",
-    "question": "Interview scenario #26: How would you handle API integration for pagination strategy in a Flutter app?",
-    "answer": "Model API responses with typed DTOs, validate nullable fields, and centralize request/retry logic in a data layer.\n\nFocus area: pagination strategy. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "class UserDto {\n  final String id;\n  final String name;\n\n  UserDto({required this.id, required this.name});\n\n  factory UserDto.fromJson(Map<String, dynamic> json) {\n    return UserDto(id: json['id'] as String, name: json['name'] as String);\n  }\n}\n\n// Focus area\nconst String focusArea = 'pagination strategy';\nvoid discuss() {\n  debugPrint('Scenario 26: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 138,
-    "topic_id": 3,
-    "order_index": 103,
-    "difficulty": "easy",
-    "question": "Interview scenario #49: How would you handle stream handling for dependency injection in a Flutter app?",
-    "answer": "Cancel subscriptions in dispose, debounce noisy sources, and keep transformation logic in dedicated services or blocs.\n\nFocus area: dependency injection. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "late final StreamSubscription<int> sub;\n\nvoid start(Stream<int> source) {\n  sub = source.listen((value) => debugPrint('value: $value'));\n}\n\n// Focus area\nconst String focusArea = 'dependency injection';\nvoid discuss() {\n  debugPrint('Scenario 49: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 161,
-    "topic_id": 3,
-    "order_index": 104,
-    "difficulty": "hard",
-    "question": "Interview scenario #72: How would you handle performance optimization for render performance in a Flutter app?",
-    "answer": "Measure first with DevTools, remove unnecessary rebuilds, cache expensive operations, and prefer const constructors where possible.\n\nFocus area: render performance. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "class FastTitle extends StatelessWidget {\n  const FastTitle({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const Text('Optimized Widget');\n  }\n}\n\n// Focus area\nconst String focusArea = 'render performance';\nvoid discuss() {\n  debugPrint('Scenario 72: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 184,
-    "topic_id": 3,
-    "order_index": 105,
-    "difficulty": "medium",
-    "question": "Interview scenario #95: How would you handle testing approach for CI reliability in a Flutter app?",
-    "answer": "Use unit tests for business logic, widget tests for UI behavior, and integration tests for critical user flows.\n\nFocus area: CI reliability. In interviews, explain trade-offs, failure modes, and how you would validate the result in production.",
-    "code_example": "test('sum works', () {\n  expect(2 + 2, 4);\n});\n\n// Focus area\nconst String focusArea = 'CI reliability';\nvoid discuss() {\n  debugPrint('Scenario 95: $focusArea');\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 210,
-    "topic_id": 3,
-    "order_index": 106,
-    "difficulty": "medium",
-    "question": "Scenario 1: How would you approach API resilience for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For API resilience, discuss monitoring and validation in production.",
-    "code_example": "void discuss3_1() {\n  const focus = \"API resilience\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 211,
-    "topic_id": 3,
-    "order_index": 107,
-    "difficulty": "hard",
-    "question": "Scenario 2: How would you approach testing depth for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For testing depth, discuss monitoring and validation in production.",
-    "code_example": "void discuss3_2() {\n  const focus = \"testing depth\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 212,
-    "topic_id": 3,
-    "order_index": 108,
-    "difficulty": "easy",
-    "question": "Scenario 3: How would you approach offline strategy for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For offline strategy, discuss monitoring and validation in production.",
-    "code_example": "void discuss3_3() {\n  const focus = \"offline strategy\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 213,
-    "topic_id": 3,
-    "order_index": 109,
-    "difficulty": "medium",
-    "question": "Scenario 4: How would you approach security checks for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For security checks, discuss monitoring and validation in production.",
-    "code_example": "void discuss3_4() {\n  const focus = \"security checks\";\n  print(\"Discuss: \" + focus);\n}",
-    "code_language": "dart"
-  },
-  {
-    "id": 214,
-    "topic_id": 3,
-    "order_index": 110,
-    "difficulty": "hard",
-    "question": "Scenario 5: How would you approach release process for this topic?",
-    "answer": "Explain assumptions, constraints, measurable goals, and rollback. For release process, discuss monitoring and validation in production.",
-    "code_example": "void discuss3_5() {\n  const focus = \"release process\";\n  print(\"Discuss: \" + focus);\n}",
     "code_language": "dart"
   }
 ]

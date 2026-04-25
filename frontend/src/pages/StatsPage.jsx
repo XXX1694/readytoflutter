@@ -1,0 +1,294 @@
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, TrendingUp, Brain, Target } from 'lucide-react';
+import { useTopics, useQuestions, useStats } from '../lib/queries.js';
+import { getCardState, getSrsSummary } from '../lib/srs.js';
+import { useLang } from '../i18n/LangContext.jsx';
+import { useT } from '../i18n/ui.js';
+import { useContent } from '../i18n/content.js';
+import { Button, Eyebrow, ProgressBar, Pill, FullPageLoader, TopicGlyph, levelTone } from '../ui/index.js';
+import { cn } from '../lib/cn.js';
+
+const LEVELS = ['junior', 'mid', 'senior'];
+
+const easeBucket = (ease) => {
+  if (ease >= 2.7) return { label: 'strong', tone: 'mint' };
+  if (ease >= 2.3) return { label: 'solid',  tone: 'brand' };
+  if (ease >= 1.8) return { label: 'shaky',  tone: 'amber' };
+  return { label: 'weak', tone: 'coral' };
+};
+
+export default function StatsPage() {
+  const navigate = useNavigate();
+  const { lang } = useLang();
+  const t = useT(lang);
+  const { topicTitle } = useContent(lang);
+
+  const topicsQ = useTopics();
+  const questionsQ = useQuestions();
+  const statsQ = useStats();
+
+  if (topicsQ.isLoading || questionsQ.isLoading) return <FullPageLoader />;
+
+  const topics = topicsQ.data ?? [];
+  const questions = questionsQ.data ?? [];
+  const stats = statsQ.data;
+
+  // Build per-topic breakdown
+  const perTopic = topics.map((topic) => {
+    const tQuestions = questions.filter((q) => q.topic_id === topic.id);
+    const completed = tQuestions.filter((q) => q.status === 'completed').length;
+    const inProgress = tQuestions.filter((q) => q.status === 'in_progress').length;
+
+    let easeSum = 0;
+    let easeCount = 0;
+    let learned = 0;
+    let dueNow = 0;
+    const now = Date.now();
+    for (const q of tQuestions) {
+      const s = getCardState(q.id);
+      if (s.reps > 0) {
+        learned += 1;
+        easeSum += s.ease;
+        easeCount += 1;
+      }
+      if (s.dueAt && s.dueAt <= now) dueNow += 1;
+    }
+    const avgEase = easeCount > 0 ? easeSum / easeCount : null;
+    return {
+      topic,
+      total: tQuestions.length,
+      completed,
+      inProgress,
+      learned,
+      dueNow,
+      avgEase,
+      pct: tQuestions.length > 0 ? Math.round((completed / tQuestions.length) * 100) : 0,
+    };
+  });
+
+  // Global SRS
+  const srs = getSrsSummary(questions);
+
+  // Mastery score: blends completion % and SRS ease
+  const mastery = (row) => {
+    const compScore = row.pct;
+    if (!row.avgEase) return compScore;
+    // ease 2.5 → 100, 1.3 → 0 — clamped
+    const easeScore = Math.max(0, Math.min(100, ((row.avgEase - 1.3) / (3.0 - 1.3)) * 100));
+    return Math.round(compScore * 0.6 + easeScore * 0.4);
+  };
+
+  const overallMastery = perTopic.length
+    ? Math.round(perTopic.reduce((s, r) => s + mastery(r), 0) / perTopic.length)
+    : 0;
+
+  // Weakest topics (lowest mastery, ignoring 0%)
+  const weakest = [...perTopic]
+    .filter((r) => r.total > 0)
+    .sort((a, b) => mastery(a) - mastery(b))
+    .slice(0, 3);
+
+  return (
+    <div className="bg-page">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="-ml-2 mb-5 text-muted hover:text-ink"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {t.backToDashboard}
+        </Button>
+
+        {/* Header */}
+        <header className="mb-8 flex flex-col gap-3 border-b-1.5 border-ink pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow accent="brand">
+              <TrendingUp className="mr-1 inline h-3 w-3" />
+              {lang === 'ru' ? 'Прогресс' : 'Stats'}
+            </Eyebrow>
+            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+              {lang === 'ru' ? 'Карта знаний' : 'Mastery map'}
+            </h1>
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
+              {lang === 'ru'
+                ? `${overallMastery}% средний уровень · ${srs.learned}/${srs.total} изучено · ${srs.due + srs.overdue} к разбору`
+                : `${overallMastery}% overall mastery · ${srs.learned}/${srs.total} learned · ${srs.due + srs.overdue} due`}
+            </p>
+          </div>
+          <Button variant="brand" size="md" onClick={() => navigate('/study')}>
+            <Brain className="h-4 w-4" />
+            {lang === 'ru' ? 'Сессия SRS' : 'Study session'}
+          </Button>
+        </header>
+
+        {/* Big number tiles */}
+        <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <BigTile
+            label={lang === 'ru' ? 'Изучено' : 'Learned'}
+            value={srs.learned}
+            suffix={`/ ${srs.total}`}
+            tone="mint"
+          />
+          <BigTile
+            label={lang === 'ru' ? 'Просрочено' : 'Overdue'}
+            value={srs.overdue}
+            tone="coral"
+          />
+          <BigTile
+            label={lang === 'ru' ? 'Сегодня' : 'Due today'}
+            value={srs.due}
+            tone="amber"
+          />
+          <BigTile
+            label={lang === 'ru' ? 'Новых' : 'Fresh'}
+            value={srs.fresh}
+            tone="brand"
+          />
+        </section>
+
+        {/* Weakest topics */}
+        {weakest.some((r) => mastery(r) < 80) && (
+          <section className="mb-10">
+            <Eyebrow accent="amber" className="mb-3">
+              {lang === 'ru' ? 'Слабые места' : 'Weakest topics'}
+            </Eyebrow>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {weakest.map((row) => (
+                <button
+                  key={row.topic.id}
+                  type="button"
+                  onClick={() => navigate(`/topic/${row.topic.slug}`)}
+                  className="flex flex-col gap-2 rounded-md border-1.5 border-coral bg-coral/5 p-4 text-left shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-display text-base font-medium text-ink line-clamp-1">
+                      {topicTitle(row.topic)}
+                    </span>
+                    <span className="font-mono text-sm tabular-nums text-coral">
+                      {mastery(row)}%
+                    </span>
+                  </div>
+                  <ProgressBar value={mastery(row)} max={100} size="xs" tone="amber" />
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted">
+                    {row.completed}/{row.total} done
+                    {row.avgEase != null && ` · ease ${row.avgEase.toFixed(2)}`}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Per-level breakdown */}
+        {LEVELS.map((level, idx) => {
+          const rows = perTopic.filter((r) => r.topic.level === level);
+          if (!rows.length) return null;
+          const levelT = t[level];
+          const levelMastery = Math.round(rows.reduce((s, r) => s + mastery(r), 0) / rows.length);
+          return (
+            <section key={level} className="mb-10">
+              <header className="mb-4 flex items-end justify-between border-b-1.5 border-ink pb-2">
+                <div>
+                  <Eyebrow index={idx + 1} accent="brand" className="mb-1">
+                    {levelT.short}
+                  </Eyebrow>
+                  <h2 className="font-display text-xl font-medium tracking-tight text-ink">
+                    {levelT.label}
+                  </h2>
+                </div>
+                <div className="text-right">
+                  <div className="num text-3xl text-ink">{levelMastery}%</div>
+                  <div className="font-mono text-[10px] uppercase text-muted">
+                    {lang === 'ru' ? 'Средний' : 'Average'}
+                  </div>
+                </div>
+              </header>
+              <div className="space-y-2">
+                {rows.map((row) => (
+                  <TopicRow
+                    key={row.topic.id}
+                    row={row}
+                    masteryPct={mastery(row)}
+                    onTopic={() => navigate(`/topic/${row.topic.slug}`)}
+                    onDrill={() => navigate(`/study?topic=${row.topic.slug}`)}
+                    lang={lang}
+                    t={t}
+                    topicTitle={topicTitle}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BigTile({ label, value, suffix, tone = 'ink' }) {
+  const ACCENTS = {
+    mint:  'text-mint',
+    amber: 'text-[rgb(var(--amber))]',
+    coral: 'text-coral',
+    brand: 'text-brand',
+    ink:   'text-ink',
+  };
+  return (
+    <div className="flex flex-col gap-2 rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm sm:p-5">
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className={cn('num text-display-xs sm:text-display-sm', ACCENTS[tone])}>{value}</span>
+        {suffix && <span className="font-mono text-xs uppercase text-muted">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }) {
+  const easeInfo = row.avgEase ? easeBucket(row.avgEase) : null;
+  return (
+    <div className="group flex items-center gap-3 rounded-md border border-rule bg-paper-2 px-4 py-3 transition-all hover:border-ink hover:shadow-codex-sm">
+      <TopicGlyph topic={row.topic} size="sm" />
+      <button
+        type="button"
+        onClick={onTopic}
+        className="min-w-0 flex-1 text-left"
+      >
+        <div className="text-sm text-ink truncate">{topicTitle(row.topic)}</div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <ProgressBar
+            value={masteryPct}
+            max={100}
+            size="xs"
+            tone={masteryPct >= 80 ? 'mint' : masteryPct >= 50 ? 'brand' : 'amber'}
+            className="max-w-[300px]"
+          />
+          <span className="font-mono text-[10px] tabular-nums text-muted shrink-0">
+            {masteryPct}%
+          </span>
+        </div>
+      </button>
+      <div className="hidden flex-col items-end gap-1 sm:flex">
+        <span className="font-mono text-[10px] tabular-nums text-muted">
+          {row.completed}/{row.total}
+        </span>
+        {easeInfo && (
+          <Pill tone={easeInfo.tone} size="xs">
+            {easeInfo.label}
+          </Pill>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onDrill}
+        aria-label="Drill"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rule-strong text-muted opacity-0 transition-all hover:border-ink hover:text-brand group-hover:opacity-100"
+      >
+        <Brain className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}

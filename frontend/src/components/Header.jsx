@@ -1,73 +1,83 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Menu, Search, Sun, Moon, ExternalLink } from 'lucide-react';
+import { usePrefs } from '../store/prefs.js';
+import { useLang } from '../i18n/LangContext.jsx';
+import { useT } from '../i18n/ui.js';
+import { IconButton } from '../ui/index.js';
 
-export default function Header({ theme, toggleTheme, onMenuClick }) {
-  const [query, setQuery] = useState('');
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const modKey = isMac ? '⌘' : 'Ctrl';
+
+export default function Header() {
   const navigate = useNavigate();
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-  };
+  const { lang, setLang } = useLang();
+  const t = useT(lang);
+  const theme = usePrefs((s) => s.theme);
+  const toggleTheme = usePrefs((s) => s.toggleTheme);
+  const toggleSidebar = usePrefs((s) => s.toggleSidebar);
+  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
 
   return (
-    <header className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 border-b border-slate-200 bg-white shrink-0 dark:border-zinc-800 dark:bg-zinc-950">
-      {/* Mobile menu button */}
-      <button
-        onClick={onMenuClick}
-        className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        aria-label="Toggle menu"
+    <header className="sticky top-0 z-30 flex shrink-0 items-center gap-2 border-b-1.5 border-ink bg-paper/80 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-paper/60 sm:px-6">
+      {/* Mobile menu */}
+      <IconButton
+        size="md"
+        variant="ghost"
+        label={t.openMenu}
+        className="lg:hidden"
+        onClick={toggleSidebar}
       >
-        <svg className="w-5 h-5 text-slate-700 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Menu className="h-5 w-5" />
+      </IconButton>
+
+      {/* Cmd+K trigger — looks like a search input but opens the palette */}
+      <button
+        type="button"
+        onClick={() => setCommandOpen(true)}
+        aria-label={t.searchOpenHint}
+        className="group flex flex-1 max-w-xl items-center gap-2.5 rounded-md border-1.5 border-ink bg-paper-2 px-3 py-2 text-left text-sm shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex active:translate-x-px active:translate-y-px active:shadow-none"
+      >
+        <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+        <span className="flex-1 truncate text-muted">{t.searchOpenHint}</span>
+        <kbd className="hidden items-center gap-0.5 rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted sm:flex">
+          {modKey}
+          <span className="text-[8px]">+</span>
+          K
+        </kbd>
       </button>
 
-      <form onSubmit={handleSearch} className="flex-1 max-w-xl">
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search..."
-            className="w-full rounded-lg border border-slate-300 bg-white pl-10 pr-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-flutter-blue focus:ring-1 focus:ring-flutter-blue dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder-slate-500 sm:placeholder:content-['Search_questions,_topics,_concepts...']"
-          />
-        </div>
-      </form>
+      <div className="flex items-center gap-1.5">
+        {/* Language */}
+        <button
+          type="button"
+          onClick={() => setLang(lang === 'en' ? 'ru' : 'en')}
+          aria-label={t.cmdSwitchLang}
+          className="hidden h-9 items-center gap-1 rounded-md border border-rule-strong bg-paper-2 px-2.5 font-mono text-[11px] uppercase text-ink-2 transition-colors hover:border-ink hover:text-ink sm:inline-flex"
+        >
+          {t.langSwitch}
+        </button>
 
-      <button
-        onClick={toggleTheme}
-        className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 shrink-0"
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? (
-          <>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v2.5M12 18.5V21M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M3 12h2.5M18.5 12H21M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77M12 16a4 4 0 100-8 4 4 0 000 8z" />
-            </svg>
-            <span className="hidden sm:inline">Light</span>
-          </>
-        ) : (
-          <>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 118.646 3.646 7 7 0 0020.354 15.354z" />
-            </svg>
-            <span className="hidden sm:inline">Dark</span>
-          </>
-        )}
-      </button>
+        {/* Theme */}
+        <IconButton
+          size="md"
+          variant="outline"
+          label={t.toggleTheme}
+          onClick={toggleTheme}
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </IconButton>
 
-      <a
-        href="https://flutter.dev/docs"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hidden md:block text-xs text-slate-500 hover:text-flutter-blue dark:text-slate-400 dark:hover:text-flutter-sky shrink-0"
-      >
-        Docs ↗
-      </a>
+        {/* Docs link */}
+        <a
+          href="https://flutter.dev/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden h-9 items-center gap-1 rounded-md px-2 font-mono text-[11px] uppercase tracking-wider text-muted transition-colors hover:text-ink md:inline-flex"
+        >
+          {t.docs}
+          <ExternalLink className="h-3 w-3" aria-hidden />
+        </a>
+      </div>
     </header>
   );
 }

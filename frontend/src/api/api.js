@@ -6,30 +6,78 @@ const api = axios.create({ baseURL: apiBaseUrl });
 const STATIC_DATA_URL = `${import.meta.env.BASE_URL}seed/static-data.json`;
 const PROGRESS_STORAGE_KEY = 'readytoflutter_progress_v1';
 
-let staticDataPromise;
+let staticDataPromise = null;
+let isLoadingStaticData = false;
 
 const loadStaticData = async () => {
-  if (!staticDataPromise) {
-    staticDataPromise = fetch(STATIC_DATA_URL).then(async (res) => {
+  // If already loaded, return cached promise
+  if (staticDataPromise) {
+    return staticDataPromise;
+  }
+
+  // If currently loading, wait for it
+  if (isLoadingStaticData) {
+    return new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (staticDataPromise) {
+          clearInterval(checkInterval);
+          resolve(staticDataPromise);
+        }
+      }, 50);
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        reject(new Error('Static data loading timeout'));
+      }, 10000);
+    });
+  }
+
+  // Start loading
+  isLoadingStaticData = true;
+
+  staticDataPromise = fetch(STATIC_DATA_URL)
+    .then(async (res) => {
       if (!res.ok) {
         throw new Error(`Failed to load static data: ${res.status}`);
       }
       return res.json();
+    })
+    .catch((error) => {
+      // Reset on error so it can be retried
+      staticDataPromise = null;
+      isLoadingStaticData = false;
+      throw error;
+    })
+    .finally(() => {
+      isLoadingStaticData = false;
     });
-  }
+
   return staticDataPromise;
 };
 
 const readProgress = () => {
   try {
-    return JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || '{}');
-  } catch {
+    const data = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch (error) {
+    console.error('Failed to read progress from localStorage:', error);
     return {};
   }
 };
 
 const writeProgress = (progress) => {
-  localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
+  try {
+    const data = JSON.stringify(progress);
+    localStorage.setItem(PROGRESS_STORAGE_KEY, data);
+  } catch (error) {
+    console.error('Failed to write progress to localStorage:', error);
+    // Check if quota exceeded
+    if (error.name === 'QuotaExceededError') {
+      alert('Storage quota exceeded. Please clear some browser data.');
+    }
+    throw error;
+  }
 };
 
 const withProgress = (question, progress) => {

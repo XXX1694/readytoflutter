@@ -1,165 +1,367 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, forwardRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ChevronDown, Code2, Circle, CircleDot, CheckCircle2, NotebookPen,
+  Bookmark, Volume2, Square,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import CodeBlock from './CodeBlock.jsx';
-import { updateProgress } from '../api/api.js';
+import { useUpdateProgress } from '../lib/queries.js';
+import { useLang } from '../i18n/LangContext.jsx';
+import { useT } from '../i18n/ui.js';
+import { useContent } from '../i18n/content.js';
+import { Pill, difficultyTone } from '../ui/index.js';
+import { cn } from '../lib/cn.js';
+import { useBookmark } from '../lib/useBookmark.js';
+import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts.js';
 
-const STATUSES = [
-  { key: 'not_started', label: 'Not Started', icon: '○' },
-  { key: 'in_progress', label: 'In Progress', icon: '◑' },
-  { key: 'completed',   label: 'Completed',   icon: '●' },
-];
-
-const difficultyColors = {
-  easy:   'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20',
-  medium: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20',
-  hard:   'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
+const STATUS_META = {
+  not_started: { icon: Circle,        tone: 'ghost', accent: 'text-muted' },
+  in_progress: { icon: CircleDot,     tone: 'amber', accent: 'text-[rgb(var(--amber))]' },
+  completed:   { icon: CheckCircle2,  tone: 'mint',  accent: 'text-mint' },
 };
+const STATUS_KEYS = ['not_started', 'in_progress', 'completed'];
 
-export default function QuestionCard({ question, index, onProgressChange }) {
-  const [open, setOpen] = useState(false);
-  const [showCode, setShowCode] = useState(false);
+const QuestionCard = forwardRef(function QuestionCard(
+  { question, index, expanded: controlledExpanded, onToggleExpand, focused },
+  ref,
+) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledExpanded ?? internalOpen;
+  const toggleOpen = onToggleExpand || (() => setInternalOpen((v) => !v));
+
   const [status, setStatus] = useState(question.status || 'not_started');
-  const [notes, setNotes] = useState(question.notes || '');
-  const [savingNotes, setSavingNotes] = useState(false);
+  const [showCode, setShowCode] = useState(false);
 
-  const handleStatusChange = async (newStatus) => {
-    setStatus(newStatus);
-    try {
-      await updateProgress(question.id, newStatus, notes);
-      onProgressChange?.();
-    } catch (e) {
-      console.error('Failed to update progress:', e);
-    }
-  };
+  const { lang } = useLang();
+  const t = useT(lang);
+  const { questionText, answerText } = useContent(lang);
+  const update = useUpdateProgress();
+  const [bookmarked, toggleBookmarked] = useBookmark(question.id);
 
-  const handleSaveNotes = async () => {
-    setSavingNotes(true);
-    try {
-      await updateProgress(question.id, status, notes);
-      onProgressChange?.();
-    } finally {
-      setSavingNotes(false);
-    }
-  };
+  // Subscribe once to the TTS singleton so we can light up the button when
+  // *this* card is the one currently being read.
+  const [thisSpeakingToken, setThisSpeakingToken] = useState(null);
+  useEffect(() => {
+    const unsub = subscribeTts(() => {
+      if (!isSpeaking()) setThisSpeakingToken(null);
+    });
+    return unsub;
+  }, []);
 
-  const statusConfig = STATUSES.find(s => s.key === status);
+  // Sync status when the parent re-fetches (after mutation)
+  useEffect(() => {
+    setStatus(question.status || 'not_started');
+  }, [question.status]);
+
+  const STATUS_LABELS = useMemo(
+    () => ({
+      not_started: t.notStarted,
+      in_progress: t.inProgressStatus,
+      completed: t.completedStatus,
+    }),
+    [t],
+  );
+
+  const handleStatus = useCallback(
+    async (next) => {
+      if (status === next) return;
+      const prev = status;
+      setStatus(next);
+      try {
+        await update.mutateAsync({
+          questionId: question.id,
+          status: next,
+          notes: question.notes || null,
+        });
+      } catch {
+        setStatus(prev);
+        toast.error(t.failedUpdateStatus);
+      }
+    },
+    [status, update, question.id, question.notes, t],
+  );
+
+  const difficultyLabel =
+    { easy: t.easy, medium: t.medium, hard: t.hard }[question.difficulty] || question.difficulty;
+  const StatusIcon = STATUS_META[status].icon;
 
   return (
-    <div className={`border rounded-lg sm:rounded-xl overflow-hidden transition-all duration-200 ${
-      open
-        ? 'border-flutter-blue/50 bg-white dark:border-flutter-blue/50 dark:bg-slate-900'
-        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
-    }`}>
-      {/* Question header */}
+    <article
+      ref={ref}
+      data-question-id={question.id}
+      className={cn(
+        'overflow-hidden rounded-md border-1.5 bg-paper-2 transition-all duration-150',
+        open
+          ? 'border-ink shadow-codex'
+          : 'border-rule-strong shadow-codex-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-codex hover:border-ink',
+        focused && !open && 'ring-2 ring-brand ring-offset-2 ring-offset-paper',
+      )}
+    >
+      {/* Header — clickable to toggle */}
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-start gap-2 sm:gap-3 p-3 sm:p-4 text-left"
+        type="button"
+        onClick={toggleOpen}
+        aria-expanded={open}
+        className="flex w-full items-start gap-3 p-4 text-left sm:gap-4 sm:p-5"
       >
-        {/* Index */}
-        <span className="shrink-0 w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs flex items-center justify-center font-mono mt-0.5 dark:bg-slate-800 dark:text-slate-400">
-          {index + 1}
+        <span
+          className={cn(
+            'shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md border-1.5 border-ink bg-paper font-mono text-[11px] tabular-nums text-ink',
+            status === 'completed' && 'border-mint bg-mint/15 text-mint',
+            status === 'in_progress' && 'border-[rgb(var(--amber))] bg-amber/15 text-[rgb(var(--amber))]',
+          )}
+          aria-hidden
+        >
+          {String(index + 1).padStart(2, '0')}
         </span>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-snug">{question.question}</p>
-          <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
-            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${difficultyColors[question.difficulty]}`}>
-              {question.difficulty}
-            </span>
-            {question.tags && question.tags.split(',').map(t => (
-              <span key={t} className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">{t.trim()}</span>
-            ))}
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] leading-snug text-ink sm:text-base">{questionText(question)}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <Pill tone={difficultyTone[question.difficulty] || 'neutral'} size="xs">
+              {difficultyLabel}
+            </Pill>
+            {question.tags &&
+              question.tags
+                .split(',')
+                .map((tag, i) => (
+                  <Pill key={`${tag}-${i}`} tone="neutral" size="xs">
+                    {tag.trim()}
+                  </Pill>
+                ))}
           </div>
         </div>
 
-        {/* Status indicator */}
-        <div className="shrink-0 flex items-center gap-2">
-          <span className={`text-xs font-medium ${
-            status === 'completed' ? 'text-cyan-700 dark:text-cyan-300' :
-            status === 'in_progress' ? 'text-flutter-blue dark:text-flutter-sky' : 'text-slate-500 dark:text-slate-500'
-          }`}>
-            {statusConfig?.icon}
-          </span>
-          <svg
-            className={`w-4 h-4 text-slate-500 dark:text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); toggleBookmarked(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                e.preventDefault();
+                toggleBookmarked();
+              }
+            }}
+            aria-label={bookmarked
+              ? (lang === 'ru' ? 'Убрать из закладок' : 'Remove bookmark')
+              : (lang === 'ru' ? 'В закладки' : 'Bookmark')}
+            aria-pressed={bookmarked}
+            className={cn(
+              'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors cursor-pointer',
+              bookmarked
+                ? 'text-[rgb(var(--amber))]'
+                : 'text-muted hover:text-ink',
+            )}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+            <Bookmark className="h-4 w-4" fill={bookmarked ? 'currentColor' : 'none'} />
+          </span>
+          <StatusIcon className={cn('h-5 w-5', STATUS_META[status].accent)} aria-hidden />
+          <ChevronDown
+            className={cn('h-4 w-4 text-muted transition-transform', open && 'rotate-180')}
+            aria-hidden
+          />
         </div>
       </button>
 
-      {/* Expanded content */}
-      {open && (
-        <div className="border-t border-slate-200 dark:border-slate-800">
-          {/* Progress control */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 dark:bg-zinc-950 dark:border-slate-800">
-            <span className="text-xs text-slate-500 dark:text-slate-400 mr-1">Mark as:</span>
-            {STATUSES.map(s => (
-              <button
-                key={s.key}
-                onClick={() => handleStatusChange(s.key)}
-                className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                  status === s.key
-                    ? s.key === 'completed' ? 'bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/40'
-                      : s.key === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40'
-                      : 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
-                    : 'text-slate-500 border-slate-300 hover:border-slate-400 hover:text-slate-700 dark:text-slate-400 dark:border-slate-700 dark:hover:border-slate-600 dark:hover:text-slate-200'
-                }`}
-              >
-                {s.icon} {s.label}
-              </button>
-            ))}
-          </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="expand"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t-1.5 border-ink">
+              {/* Status segmented control */}
+              <div className="flex flex-wrap items-center gap-2 border-b border-rule bg-paper px-4 py-3 sm:px-5">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                  {t.markAs}
+                </span>
+                <div className="inline-flex items-center gap-px rounded-md border-1.5 border-ink bg-paper-2 p-0.5 shadow-codex-sm">
+                  {STATUS_KEYS.map((key) => {
+                    const Icon = STATUS_META[key].icon;
+                    const active = status === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleStatus(key)}
+                        disabled={update.isPending}
+                        aria-pressed={active}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-mono text-[11px] uppercase transition-colors',
+                          active
+                            ? key === 'completed'
+                              ? 'bg-mint text-paper'
+                              : key === 'in_progress'
+                                ? 'bg-[rgb(var(--amber))] text-paper'
+                                : 'bg-ink text-paper'
+                            : 'text-muted hover:text-ink',
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" aria-hidden />
+                        {STATUS_LABELS[key]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Answer */}
-          <div className="px-3 sm:px-4 py-4">
-            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Answer</h4>
-            <div className="answer-text text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-              {question.answer}
-            </div>
-          </div>
+              {/* Answer */}
+              <section className="px-4 py-5 sm:px-5">
+                <header className="mb-3 flex items-center gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
+                    {t.answer}
+                  </span>
+                  <span className="h-px flex-1 bg-rule" aria-hidden />
+                  {isTtsSupported() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (thisSpeakingToken !== null) {
+                          stop();
+                          setThisSpeakingToken(null);
+                        } else {
+                          const text = `${questionText(question)}. ${answerText(question)}`;
+                          const tok = speak(text, {
+                            lang,
+                            onEnd: () => setThisSpeakingToken(null),
+                          });
+                          setThisSpeakingToken(tok);
+                        }
+                      }}
+                      aria-label={thisSpeakingToken !== null
+                        ? (lang === 'ru' ? 'Остановить' : 'Stop')
+                        : (lang === 'ru' ? 'Озвучить' : 'Listen')}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md border border-rule-strong px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors',
+                        thisSpeakingToken !== null
+                          ? 'border-brand bg-brand/10 text-brand'
+                          : 'text-muted hover:border-ink hover:text-ink',
+                      )}
+                    >
+                      {thisSpeakingToken !== null ? (
+                        <>
+                          <Square className="h-3 w-3" />
+                          {lang === 'ru' ? 'Стоп' : 'Stop'}
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="h-3 w-3" />
+                          {lang === 'ru' ? 'Слушать' : 'Listen'}
+                        </>
+                      )}
+                    </button>
+                  )}
+                </header>
+                <div className="answer-text text-[14.5px] leading-relaxed text-ink-2 sm:text-[15px]">
+                  {answerText(question)}
+                </div>
+              </section>
 
-          {/* Code example */}
-          {question.code_example && (
-            <div className="px-3 sm:px-4 pb-4">
-              <button
-                onClick={() => setShowCode(!showCode)}
-                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold text-flutter-blue hover:text-[#0168c1] dark:text-flutter-sky dark:hover:text-cyan-300 mb-3 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                </svg>
-                {showCode ? 'Hide' : 'Show'} Code Example
-                <svg className={`w-3.5 h-3.5 transition-transform ${showCode ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {showCode && (
-                <CodeBlock code={question.code_example} language={question.code_language || 'dart'} />
+              {/* Code */}
+              {question.code_example && (
+                <section className="px-4 pb-4 sm:px-5">
+                  <button
+                    type="button"
+                    onClick={() => setShowCode((v) => !v)}
+                    aria-expanded={showCode}
+                    className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand transition-colors hover:text-brand-ink"
+                  >
+                    <Code2 className="h-3.5 w-3.5" aria-hidden />
+                    {showCode ? t.hideCodeExample : t.showCodeExample}
+                    <ChevronDown
+                      className={cn('h-3 w-3 transition-transform', showCode && 'rotate-180')}
+                      aria-hidden
+                    />
+                  </button>
+                  {showCode && (
+                    <CodeBlock
+                      code={question.code_example}
+                      language={question.code_language || 'dart'}
+                    />
+                  )}
+                </section>
               )}
-            </div>
-          )}
 
-          {/* Notes */}
-          <div className="px-3 sm:px-4 pb-4">
-            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">My Notes</h4>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Add your notes..."
-              rows={3}
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-flutter-blue focus:ring-1 focus:ring-flutter-blue resize-none dark:bg-zinc-950 dark:border-slate-700 dark:text-slate-300 dark:placeholder-slate-500"
-            />
-            <button
-              onClick={handleSaveNotes}
-              disabled={savingNotes}
-              className="mt-2 text-xs px-3 py-1.5 bg-flutter-blue hover:bg-[#0168c1] disabled:bg-slate-400 dark:disabled:bg-slate-700 text-white rounded-lg transition-colors"
-            >
-              {savingNotes ? 'Saving...' : 'Save Notes'}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+              {/* Notes */}
+              <NotesEditor
+                key={question.id}
+                questionId={question.id}
+                initialNotes={question.notes || ''}
+                status={status}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </article>
+  );
+});
+
+function NotesEditor({ questionId, initialNotes, status }) {
+  const { lang } = useLang();
+  const t = useT(lang);
+  const update = useUpdateProgress();
+  const [notes, setNotes] = useState(initialNotes);
+  const [savedAt, setSavedAt] = useState(initialNotes ? Date.now() : null);
+  const lastSaved = useRef(initialNotes);
+  const timer = useRef(null);
+
+  // Debounced auto-save: 800ms after last keystroke
+  useEffect(() => {
+    if (notes === lastSaved.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        await update.mutateAsync({ questionId, status, notes });
+        lastSaved.current = notes;
+        setSavedAt(Date.now());
+      } catch {
+        toast.error(t.failedSaveNotes);
+      }
+    }, 800);
+    return () => timer.current && clearTimeout(timer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes]);
+
+  const savedHint =
+    savedAt &&
+    new Intl.RelativeTimeFormat(lang === 'ru' ? 'ru' : 'en', { numeric: 'auto' }).format(
+      Math.round((savedAt - Date.now()) / 1000),
+      'second',
+    );
+
+  return (
+    <section className="border-t border-rule px-4 py-4 sm:px-5">
+      <header className="mb-2 flex items-center justify-between">
+        <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+          <NotebookPen className="h-3 w-3" aria-hidden />
+          {t.myNotes}
+        </span>
+        <span className="font-mono text-[10px] text-muted-2">
+          {update.isPending ? t.saving : savedAt ? `✓ ${lang === 'ru' ? 'сохранено' : 'saved'}` : ''}
+        </span>
+      </header>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder={t.addNotes}
+        rows={3}
+        maxLength={1000}
+        aria-label={t.personalNotes}
+        className="w-full resize-none rounded-md border border-rule-strong bg-paper px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-ink focus:ring-1 focus:ring-brand/30"
+      />
+      <div className="mt-1 text-right font-mono text-[10px] text-muted-2">
+        {notes.length}/1000
+      </div>
+    </section>
   );
 }
+
+export default QuestionCard;

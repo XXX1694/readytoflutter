@@ -1,182 +1,195 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTopics, getStats, resetProgress } from '../api/api.js';
+import { toast } from 'sonner';
+import { Command, Sparkles, Target } from 'lucide-react';
+import { useTopics, useStats, useResetProgress } from '../lib/queries.js';
+import { useLang } from '../i18n/LangContext.jsx';
+import { useT } from '../i18n/ui.js';
+import { useContent } from '../i18n/content.js';
+import { usePrefs } from '../store/prefs.js';
+import { Button, Eyebrow, FullPageLoader } from '../ui/index.js';
+import StatTile from '../components/StatTile.jsx';
+import TopicTile from '../components/TopicTile.jsx';
+import ActivityHeatmap from '../components/ActivityHeatmap.jsx';
+import DueWidget from '../components/DueWidget.jsx';
 
-const LEVEL_CONFIG = {
-  junior: {
-    label: 'Junior Developer',
-    badge: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300',
-    dot: 'bg-flutter-sky',
-    desc: '0–2 years experience',
-  },
-  mid: {
-    label: 'Mid-Level Developer',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
-    dot: 'bg-flutter-blue',
-    desc: '2–5 years experience',
-  },
-  senior: {
-    label: 'Senior Developer',
-    badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
-    dot: 'bg-slate-700 dark:bg-slate-300',
-    desc: '5+ years experience',
-  },
-};
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
+const modKey = isMac ? '⌘' : 'Ctrl';
 
-function TopicCard({ topic, level }) {
-  const navigate = useNavigate();
-  const cfg = LEVEL_CONFIG[level];
-  const pct = topic.question_count > 0
-    ? Math.round((topic.completed_count / topic.question_count) * 100)
-    : 0;
-
-  return (
-    <button
-      onClick={() => navigate(`/topic/${topic.slug}`)}
-      className="group text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-flutter-sky transition-colors dark:border-slate-800 dark:bg-slate-900 dark:hover:border-flutter-blue"
-    >
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-2xl">{topic.icon}</span>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>
-          {topic.question_count} Q
-        </span>
-      </div>
-      <h3 className="font-semibold text-slate-900 text-sm mb-1 group-hover:text-flutter-blue dark:text-slate-100 dark:group-hover:text-flutter-sky transition-colors">
-        {topic.title}
-      </h3>
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug mb-3">{topic.description}</p>
-      {/* Progress bar */}
-      <div className="h-1 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
-        <div
-          className="h-full bg-flutter-sky rounded-full transition-all duration-500"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-        {topic.completed_count}/{topic.question_count} completed
-      </div>
-    </button>
-  );
-}
+const LEVELS = ['junior', 'mid', 'senior'];
 
 export default function HomePage() {
-  const [topics, setTopics] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { lang } = useLang();
+  const t = useT(lang);
+  const { topicTitle, topicDesc } = useContent(lang);
+  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const navigate = useNavigate();
 
-  const loadData = () => {
-    setLoading(true);
-    Promise.all([getTopics(), getStats()])
-      .then(([t, s]) => { setTopics(t); setStats(s); })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  };
+  const topicsQ = useTopics();
+  const statsQ = useStats();
+  const reset = useResetProgress();
 
-  useEffect(() => { loadData(); }, []);
+  const handleReset = useCallback(async () => {
+    if (!window.confirm(t.resetConfirm)) return;
+    try {
+      await reset.mutateAsync();
+      toast.success(lang === 'ru' ? 'Прогресс сброшен' : 'Progress reset');
+    } catch {
+      toast.error(t.failedReset);
+    }
+  }, [reset, t, lang]);
 
-  const handleReset = async () => {
-    if (!confirm('Reset all progress? This cannot be undone.')) return;
-    await resetProgress();
-    loadData();
-  };
-
-  if (loading) {
+  if (topicsQ.isLoading || statsQ.isLoading) {
+    return <FullPageLoader label={t.loadingTopics} />;
+  }
+  if (topicsQ.error) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-flutter-blue border-t-transparent rounded-full animate-spin" />
-          <span className="text-slate-500 dark:text-slate-400 text-sm">Loading topics...</span>
+      <div className="flex h-full items-center justify-center px-4">
+        <div className="flex max-w-md flex-col items-center gap-4 text-center">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-coral">Error</span>
+          <p className="font-display text-2xl text-ink">{t.failedLoadTopics}</p>
+          <Button variant="codex" onClick={() => topicsQ.refetch()}>{t.tryAgain}</Button>
         </div>
       </div>
     );
   }
 
+  const topics = topicsQ.data ?? [];
+  const stats = statsQ.data;
   const total = stats?.totalQuestions ?? 0;
   const completed = stats?.completed ?? 0;
   const inProgress = stats?.inProgress ?? 0;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      {/* Hero */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-          Flutter Interview Prep
-          <span className="ml-2 text-flutter-blue">💙</span>
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base max-w-3xl">
-          Comprehensive interview preparation covering Dart & Flutter from Junior to Senior level.
-          Topics include state management, architecture patterns, DSA, native integration, and more.
-        </p>
-      </div>
+    <div className="bg-page">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        {/* HERO */}
+        <section className="mb-10 sm:mb-14">
+          <Eyebrow index={0} accent="brand">
+            ReadyToFlutter · Codex
+          </Eyebrow>
+          <h1 className="mt-4 font-display text-display-sm font-medium leading-[1.02] tracking-tightest text-ink sm:text-display-md lg:text-display-lg">
+            {lang === 'ru' ? (
+              <>
+                Готов к <em className="not-italic text-brand">собеседованию</em>?
+                <br />
+                <span className="font-display italic text-ink-2">Соберись.</span>
+              </>
+            ) : (
+              <>
+                Ready for the <em className="not-italic text-brand">interview</em>?
+                <br />
+                <span className="font-display italic text-ink-2">Drill it.</span>
+              </>
+            )}
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-2 sm:text-lg">
+            {t.heroDesc}
+          </p>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{total}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Total Questions</div>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-xl sm:text-2xl font-bold text-cyan-700 dark:text-cyan-300">{completed}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Completed</div>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-xl sm:text-2xl font-bold text-flutter-blue dark:text-flutter-sky">{inProgress}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">In Progress</div>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 dark:bg-slate-900 dark:border-slate-800">
-          <div className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-300">{pct}%</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Completion</div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      {total > 0 && (
-        <div className="mb-6 sm:mb-8">
-          <div className="h-1.5 sm:h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
-            <div
-              className="h-full bg-flutter-blue rounded-full transition-all duration-700"
-              style={{ width: `${pct}%` }}
-            />
+          {/* CTA row */}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Button variant="brand" onClick={() => navigate('/mock')}>
+              <Target className="h-4 w-4" />
+              {lang === 'ru' ? 'Mock-собеседование' : 'Mock interview'}
+              <kbd className="ml-1 rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px]">{modKey}M</kbd>
+            </Button>
+            <Button variant="codex" onClick={() => setCommandOpen(true)}>
+              <Command className="h-4 w-4" />
+              <span>{t.searchOpenHint}</span>
+              <kbd className="ml-1 rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px]">{modKey}K</kbd>
+            </Button>
+            <a
+              href="#levels"
+              className="inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider text-muted hover:text-ink"
+            >
+              <Sparkles className="h-3.5 w-3.5" aria-hidden />
+              {lang === 'ru' ? 'Открыть программу' : 'Browse syllabus'}
+            </a>
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* Topics by level */}
-      {(['junior', 'mid', 'senior']).map(level => {
-        const levelTopics = topics.filter(t => t.level === level);
-        if (!levelTopics.length) return null;
-        const cfg = LEVEL_CONFIG[level];
-        return (
-          <div key={level} className="mb-8 sm:mb-10">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-              <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">{cfg.label}</h2>
-              <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">{cfg.desc}</span>
-              <span className={`ml-auto text-xs px-2.5 py-1 rounded-full font-medium ${cfg.badge}`}>
-                {levelTopics.length} topic{levelTopics.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-              {levelTopics.map(topic => (
-                <TopicCard key={topic.id} topic={topic} level={level} />
-              ))}
+        {/* STATS */}
+        <section className="mb-10 sm:mb-12">
+          <Eyebrow index={1} className="mb-4">
+            {lang === 'ru' ? 'Прогресс' : 'Progress'}
+          </Eyebrow>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            <StatTile index={1} label={t.totalQuestions} value={total} accent="ink" />
+            <StatTile index={2} label={t.completed} value={completed} accent="mint" />
+            <StatTile index={3} label={t.inProgress} value={inProgress} accent="amber" />
+            <StatTile index={4} label={t.completion} value={pct} suffix="%" accent="brand" />
+          </div>
+        </section>
+
+        {/* SRS + ACTIVITY */}
+        <section className="mb-12 grid grid-cols-1 gap-4 sm:mb-16 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <DueWidget />
+          </div>
+          <div className="lg:col-span-2">
+            <Eyebrow index={2} className="mb-4">
+              {lang === 'ru' ? 'Активность · 14 недель' : 'Activity · last 14 weeks'}
+            </Eyebrow>
+            <div className="h-full rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm sm:p-6">
+              <ActivityHeatmap weeks={14} />
             </div>
           </div>
-        );
-      })}
+        </section>
 
-      {/* Reset button */}
-      {completed > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-          <button
-            onClick={handleReset}
-            className="text-xs text-slate-500 hover:text-flutter-blue dark:text-slate-400 dark:hover:text-flutter-sky transition-colors"
-          >
-            Reset All Progress
-          </button>
-        </div>
-      )}
+        {/* LEVELS */}
+        <section id="levels">
+          {LEVELS.map((level, idx) => {
+            const items = topics.filter((tp) => tp.level === level);
+            if (!items.length) return null;
+            const levelT = t[level];
+            return (
+              <div key={level} className="mb-12 sm:mb-16">
+                <header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b-1.5 border-ink pb-3">
+                  <div>
+                    <Eyebrow index={idx + 1} accent="brand" className="mb-2">
+                      {levelT.short}
+                    </Eyebrow>
+                    <h2 className="font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+                      {levelT.label}
+                    </h2>
+                    <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
+                      {levelT.desc} · {t.topicCount(items.length)}
+                    </p>
+                  </div>
+                </header>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {items.map((topic) => (
+                    <TopicTile
+                      key={topic.id}
+                      topic={topic}
+                      level={level}
+                      t={t}
+                      topicTitle={topicTitle}
+                      topicDesc={topicDesc}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* RESET */}
+        {completed > 0 && (
+          <div className="mt-8 flex justify-end border-t-1.5 border-rule pt-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-muted hover:text-coral"
+            >
+              {t.resetAllProgress}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

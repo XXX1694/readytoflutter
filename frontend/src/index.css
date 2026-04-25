@@ -1,29 +1,151 @@
+/* Self-hosted variable fonts (loaded once, used everywhere via Tailwind families) */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Codex design tokens. All colors are stored as `R G B` triplets so Tailwind
+ * can apply alpha via `rgb(var(--token) / <alpha-value>)`.
+ * ──────────────────────────────────────────────────────────────────────────── */
 @layer base {
-  * { box-sizing: border-box; }
+  :root {
+    /* Light theme — warm paper, softened for less eye strain */
+    --paper:        252 250 246;   /* #FCFAF6 page bg, gentler */
+    --paper-2:      247 244 237;   /* #F7F4ED elevated card bg */
+    --ink:           38  48  68;   /* #263044 primary text (was #0E1627 — too harsh) */
+    --ink-2:         72  84 108;   /* #48546C secondary heading */
+    --ink-3:        108 122 148;   /* #6C7A94 tertiary */
+    --rule:         226 220 208;   /* #E2DCD0 hairline (lighter) */
+    --rule-strong:  198 190 174;   /* #C6BEAE strong border */
+    --muted:        116 128 150;   /* #748096 body muted */
+    --muted-2:      156 166 186;   /* #9CA6BA caption */
+
+    --brand:         18 124 196;   /* slightly desaturated flutter blue */
+    --brand-ink:     12  98 168;   /* darker brand for hovers */
+    --brand-sky:    102 198 240;   /* slightly muted */
+    --mint:          76 174 148;   /* #4CAE94 calmer success (was #22C5A0) */
+    --amber:        216 158 110;   /* #D89E6E warmer, less neon */
+    --coral:        212 130 110;   /* #D4826E softer */
+    --plum:         160 122 196;   /* slightly muted */
+
+    /* Shadow color — slightly cooler than ink so brutalist offset is visible
+       but doesn't pulse against warm paper */
+    --shadow:        50  60  88;   /* #323C58 ~ ink with cool tint */
+
+    color-scheme: light;
+  }
+
+  .dark {
+    /* Dark theme — deep ink, slightly softer text and accents */
+    --paper:         12  20  34;   /* #0C1422 page bg */
+    --paper-2:       19  28  46;   /* #131C2E elevated card */
+    --ink:          218 228 246;   /* #DAE4F6 primary text (was #EAF0FC) */
+    --ink-2:        186 200 224;   /* #BAC8E0 secondary */
+    --ink-3:        148 164 192;   /* #94A4C0 tertiary */
+    --rule:          32  46  74;   /* #202E4A hairline */
+    --rule-strong:   58  80 118;   /* #3A5076 strong border */
+    --muted:        140 156 188;   /* #8C9CBC muted */
+    --muted-2:      110 126 156;   /* #6E7E9C caption */
+
+    --brand:         96 192 240;   /* #60C0F0 calmer phosphor */
+    --brand-ink:     18 124 196;   /* matches light brand */
+    --brand-sky:    132 218 248;   /* softer cyan */
+    --mint:         108 204 174;   /* #6CCCAE calmer */
+    --amber:        232 184 138;   /* #E8B88A warmer */
+    --coral:        228 156 134;   /* #E49C86 less hot */
+    --plum:         180 138 218;
+
+    --shadow:        12  20  34;   /* equal to paper — invisible offset */
+
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+    border-color: rgb(var(--rule));
+  }
   html, body, #root { height: 100%; }
+  html {
+    font-family: theme('fontFamily.sans');
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
   body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background: #f4f9ff;
-    color: #0f172a;
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
   }
-  .dark body {
-    background: #0b0b0c;
-    color: #e2e8f0;
+
+  /* Headlines lean editorial (Fraunces) by default; override per-element if needed */
+  h1, h2, h3 { font-family: theme('fontFamily.display'); letter-spacing: -0.02em; }
+  h1 { font-weight: 500; }
+  h2, h3 { font-weight: 600; }
+
+  /* Selection */
+  ::selection { background: rgb(var(--brand) / 0.25); color: rgb(var(--ink)); }
+
+  /* Scrollbar — matches surface */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--rule-strong) / 0.6);
+    border-radius: 999px;
+    border: 2px solid rgb(var(--paper));
   }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #e2e8f0; }
-  ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-  .dark ::-webkit-scrollbar-track { background: #0f172a; }
-  .dark ::-webkit-scrollbar-thumb { background: #334155; }
-  .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--rule-strong)); }
+
+  /* Focus ring — used everywhere via .focus-ring helper or directly */
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer components {
+  /* Page-level blueprint background. Subtle grid — kept as a hint, not a pattern. */
+  .bg-page {
+    background-color: rgb(var(--paper));
+    background-image:
+      linear-gradient(rgb(var(--rule) / 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--rule) / 0.18) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: -1px -1px;
+  }
+
+  /* Numbered section eyebrow: `<span class="eyebrow">01 / Junior</span>` */
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.18em] text-muted;
+  }
+
+  /* Codex card — brutalist with hard offset shadow.
+     Use the cva Card component preferentially; this is the raw utility. */
+  .codex-card {
+    @apply bg-paper-2 border-1.5 border-ink rounded-md
+           shadow-codex transition-all duration-150
+           hover:-translate-x-px hover:-translate-y-px hover:shadow-codex-lg
+           active:translate-x-px active:translate-y-px active:shadow-codex-sm;
+  }
+
+  /* Soft card — for content density without the brutalist signature */
+  .soft-card {
+    @apply bg-paper-2 border border-rule rounded-xl shadow-soft;
+  }
+
+  /* Display number: huge editorial figure */
+  .num {
+    font-family: theme('fontFamily.display');
+    font-feature-settings: 'tnum', 'lnum';
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+
+  /* Legacy badges kept so old screens don't break during migration. */
   .level-badge-junior  { @apply bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30; }
   .level-badge-mid     { @apply bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30; }
   .level-badge-senior  { @apply bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30; }
@@ -31,39 +153,145 @@
   .diff-easy   { @apply bg-cyan-500/10 text-cyan-700 dark:text-cyan-300; }
   .diff-medium { @apply bg-blue-500/10 text-blue-700 dark:text-blue-300; }
   .diff-hard   { @apply bg-slate-500/10 text-slate-700 dark:text-slate-300; }
-
-  .status-not_started  { @apply bg-gray-700 text-gray-400; }
-  .status-in_progress  { @apply bg-blue-500/20 text-blue-700 dark:text-blue-300; }
-  .status-completed    { @apply bg-cyan-500/20 text-cyan-700 dark:text-cyan-300; }
 }
 
-/* Prism code block overrides */
-pre[class*="language-"] {
-  margin: 0 !important;
-  border-radius: 0.5rem !important;
-  font-size: 0.875rem !important;
-  line-height: 1.7 !important;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-  background: #f8fafc !important;
-  color: #0f172a !important;
-  border: 1px solid #e2e8f0 !important;
+/* Shiki output — make highlighter respect Codex paper background */
+[data-shiki] pre,
+.shiki {
+  background: transparent !important;
 }
-
-.dark pre[class*="language-"] {
-  background: #0f172a !important;
-  color: #e2e8f0 !important;
-  border: 1px solid #1e293b !important;
-}
-
-code[class*="language-"] {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-}
-
-/* Smooth transitions */
-* { transition-property: background-color, border-color, color, opacity; transition-duration: 150ms; }
 
 /* Answer text formatting */
 .answer-text {
   white-space: pre-wrap;
-  line-height: 1.8;
+  line-height: 1.75;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Print rules — for the /topic/:slug/print revision-sheet view.
+ * ──────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Page setup — A4 with comfortable margins applied to EVERY printed page.
+     The @page rule is honoured by Chrome / Edge / Safari when the user has
+     "Default" margins selected in the print dialog. If they pick "None" or
+     "Minimum", the browser overrides this — that's a per-print user choice.
+     We belt-and-suspender by giving the article its own padding too, so
+     even with a "None" choice you still see breathing room around content. */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+  /* First/last page can have slightly different margins; keep them in sync */
+  @page :first { margin-top: 18mm; }
+
+  /* Force light colors in print so dark theme doesn't bleed black ink */
+  :root, .dark {
+    --paper:        255 255 255;
+    --paper-2:      250 250 248;
+    --ink:           20  24  32;
+    --ink-2:         48  56  72;
+    --ink-3:         92 100 120;
+    --rule:         210 210 210;
+    --rule-strong:  170 170 170;
+    --muted:         96 104 120;
+    --muted-2:      140 148 164;
+    --shadow:       0 0 0;
+  }
+
+  html, body, #root {
+    background: #fff !important;
+    color: #14181f !important;
+    height: auto !important;
+    overflow: visible !important;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Defuse any height/overflow constraints that would clip content to one page */
+  .h-screen { height: auto !important; }
+  .overflow-hidden,
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto { overflow: visible !important; }
+
+  /* Hide app chrome in print — sidebar, header, toolbars */
+  aside,
+  .print-hide,
+  [data-no-print],
+  header.sticky {
+    display: none !important;
+  }
+
+  /* The print view fills the page; @page margin handles primary inset.
+     Article also keeps a small inner padding as a fallback for "None" margins. */
+  .print-view { background: #fff !important; }
+  .print-view article {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 6mm 4mm !important;
+  }
+
+  /* Questions flow naturally between pages — no forced breaks. The heading
+     stays glued to its content and code blocks try not to split mid-snippet. */
+  .print-view .print-question {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    margin-bottom: 16pt !important;
+  }
+  .print-view .print-question h2 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .print-view ol > li + li { margin-top: 0 !important; }
+
+  /* Code blocks — wrap; avoid splitting short snippets, allow long ones to flow */
+  pre, code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+  }
+  pre {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  /* Hide brutalist hard shadows in print — they print as grey blocks */
+  .shadow-codex,
+  .shadow-codex-sm,
+  .shadow-codex-lg {
+    box-shadow: none !important;
+  }
+
+  /* Remove blueprint background grid */
+  .bg-page { background-image: none !important; }
+
+  /* Hyperlinks — show URLs after the text */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Mobile polish — brutalist hard shadows are visual noise on small screens
+ * and eat real estate. Soften offsets and tighten paddings under 640px.
+ * ──────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .shadow-codex-sm { box-shadow: 1px 1px 0 0 rgb(var(--shadow) / 0.55) !important; }
+  .shadow-codex     { box-shadow: 2px 2px 0 0 rgb(var(--shadow) / 0.55) !important; }
+  .shadow-codex-lg  { box-shadow: 3px 3px 0 0 rgb(var(--shadow) / 0.55) !important; }
+  .shadow-codex-brand { box-shadow: 2px 2px 0 0 rgb(var(--brand) / 0.7) !important; }
+  .shadow-codex-mint  { box-shadow: 2px 2px 0 0 rgb(var(--mint) / 0.7) !important; }
+
+  /* Sidebar drawer fills more of the small screen for easier tap targets */
+  aside[class*="w-72"] { width: min(86vw, 320px) !important; }
+
+  /* Code blocks: cap height so a long snippet doesn't dwarf the screen */
+  .codex-card pre,
+  pre[class*="language-"] {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
 }
