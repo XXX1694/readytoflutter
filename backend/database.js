@@ -87,6 +87,8 @@ function normalizeExistingQuestions() {
 }
 
 function removeGeneralQuestions() {
+  // After the user_id migration we still want to clean orphan progress for
+  // deleted questions, regardless of which user it belonged to.
   const deleteProgress = sqlite.prepare(`
     DELETE FROM progress
     WHERE question_id IN (
@@ -140,19 +142,62 @@ function init() {
       FOREIGN KEY (question_id) REFERENCES questions(id)
     );
 
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      name TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_topics_level ON topics(level);
     CREATE INDEX IF NOT EXISTS idx_topics_order ON topics(order_index);
     CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic_id);
     CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(difficulty);
     CREATE INDEX IF NOT EXISTS idx_questions_order ON questions(order_index);
     CREATE INDEX IF NOT EXISTS idx_progress_status ON progress(status);
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `);
 
+  migrateProgressToUserScoped();
   seedIfEmpty();
   removeGeneralQuestions();
   normalizeExistingQuestions();
   stripTopicIcons();
   dropKnownDuplicates();
+}
+
+// Idempotent: progress used `question_id` as PK; with auth each user gets a
+// row per question. New PK is (user_id, question_id), and any pre-existing
+// rows are preserved under user_id = 0 (legacy archive, effectively
+// unreachable but kept rather than dropped).
+function migrateProgressToUserScoped() {
+  const cols = sqlite.prepare("PRAGMA table_info(progress)").all();
+  const hasUserId = cols.some((c) => c.name === 'user_id');
+  if (hasUserId) return;
+
+  const tx = sqlite.transaction(() => {
+    sqlite.exec(`
+      CREATE TABLE progress_v2 (
+        user_id INTEGER NOT NULL DEFAULT 0,
+        question_id INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        notes TEXT,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, question_id),
+        FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      INSERT INTO progress_v2 (user_id, question_id, status, notes, updated_at)
+        SELECT 0, question_id, status, notes, updated_at FROM progress;
+      DROP TABLE progress;
+      ALTER TABLE progress_v2 RENAME TO progress;
+      CREATE INDEX idx_progress_user ON progress(user_id);
+      CREATE INDEX idx_progress_status ON progress(status);
+    `);
+  });
+  tx();
 }
 
 // Idempotent: clears legacy emoji icons. Safe to run on every boot.
@@ -227,18 +272,20 @@ function seedIfEmpty() {
   tx();
 }
 
-function getTopics(level) {
+// All read functions take a `userId` (default 0 = anonymous, no progress
+// joined). Progress writes always require a real user id.
+function getTopics(level, userId = 0) {
   let sql = `
     SELECT
       t.*,
-      COUNT(q.id) AS question_count,
+      COUNT(DISTINCT q.id) AS question_count,
       SUM(CASE WHEN p.status = 'completed' THEN 1 ELSE 0 END) AS completed_count
     FROM topics t
     LEFT JOIN questions q ON q.topic_id = t.id
-    LEFT JOIN progress p ON p.question_id = q.id
+    LEFT JOIN progress p ON p.question_id = q.id AND p.user_id = @userId
   `;
 
-  const params = {};
+  const params = { userId: Number(userId) || 0 };
   if (level) {
     sql += ' WHERE t.level = @level';
     params.level = level;
@@ -249,7 +296,7 @@ function getTopics(level) {
   return sqlite.prepare(sql).all(params);
 }
 
-function getTopic(slug) {
+function getTopic(slug, userId = 0) {
   const topic = sqlite.prepare('SELECT * FROM topics WHERE slug = ?').get(slug);
   if (!topic) return null;
 
@@ -260,13 +307,13 @@ function getTopic(slug) {
         COALESCE(p.status, 'not_started') AS status,
         p.notes
       FROM questions q
-      LEFT JOIN progress p ON p.question_id = q.id
-      WHERE q.topic_id = ?
+      LEFT JOIN progress p ON p.question_id = q.id AND p.user_id = @userId
+      WHERE q.topic_id = @topicId
       ORDER BY q.order_index ASC
     `)
-    .all(topic.id);
+    .all({ topicId: topic.id, userId: Number(userId) || 0 });
 
-  const completedCount = questions.filter(q => q.status === 'completed').length;
+  const completedCount = questions.filter((q) => q.status === 'completed').length;
 
   return {
     ...topic,
@@ -276,9 +323,9 @@ function getTopic(slug) {
   };
 }
 
-function getQuestions({ level, difficulty, search } = {}) {
+function getQuestions({ level, difficulty, search } = {}, userId = 0) {
   const conditions = [];
-  const params = {};
+  const params = { userId: Number(userId) || 0 };
 
   if (level) {
     conditions.push('t.level = @level');
@@ -308,26 +355,29 @@ function getQuestions({ level, difficulty, search } = {}) {
         p.notes
       FROM questions q
       JOIN topics t ON t.id = q.topic_id
-      LEFT JOIN progress p ON p.question_id = q.id
+      LEFT JOIN progress p ON p.question_id = q.id AND p.user_id = @userId
       ${whereClause}
       ORDER BY t.order_index ASC, q.order_index ASC
     `)
     .all(params);
 }
 
-function setProgress(questionId, status, notes) {
-  const now = new Date().toISOString();
+function setProgress(userId, questionId, status, notes, updatedAt) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('setProgress requires a real user id');
+  const now = updatedAt || new Date().toISOString();
 
   sqlite
     .prepare(`
-      INSERT INTO progress (question_id, status, notes, updated_at)
-      VALUES (@question_id, @status, @notes, @updated_at)
-      ON CONFLICT(question_id) DO UPDATE SET
+      INSERT INTO progress (user_id, question_id, status, notes, updated_at)
+      VALUES (@user_id, @question_id, @status, @notes, @updated_at)
+      ON CONFLICT(user_id, question_id) DO UPDATE SET
         status = excluded.status,
         notes = excluded.notes,
         updated_at = excluded.updated_at
     `)
     .run({
+      user_id: uid,
       question_id: Number(questionId),
       status,
       notes: notes || null,
@@ -337,14 +387,63 @@ function setProgress(questionId, status, notes) {
   return { status, notes: notes || null, updated_at: now };
 }
 
-function getStats() {
+// Bulk import — used by the frontend the first time a user logs in to push
+// their localStorage-stored progress to the server in a single round trip.
+// "Last write wins" per (user_id, question_id), keyed on updated_at when
+// supplied so we don't clobber a server row that's already newer.
+function bulkSetProgress(userId, items) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('bulkSetProgress requires a real user id');
+  if (!Array.isArray(items) || items.length === 0) return { imported: 0, skipped: 0 };
+
+  const existing = sqlite
+    .prepare('SELECT question_id, updated_at FROM progress WHERE user_id = ?')
+    .all(uid);
+  const existingMap = new Map(existing.map((r) => [r.question_id, r.updated_at]));
+
+  let imported = 0;
+  let skipped = 0;
+
+  const upsert = sqlite.prepare(`
+    INSERT INTO progress (user_id, question_id, status, notes, updated_at)
+    VALUES (@user_id, @question_id, @status, @notes, @updated_at)
+    ON CONFLICT(user_id, question_id) DO UPDATE SET
+      status = excluded.status,
+      notes = excluded.notes,
+      updated_at = excluded.updated_at
+  `);
+
+  const tx = sqlite.transaction(() => {
+    for (const it of items) {
+      const qid = Number(it.questionId ?? it.question_id);
+      if (!qid || !it.status) { skipped += 1; continue; }
+      const incomingAt = it.updated_at || it.updatedAt || new Date().toISOString();
+      const serverAt = existingMap.get(qid);
+      if (serverAt && serverAt >= incomingAt) { skipped += 1; continue; }
+      upsert.run({
+        user_id: uid,
+        question_id: qid,
+        status: it.status,
+        notes: it.notes || null,
+        updated_at: incomingAt,
+      });
+      imported += 1;
+    }
+  });
+  tx();
+
+  return { imported, skipped };
+}
+
+function getStats(userId = 0) {
+  const uid = Number(userId) || 0;
   const totalQuestions = sqlite.prepare('SELECT COUNT(*) AS count FROM questions').get().count;
   const completed = sqlite
-    .prepare("SELECT COUNT(*) AS count FROM progress WHERE status = 'completed'")
-    .get().count;
+    .prepare("SELECT COUNT(*) AS count FROM progress WHERE status = 'completed' AND user_id = ?")
+    .get(uid).count;
   const inProgress = sqlite
-    .prepare("SELECT COUNT(*) AS count FROM progress WHERE status = 'in_progress'")
-    .get().count;
+    .prepare("SELECT COUNT(*) AS count FROM progress WHERE status = 'in_progress' AND user_id = ?")
+    .get(uid).count;
 
   const byLevel = sqlite
     .prepare(`
@@ -364,8 +463,69 @@ function getStats() {
   return { totalQuestions, completed, inProgress, byLevel };
 }
 
-function resetProgress() {
-  sqlite.prepare('DELETE FROM progress').run();
+function resetProgress(userId) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('resetProgress requires a real user id');
+  sqlite.prepare('DELETE FROM progress WHERE user_id = ?').run(uid);
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+
+function createUser({ email, passwordHash, name }) {
+  const now = new Date().toISOString();
+  const info = sqlite
+    .prepare(`
+      INSERT INTO users (email, password_hash, name, created_at, updated_at)
+      VALUES (@email, @password_hash, @name, @created_at, @updated_at)
+    `)
+    .run({
+      email: email.trim().toLowerCase(),
+      password_hash: passwordHash,
+      name: name || null,
+      created_at: now,
+      updated_at: now,
+    });
+  return getUserById(info.lastInsertRowid);
+}
+
+function getUserByEmail(email) {
+  return sqlite
+    .prepare('SELECT * FROM users WHERE email = ?')
+    .get(String(email || '').trim().toLowerCase());
+}
+
+function getUserById(id) {
+  return sqlite.prepare('SELECT * FROM users WHERE id = ?').get(Number(id));
+}
+
+function updateUserName(id, name) {
+  const now = new Date().toISOString();
+  sqlite
+    .prepare('UPDATE users SET name = ?, updated_at = ? WHERE id = ?')
+    .run(name || null, now, Number(id));
+  return getUserById(id);
+}
+
+function updateUserPassword(id, passwordHash) {
+  const now = new Date().toISOString();
+  sqlite
+    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+    .run(passwordHash, now, Number(id));
+  return getUserById(id);
+}
+
+function updateUserEmail(id, email) {
+  const now = new Date().toISOString();
+  sqlite
+    .prepare('UPDATE users SET email = ?, updated_at = ? WHERE id = ?')
+    .run(String(email).trim().toLowerCase(), now, Number(id));
+  return getUserById(id);
+}
+
+function deleteUser(id) {
+  // Progress rows cascade on FK ON DELETE CASCADE.
+  sqlite.prepare('DELETE FROM progress WHERE user_id = ?').run(Number(id));
+  sqlite.prepare('DELETE FROM users WHERE id = ?').run(Number(id));
 }
 
 module.exports = {
@@ -374,6 +534,14 @@ module.exports = {
   getTopic,
   getQuestions,
   setProgress,
+  bulkSetProgress,
   getStats,
   resetProgress,
+  createUser,
+  getUserByEmail,
+  getUserById,
+  updateUserName,
+  updateUserPassword,
+  updateUserEmail,
+  deleteUser,
 };

@@ -6,10 +6,12 @@ import { useT } from '../i18n/ui.js';
 import { cn } from '../lib/cn.js';
 
 const INTENSITY_CLASS = [
-  'bg-rule/40',
-  'bg-brand/25',
-  'bg-brand/55',
-  'bg-brand/80',
+  // Empty cell needs to stay visible in both themes — dark mode lifts to
+  // rule-strong so the grid reads against the deep paper background.
+  'bg-rule-strong/25 dark:bg-rule-strong/40',
+  'bg-brand/30 dark:bg-brand/35',
+  'bg-brand/55 dark:bg-brand/55',
+  'bg-brand/80 dark:bg-brand/80',
   'bg-brand',
 ];
 
@@ -60,7 +62,7 @@ export default function ActivityHeatmap({ weeks = 14 }) {
                       <Tooltip.Trigger asChild>
                         <span
                           className={cn(
-                            'h-3 w-3 rounded-[3px] ring-1 ring-rule/30 transition-transform hover:scale-110 sm:h-3.5 sm:w-3.5',
+                            'h-3 w-3 rounded-[3px] ring-1 ring-rule/40 transition-transform hover:scale-110 dark:ring-rule-strong/50 sm:h-3.5 sm:w-3.5',
                             INTENSITY_CLASS[intensity(cell.count)],
                           )}
                           aria-label={`${fmt(cell.date)} — ${cell.count}`}
@@ -87,7 +89,11 @@ export default function ActivityHeatmap({ weeks = 14 }) {
           <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted">
             <span>{lang === 'ru' ? 'Меньше' : 'Less'}</span>
             {INTENSITY_CLASS.map((c, i) => (
-              <span key={i} className={cn('h-2.5 w-2.5 rounded-[2px] ring-1 ring-rule/30', c)} aria-hidden />
+              <span
+                key={i}
+                className={cn('h-2.5 w-2.5 rounded-[2px] ring-1 ring-rule/40 dark:ring-rule-strong/50', c)}
+                aria-hidden
+              />
             ))}
             <span>{lang === 'ru' ? 'Больше' : 'More'}</span>
           </div>

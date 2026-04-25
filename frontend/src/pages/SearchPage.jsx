@@ -7,7 +7,7 @@ import QuestionCard from '../components/QuestionCard.jsx';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
-import { Button, FullPageLoader } from '../ui/index.js';
+import { Button, Skeleton } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 
 const FACETS = {
@@ -132,7 +132,7 @@ export default function SearchPage() {
     };
   }, [t]);
 
-  if (isLoading) return <FullPageLoader />;
+  if (isLoading) return <SearchSkeleton lang={lang} />;
 
   return (
     <div className="bg-page">
@@ -237,14 +237,23 @@ export default function SearchPage() {
 
         {/* Results */}
         {results.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <span className="text-4xl" aria-hidden>🔍</span>
-            <p className="font-display text-xl text-ink">
-              {query ? t.noResultsFor(query) : t.enterSearchQuery}
-            </p>
-            <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-              {t.tryDifferentKeywords}
-            </p>
+          <div className="mt-6 flex flex-col items-center gap-4 rounded-md border-1.5 border-dashed border-rule-strong bg-paper-2/40 px-6 py-14 text-center sm:py-20">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-sm">
+              <SearchIcon className="h-5 w-5 text-brand" aria-hidden />
+            </span>
+            <div className="space-y-1">
+              <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
+                {query ? t.noResultsFor(query) : t.enterSearchQuery}
+              </h2>
+              <p className="mx-auto max-w-sm text-sm text-ink-2">
+                {t.tryDifferentKeywords}
+              </p>
+            </div>
+            {!query && (
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
+                {lang === 'ru' ? 'индексировано:' : 'indexed:'} {questions.length}
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -263,6 +272,32 @@ export default function SearchPage() {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function SearchSkeleton({ lang }) {
+  return (
+    <div className="bg-page">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <Skeleton className="mb-5 h-4 w-32" />
+        <Skeleton className="mb-2 h-3 w-16" />
+        <Skeleton className="mb-6 h-9 w-1/2 max-w-md" />
+        <Skeleton className="mb-6 h-12 w-full rounded-md" />
+        <div className="mb-6 flex gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-16 rounded-md" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-4 shadow-codex-sm">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="mt-2 h-3 w-1/2" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

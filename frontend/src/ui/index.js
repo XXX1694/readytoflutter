@@ -5,4 +5,5 @@ export { ProgressBar } from './ProgressBar.jsx';
 export { Eyebrow } from './Eyebrow.jsx';
 export { IconButton } from './IconButton.jsx';
 export { Spinner, FullPageLoader } from './Spinner.jsx';
+export { Skeleton, SkeletonCard } from './Skeleton.jsx';
 export { TopicGlyph } from './TopicGlyph.jsx';

@@ -20,3 +20,4 @@ frontend/dist
 backend/data/interview.db
 backend/data/interview.db-*
 backend/data/progress.json
+backend/data/.jwt-secret

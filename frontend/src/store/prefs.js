@@ -48,6 +48,14 @@ export const usePrefs = create(
       commandOpen: false,
       setCommandOpen: (commandOpen) => set({ commandOpen }),
       toggleCommand: () => set((s) => ({ commandOpen: !s.commandOpen })),
+
+      // Active Recall mode — when true:
+      //  - QuestionCard hides answers behind a hint-ladder reveal
+      //  - StudyPage shows a one-line gist input before flipping
+      // Default off so first-time experience stays light.
+      recallMode: false,
+      setRecallMode: (recallMode) => set({ recallMode }),
+      toggleRecallMode: () => set((s) => ({ recallMode: !s.recallMode })),
     }),
     {
       name: 'rtf:prefs:v1',
@@ -57,6 +65,7 @@ export const usePrefs = create(
         theme: s.theme,
         topicFilter: s.topicFilter,
         searchFacets: s.searchFacets,
+        recallMode: s.recallMode,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);

@@ -4,6 +4,8 @@ import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { IconButton } from '../ui/index.js';
+import { cn } from '../lib/cn.js';
+import AccountMenu from './AccountMenu.jsx';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const modKey = isMac ? '⌘' : 'Ctrl';
@@ -47,15 +49,29 @@ export default function Header() {
       </button>
 
       <div className="flex items-center gap-1.5">
-        {/* Language */}
-        <button
-          type="button"
-          onClick={() => setLang(lang === 'en' ? 'ru' : 'en')}
-          aria-label={t.cmdSwitchLang}
-          className="hidden h-9 items-center gap-1 rounded-md border border-rule-strong bg-paper-2 px-2.5 font-mono text-[11px] uppercase text-ink-2 transition-colors hover:border-ink hover:text-ink sm:inline-flex"
-        >
-          {t.langSwitch}
-        </button>
+        {/* Language — segmented EN / RU control */}
+        <div className="hidden h-9 items-center rounded-md border-1.5 border-rule-strong bg-paper-2 p-0.5 font-mono text-[11px] uppercase shadow-codex-sm sm:inline-flex">
+          {(['en', 'ru']).map((code) => {
+            const active = lang === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => lang !== code && setLang(code)}
+                aria-pressed={active}
+                aria-label={`${t.cmdSwitchLang} — ${code.toUpperCase()}`}
+                className={cn(
+                  'inline-flex h-7 items-center rounded-sm px-2 transition-colors',
+                  active
+                    ? 'bg-ink text-paper'
+                    : 'text-muted hover:text-ink',
+                )}
+              >
+                {code.toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
 
         {/* Theme */}
         <IconButton
@@ -77,6 +93,9 @@ export default function Header() {
           {t.docs}
           <ExternalLink className="h-3 w-3" aria-hidden />
         </a>
+
+        {/* Account */}
+        <AccountMenu />
       </div>
     </header>
   );

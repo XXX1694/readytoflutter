@@ -18,6 +18,11 @@ const BookmarksPage = lazy(() => import('./pages/BookmarksPage.jsx'));
 const AdminPage = lazy(() => import('./pages/AdminPage.jsx'));
 const StatsPage = lazy(() => import('./pages/StatsPage.jsx'));
 const PrintTopicPage = lazy(() => import('./pages/PrintTopicPage.jsx'));
+const CheatsheetPage = lazy(() => import('./pages/CheatsheetPage.jsx'));
+const RoundPage = lazy(() => import('./pages/RoundPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const SignupPage = lazy(() => import('./pages/SignupPage.jsx'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 
 export default function App() {
   return (
@@ -34,6 +39,14 @@ export default function App() {
                 element={
                   <Suspense fallback={<FullPageLoader />}>
                     <PrintTopicPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="topic/:slug/cheatsheet"
+                element={
+                  <Suspense fallback={<FullPageLoader />}>
+                    <CheatsheetPage />
                   </Suspense>
                 }
               />
@@ -99,6 +112,38 @@ export default function App() {
                   element={
                     <Suspense fallback={<FullPageLoader />}>
                       <StatsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="round/:slug"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <RoundPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="login"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <LoginPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="signup"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <SignupPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="settings"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <SettingsPage />
                     </Suspense>
                   }
                 />

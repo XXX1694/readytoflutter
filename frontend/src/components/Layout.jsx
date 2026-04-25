@@ -4,6 +4,7 @@ import Sidebar from './Sidebar.jsx';
 import Header from './Header.jsx';
 import CommandPalette from './CommandPalette.jsx';
 import WelcomeDialog from './WelcomeDialog.jsx';
+import BottomNav from './BottomNav.jsx';
 import { usePrefs } from '../store/prefs.js';
 
 export default function Layout() {
@@ -18,6 +19,7 @@ export default function Layout() {
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
+        <BottomNav />
       </div>
 
       <CommandPalette />

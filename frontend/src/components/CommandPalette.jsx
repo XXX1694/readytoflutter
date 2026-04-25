@@ -18,19 +18,35 @@ import {
   Pencil,
   TrendingUp,
   HelpCircle,
+  Edit3,
+  LogIn,
+  LogOut,
+  UserPlus,
+  Cloud,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
+import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
-import { resetProgress } from '../api/api.js';
+import {
+  resetProgress, authLogout, bulkSyncProgress,
+  readLocalProgress, clearLocalProgress,
+} from '../api/api.js';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function CommandPalette() {
   const open = usePrefs((s) => s.commandOpen);
   const setOpen = usePrefs((s) => s.setCommandOpen);
   const toggleTheme = usePrefs((s) => s.toggleTheme);
+  const recallMode = usePrefs((s) => s.recallMode);
+  const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
+  const authToken = useAuth((s) => s.token);
+  const authUser = useAuth((s) => s.user);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const clearSession = useAuth((s) => s.clearSession);
+  const markSynced = useAuth((s) => s.markSynced);
   const navigate = useNavigate();
   const { lang, setLang } = useLang();
   const t = useT(lang);
@@ -155,6 +171,67 @@ export default function CommandPalette() {
                 </CmdItem>
               </Command.Group>
 
+              {backendAvailable && (
+                <Command.Group
+                  heading={lang === 'ru' ? 'Аккаунт' : 'Account'}
+                  className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
+                >
+                  {!authToken ? (
+                    <>
+                      <CmdItem icon={<LogIn />} onSelect={run(() => navigate('/login'))}>
+                        {lang === 'ru' ? 'Войти' : 'Sign in'}
+                      </CmdItem>
+                      <CmdItem icon={<UserPlus />} onSelect={run(() => navigate('/signup'))}>
+                        {lang === 'ru' ? 'Регистрация' : 'Create account'}
+                      </CmdItem>
+                    </>
+                  ) : (
+                    <>
+                      <CmdItem
+                        icon={<Cloud />}
+                        onSelect={run(async () => {
+                          const local = readLocalProgress();
+                          const items = Object.entries(local).map(([k, v]) => ({
+                            questionId: Number(k),
+                            status: v?.status,
+                            notes: v?.notes || null,
+                            updated_at: v?.updated_at || new Date().toISOString(),
+                          })).filter((p) => p.questionId && p.status);
+                          if (items.length === 0) {
+                            toast.info(lang === 'ru' ? 'Локального прогресса нет' : 'Nothing to sync');
+                            return;
+                          }
+                          try {
+                            const r = await bulkSyncProgress(items);
+                            clearLocalProgress();
+                            markSynced();
+                            qc.invalidateQueries();
+                            toast.success(lang === 'ru' ? `Импортировано ${r.imported}` : `Imported ${r.imported}`);
+                          } catch {
+                            toast.error(lang === 'ru' ? 'Не удалось импортировать' : 'Sync failed');
+                          }
+                        })}
+                      >
+                        {lang === 'ru' ? 'Синхронизировать прогресс' : 'Sync local progress'}
+                      </CmdItem>
+                      <CmdItem
+                        icon={<LogOut />}
+                        onSelect={run(async () => {
+                          try { await authLogout(); } catch {}
+                          clearSession();
+                          qc.invalidateQueries();
+                          toast.success(lang === 'ru' ? 'Вышел' : 'Signed out');
+                          navigate('/');
+                        })}
+                        trailing={authUser?.email}
+                      >
+                        {lang === 'ru' ? 'Выйти' : 'Sign out'}
+                      </CmdItem>
+                    </>
+                  )}
+                </Command.Group>
+              )}
+
               <Command.Group
                 heading={t.cmdAppearance}
                 className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
@@ -168,6 +245,15 @@ export default function CommandPalette() {
                   trailing={lang === 'en' ? 'RU' : 'EN'}
                 >
                   {t.cmdSwitchLang}
+                </CmdItem>
+                <CmdItem
+                  icon={<Edit3 />}
+                  onSelect={run(toggleRecallMode)}
+                  trailing={recallMode ? 'ON' : 'OFF'}
+                >
+                  {lang === 'ru'
+                    ? 'Режим активного припоминания'
+                    : 'Active recall mode'}
                 </CmdItem>
               </Command.Group>
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark } from 'lucide-react';
+import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp } from 'lucide-react';
 import { useTopics, useStats } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -8,6 +8,23 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { ProgressBar, IconButton, TopicGlyph } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+
+const NAV_LINK_CLASS = ({ isActive }) =>
+  cn(
+    'mx-2 mt-px flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
+    isActive
+      ? 'bg-ink text-paper shadow-codex-sm'
+      : 'text-ink-2 hover:bg-paper hover:text-ink',
+  );
+
+function MainNavLink({ to, end, onClose, icon: Icon, children }) {
+  return (
+    <NavLink to={to} end={end} onClick={onClose} className={NAV_LINK_CLASS}>
+      <Icon className="h-4 w-4" aria-hidden />
+      {children}
+    </NavLink>
+  );
+}
 
 const LEVELS = [
   { key: 'junior', dot: 'bg-brand' },
@@ -101,67 +118,21 @@ export default function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3">
-          <NavLink
-            to="/"
-            end
-            onClick={close}
-            className={({ isActive }) =>
-              cn(
-                'mx-2 flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-ink text-paper'
-                  : 'text-ink-2 hover:bg-paper hover:text-ink',
-              )
-            }
-          >
-            <HomeIcon className="h-4 w-4" aria-hidden />
+          <MainNavLink to="/" end onClose={close} icon={HomeIcon}>
             {t.dashboard}
-          </NavLink>
-          <NavLink
-            to="/study"
-            onClick={close}
-            className={({ isActive }) =>
-              cn(
-                'mx-2 mt-px flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-ink text-paper'
-                  : 'text-ink-2 hover:bg-paper hover:text-ink',
-              )
-            }
-          >
-            <Brain className="h-4 w-4" aria-hidden />
+          </MainNavLink>
+          <MainNavLink to="/study" onClose={close} icon={Brain}>
             {lang === 'ru' ? 'Повторение' : 'Study'}
-          </NavLink>
-          <NavLink
-            to="/mock"
-            onClick={close}
-            className={({ isActive }) =>
-              cn(
-                'mx-2 mt-px flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-ink text-paper'
-                  : 'text-ink-2 hover:bg-paper hover:text-ink',
-              )
-            }
-          >
-            <Target className="h-4 w-4" aria-hidden />
+          </MainNavLink>
+          <MainNavLink to="/mock" onClose={close} icon={Target}>
             {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
-          </NavLink>
-          <NavLink
-            to="/bookmarks"
-            onClick={close}
-            className={({ isActive }) =>
-              cn(
-                'mx-2 mt-px flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-ink text-paper'
-                  : 'text-ink-2 hover:bg-paper hover:text-ink',
-              )
-            }
-          >
-            <Bookmark className="h-4 w-4" aria-hidden />
+          </MainNavLink>
+          <MainNavLink to="/bookmarks" onClose={close} icon={Bookmark}>
             {lang === 'ru' ? 'Закладки' : 'Bookmarks'}
-          </NavLink>
+          </MainNavLink>
+          <MainNavLink to="/stats" onClose={close} icon={TrendingUp}>
+            {lang === 'ru' ? 'Статистика' : 'Mastery'}
+          </MainNavLink>
 
           <div className="my-3 mx-5 h-px bg-rule" />
 

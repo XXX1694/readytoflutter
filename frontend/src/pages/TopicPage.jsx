@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Brain, Target, Printer } from 'lucide-react';
+import { ArrowLeft, Brain, Target, Printer, FileText, MessagesSquare } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTopic } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
@@ -8,7 +8,7 @@ import QuestionCard from '../components/QuestionCard.jsx';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
-import { Button, Pill, ProgressBar, FullPageLoader, Eyebrow, TopicGlyph, levelTone } from '../ui/index.js';
+import { Button, Pill, ProgressBar, Skeleton, Eyebrow, TopicGlyph, levelTone } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 
 const FILTERS = ['all', 'not_started', 'in_progress', 'completed'];
@@ -87,7 +87,7 @@ export default function TopicPage() {
     setOpenId((prev) => (prev === q.id ? null : q.id));
   }, { preventDefault: true });
 
-  if (isLoading) return <FullPageLoader label={t.loadingTopic} />;
+  if (isLoading) return <TopicSkeleton />;
   if (error || !topic) {
     return (
       <div className="flex h-full items-center justify-center px-4">
@@ -165,10 +165,27 @@ export default function TopicPage() {
             <Button
               variant="codex"
               size="sm"
+              onClick={() => navigate(`/round/${topic.slug}`)}
+            >
+              <MessagesSquare className="h-3.5 w-3.5" />
+              {lang === 'ru' ? 'Раунд' : 'Round'}
+            </Button>
+            <Button
+              variant="codex"
+              size="sm"
               onClick={() => navigate(`/mock?topic=${topic.slug}`)}
             >
               <Target className="h-3.5 w-3.5" />
               {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/cheatsheet`, '_blank', 'noopener')}
+              className="text-muted hover:text-ink"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              {lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}
             </Button>
             <Button
               variant="ghost"
@@ -246,6 +263,53 @@ export default function TopicPage() {
               />
             ))
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopicSkeleton() {
+  return (
+    <div className="bg-page">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <Skeleton className="mb-5 h-4 w-32" />
+        <header className="mb-8 border-b-1.5 border-ink pb-6">
+          <div className="flex items-start gap-4">
+            <Skeleton className="h-14 w-14 rounded-md" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-9 w-3/4" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          </div>
+          <div className="mt-5 flex items-center gap-3">
+            <Skeleton className="h-2 w-1/2 max-w-md" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Skeleton className="h-8 w-24 rounded-md" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="h-8 w-28 rounded-md" />
+          </div>
+        </header>
+        <div className="mb-6 flex gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-20 rounded-md" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-4 shadow-codex-sm">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-7 w-7 rounded-md" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

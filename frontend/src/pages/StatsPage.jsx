@@ -6,7 +6,7 @@ import { getCardState, getSrsSummary } from '../lib/srs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
-import { Button, Eyebrow, ProgressBar, Pill, FullPageLoader, TopicGlyph, levelTone } from '../ui/index.js';
+import { Button, Eyebrow, ProgressBar, Pill, Skeleton, TopicGlyph, levelTone } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 
 const LEVELS = ['junior', 'mid', 'senior'];
@@ -28,7 +28,7 @@ export default function StatsPage() {
   const questionsQ = useQuestions();
   const statsQ = useStats();
 
-  if (topicsQ.isLoading || questionsQ.isLoading) return <FullPageLoader />;
+  if (topicsQ.isLoading || questionsQ.isLoading) return <StatsSkeleton />;
 
   const topics = topicsQ.data ?? [];
   const questions = questionsQ.data ?? [];
@@ -289,6 +289,49 @@ function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }) {
       >
         <Brain className="h-4 w-4" />
       </button>
+    </div>
+  );
+}
+
+function StatsSkeleton() {
+  return (
+    <div className="bg-page">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <Skeleton className="mb-5 h-4 w-32" />
+        <header className="mb-8 border-b-1.5 border-ink pb-6">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="mt-2 h-9 w-2/3" />
+          <Skeleton className="mt-1 h-3 w-1/2" />
+        </header>
+        <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-5 shadow-codex-sm">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="mt-3 h-9 w-12" />
+            </div>
+          ))}
+        </div>
+        {[1, 2, 3].map((row) => (
+          <section key={row} className="mb-10">
+            <div className="mb-4 border-b-1.5 border-ink pb-2">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="mt-2 h-6 w-40" />
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-md border border-rule bg-paper-2/80 px-4 py-3">
+                  <Skeleton className="h-9 w-9 rounded-md" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-2 w-1/2" />
+                  </div>
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

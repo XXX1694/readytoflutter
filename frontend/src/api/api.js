@@ -1,7 +1,35 @@
 import axios from 'axios';
+import { useAuth } from '../store/auth.js';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
 const api = axios.create({ baseURL: apiBaseUrl });
+
+// Attach the auth token (if any) to every outgoing request. Reading from the
+// store on each request keeps things in sync after login/logout without
+// re-creating the axios instance.
+api.interceptors.request.use((config) => {
+  const token = useAuth.getState().token;
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// 401 → clear local session. The fallbacks below take over for any caller
+// that depends on progress reads.
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401) {
+      const { token, clearSession } = useAuth.getState();
+      if (token) clearSession();
+    }
+    return Promise.reject(err);
+  },
+);
+
+export { api, apiBaseUrl };
 
 const STATIC_DATA_URL = `${import.meta.env.BASE_URL}seed/static-data.json`;
 const PROGRESS_STORAGE_KEY = 'readytoflutter_progress_v1';
@@ -263,3 +291,51 @@ export const resetProgress = () =>
     () => api.delete('/progress/reset').then((r) => r.data),
     fallbackResetProgress,
   );
+
+// ── Auth ────────────────────────────────────────────────────────────────────
+// These don't have static fallbacks — auth is only meaningful with a real
+// backend. Callers handle the rejection (LoginPage etc).
+
+export const authRegister = (email, password, name) =>
+  api.post('/auth/register', { email, password, name }).then((r) => r.data);
+
+export const authLogin = (email, password) =>
+  api.post('/auth/login', { email, password }).then((r) => r.data);
+
+export const authLogout = () =>
+  api.post('/auth/logout').then((r) => r.data).catch(() => ({ ok: true }));
+
+export const authMe = () =>
+  api.get('/auth/me').then((r) => r.data);
+
+export const authUpdateName = (name) =>
+  api.put('/auth/me', { name }).then((r) => r.data);
+
+export const authChangePassword = (currentPassword, newPassword) =>
+  api.put('/auth/password', { currentPassword, newPassword }).then((r) => r.data);
+
+export const authChangeEmail = (currentPassword, newEmail) =>
+  api.put('/auth/email', { currentPassword, newEmail }).then((r) => r.data);
+
+export const authDeleteAccount = () =>
+  api.delete('/auth/me').then((r) => r.data);
+
+// Bulk import — used at first login to migrate localStorage progress to the
+// server. Items use the same shape as the in-browser store.
+export const bulkSyncProgress = (items) =>
+  api.post('/progress/bulk', { items }).then((r) => r.data);
+
+// Read raw localStorage progress so the sync helper can transform it for the
+// bulk endpoint without touching the rest of the dual-mode plumbing.
+export const readLocalProgress = () => {
+  try {
+    const raw = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const clearLocalProgress = () => {
+  try { localStorage.removeItem(PROGRESS_STORAGE_KEY); } catch { /* ignore */ }
+};

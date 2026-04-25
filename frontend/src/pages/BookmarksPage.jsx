@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookmarkX, Bookmark, Brain, Target } from 'lucide-react';
+import { ArrowLeft, BookmarkX, Bookmark, Brain, Target, Star, ArrowRight } from 'lucide-react';
 import { useQuestions } from '../lib/queries.js';
 import { useBookmarkIds } from '../lib/useBookmark.js';
 import { clearAllBookmarks } from '../lib/bookmarks.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
-import { Button, FullPageLoader } from '../ui/index.js';
+import { Button, Skeleton } from '../ui/index.js';
 import QuestionCard from '../components/QuestionCard.jsx';
 
 export default function BookmarksPage() {
@@ -21,7 +21,23 @@ export default function BookmarksPage() {
     return questions.filter((q) => set.has(q.id));
   }, [questions, ids]);
 
-  if (isLoading) return <FullPageLoader />;
+  if (isLoading) {
+    return (
+      <div className="bg-page">
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+          <Skeleton className="mb-5 h-4 w-32" />
+          <Skeleton className="mb-2 h-3 w-20" />
+          <Skeleton className="mb-1 h-9 w-2/3" />
+          <Skeleton className="mb-6 h-3 w-1/3" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-md" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-page">
@@ -88,16 +104,24 @@ export default function BookmarksPage() {
         </header>
 
         {bookmarked.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <Bookmark className="h-10 w-10 text-muted" aria-hidden />
-            <p className="font-display text-xl text-ink">
-              {lang === 'ru' ? 'Закладок пока нет' : 'No bookmarks yet'}
-            </p>
-            <p className="max-w-sm font-mono text-[11px] uppercase tracking-wider text-muted">
-              {lang === 'ru'
-                ? 'Жми звёздочку на любой карточке — здесь соберётся «список добить»'
-                : 'Hit the star on any question — they pile up here as your "tough list"'}
-            </p>
+          <div className="mt-10 flex flex-col items-center gap-4 rounded-md border-1.5 border-dashed border-rule-strong bg-paper-2/40 px-6 py-14 text-center sm:py-20">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-sm">
+              <Star className="h-5 w-5 text-[rgb(var(--amber))]" aria-hidden />
+            </span>
+            <div className="space-y-1">
+              <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
+                {lang === 'ru' ? 'Список «добить» пуст' : 'Your tough list is empty'}
+              </h2>
+              <p className="mx-auto max-w-sm text-sm text-ink-2">
+                {lang === 'ru'
+                  ? 'Жми ★ на любой карточке вопроса — сюда соберётся всё, что хочешь добить перед собесом.'
+                  : 'Tap ★ on any question — anything you want to drill before the interview lands here.'}
+              </p>
+            </div>
+            <Button variant="brand" size="md" onClick={() => navigate('/')}>
+              <ArrowRight className="h-4 w-4" />
+              {lang === 'ru' ? 'Перейти к темам' : 'Browse topics'}
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">

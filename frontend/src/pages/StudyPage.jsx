@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, RotateCcw, ArrowRight, Sparkles, Brain, Code2, ChevronDown,
+  X, RotateCcw, ArrowRight, Sparkles, Brain, Code2, ChevronDown, Edit3, EyeOff,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
 import { useQuestions } from '../lib/queries.js';
 import { pickDueQueue, rateCard, getCardState } from '../lib/srs.js';
+import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
@@ -33,6 +34,8 @@ export default function StudyPage() {
   const { lang } = useLang();
   const t = useT(lang);
   const { questionText, answerText } = useContent(lang);
+  const recallMode = usePrefs((s) => s.recallMode);
+  const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
 
   const { data: allQuestions = [], isLoading } = useQuestions();
 
@@ -61,6 +64,10 @@ export default function StudyPage() {
   const [flipped, setFlipped] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [stats, setStats] = useState({ again: 0, hard: 0, good: 0, easy: 0 });
+  // Per-session gist map: { [questionId]: string }. Lives in memory only;
+  // recall is meant to be lightweight, not persisted.
+  const [gists, setGists] = useState({});
+  const gistRef = useRef(null);
 
   useEffect(() => {
     if (pool.length === 0) return;
@@ -68,11 +75,21 @@ export default function StudyPage() {
     setCursor(0);
     setFlipped(false);
     setShowCode(false);
+    setGists({});
   }, [pool]);
 
   const current = queue[cursor];
   const total = queue.length;
   const finished = total > 0 && cursor >= total;
+
+  // Auto-focus gist input when entering a new card in recall mode
+  useEffect(() => {
+    if (recallMode && !flipped && current) {
+      // Defer to next frame so the textarea is mounted
+      const id = setTimeout(() => gistRef.current?.focus(), 60);
+      return () => clearTimeout(id);
+    }
+  }, [recallMode, flipped, current]);
 
   const next = () => {
     setFlipped(false);
@@ -85,6 +102,11 @@ export default function StudyPage() {
     rateCard(current.id, key);
     setStats((s) => ({ ...s, [key]: s[key] + 1 }));
     next();
+  };
+
+  const updateGist = (text) => {
+    if (!current) return;
+    setGists((g) => ({ ...g, [current.id]: text }));
   };
 
   // Hotkeys
@@ -144,7 +166,7 @@ export default function StudyPage() {
       <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-3xl flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         {/* Top bar */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Brain className="h-5 w-5 text-brand" aria-hidden />
             <span className="font-display text-xl font-medium text-ink">
               {lang === 'ru' ? 'Сессия повторения' : 'Study session'}
@@ -158,10 +180,28 @@ export default function StudyPage() {
               </Pill>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} aria-label="Close">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleRecallMode}
+              aria-pressed={recallMode}
+              aria-label={lang === 'ru' ? 'Режим активного припоминания' : 'Active recall mode'}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md border-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-all shadow-codex-sm',
+                recallMode
+                  ? 'border-ink bg-ink text-paper'
+                  : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+              )}
+              title={lang === 'ru' ? 'Печатать суть до раскрытия' : 'Type a gist before revealing'}
+            >
+              <Edit3 className="h-3 w-3" aria-hidden />
+              {lang === 'ru' ? 'Recall' : 'Recall'}
+            </button>
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} aria-label="Close">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
         </header>
 
         {/* Progress */}
@@ -172,8 +212,8 @@ export default function StudyPage() {
           </span>
         </div>
 
-        {/* Card */}
-        <div className="flex flex-1 items-center justify-center">
+        {/* Card + (optional) gist input */}
+        <div className="flex flex-1 flex-col items-stretch justify-center gap-4">
           <div className="w-full perspective-[1500px]">
             <motion.div
               key={current.id}
@@ -189,7 +229,8 @@ export default function StudyPage() {
                 aria-label={lang === 'ru' ? 'Показать ответ' : 'Reveal answer'}
                 className={cn(
                   'block w-full rounded-md border-1.5 border-ink bg-paper-2 p-6 text-left shadow-codex sm:p-10',
-                  'min-h-[60vh] backface-hidden',
+                  'backface-hidden',
+                  recallMode ? 'min-h-[42vh]' : 'min-h-[60vh]',
                 )}
                 style={{ backfaceVisibility: 'hidden' }}
               >
@@ -205,13 +246,20 @@ export default function StudyPage() {
                       <Sparkles className="h-2.5 w-2.5" aria-hidden /> {lang === 'ru' ? 'Новая' : 'New'}
                     </Pill>
                   )}
+                  {recallMode && (
+                    <Pill tone="ink" size="xs">
+                      <Edit3 className="h-2.5 w-2.5" aria-hidden /> Recall
+                    </Pill>
+                  )}
                 </div>
                 <p className="font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
                   {questionText(current)}
                 </p>
                 <div className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
                   <kbd className="rounded border border-rule-strong px-1.5 py-0.5">Space</kbd>
-                  {lang === 'ru' ? 'показать ответ' : 'reveal answer'}
+                  {recallMode
+                    ? (lang === 'ru' ? 'когда готов — раскрыть' : 'when ready — reveal')
+                    : (lang === 'ru' ? 'показать ответ' : 'reveal answer')}
                 </div>
               </button>
 
@@ -219,13 +267,25 @@ export default function StudyPage() {
               <div
                 className={cn(
                   'absolute inset-0 overflow-y-auto rounded-md border-1.5 border-ink bg-paper-2 p-6 shadow-codex sm:p-10',
-                  'min-h-[60vh] backface-hidden',
+                  'backface-hidden',
+                  recallMode ? 'min-h-[42vh]' : 'min-h-[60vh]',
                 )}
                 style={{
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                 }}
               >
+                {recallMode && gists[current.id]?.trim() && (
+                  <div className="mb-4 rounded-md border border-rule-strong bg-paper px-3 py-2">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                      <Edit3 className="h-2.5 w-2.5" aria-hidden />
+                      {lang === 'ru' ? 'Твоя суть' : 'Your gist'}
+                    </div>
+                    <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink-2">
+                      {gists[current.id]}
+                    </div>
+                  </div>
+                )}
                 <div className="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {t.answer}
                   <span className="h-px flex-1 bg-rule" aria-hidden />
@@ -253,6 +313,38 @@ export default function StudyPage() {
               </div>
             </motion.div>
           </div>
+
+          {/* Gist input — only on the front side, in recall mode */}
+          <AnimatePresence>
+            {recallMode && !flipped && (
+              <motion.div
+                key="gist"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+              >
+                <label className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                  <Edit3 className="h-2.5 w-2.5" aria-hidden />
+                  {lang === 'ru' ? 'Суть в двух словах' : 'Gist — two lines'}
+                  <span className="h-px flex-1 bg-rule" aria-hidden />
+                  <span className="font-mono text-[10px] tabular-nums normal-case tracking-normal text-muted-2">
+                    {(gists[current.id] || '').length} / 280
+                  </span>
+                </label>
+                <textarea
+                  ref={gistRef}
+                  value={gists[current.id] || ''}
+                  onChange={(e) => updateGist(e.target.value.slice(0, 280))}
+                  placeholder={lang === 'ru'
+                    ? 'Напечатай ключевую идею пальцами — даже одно слово фиксирует мозг…'
+                    : 'Type the key idea — even one word commits your brain…'}
+                  rows={3}
+                  className="w-full resize-none rounded-md border-1.5 border-rule-strong bg-paper-2 px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-ink focus:ring-1 focus:ring-brand/30"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Rating bar */}

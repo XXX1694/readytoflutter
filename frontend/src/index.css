@@ -59,7 +59,9 @@
     --coral:        228 156 134;   /* #E49C86 less hot */
     --plum:         180 138 218;
 
-    --shadow:        12  20  34;   /* equal to paper — invisible offset */
+    /* Cool ink-toned offset — brighter than paper-2 (19/28/46) so the
+       brutalist hard shadow keeps its identity in dark mode */
+    --shadow:        84 110 160;   /* ~ rule-strong tinted brighter */
 
     color-scheme: dark;
   }
@@ -271,6 +273,21 @@
     content: " (" attr(href) ")";
     font-size: 0.85em;
     color: #555;
+  }
+
+  /* Cheatsheet — 2-col grid that fits A4. Items must not split across pages. */
+  .print-view .cheatsheet-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6pt 10pt !important;
+  }
+  .print-view .cheatsheet-item {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  /* Cheatsheet hyperlinks: don't expand to "(href)" since the page is dense */
+  .print-view a[href]::after {
+    content: '' !important;
   }
 }
 

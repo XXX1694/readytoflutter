@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, useCallback, useMemo, forwardRef } from 'r
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDown, Code2, Circle, CircleDot, CheckCircle2, NotebookPen,
-  Bookmark, Volume2, Square,
+  Bookmark, Volume2, Square, Lightbulb, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import CodeBlock from './CodeBlock.jsx';
 import { useUpdateProgress } from '../lib/queries.js';
+import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
@@ -14,6 +15,7 @@ import { Pill, difficultyTone } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import { useBookmark } from '../lib/useBookmark.js';
 import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts.js';
+import { extractHint } from '../lib/hint.js';
 
 const STATUS_META = {
   not_started: { icon: Circle,        tone: 'ghost', accent: 'text-muted' },
@@ -38,6 +40,22 @@ const QuestionCard = forwardRef(function QuestionCard(
   const { questionText, answerText } = useContent(lang);
   const update = useUpdateProgress();
   const [bookmarked, toggleBookmarked] = useBookmark(question.id);
+  const recallMode = usePrefs((s) => s.recallMode);
+
+  // Hint-ladder reveal (only when recallMode is on):
+  //   'hidden' → 'hint' → 'full'
+  // Resets each time the card is collapsed.
+  const [reveal, setReveal] = useState(recallMode ? 'hidden' : 'full');
+  useEffect(() => {
+    // When the card opens or recallMode toggles, reset to the appropriate stage.
+    if (!open) return;
+    setReveal(recallMode ? 'hidden' : 'full');
+    setShowCode(false);
+  }, [open, recallMode, question.id]);
+
+  const fullAnswer = answerText(question);
+  const hintText = useMemo(() => extractHint(fullAnswer), [fullAnswer]);
+  const sameAsFull = hintText && hintText.length >= fullAnswer.trim().length - 4;
 
   // Subscribe once to the TTS singleton so we can light up the button when
   // *this* card is the one currently being read.
@@ -218,8 +236,24 @@ const QuestionCard = forwardRef(function QuestionCard(
                   <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                     {t.answer}
                   </span>
+                  {recallMode && reveal !== 'full' && (
+                    <Pill tone="ink" size="xs">
+                      <Lightbulb className="h-2.5 w-2.5" aria-hidden /> Recall
+                    </Pill>
+                  )}
                   <span className="h-px flex-1 bg-rule" aria-hidden />
-                  {isTtsSupported() && (
+                  {recallMode && reveal === 'full' && (
+                    <button
+                      type="button"
+                      onClick={() => setReveal('hidden')}
+                      aria-label={lang === 'ru' ? 'Скрыть ответ снова' : 'Hide again'}
+                      className="inline-flex items-center gap-1 rounded-md border border-rule-strong px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted transition-colors hover:border-ink hover:text-ink"
+                    >
+                      <Eye className="h-3 w-3" />
+                      {lang === 'ru' ? 'Скрыть' : 'Hide'}
+                    </button>
+                  )}
+                  {reveal !== 'hidden' && isTtsSupported() && (
                     <button
                       type="button"
                       onClick={() => {
@@ -227,7 +261,8 @@ const QuestionCard = forwardRef(function QuestionCard(
                           stop();
                           setThisSpeakingToken(null);
                         } else {
-                          const text = `${questionText(question)}. ${answerText(question)}`;
+                          const body = reveal === 'full' ? answerText(question) : hintText;
+                          const text = `${questionText(question)}. ${body}`;
                           const tok = speak(text, {
                             lang,
                             onEnd: () => setThisSpeakingToken(null),
@@ -259,13 +294,77 @@ const QuestionCard = forwardRef(function QuestionCard(
                     </button>
                   )}
                 </header>
-                <div className="answer-text text-[14.5px] leading-relaxed text-ink-2 sm:text-[15px]">
-                  {answerText(question)}
-                </div>
+
+                {recallMode && reveal === 'hidden' ? (
+                  <div className="recall-veil relative overflow-hidden rounded-md border-1.5 border-dashed border-rule-strong">
+                    {/* Blurred peek of the actual answer — strong blur so it
+                        teases shape and length without leaking content. */}
+                    <div
+                      aria-hidden
+                      className="answer-text pointer-events-none select-none px-4 py-5 text-[14.5px] leading-relaxed text-ink-2 opacity-50 blur-[8px] sm:text-[15px]"
+                      style={{ filter: 'blur(8px)' }}
+                    >
+                      {fullAnswer.slice(0, 360)}
+                    </div>
+                    {/* Overlay: prompt + reveal buttons, centered over the peek. */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/55 px-4 py-5 text-center backdrop-blur-[2px] dark:bg-paper/70">
+                      <p className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                        <Lightbulb className="h-3 w-3" aria-hidden />
+                        {lang === 'ru'
+                          ? 'Сначала проговори ответ про себя'
+                          : 'Recall the answer in your head first'}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {hintText && !sameAsFull && (
+                          <button
+                            type="button"
+                            onClick={() => setReveal('hint')}
+                            className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-rule-strong bg-paper-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:border-ink hover:text-ink hover:shadow-codex"
+                          >
+                            <Lightbulb className="h-3.5 w-3.5" aria-hidden />
+                            {lang === 'ru' ? 'Подсказка' : 'Hint'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setReveal('full')}
+                          className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+                        >
+                          <Eye className="h-3.5 w-3.5" aria-hidden />
+                          {lang === 'ru' ? 'Показать ответ' : 'Reveal answer'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : recallMode && reveal === 'hint' ? (
+                  <div className="space-y-3">
+                    <div className="rounded-md border border-amber/40 bg-amber/10 px-4 py-3">
+                      <div className="mb-1.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[rgb(var(--amber))]">
+                        <Lightbulb className="h-3 w-3" aria-hidden />
+                        {lang === 'ru' ? 'Подсказка' : 'Hint'}
+                      </div>
+                      <p className="text-[14.5px] leading-relaxed text-ink-2 sm:text-[15px]">
+                        {hintText}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReveal('full')}
+                      className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+                    >
+                      <Eye className="h-3.5 w-3.5" aria-hidden />
+                      {lang === 'ru' ? 'Полный ответ' : 'Full answer'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="answer-text text-[14.5px] leading-relaxed text-ink-2 sm:text-[15px]">
+                    {answerText(question)}
+                  </div>
+                )}
               </section>
 
-              {/* Code */}
-              {question.code_example && (
+              {/* Code — only after full reveal */}
+              {question.code_example && reveal === 'full' && (
                 <section className="px-4 pb-4 sm:px-5">
                   <button
                     type="button"
