@@ -237,12 +237,23 @@ export default function KnowledgePage() {
           <Search className="h-4 w-4 text-muted" aria-hidden />
           <input
             type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            autoCorrect="off"
+            spellCheck={false}
+            autoCapitalize="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={(e) => {
+              setTimeout(() => {
+                try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                catch { /* older Safari */ }
+              }, 250);
+            }}
             placeholder={isRu
               ? 'Найти материал — riverpod, тестирование, arch…'
               : 'Search — riverpod, testing, arch…'}
-            className="w-full bg-transparent font-sans text-sm text-ink placeholder:text-muted-2 outline-none"
+            className="w-full bg-transparent font-sans text-base text-ink placeholder:text-muted-2 outline-none sm:text-sm"
           />
           {query && (
             <button
@@ -385,7 +396,7 @@ function CategoryChip({ active, onClick, label, count, Icon }) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-200',
+        'group inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-200',
         active
           ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.18)]'
           : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
@@ -417,7 +428,7 @@ function ToggleChip({ active, onClick, children }) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-all duration-200',
+        'inline-flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-200',
         active
           ? 'border-ink bg-ink text-paper'
           : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',

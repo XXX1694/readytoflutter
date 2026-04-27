@@ -439,6 +439,8 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           value={draft.question}
           onChange={(e) => setDraft({ ...draft, question: e.target.value })}
           rows={2}
+          autoCorrect="off"
+          spellCheck={false}
           className="w-full resize-y rounded-xl border border-rule/12 bg-paper-2/60 px-3 py-2 text-sm leading-relaxed outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15"
         />
       </Field>
@@ -448,6 +450,8 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           value={draft.answer}
           onChange={(e) => setDraft({ ...draft, answer: e.target.value })}
           rows={10}
+          autoCorrect="off"
+          spellCheck={false}
           className="w-full resize-y rounded-xl border border-rule/12 bg-paper-2/60 px-3 py-2 text-sm leading-relaxed outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15 answer-text"
         />
         <div className="mt-1 font-mono text-[10px] text-muted-2">
@@ -460,6 +464,9 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           value={draft.code_example || ''}
           onChange={(e) => setDraft({ ...draft, code_example: e.target.value || null })}
           rows={12}
+          autoCorrect="off"
+          spellCheck={false}
+          autoCapitalize="off"
           placeholder={lang === 'ru' ? '// необязательно' : '// optional'}
           className="w-full resize-y rounded-xl border border-rule/12 bg-paper-2/60 px-3 py-2 text-[12.5px] leading-relaxed outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15 font-mono"
         />

@@ -25,8 +25,8 @@
     --ink-3:        113 113 122;   /* #71717A zinc-500 tertiary */
     --rule:          24  24  27;   /* used as alpha base — see border below */
     --rule-strong:   24  24  27;   /* same — strength via alpha */
-    --muted:        113 113 122;   /* #71717A */
-    --muted-2:      161 161 170;   /* #A1A1AA */
+    --muted:        113 113 122;   /* #71717A — ~5.0:1 on white */
+    --muted-2:      130 130 140;   /* #82828C — was #A1A1AA (only 2.7:1, fails AA) */
 
     /* Brand: indigo-violet. Aurora-friendly. */
     --brand:         99 102 241;   /* #6366F1 indigo-500 */
@@ -55,19 +55,19 @@
     --paper-2:      255 252 246;   /* clean cream */
     --ink:           41  31  20;   /* warm dark sepia */
     --ink-2:         87  68  48;
-    --ink-3:        130 102  74;
+    --ink-3:        117  92  66;   /* slightly darker — was 130/102/74, low on cream */
     --rule:          87  68  48;
     --rule-strong:   87  68  48;
-    --muted:        130 108  82;
-    --muted-2:      168 142 110;
+    --muted:        117  95  68;   /* tightened — was 130/108/82 → ~5:1 */
+    --muted-2:      150 124  92;   /* darker tertiary — was 168/142/110 (only 3.4:1) */
 
     --brand:        180  83  9;    /* burnt amber */
     --brand-ink:    146  64  14;
     --brand-sky:    202 138  4;    /* warm gold */
-    --mint:         101 163  13;   /* olive */
+    --mint:         101 130  20;   /* deeper olive — readable on cream */
     --amber:        217 119  6;
-    --coral:        220  38  38;
-    --plum:         147  51 234;
+    --coral:        180  60  45;   /* warmed brick — less alarming on cream */
+    --plum:         126  58 162;   /* dusky plum — toned for warm bg */
 
     --shadow:        78  56  32;
 
@@ -83,8 +83,8 @@
     --ink-3:        161 161 170;   /* #A1A1AA zinc-400 */
     --rule:         255 255 255;   /* white at low alpha */
     --rule-strong:  255 255 255;
-    --muted:        161 161 170;   /* #A1A1AA */
-    --muted-2:      113 113 122;   /* #71717A */
+    --muted:        161 161 170;   /* #A1A1AA — ~6.5:1 on paper-2 */
+    --muted-2:      138 138 148;   /* #8A8A94 — bumped from #71717A (was 4.0:1, fails AA body) */
 
     --brand:        129 140 248;   /* #818CF8 indigo-400 brighter */
     --brand-ink:    165 180 252;   /* #A5B4FC indigo-300 hover */
@@ -103,6 +103,9 @@
     box-sizing: border-box;
     /* Borders read as low-alpha hairlines now, not solid ink rules. */
     border-color: rgb(var(--rule) / 0.10);
+    /* Kill the grey iOS tap flash globally — buttons handle their own
+       feedback via :active / hover states. */
+    -webkit-tap-highlight-color: transparent;
   }
   .dark * {
     border-color: rgb(var(--rule) / 0.10);
@@ -121,6 +124,28 @@
   body {
     background: rgb(var(--paper));
     color: rgb(var(--ink));
+    /* Prevent body bouncing when a nested scroller hits its end on iOS. */
+    overscroll-behavior-y: none;
+  }
+  /* Inputs: keep the default text caret + selection but no tap flash. */
+  input, textarea, select, button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* iOS auto-zoom prevention: any input with font-size < 16px causes a
+     forced zoom on focus. Our <16px monospace inputs are rare, but bump
+     globally for safety on iPhone viewports. */
+  @supports (-webkit-touch-callout: none) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: max(16px, 1em);
+    }
   }
 
   /* All headings use sans now — Inter Display weights. The `font-display`
@@ -337,9 +362,9 @@ h1, h2, h3 { text-wrap: balance; }
 .dark .skeleton-shine {
   background-image: linear-gradient(
     100deg,
-    rgb(255 255 255 / 0.04) 20%,
-    rgb(255 255 255 / 0.10) 50%,
-    rgb(255 255 255 / 0.04) 80%
+    rgb(255 255 255 / 0.06) 20%,
+    rgb(255 255 255 / 0.14) 50%,
+    rgb(255 255 255 / 0.06) 80%
   );
 }
 @media (prefers-reduced-motion: reduce) {

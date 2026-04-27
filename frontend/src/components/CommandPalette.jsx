@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -26,6 +26,7 @@ import {
   LogOut,
   UserPlus,
   Cloud,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
@@ -65,6 +66,68 @@ export default function CommandPalette() {
   useHotkeys('mod+m', (e) => { e.preventDefault(); navigate('/mock'); }, { enableOnFormTags: true });
   useHotkeys('mod+b', (e) => { e.preventDefault(); navigate('/bookmarks'); }, { enableOnFormTags: true });
   useHotkeys('mod+e', (e) => { e.preventDefault(); navigate('/admin'); }, { enableOnFormTags: true });
+  useHotkeys('mod+,', (e) => { e.preventDefault(); navigate('/settings'); }, { enableOnFormTags: true });
+
+  // Vim-style "go" prefix: press `g` then a letter within ~1.2s for navigation.
+  // Skipped while typing or when the palette is open. Matches GitHub/Linear UX.
+  const goPending = useRef(0);
+  const isTyping = (e) => {
+    const tag = (e.target?.tagName || '').toLowerCase();
+    return ['input', 'textarea', 'select'].includes(tag) || e.target?.isContentEditable;
+  };
+  const armGo = (e) => {
+    if (isTyping(e) || open) return;
+    e.preventDefault();
+    goPending.current = Date.now();
+  };
+  const consumeGo = (e, to) => {
+    if (isTyping(e) || open) return false;
+    if (Date.now() - goPending.current >= 1200) return false;
+    e.preventDefault();
+    goPending.current = 0;
+    navigate(to);
+    return true;
+  };
+
+  useHotkeys('g', armGo);
+  useHotkeys('h', (e) => consumeGo(e, '/'));
+  useHotkeys('y', (e) => consumeGo(e, '/study'));         // y = study (s is search)
+  useHotkeys('k', (e) => consumeGo(e, '/knowledge'));
+  useHotkeys('a', (e) => consumeGo(e, '/settings'));      // a = account/settings
+
+  // `g s`, `g m`, `g b`, `g t` are handled below alongside the bare `s/m/b/t`
+  // keys so we don't double-register the same letter twice with conflicting
+  // behaviour.
+
+  useHotkeys('s', (e) => {
+    if (consumeGo(e, '/search')) return;
+    // bare `s` does nothing — Cmd+S already covers Study.
+  });
+  useHotkeys('m', (e) => {
+    if (consumeGo(e, '/mock')) return;
+  });
+  useHotkeys('b', (e) => {
+    if (consumeGo(e, '/bookmarks')) return;
+  });
+
+  // Single-key power-user toggles. Skipped while typing or while `g` is armed.
+  useHotkeys('t', (e) => {
+    if (consumeGo(e, '/stats')) return; // `g t` → mastery
+    if (isTyping(e) || open) return;
+    e.preventDefault();
+    const next = theme === 'light' ? 'sepia' : theme === 'sepia' ? 'dark' : 'light';
+    setTheme(next);
+  });
+  useHotkeys('r', (e) => {
+    if (isTyping(e) || open) return;
+    e.preventDefault();
+    toggleRecallMode();
+    toast.success(
+      lang === 'ru'
+        ? `Режим recall: ${!recallMode ? 'вкл' : 'выкл'}`
+        : `Recall mode: ${!recallMode ? 'on' : 'off'}`,
+    );
+  });
 
   useEffect(() => { if (!open) setQuery(''); }, [open]);
 
@@ -95,7 +158,13 @@ export default function CommandPalette() {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-[16vh] z-50 w-[92vw] max-w-2xl -translate-x-1/2 outline-none data-[state=open]:animate-slide-up">
+        {/*
+          Mobile: snap near the top with a small inset (4vh) and let the body
+          scroll inside Command.List — `top-[16vh]` would push half the
+          palette off the screen on a 568pt iPhone with the keyboard up.
+          Desktop (sm+): center-ish 16vh as before.
+        */}
+        <Dialog.Content className="fixed left-1/2 top-[4vh] sm:top-[16vh] z-50 w-[92vw] max-w-2xl -translate-x-1/2 outline-none data-[state=open]:animate-slide-up">
           <Dialog.Title className="sr-only">{t.commandPlaceholder}</Dialog.Title>
           <Dialog.Description className="sr-only">{t.commandHint}</Dialog.Description>
           <Command
@@ -108,14 +177,21 @@ export default function CommandPalette() {
                 value={query}
                 onValueChange={setQuery}
                 placeholder={t.commandPlaceholder}
-                className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
+                inputMode="search"
+                enterKeyHint="search"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="off"
+                className="flex-1 bg-transparent text-base sm:text-[15px] text-ink placeholder:text-muted-2 outline-none"
               />
               <kbd className="hidden sm:flex items-center gap-1 rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-2">
                 ESC
               </kbd>
             </div>
 
-            <Command.List className="max-h-[60vh] overflow-y-auto p-2">
+            {/* Cap with `dvh` so the palette body shrinks with the iOS keyboard;
+                bigger ceiling on phones because we open near the top. */}
+            <Command.List className="max-h-[70dvh] sm:max-h-[60vh] overflow-y-auto overscroll-contain p-2">
               <Command.Empty className="py-8 text-center text-sm text-muted">
                 {t.cmdNoResults}
               </Command.Empty>
@@ -163,6 +239,15 @@ export default function CommandPalette() {
                 >
                   {lang === 'ru' ? 'Статистика' : 'Mastery map'}
                 </CmdItem>
+                {backendAvailable && (
+                  <CmdItem
+                    icon={<SettingsIcon />}
+                    onSelect={run(() => navigate('/settings'))}
+                    trailing="⌘+,"
+                  >
+                    {lang === 'ru' ? 'Настройки' : 'Settings'}
+                  </CmdItem>
+                )}
                 <CmdItem
                   icon={<Pencil />}
                   onSelect={run(() => navigate('/admin'))}

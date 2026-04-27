@@ -14,12 +14,17 @@ export default function Layout() {
   const theme = usePrefs((s) => s.theme);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-page text-ink">
+    // Use dynamic viewport units (`100dvh`) so the iOS browser chrome /
+    // virtual keyboard correctly shrink the visible area. `h-screen` bakes in
+    // the larger `100vh` (max chrome) which clips the bottom of inputs when
+    // the keyboard pops up. `min-h-dvh` lets layout grow if a child is huge
+    // while still resizing with the keyboard.
+    <div className="flex min-h-dvh h-dvh overflow-hidden bg-page text-ink">
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overscroll-contain">
           <RouteTransition>
             <Outlet />
           </RouteTransition>

@@ -161,8 +161,15 @@ export default function SignupPage() {
               <input
                 type="text"
                 autoComplete="name"
+                autoCapitalize="words"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={(e) => {
+                  setTimeout(() => {
+                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                    catch { /* older Safari */ }
+                  }, 250);
+                }}
                 placeholder={T.namePh}
                 className={inputClass(false)}
               />
@@ -171,9 +178,19 @@ export default function SignupPage() {
             <Field label={T.email} icon={<AtSign className="h-3.5 w-3.5" />} error={errLabel(errors.email)}>
               <input
                 type="email"
+                inputMode="email"
                 autoComplete="email"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={(e) => {
+                  setTimeout(() => {
+                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                    catch { /* older Safari */ }
+                  }, 250);
+                }}
                 placeholder="you@example.com"
                 className={inputClass(errors.email)}
               />
@@ -198,8 +215,17 @@ export default function SignupPage() {
               <input
                 type={showPwd ? 'text' : 'password'}
                 autoComplete="new-password"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="off"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={(e) => {
+                  setTimeout(() => {
+                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                    catch { /* older Safari */ }
+                  }, 250);
+                }}
                 placeholder={T.passwordPh}
                 className={inputClass(errors.password)}
               />

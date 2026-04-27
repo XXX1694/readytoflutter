@@ -234,7 +234,7 @@ export default function MockPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Top bar */}
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
           <div className="flex items-center gap-3">
@@ -291,9 +291,18 @@ export default function MockPage() {
               ref={textareaRef}
               value={userText}
               onChange={(e) => updateAnswer(e.target.value)}
+              onFocus={(e) => {
+                setTimeout(() => {
+                  try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                  catch { /* older Safari */ }
+                }, 250);
+              }}
               placeholder={lang === 'ru' ? 'Печатай — на собеседовании ты будешь говорить, а тут думаешь пальцами…' : 'Type — at the real interview you would speak, here you think out loud…'}
               rows={8}
               autoFocus
+              autoCorrect="off"
+              spellCheck={false}
+              autoCapitalize="off"
               className="w-full resize-y rounded-md border border-rule/15 bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -312,11 +321,14 @@ export default function MockPage() {
           </section>
         )}
 
-        {/* Side-by-side review */}
+        {/* Side-by-side review.
+            Mobile: reference first (the user wants the answer immediately), then
+            their own attempt for comparison. Desktop: side-by-side, your-answer
+            on the left, reference on the right (Western reading order). */}
         {revealed && (
           <>
             <section className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-md border border-rule/15 bg-paper p-4">
+              <div className="order-2 rounded-md border border-rule/15 bg-paper p-4 lg:order-1">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
                 </div>
@@ -328,7 +340,7 @@ export default function MockPage() {
                   )}
                 </div>
               </div>
-              <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm">
+              <div className="order-1 rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm lg:order-2">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {lang === 'ru' ? 'Эталонный ответ' : 'Reference'}
                 </div>
@@ -484,7 +496,7 @@ function ToggleChip({ active, onClick, children }) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex items-center rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wider transition-all duration-200',
+        'inline-flex min-h-[40px] items-center rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-wider transition-all duration-200',
         active
           ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.20)]'
           : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',

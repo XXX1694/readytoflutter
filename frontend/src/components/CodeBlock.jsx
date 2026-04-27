@@ -77,7 +77,7 @@ export default function CodeBlock({ code, language = 'dart', className }) {
               onClick={openInDartPad}
               aria-label={lang === 'ru' ? 'Открыть в DartPad' : 'Open in DartPad'}
               title={lang === 'ru' ? 'Скопировать и открыть DartPad' : 'Copy + open DartPad'}
-              className="inline-flex h-6 items-center gap-1 rounded-lg px-2 font-mono text-[10px] uppercase text-brand transition-colors hover:bg-brand/10"
+              className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1.5 font-mono text-[11px] uppercase text-brand transition-colors hover:bg-brand/10 sm:min-h-0 sm:h-6 sm:py-0 sm:text-[10px] sm:px-2"
             >
               <Play className="h-3 w-3" />
               DartPad
@@ -87,7 +87,7 @@ export default function CodeBlock({ code, language = 'dart', className }) {
             type="button"
             onClick={copy}
             aria-label="Copy code"
-            className="inline-flex h-6 items-center gap-1 rounded-lg px-2 font-mono text-[10px] uppercase text-muted transition-colors hover:bg-rule/8 hover:text-ink"
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1.5 font-mono text-[11px] uppercase text-muted transition-colors hover:bg-rule/8 hover:text-ink sm:min-h-0 sm:h-6 sm:py-0 sm:text-[10px] sm:px-2"
           >
             {copied ? <Check className="h-3 w-3 text-mint" /> : <Copy className="h-3 w-3" />}
             {copied ? (lang === 'ru' ? 'Скоп.' : 'Copied') : (lang === 'ru' ? 'Копир.' : 'Copy')}

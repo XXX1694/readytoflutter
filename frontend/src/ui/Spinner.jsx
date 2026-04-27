@@ -17,7 +17,9 @@ export function Spinner({ size = 'md', className, label }) {
       aria-label={label || 'Loading'}
       className={cn(
         'inline-block animate-spin rounded-full',
-        'border-rule/12 border-t-brand',
+        // Track at /20 so it's actually visible against light surfaces; the
+        // brand-colored top edge is what readers track for the spin.
+        'border-rule/20 border-t-brand',
         SIZES[size],
         className,
       )}

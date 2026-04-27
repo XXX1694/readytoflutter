@@ -175,7 +175,7 @@ export default function StudyPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         {/* Top bar */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -355,10 +355,19 @@ export default function StudyPage() {
                   ref={gistRef}
                   value={gists[current.id] || ''}
                   onChange={(e) => updateGist(e.target.value.slice(0, 280))}
+                  onFocus={(e) => {
+                    setTimeout(() => {
+                      try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                      catch { /* older Safari */ }
+                    }, 250);
+                  }}
                   placeholder={lang === 'ru'
                     ? 'Напечатай ключевую идею пальцами — даже одно слово фиксирует мозг…'
                     : 'Type the key idea — even one word commits your brain…'}
                   rows={3}
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoCapitalize="off"
                   className="w-full resize-none rounded-md border border-rule/15 bg-paper-2 px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-rule/15 focus:ring-1 focus:ring-brand/30"
                 />
               </motion.div>

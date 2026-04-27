@@ -32,8 +32,13 @@ export default function VideoPlayer({ resource, isRu, onOpenChange }) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <Dialog.Content
+          // On phones, take ~96vw and let the modal grow tall (the player is
+          // already a 16:9 ratio block) — `max-h-[92dvh]` + internal scroll
+          // handles overflow when the description is long. Tap fullscreen
+          // button in the iframe for landscape; "Open in YouTube" stays in
+          // the header for users who prefer the native player.
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-[min(92vw,1100px)] -translate-x-1/2 -translate-y-1/2',
+            'fixed left-1/2 top-1/2 z-50 w-[min(96vw,1100px)] max-h-[92dvh] overflow-y-auto -translate-x-1/2 -translate-y-1/2',
             'rounded-md border border-rule/15 bg-paper-2 shadow-codex-lg',
             'data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0',
           )}

@@ -22,7 +22,7 @@ class ErrorBoundary extends Component {
       const t = UI[lang] || UI.en;
 
       return (
-        <div className="bg-page min-h-screen flex items-center justify-center px-4">
+        <div className="bg-page min-h-dvh flex items-center justify-center px-4">
           <div className="relative max-w-md w-full overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 p-8 shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_24px_64px_-12px_rgb(var(--shadow)/0.16)]">
             {/* Coral aurora glow */}
             <span aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-coral/20 via-amber/10 to-transparent blur-3xl" />

@@ -66,6 +66,27 @@ export default {
         1.5: '1.5px',
       },
 
+      // Atlas opacity scale — Tailwind's default skips /8 and /12, but our
+      // hairline borders + tinted surfaces lean on those values heavily
+      // (e.g. `border-rule/12`, `bg-brand/12`, `from-rule/8`). Without this,
+      // ~85 class usages silently no-op. Extending here keeps `<color>/<n>`
+      // shorthand working everywhere.
+      opacity: {
+        2: '0.02',
+        4: '0.04',
+        6: '0.06',
+        8: '0.08',
+        12: '0.12',
+        14: '0.14',
+        18: '0.18',
+        22: '0.22',
+        35: '0.35',
+        45: '0.45',
+        55: '0.55',
+        65: '0.65',
+        85: '0.85',
+      },
+
       borderRadius: {
         // Modern bigger defaults — Linear / Vercel
         DEFAULT: '8px',

@@ -160,9 +160,20 @@ export default function SearchPage() {
             <SearchIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
             <input
               ref={inputRef}
-              type="text"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              autoCorrect="off"
+              spellCheck={false}
+              autoCapitalize="off"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onFocus={(e) => {
+                setTimeout(() => {
+                  try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                  catch { /* older Safari */ }
+                }, 250);
+              }}
               placeholder={t.searchPlaceholderLong}
               className="h-12 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
               autoFocus
@@ -199,7 +210,7 @@ export default function SearchPage() {
                     onClick={() => setFacet(key, value)}
                     aria-pressed={active}
                     className={cn(
-                      'inline-flex items-center rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
+                      'inline-flex min-h-[36px] items-center rounded-full border px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
                       active
                         ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.18)]'
                         : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',

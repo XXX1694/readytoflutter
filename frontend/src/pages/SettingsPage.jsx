@@ -5,13 +5,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   ArrowLeft, User, Lock, AtSign, Trash2, Save, Eye, EyeOff, Shield,
-  Mail, AlertTriangle,
+  Mail, AlertTriangle, Sliders, Sun, Moon, Coffee, Languages, Edit3,
 } from 'lucide-react';
 import { useAuth } from '../store/auth.js';
 import {
   authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
 } from '../api/api.js';
 import { useLang } from '../i18n/LangContext.jsx';
+import { usePrefs } from '../store/prefs.js';
 import { Button, Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 
@@ -64,15 +65,20 @@ export default function SettingsPage() {
           </p>
         </header>
 
-        <Tabs.Root defaultValue="profile">
+        <Tabs.Root defaultValue="preferences">
           <Tabs.List
             className="mb-6 inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm"
             aria-label={T.tabs}
           >
+            <TabTrigger value="preferences" icon={<Sliders className="h-3.5 w-3.5" />}>{T.tabPreferences}</TabTrigger>
             <TabTrigger value="profile" icon={<User className="h-3.5 w-3.5" />}>{T.tabProfile}</TabTrigger>
             <TabTrigger value="security" icon={<Lock className="h-3.5 w-3.5" />}>{T.tabSecurity}</TabTrigger>
             <TabTrigger value="danger" icon={<AlertTriangle className="h-3.5 w-3.5" />}>{T.tabDanger}</TabTrigger>
           </Tabs.List>
+
+          <Tabs.Content value="preferences" className="outline-none">
+            <PreferencesSection T={T} isRu={isRu} />
+          </Tabs.Content>
 
           <Tabs.Content value="profile" className="outline-none">
             <ProfileSection user={user} setSession={setSession} token={token} qc={qc} T={T} />
@@ -118,6 +124,175 @@ function Section({ title, subtitle, children }) {
   );
 }
 
+// ── Preferences (theme, language, recall mode) ─────────────────────────────
+function PreferencesSection({ T, isRu }) {
+  const theme = usePrefs((s) => s.theme);
+  const setTheme = usePrefs((s) => s.setTheme);
+  const recallMode = usePrefs((s) => s.recallMode);
+  const setRecallMode = usePrefs((s) => s.setRecallMode);
+  const { lang, setLang } = useLang();
+
+  const themes = [
+    {
+      key: 'light',
+      label: isRu ? 'Светлая' : 'Light',
+      Icon: Sun,
+      // Visual swatch — paper + ink stripes so the choice is obvious at a glance.
+      swatch: 'bg-[#fafaf9]',
+      stripeA: 'bg-[#171717]',
+      stripeB: 'bg-[#06b6d4]',
+    },
+    {
+      key: 'sepia',
+      label: isRu ? 'Сепия' : 'Sepia',
+      Icon: Coffee,
+      swatch: 'bg-[#f5efe1]',
+      stripeA: 'bg-[#3f2d1d]',
+      stripeB: 'bg-[#a16207]',
+    },
+    {
+      key: 'dark',
+      label: isRu ? 'Тёмная' : 'Dark',
+      Icon: Moon,
+      swatch: 'bg-[#0a0a0a]',
+      stripeA: 'bg-[#fafafa]',
+      stripeB: 'bg-[#22d3ee]',
+    },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <Section
+        title={isRu ? 'Внешний вид' : 'Appearance'}
+        subtitle={isRu
+          ? 'Тема и шрифт сохраняются на этом устройстве.'
+          : 'Theme is saved per device. Hotkey: T to cycle.'}
+      >
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+              <Sun className="h-3 w-3" />
+              {isRu ? 'Тема' : 'Theme'}
+            </div>
+            <div role="radiogroup" aria-label={isRu ? 'Тема' : 'Theme'} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {themes.map((t) => {
+                const active = theme === t.key;
+                const { Icon } = t;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setTheme(t.key)}
+                    className={cn(
+                      'group relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all',
+                      active
+                        ? 'border-ink shadow-codex-sm ring-2 ring-brand/30'
+                        : 'border-rule/15 hover:border-rule/30 hover:shadow-codex-sm',
+                    )}
+                  >
+                    {/* Mini "browser" swatch — body + two stripes hint at ink + brand */}
+                    <div className={cn('relative h-20 w-full overflow-hidden rounded-md border border-rule/15', t.swatch)}>
+                      <div className={cn('absolute left-3 top-3 h-1.5 w-12 rounded-full', t.stripeA)} />
+                      <div className={cn('absolute left-3 top-6 h-1.5 w-8 rounded-full', t.stripeB, 'opacity-80')} />
+                      <div className={cn('absolute bottom-3 right-3 h-2 w-2 rounded-full', t.stripeB)} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 font-display text-sm font-medium text-ink">
+                        <Icon className="h-3.5 w-3.5 text-muted" />
+                        {t.label}
+                      </span>
+                      {active && (
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-brand">
+                          {isRu ? 'выбрано' : 'active'}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+              <Languages className="h-3 w-3" />
+              {isRu ? 'Язык интерфейса' : 'Interface language'}
+            </div>
+            <div role="radiogroup" aria-label={isRu ? 'Язык' : 'Language'} className="inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm">
+              {['en', 'ru'].map((code) => {
+                const active = lang === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setLang(code)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-colors',
+                      active
+                        ? 'bg-ink text-paper'
+                        : 'text-muted hover:text-ink',
+                    )}
+                  >
+                    {code === 'en' ? 'English' : 'Русский'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title={isRu ? 'Учебный режим' : 'Study behavior'}
+        subtitle={isRu
+          ? 'Recall прячет ответ за подсказкой, чтобы ты вспоминал, а не читал.'
+          : 'Recall hides the answer behind a hint ladder so you retrieve, not re-read.'}
+      >
+        <label className="flex cursor-pointer items-start justify-between gap-4 rounded-md border border-rule/15 bg-paper p-4 transition-colors hover:border-rule/30">
+          <span className="flex-1">
+            <span className="inline-flex items-center gap-1.5 font-display text-sm font-medium text-ink">
+              <Edit3 className="h-3.5 w-3.5 text-muted" />
+              {isRu ? 'Активное припоминание' : 'Active recall'}
+            </span>
+            <span className="mt-1 block text-xs text-muted">
+              {isRu
+                ? 'Карточки откроются с подсказкой и блюром. Хоткей: R.'
+                : 'Cards open blurred with a hint ladder. Hotkey: R.'}
+            </span>
+          </span>
+          <span
+            role="switch"
+            aria-checked={recallMode}
+            tabIndex={0}
+            onClick={() => setRecallMode(!recallMode)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setRecallMode(!recallMode);
+              }
+            }}
+            className={cn(
+              'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors',
+              recallMode ? 'border-ink bg-ink' : 'border-rule/30 bg-paper-2',
+            )}
+          >
+            <span
+              className={cn(
+                'inline-block h-4 w-4 rounded-full bg-paper transition-transform',
+                recallMode ? 'translate-x-6' : 'translate-x-1',
+              )}
+            />
+          </span>
+        </label>
+      </Section>
+    </div>
+  );
+}
+
 // ── Profile (name + email read-only) ────────────────────────────────────────
 function ProfileSection({ user, setSession, token, qc, T }) {
   const [name, setName] = useState(user.name || '');
@@ -146,8 +321,10 @@ function ProfileSection({ user, setSession, token, qc, T }) {
         <Field label={T.name} icon={<User className="h-3.5 w-3.5" />} hint={T.nameHint}>
           <input
             type="text"
+            autoCapitalize="words"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onFocus={focusCenter}
             placeholder={T.namePh}
             maxLength={80}
             className={inputClass(false)}
@@ -228,8 +405,12 @@ function SecuritySection({ T }) {
           <input
             type={showCurrent ? 'text' : 'password'}
             autoComplete="current-password"
+            autoCorrect="off"
+            spellCheck={false}
+            autoCapitalize="off"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
+            onFocus={focusCenter}
             className={inputClass(false)}
           />
         </Field>
@@ -252,8 +433,12 @@ function SecuritySection({ T }) {
           <input
             type={showNext ? 'text' : 'password'}
             autoComplete="new-password"
+            autoCorrect="off"
+            spellCheck={false}
+            autoCapitalize="off"
             value={next}
             onChange={(e) => setNext(e.target.value)}
+            onFocus={focusCenter}
             className={inputClass(false)}
           />
         </Field>
@@ -262,8 +447,12 @@ function SecuritySection({ T }) {
           <input
             type={showNext ? 'text' : 'password'}
             autoComplete="new-password"
+            autoCorrect="off"
+            spellCheck={false}
+            autoCapitalize="off"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
+            onFocus={focusCenter}
             className={inputClass(false)}
           />
         </Field>
@@ -473,12 +662,22 @@ const inputClass = (hasErr) => cn(
     : 'border-rule/12 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/20',
 );
 
+// Re-center the focused field on phones — iOS often hides it behind the
+// virtual keyboard otherwise.
+const focusCenter = (e) => {
+  setTimeout(() => {
+    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    catch { /* older Safari */ }
+  }, 250);
+};
+
 const RU = {
   back: 'На главную',
   eyebrow: 'Аккаунт',
   title: 'Настройки',
   joined: 'с',
   tabs: 'Разделы настроек',
+  tabPreferences: 'Настройки',
   tabProfile: 'Профиль',
   tabSecurity: 'Безопасность',
   tabDanger: 'Опасная зона',
@@ -539,6 +738,7 @@ const EN = {
   title: 'Settings',
   joined: 'joined',
   tabs: 'Settings sections',
+  tabPreferences: 'Preferences',
   tabProfile: 'Profile',
   tabSecurity: 'Security',
   tabDanger: 'Danger zone',

@@ -168,8 +168,10 @@ const QuestionCard = forwardRef(function QuestionCard(
               ? (lang === 'ru' ? 'Убрать из закладок' : 'Remove bookmark')
               : (lang === 'ru' ? 'В закладки' : 'Bookmark')}
             aria-pressed={bookmarked}
+            // Visible 28×28 stays the same; -m-1.5 + p-1.5 grows the actual
+            // hit area to ~44px on touch without nudging adjacent layout.
             className={cn(
-              'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors cursor-pointer',
+              'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors cursor-pointer -m-1.5 p-1.5 box-content',
               bookmarked
                 ? 'text-[rgb(var(--amber))]'
                 : 'text-muted hover:text-ink',
@@ -452,10 +454,20 @@ function NotesEditor({ questionId, initialNotes, status }) {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
+        onFocus={(e) => {
+          // Mobile keyboard pop can hide the field — re-center it.
+          setTimeout(() => {
+            try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+            catch { /* older Safari */ }
+          }, 250);
+        }}
         placeholder={t.addNotes}
         rows={3}
         maxLength={1000}
         aria-label={t.personalNotes}
+        autoCorrect="off"
+        spellCheck={false}
+        autoCapitalize="off"
         className="w-full resize-none rounded-md border border-rule/15 bg-paper px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-rule/15 focus:ring-1 focus:ring-brand/30"
       />
       <div className="mt-1 text-right font-mono text-[10px] text-muted-2">

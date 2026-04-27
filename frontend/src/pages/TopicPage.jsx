@@ -216,7 +216,7 @@ export default function TopicPage() {
                 onClick={() => setFilter(f)}
                 aria-pressed={active}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
+                  'inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
                   active
                     ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.20)]'
                     : 'border-rule/12 bg-paper-2 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',

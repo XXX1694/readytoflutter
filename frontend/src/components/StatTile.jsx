@@ -8,7 +8,6 @@ const ACCENTS = {
 };
 
 export default function StatTile({
-  index,
   label,
   value,
   suffix,

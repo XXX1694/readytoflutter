@@ -7,11 +7,12 @@ const SIZES = {
 };
 
 // Atlas: gradient-tinted glyph instead of border + flat fill — more premium feel.
+// Bottom-stop bumped from /5 to /10 so sepia (warm-on-warm) doesn't wash out.
 const TONES = {
-  junior:  'bg-gradient-to-br from-brand/15 to-brand/5 text-brand ring-1 ring-brand/20',
-  mid:     'bg-gradient-to-br from-plum/15 to-plum/5 text-plum ring-1 ring-plum/20',
-  senior:  'bg-gradient-to-br from-mint/15 to-mint/5 text-mint ring-1 ring-mint/20',
-  default: 'bg-gradient-to-br from-rule/8 to-transparent text-ink-2 ring-1 ring-rule/15',
+  junior:  'bg-gradient-to-br from-brand/20 to-brand/10 text-brand ring-1 ring-brand/20',
+  mid:     'bg-gradient-to-br from-plum/20 to-plum/10 text-plum ring-1 ring-plum/20',
+  senior:  'bg-gradient-to-br from-mint/20 to-mint/10 text-mint ring-1 ring-mint/20',
+  default: 'bg-gradient-to-br from-rule/10 to-rule/5 text-ink-2 ring-1 ring-rule/15',
 };
 
 /**

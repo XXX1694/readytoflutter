@@ -14,9 +14,24 @@ const SHORTCUTS = [
     { keys: [M, 'S'], en: 'Start study session', ru: 'Начать сессию' },
     { keys: [M, 'M'], en: 'Open mock interview', ru: 'Открыть mock-собес' },
     { keys: [M, 'B'], en: 'Open bookmarks', ru: 'Открыть закладки' },
+    { keys: [M, ','], en: 'Settings', ru: 'Настройки' },
     { keys: ['/'],    en: 'Focus global search', ru: 'Фокус на поиск' },
     { keys: ['?'],    en: 'This panel', ru: 'Эта панель' },
     { keys: ['Esc'],  en: 'Close / leave', ru: 'Закрыть / уйти' },
+  ]},
+  { group: { en: 'Quick jump (g …)', ru: 'Быстрый переход (g …)' }, items: [
+    { keys: ['G', 'H'], en: 'Home', ru: 'На главную' },
+    { keys: ['G', 'S'], en: 'Search', ru: 'Поиск' },
+    { keys: ['G', 'Y'], en: 'Study', ru: 'Учить' },
+    { keys: ['G', 'M'], en: 'Mock', ru: 'Mock' },
+    { keys: ['G', 'K'], en: 'Knowledge', ru: 'База знаний' },
+    { keys: ['G', 'B'], en: 'Bookmarks', ru: 'Закладки' },
+    { keys: ['G', 'T'], en: 'Mastery (stats)', ru: 'Статистика' },
+    { keys: ['G', 'A'], en: 'Settings', ru: 'Настройки' },
+  ]},
+  { group: { en: 'Toggles', ru: 'Переключатели' }, items: [
+    { keys: ['T'], en: 'Cycle theme · light → sepia → dark', ru: 'Тема · светлая → сепия → тёмная' },
+    { keys: ['R'], en: 'Recall mode on / off', ru: 'Режим recall вкл / выкл' },
   ]},
   { group: { en: 'Topic page', ru: 'Страница темы' }, items: [
     { keys: ['J / ↓'], en: 'Next question', ru: 'Следующий вопрос' },
@@ -39,11 +54,24 @@ const SHORTCUTS = [
 /**
  * Power-user keyboard shortcuts overlay. Press `?` anywhere to open.
  * Glass surface, brand-tinted kbd capsules.
+ *
+ * Skipped entirely on touch-only devices: there's no physical keyboard to
+ * hit Shift+/, and none of the listed shortcuts apply on mobile anyway.
  */
+const isTouchOnly = () => {
+  if (typeof window === 'undefined') return false;
+  // Coarse pointer + no fine pointer = touch device with no mouse/trackpad.
+  return window.matchMedia?.('(hover: none) and (pointer: coarse)').matches ?? false;
+};
+
 export default function ShortcutsOverlay() {
   const [open, setOpen] = useState(false);
   const { lang } = useLang();
   const isRu = lang === 'ru';
+
+  // Hooks must run unconditionally — gate the listener with `enabled` and
+  // skip render later, instead of early-returning before the hook.
+  const touchOnly = isTouchOnly();
 
   useHotkeys('shift+/', (e) => {
     // `?` lives on Shift+/ — most layouts. Don't fire while typing in form fields.
@@ -51,7 +79,10 @@ export default function ShortcutsOverlay() {
     if (['input', 'textarea'].includes(tag) || e.target?.isContentEditable) return;
     e.preventDefault();
     setOpen((v) => !v);
-  });
+  }, { enabled: !touchOnly });
+
+  // Don't render on phones — saves a Radix subtree.
+  if (touchOnly) return null;
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>

@@ -176,7 +176,7 @@ export default function RoundPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Top bar */}
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -272,11 +272,20 @@ export default function RoundPage() {
               ref={textareaRef}
               value={userText}
               onChange={(e) => updateAnswer(e.target.value)}
+              onFocus={(e) => {
+                setTimeout(() => {
+                  try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                  catch { /* older Safari */ }
+                }, 250);
+              }}
               placeholder={lang === 'ru'
                 ? 'Печатай так, как стал бы говорить вслух…'
                 : 'Type the way you would speak aloud…'}
               rows={6}
               autoFocus
+              autoCorrect="off"
+              spellCheck={false}
+              autoCapitalize="off"
               className="w-full resize-y rounded-md border border-rule/15 bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -296,8 +305,10 @@ export default function RoundPage() {
           </section>
         ) : (
           <>
+            {/* Mobile: reference first so the user can compare against truth
+                immediately; their own attempt sits below for self-review. */}
             <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-md border border-rule/15 bg-paper p-4">
+              <div className="order-2 rounded-md border border-rule/15 bg-paper p-4 lg:order-1">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
                 </div>
@@ -309,7 +320,7 @@ export default function RoundPage() {
                   )}
                 </div>
               </div>
-              <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm">
+              <div className="order-1 rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm lg:order-2">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {lang === 'ru' ? 'Эталон' : 'Reference'}
                 </div>

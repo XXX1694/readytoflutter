@@ -111,9 +111,19 @@ export default function LoginPage() {
             >
               <input
                 type="email"
+                inputMode="email"
                 autoComplete="email"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={(e) => {
+                  setTimeout(() => {
+                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                    catch { /* older Safari */ }
+                  }, 250);
+                }}
                 placeholder="you@example.com"
                 className={inputClass(errors.email)}
                 autoFocus
@@ -138,8 +148,17 @@ export default function LoginPage() {
               <input
                 type={showPwd ? 'text' : 'password'}
                 autoComplete="current-password"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="off"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={(e) => {
+                  setTimeout(() => {
+                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                    catch { /* older Safari */ }
+                  }, 250);
+                }}
                 placeholder="••••••••"
                 className={inputClass(errors.password)}
               />

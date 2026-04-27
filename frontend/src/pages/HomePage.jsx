@@ -88,7 +88,9 @@ export default function HomePage() {
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
             ReadyToFlutter · Atlas
           </div>
-          <h1 className="font-display text-display-md font-semibold leading-[1.02] tracking-tightest sm:text-display-lg lg:text-display-xl">
+          {/* Display-xl (6.5rem ≈ 104px) overflows on narrow phones — start
+              smaller and ramp up only when there's real horizontal space. */}
+          <h1 className="font-display text-display-sm font-semibold leading-[1.02] tracking-tightest sm:text-display-md lg:text-display-lg xl:text-display-xl">
             {lang === 'ru' ? (
               <>
                 <span className="text-ink">Готов к</span>
@@ -143,20 +145,20 @@ export default function HomePage() {
 
         {/* STATS */}
         <section className="mb-10 sm:mb-12">
-          <Eyebrow index={1} className="mb-4">
+          <Eyebrow className="mb-4">
             {lang === 'ru' ? 'Прогресс' : 'Progress'}
           </Eyebrow>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-            <StatTile index={1} label={t.totalQuestions} value={total} accent="ink" />
-            <StatTile index={2} label={t.completed} value={completed} accent="mint" />
-            <StatTile index={3} label={t.inProgress} value={inProgress} accent="amber" />
-            <StatTile index={4} label={t.completion} value={pct} suffix="%" accent="brand" />
+            <StatTile label={t.totalQuestions} value={total} accent="ink" />
+            <StatTile label={t.completed} value={completed} accent="mint" />
+            <StatTile label={t.inProgress} value={inProgress} accent="amber" />
+            <StatTile label={t.completion} value={pct} suffix="%" accent="brand" />
           </div>
         </section>
 
         {/* ACTIVITY */}
         <section className="mb-12 sm:mb-16">
-          <Eyebrow index={2} className="mb-4">
+          <Eyebrow className="mb-4">
             {lang === 'ru' ? 'Активность · 14 недель' : 'Activity · last 14 weeks'}
           </Eyebrow>
           <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm sm:p-6">
@@ -174,7 +176,7 @@ export default function HomePage() {
               <div key={level} className="mb-12 sm:mb-16">
                 <header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-rule/15 pb-3">
                   <div>
-                    <Eyebrow index={idx + 1} accent="brand" className="mb-2">
+                    <Eyebrow accent="brand" className="mb-2">
                       {levelT.short}
                     </Eyebrow>
                     <h2 className="font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">

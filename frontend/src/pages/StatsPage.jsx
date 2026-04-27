@@ -192,7 +192,7 @@ export default function StatsPage() {
             <section key={level} className="mb-10">
               <header className="mb-4 flex items-end justify-between border-b border-rule/15 pb-2">
                 <div>
-                  <Eyebrow index={idx + 1} accent="brand" className="mb-1">
+                  <Eyebrow accent="brand" className="mb-1">
                     {levelT.short}
                   </Eyebrow>
                   <h2 className="font-display text-xl font-medium tracking-tight text-ink">

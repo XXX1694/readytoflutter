@@ -133,11 +133,11 @@ export default function Sidebar() {
           <MainNavLink to="/knowledge" onClose={close} icon={Library}>
             {lang === 'ru' ? 'База знаний' : 'Knowledge'}
           </MainNavLink>
-          <MainNavLink to="/bookmarks" onClose={close} icon={Bookmark}>
-            {lang === 'ru' ? 'Закладки' : 'Bookmarks'}
-          </MainNavLink>
           <MainNavLink to="/stats" onClose={close} icon={TrendingUp}>
             {lang === 'ru' ? 'Статистика' : 'Mastery'}
+          </MainNavLink>
+          <MainNavLink to="/bookmarks" onClose={close} icon={Bookmark}>
+            {lang === 'ru' ? 'Закладки' : 'Bookmarks'}
           </MainNavLink>
 
           <div className="my-3 mx-5 h-px bg-rule/10" />

@@ -26,8 +26,8 @@ const card = cva(
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
         ],
         // Soft — same Atlas look but no shadow (for dense lists)
-        soft: ['bg-paper-2 border border-rule/8 rounded-xl'],
-        // Quiet — flat, very subtle border
+        soft: ['bg-paper-2 border border-rule/10 rounded-xl'],
+        // Quiet — flat, even quieter border (for nested rows inside cards)
         quiet: ['bg-paper-2 border border-rule/8 rounded-xl'],
         // Outlined — transparent fill
         outline: ['bg-transparent border border-rule/15 rounded-xl'],
