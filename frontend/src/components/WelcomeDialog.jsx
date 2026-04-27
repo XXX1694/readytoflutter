@@ -94,11 +94,11 @@ export default function WelcomeDialog() {
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm data-[state=open]:animate-fade-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 outline-none data-[state=open]:animate-slide-up">
-          <div className="overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-lg">
+          <div className="overflow-hidden rounded-2xl border border-rule/12 glass shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_64px_-12px_rgb(var(--shadow)/0.30)]">
             {/* Header */}
-            <div className="flex items-center justify-between border-b-1.5 border-ink px-5 py-3">
+            <div className="flex items-center justify-between border-b border-rule/15 px-5 py-3">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {lang === 'ru' ? 'Добро пожаловать' : 'Welcome'} · Codex
@@ -121,7 +121,7 @@ export default function WelcomeDialog() {
             <Step step={STEPS[step]} lang={lang} />
 
             {/* Dots + actions */}
-            <div className="flex items-center justify-between border-t-1.5 border-ink px-5 py-3">
+            <div className="flex items-center justify-between border-t border-rule/15 px-5 py-3">
               <div className="flex items-center gap-1.5">
                 {STEPS.map((_, i) => (
                   <button
@@ -131,7 +131,7 @@ export default function WelcomeDialog() {
                     onClick={() => setStep(i)}
                     className={cn(
                       'h-1.5 w-6 rounded-full transition-colors',
-                      i === step ? 'bg-ink' : 'bg-rule-strong/60 hover:bg-rule-strong',
+                      i === step ? 'bg-ink' : 'bg-rule/15 hover:bg-rule/30',
                     )}
                   />
                 ))}
@@ -160,7 +160,7 @@ function Step({ step, lang }) {
   const text = lang === 'ru' ? step.ru : step.en;
   return (
     <div className="px-6 py-7 sm:px-7">
-      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-md border-1.5 border-ink bg-brand/10 text-brand shadow-codex-sm">
+      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand/15 to-brand/5 text-brand ring-1 ring-brand/20">
         <Icon className="h-6 w-6" />
       </div>
       <h2 className="font-display text-2xl font-medium leading-tight tracking-tight text-ink">
@@ -168,14 +168,14 @@ function Step({ step, lang }) {
       </h2>
       <p className="mt-3 text-sm leading-relaxed text-ink-2">{text.body}</p>
       {text.kbd && (
-        <div className="mt-5 inline-flex items-center gap-1.5 rounded-md border border-rule-strong bg-paper px-2 py-1">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted">
+        <div className="mt-5 inline-flex items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2 px-2.5 py-1">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
             {lang === 'ru' ? 'Хоткей' : 'Hotkey'}
           </span>
           {text.kbd.map((k, i) => (
             <kbd
               key={i}
-              className="rounded border border-rule-strong bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] text-ink"
+              className="rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-2"
             >
               {k === '⌘' ? mod : k}
             </kbd>

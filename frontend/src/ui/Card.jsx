@@ -2,28 +2,40 @@ import { forwardRef } from 'react';
 import { cva } from 'class-variance-authority';
 import { cn } from '../lib/cn.js';
 
+/**
+ * Atlas Card — soft border + layered shadow + bigger radius. Variant names
+ * preserved from old Codex set.
+ */
 const card = cva(
-  ['relative transition-all duration-150'],
+  ['relative transition-all duration-200 ease-out'],
   {
     variants: {
       variant: {
-        // Codex signature — brutalist hard-offset
+        // Atlas signature — soft elevation, gentle hover lift
         codex: [
-          'bg-paper-2 border-1.5 border-ink rounded-md shadow-codex',
+          'bg-paper-2 border border-rule/10 rounded-2xl',
+          'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
         ],
-        // Interactive — adds hover lift and active press
+        // Interactive — bigger lift + hairline brand glow on hover
         codexInteractive: [
-          'bg-paper-2 border-1.5 border-ink rounded-md shadow-codex cursor-pointer text-left',
-          'hover:-translate-x-px hover:-translate-y-px hover:shadow-codex-lg',
-          'active:translate-x-px active:translate-y-px active:shadow-codex-sm',
+          'bg-paper-2 border border-rule/10 rounded-2xl cursor-pointer text-left',
+          'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
+          'hover:-translate-y-0.5 hover:border-rule/20',
+          'hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.12)]',
+          'active:translate-y-0',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
         ],
-        // Soft — for dense lists where brutalism would be noisy
-        soft: ['bg-paper-2 border border-rule rounded-xl shadow-soft'],
-        // Quiet — flat, only divider
-        quiet: ['bg-paper-2 border border-rule rounded-lg'],
-        // Outlined — transparent background
-        outline: ['bg-transparent border border-rule-strong rounded-lg'],
+        // Soft — same Atlas look but no shadow (for dense lists)
+        soft: ['bg-paper-2 border border-rule/8 rounded-xl'],
+        // Quiet — flat, very subtle border
+        quiet: ['bg-paper-2 border border-rule/8 rounded-xl'],
+        // Outlined — transparent fill
+        outline: ['bg-transparent border border-rule/15 rounded-xl'],
+        // Glass — translucent with backdrop blur (use over aurora bg)
+        glass: [
+          'rounded-2xl glass',
+          'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.08)]',
+        ],
       },
       padding: {
         none: 'p-0',

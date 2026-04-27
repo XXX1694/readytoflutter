@@ -8,9 +8,9 @@ const SIZES = {
 };
 
 const VARIANTS = {
-  ghost: 'text-ink-2 hover:bg-paper-2 hover:text-ink',
-  outline: 'border border-rule-strong text-ink hover:bg-paper-2 hover:border-ink',
-  codex: 'border-1.5 border-ink bg-paper-2 text-ink shadow-codex-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-codex',
+  ghost:   'text-ink-2 hover:bg-rule/8 hover:text-ink',
+  outline: 'border border-rule/15 text-ink hover:bg-rule/5 hover:border-rule/25',
+  codex:   'border border-rule/15 bg-paper-2 text-ink shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04)] hover:-translate-y-px hover:shadow-[0_2px_8px_-2px_rgb(var(--shadow)/0.10)]',
 };
 
 export const IconButton = forwardRef(function IconButton(
@@ -23,7 +23,7 @@ export const IconButton = forwardRef(function IconButton(
       type="button"
       aria-label={label}
       className={cn(
-        'inline-flex items-center justify-center rounded-md transition-all duration-150',
+        'inline-flex items-center justify-center rounded-xl transition-all duration-200',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
         'disabled:opacity-50 disabled:pointer-events-none',
         SIZES[size],

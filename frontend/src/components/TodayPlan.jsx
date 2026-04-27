@@ -149,16 +149,15 @@ export default function TodayPlan() {
   const allCaughtUp = !empty && plan.due === 0 && plan.fresh === 0 && plan.weak === 0;
 
   return (
-    <div className="relative overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 shadow-codex">
-      {/* Decorative gradient sliver — codex blueprint feel, low opacity so the
-          card surface still reads as paper across both themes. */}
+    <div className="relative overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.06),0_12px_40px_-8px_rgb(var(--shadow)/0.10)]">
+      {/* Aurora glow — large soft blob, brand→sky gradient, behind everything */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-codex-gradient opacity-80"
+        className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand/30 via-brand-sky/20 to-transparent blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-12 -top-14 h-36 w-56 rotate-12 bg-codex-gradient opacity-[0.07] blur-2xl dark:opacity-[0.18]"
+        className="pointer-events-none absolute -left-16 -bottom-20 h-60 w-60 rounded-full bg-gradient-to-tr from-mint/20 via-brand/10 to-transparent blur-3xl"
       />
 
       <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-stretch sm:gap-7 sm:p-7">

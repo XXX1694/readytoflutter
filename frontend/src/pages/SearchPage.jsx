@@ -136,7 +136,7 @@ export default function SearchPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Button
           variant="ghost"
           size="sm"
@@ -147,7 +147,7 @@ export default function SearchPage() {
           {t.backToDashboard}
         </Button>
 
-        <header className="mb-6 border-b-1.5 border-ink pb-5">
+        <header className="mb-6 border-b border-rule/15 pb-5">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
             00 / {lang === 'ru' ? 'Поиск' : 'Search'}
           </span>
@@ -156,7 +156,7 @@ export default function SearchPage() {
           </h1>
 
           {/* Search input */}
-          <div className="mt-5 flex items-center gap-2 rounded-md border-1.5 border-ink bg-paper-2 px-3 shadow-codex-sm focus-within:shadow-codex">
+          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-rule/12 bg-paper-2/60 px-4 transition-all duration-200 focus-within:border-brand/40 focus-within:bg-paper-2 focus-within:ring-2 focus-within:ring-brand/15">
             <SearchIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
             <input
               ref={inputRef}
@@ -164,7 +164,7 @@ export default function SearchPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={t.searchPlaceholderLong}
-              className="h-11 flex-1 bg-transparent text-sm text-ink placeholder:text-muted-2 outline-none"
+              className="h-12 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
               autoFocus
             />
             {input && (
@@ -177,7 +177,7 @@ export default function SearchPage() {
                 <X className="h-4 w-4" />
               </button>
             )}
-            <kbd className="hidden rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted sm:inline-block">
+            <kbd className="hidden rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-2 sm:inline-block">
               /
             </kbd>
           </div>
@@ -199,10 +199,10 @@ export default function SearchPage() {
                     onClick={() => setFacet(key, value)}
                     aria-pressed={active}
                     className={cn(
-                      'inline-flex items-center rounded-md border-1.5 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-all',
+                      'inline-flex items-center rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
                       active
-                        ? 'border-ink bg-ink text-paper shadow-codex-sm'
-                        : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+                        ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.18)]'
+                        : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
                     )}
                   >
                     {labelFor(key, value)}
@@ -237,23 +237,26 @@ export default function SearchPage() {
 
         {/* Results */}
         {results.length === 0 ? (
-          <div className="mt-6 flex flex-col items-center gap-4 rounded-md border-1.5 border-dashed border-rule-strong bg-paper-2/40 px-6 py-14 text-center sm:py-20">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-sm">
-              <SearchIcon className="h-5 w-5 text-brand" aria-hidden />
-            </span>
-            <div className="space-y-1">
-              <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
-                {query ? t.noResultsFor(query) : t.enterSearchQuery}
-              </h2>
-              <p className="mx-auto max-w-sm text-sm text-ink-2">
-                {t.tryDifferentKeywords}
-              </p>
+          <div className="relative mt-6 overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 px-6 py-16 text-center sm:py-24">
+            <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand/15 via-brand-sky/10 to-transparent blur-3xl" />
+            <div className="relative mx-auto flex flex-col items-center gap-4">
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand/15 to-brand/5 ring-1 ring-brand/20">
+                <SearchIcon className="h-6 w-6 text-brand" aria-hidden />
+              </span>
+              <div className="space-y-1">
+                <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
+                  {query ? t.noResultsFor(query) : t.enterSearchQuery}
+                </h2>
+                <p className="mx-auto max-w-sm text-sm text-ink-2">
+                  {t.tryDifferentKeywords}
+                </p>
+              </div>
+              {!query && (
+                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
+                  {lang === 'ru' ? 'индексировано:' : 'indexed:'} {questions.length}
+                </p>
+              )}
             </div>
-            {!query && (
-              <p className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                {lang === 'ru' ? 'индексировано:' : 'indexed:'} {questions.length}
-              </p>
-            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -280,7 +283,7 @@ export default function SearchPage() {
 function SearchSkeleton({ lang }) {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
         <Skeleton className="mb-2 h-3 w-16" />
         <Skeleton className="mb-6 h-9 w-1/2 max-w-md" />
@@ -292,7 +295,7 @@ function SearchSkeleton({ lang }) {
         </div>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-4 shadow-codex-sm">
+            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="mt-2 h-3 w-1/2" />
             </div>

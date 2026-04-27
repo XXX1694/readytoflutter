@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Existing brand (kept for back-compat with current screens)
+        // Legacy Flutter brand still referenced by a few badges
         flutter: {
           blue: '#0175C2',
           navy: '#02569B',
@@ -13,8 +13,9 @@ export default {
           dark: '#0D1117',
         },
 
-        // Codex semantic tokens — driven by CSS vars in index.css.
-        // Use these in new components (bg-paper, text-ink, border-rule, etc.)
+        // Atlas semantic tokens — driven by CSS vars in index.css.
+        // Names preserved from previous Codex set so existing components inherit
+        // the new look automatically. Only the *values* changed.
         paper: 'rgb(var(--paper) / <alpha-value>)',
         'paper-2': 'rgb(var(--paper-2) / <alpha-value>)',
         ink: 'rgb(var(--ink) / <alpha-value>)',
@@ -36,67 +37,109 @@ export default {
         coral: 'rgb(var(--coral) / <alpha-value>)',
         plum: 'rgb(var(--plum) / <alpha-value>)',
       },
+
+      // Single sans family for everything. `display` kept as alias so old
+      // `font-display` classes still work — they render as Inter now.
       fontFamily: {
-        display: ['"Fraunces Variable"', 'Fraunces', 'Georgia', 'serif'],
-        sans: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono Variable"', '"JetBrains Mono"', 'Consolas', 'monospace'],
+        sans:    ['"Inter Variable"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        display: ['"Inter Variable"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        mono:    ['"JetBrains Mono Variable"', '"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
+
       fontSize: {
-        // Extra display sizes for the dashboard's big numbers / headlines
-        'display-xs': ['2rem', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
-        'display-sm': ['2.75rem', { lineHeight: '1.02', letterSpacing: '-0.025em' }],
-        'display-md': ['3.75rem', { lineHeight: '1.0', letterSpacing: '-0.03em' }],
-        'display-lg': ['5rem', { lineHeight: '0.95', letterSpacing: '-0.035em' }],
+        // Display sizes for hero / dashboard. Tighter tracking, heavier weight
+        // since Inter feels lighter than Fraunces at the same size.
+        'display-xs': ['2rem',    { lineHeight: '1.05', letterSpacing: '-0.025em', fontWeight: '600' }],
+        'display-sm': ['2.75rem', { lineHeight: '1.02', letterSpacing: '-0.030em', fontWeight: '600' }],
+        'display-md': ['3.75rem', { lineHeight: '1.0',  letterSpacing: '-0.035em', fontWeight: '600' }],
+        'display-lg': ['5rem',    { lineHeight: '0.96', letterSpacing: '-0.040em', fontWeight: '600' }],
+        'display-xl': ['6.5rem',  { lineHeight: '0.95', letterSpacing: '-0.045em', fontWeight: '600' }],
       },
+
       letterSpacing: {
-        tightest: '-0.04em',
+        tightest: '-0.045em',
       },
+
       borderWidth: {
+        // 1.5px referenced by many components. Keep available, but new design
+        // uses 1px hairlines via `border` everywhere.
         1.5: '1.5px',
       },
-      boxShadow: {
-        // Hard-offset brutalist shadows — softened color (--shadow), lower alpha
-        // so they read as definite-but-not-aggressive against warm paper.
-        'codex-sm': '3px 3px 0 0 rgb(var(--shadow) / 0.7)',
-        'codex': '4px 4px 0 0 rgb(var(--shadow) / 0.7)',
-        'codex-lg': '6px 6px 0 0 rgb(var(--shadow) / 0.7)',
-        'codex-brand': '4px 4px 0 0 rgb(var(--brand) / 0.85)',
-        'codex-mint': '4px 4px 0 0 rgb(var(--mint) / 0.85)',
-        // Soft layered shadow for floating panels
-        soft: '0 1px 0 rgb(var(--rule) / 1), 0 8px 24px -12px rgb(var(--shadow) / 0.15)',
-        'soft-lg': '0 1px 0 rgb(var(--rule) / 1), 0 24px 48px -16px rgb(var(--shadow) / 0.20)',
+
+      borderRadius: {
+        // Modern bigger defaults — Linear / Vercel
+        DEFAULT: '8px',
+        sm: '6px',
+        md: '10px',
+        lg: '14px',
+        xl: '18px',
+        '2xl': '22px',
+        '3xl': '28px',
       },
+
+      boxShadow: {
+        // Atlas soft elevation. Replaces brutalist hard offsets — same names so
+        // existing components automatically pick up the new look.
+        'codex-sm':
+          '0 1px 2px 0 rgb(var(--shadow) / 0.04), 0 2px 6px -2px rgb(var(--shadow) / 0.06)',
+        'codex':
+          '0 1px 2px 0 rgb(var(--shadow) / 0.06), 0 8px 24px -8px rgb(var(--shadow) / 0.10)',
+        'codex-lg':
+          '0 2px 4px 0 rgb(var(--shadow) / 0.08), 0 24px 48px -16px rgb(var(--shadow) / 0.16)',
+        'codex-brand':
+          '0 0 0 1px rgb(var(--brand) / 0.40), 0 8px 24px -8px rgb(var(--brand) / 0.32)',
+        'codex-mint':
+          '0 0 0 1px rgb(var(--mint) / 0.40), 0 8px 24px -8px rgb(var(--mint) / 0.32)',
+        soft:
+          '0 1px 2px 0 rgb(var(--shadow) / 0.04), 0 4px 16px -4px rgb(var(--shadow) / 0.06)',
+        'soft-lg':
+          '0 2px 4px 0 rgb(var(--shadow) / 0.08), 0 24px 48px -16px rgb(var(--shadow) / 0.14)',
+        aurora:
+          '0 0 0 1px rgb(var(--brand) / 0.20), 0 12px 40px -8px rgb(var(--brand) / 0.30)',
+      },
+
       backgroundImage: {
-        // Signature gradient
         'codex-gradient':
-          'linear-gradient(135deg, rgb(var(--brand)) 0%, rgb(var(--brand-sky)) 55%, rgb(var(--mint)) 100%)',
-        // Faint blueprint grid for page backgrounds
-        'blueprint':
-          'linear-gradient(rgb(var(--rule) / 0.5) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--rule) / 0.5) 1px, transparent 1px)',
+          'linear-gradient(135deg, rgb(var(--brand)) 0%, rgb(var(--brand-sky)) 50%, rgb(var(--mint)) 100%)',
+        'aurora':
+          'linear-gradient(135deg, rgb(var(--brand)) 0%, rgb(var(--brand-sky)) 50%, rgb(var(--mint)) 100%)',
+        'aurora-soft':
+          'linear-gradient(135deg, rgb(var(--brand) / 0.15) 0%, rgb(var(--brand-sky) / 0.12) 50%, rgb(var(--mint) / 0.10) 100%)',
+        'ink-fade':
+          'linear-gradient(180deg, rgb(var(--ink)) 0%, rgb(var(--ink) / 0.7) 100%)',
+        'dotted':
+          'radial-gradient(rgb(var(--rule) / 0.12) 1px, transparent 1px)',
       },
       backgroundSize: {
+        'dotted': '24px 24px',
         'blueprint-sm': '24px 24px',
         'blueprint': '32px 32px',
         'blueprint-lg': '48px 48px',
       },
+
       keyframes: {
         'fade-in': {
           from: { opacity: '0', transform: 'translateY(4px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
         },
         'slide-up': {
           from: { opacity: '0', transform: 'translateY(8px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
         },
         shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
+          '0%':   { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        'aurora-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%':      { backgroundPosition: '100% 50%' },
         },
       },
       animation: {
-        'fade-in': 'fade-in 200ms ease-out',
-        'slide-up': 'slide-up 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-        shimmer: 'shimmer 1.6s linear infinite',
+        'fade-in':  'fade-in 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'slide-up': 'slide-up 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+        shimmer:    'shimmer 1.6s linear infinite',
+        'aurora':   'aurora-shift 14s ease-in-out infinite',
       },
     },
   },

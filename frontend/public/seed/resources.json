@@ -1,0 +1,2216 @@
+{
+  "version": 2,
+  "categories": [
+    {
+      "key": "docs",
+      "icon": "BookOpen",
+      "title_en": "Official docs",
+      "title_ru": "Документация",
+      "subtitle_en": "Read the source of truth first",
+      "subtitle_ru": "Первоисточник — всегда сначала"
+    },
+    {
+      "key": "articles",
+      "icon": "FileText",
+      "title_en": "Articles & blogs",
+      "title_ru": "Статьи и блоги",
+      "subtitle_en": "Long-form deep dives",
+      "subtitle_ru": "Длинные разборы и идеи"
+    },
+    {
+      "key": "videos",
+      "icon": "PlayCircle",
+      "title_en": "Videos & channels",
+      "title_ru": "Видео и каналы",
+      "subtitle_en": "Watch in app — playlists, talks, channels",
+      "subtitle_ru": "Смотри прямо здесь — плейлисты, доклады, каналы"
+    },
+    {
+      "key": "courses",
+      "icon": "GraduationCap",
+      "title_en": "Courses",
+      "title_ru": "Курсы",
+      "subtitle_en": "Structured paths from zero to senior",
+      "subtitle_ru": "Структурированный путь от нуля"
+    },
+    {
+      "key": "books",
+      "icon": "Library",
+      "title_en": "Books",
+      "title_ru": "Книги",
+      "subtitle_en": "Slow-burn knowledge that sticks",
+      "subtitle_ru": "Длинное чтение, которое закрепляется"
+    },
+    {
+      "key": "podcasts",
+      "icon": "Podcast",
+      "title_en": "Podcasts",
+      "title_ru": "Подкасты",
+      "subtitle_en": "Listen on the train",
+      "subtitle_ru": "Слушать в дороге"
+    },
+    {
+      "key": "communities",
+      "icon": "Users",
+      "title_en": "Communities",
+      "title_ru": "Сообщества",
+      "subtitle_en": "Where to ask, where to lurk",
+      "subtitle_ru": "Где спросить, где подсмотреть"
+    },
+    {
+      "key": "tools",
+      "icon": "Wrench",
+      "title_en": "Packages & tools",
+      "title_ru": "Пакеты и инструменты",
+      "subtitle_en": "Awesome lists, packages, dev tools",
+      "subtitle_ru": "Подборки, пакеты, инструменты"
+    }
+  ],
+  "resources": [
+    {
+      "id": 1,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter Documentation",
+      "title_ru": "Документация Flutter",
+      "url": "https://docs.flutter.dev/",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "widgets",
+        "navigation"
+      ],
+      "duration": "ongoing",
+      "official": true,
+      "free": true,
+      "description_en": "The canonical entry point — install, first app, widget catalog, cookbook recipes, performance, deployment.",
+      "description_ru": "Канонический вход: установка, первое приложение, каталог виджетов, рецепты cookbook, перформанс, деплой."
+    },
+    {
+      "id": 2,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Dart Language Tour",
+      "title_ru": "Тур по языку Dart",
+      "url": "https://dart.dev/language",
+      "source": "dart.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "dart",
+        "fundamentals"
+      ],
+      "duration": "2–3 h",
+      "official": true,
+      "free": true,
+      "description_en": "Fastest path through the language: types, null safety, async, isolates, mixins, records and patterns.",
+      "description_ru": "Самый быстрый путь по языку: типы, null safety, async, изоляты, миксины, записи и паттерны."
+    },
+    {
+      "id": 3,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Effective Dart",
+      "title_ru": "Effective Dart",
+      "url": "https://dart.dev/effective-dart",
+      "source": "dart.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "dart",
+        "style",
+        "best-practices"
+      ],
+      "duration": "1 h",
+      "official": true,
+      "free": true,
+      "description_en": "Style, documentation, usage, design — the four guides every Dart engineer should read once a year.",
+      "description_ru": "Стиль, документация, использование, дизайн — четыре руководства, которые стоит перечитывать раз в год."
+    },
+    {
+      "id": 4,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter Cookbook",
+      "title_ru": "Flutter Cookbook",
+      "url": "https://docs.flutter.dev/cookbook",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "widgets",
+        "navigation",
+        "networking",
+        "animations"
+      ],
+      "duration": "browse",
+      "official": true,
+      "free": true,
+      "description_en": "Copy-paste-grade recipes for the 80% of common UI tasks: lists, forms, animations, networking, persistence.",
+      "description_ru": "Готовые рецепты на 80% типовых задач: списки, формы, анимации, сеть, хранение."
+    },
+    {
+      "id": 5,
+      "category": "docs",
+      "media_type": "tool",
+      "title_en": "DartPad",
+      "title_ru": "DartPad",
+      "url": "https://dartpad.dev/",
+      "source": "dart.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "dart",
+        "fundamentals",
+        "tools"
+      ],
+      "duration": "any",
+      "official": true,
+      "free": true,
+      "description_en": "Browser-based Dart/Flutter sandbox — perfect for testing one snippet without spinning up a project.",
+      "description_ru": "Песочница Dart/Flutter в браузере — идеально гонять один сниппет, не разворачивая проект."
+    },
+    {
+      "id": 6,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "API reference (Flutter SDK)",
+      "title_ru": "API-справочник Flutter SDK",
+      "url": "https://api.flutter.dev/",
+      "source": "api.flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "widgets",
+        "framework"
+      ],
+      "duration": "reference",
+      "official": true,
+      "free": true,
+      "description_en": "Every public class in the SDK — bookmark for the moments you need to know what a parameter actually does.",
+      "description_ru": "Каждый публичный класс SDK — закладка на случай «что вообще делает этот параметр»."
+    },
+    {
+      "id": 7,
+      "category": "docs",
+      "media_type": "tool",
+      "title_en": "pub.dev — package registry",
+      "title_ru": "pub.dev — реестр пакетов",
+      "url": "https://pub.dev/",
+      "source": "pub.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "packages",
+        "tools"
+      ],
+      "duration": "browse",
+      "official": true,
+      "free": true,
+      "description_en": "Search, score, like — the npm of Dart. Filter by Flutter platform, popularity, and Dart 3 compatibility.",
+      "description_ru": "Поиск, скор, лайки — это «npm для Dart». Фильтр по платформе Flutter, популярности и совместимости с Dart 3."
+    },
+    {
+      "id": 8,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Material 3 Design",
+      "title_ru": "Material 3 Design",
+      "url": "https://m3.material.io/",
+      "source": "material.io",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "design",
+        "material"
+      ],
+      "duration": "reference",
+      "official": true,
+      "free": true,
+      "description_en": "Material 3 specs — color, type, components. Required reading before customising your app theme.",
+      "description_ru": "Спецификация Material 3 — цвет, типографика, компоненты. Обязательно к прочтению, если меняешь тему."
+    },
+    {
+      "id": 9,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter widget catalog",
+      "title_ru": "Каталог виджетов Flutter",
+      "url": "https://docs.flutter.dev/ui/widgets",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "widgets"
+      ],
+      "duration": "reference",
+      "official": true,
+      "free": true,
+      "description_en": "Filterable index of every widget in the framework — start here when you don't know what to reach for.",
+      "description_ru": "Фильтруемый индекс всех виджетов фреймворка — отсюда начинай, когда не знаешь, что взять."
+    },
+    {
+      "id": 10,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "GoRouter — official package docs",
+      "title_ru": "GoRouter — официальные доки",
+      "url": "https://pub.dev/documentation/go_router/latest/topics/Get%20started-topic.html",
+      "source": "pub.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "navigation",
+        "routing"
+      ],
+      "duration": "2 h",
+      "official": true,
+      "free": true,
+      "description_en": "The Flutter team's recommended router — declarative, deep-link friendly, integrates with Navigator 2.0.",
+      "description_ru": "Рекомендованный командой Flutter роутер — декларативный, дружит с deep links, поверх Navigator 2.0."
+    },
+    {
+      "id": 11,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Riverpod — official docs",
+      "title_ru": "Riverpod — официальные доки",
+      "url": "https://riverpod.dev/",
+      "source": "Remi Rousselet",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "state-management",
+        "riverpod"
+      ],
+      "duration": "3 h",
+      "official": false,
+      "free": true,
+      "description_en": "Compile-safe, testable state — the new defaults for many Flutter teams. Read 'concepts' and 'getting started' first.",
+      "description_ru": "Compile-safe, тестируемое состояние — стандарт по умолчанию для многих команд."
+    },
+    {
+      "id": 12,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Bloc library — full docs",
+      "title_ru": "Bloc — полная документация",
+      "url": "https://bloclibrary.dev/",
+      "source": "Felix Angelov",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "state-management",
+        "bloc"
+      ],
+      "duration": "4 h",
+      "official": false,
+      "free": true,
+      "description_en": "BLoC concepts, recipes (counter → weather → todos → infinite list), testing patterns, examples.",
+      "description_ru": "Концепции BLoC, рецепты, паттерны тестов, примеры."
+    },
+    {
+      "id": 13,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter on the Web",
+      "title_ru": "Flutter на вебе",
+      "url": "https://docs.flutter.dev/platform-integration/web",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "web",
+        "deployment"
+      ],
+      "duration": "reference",
+      "official": true,
+      "free": true,
+      "description_en": "Web build pipeline, renderers (HTML/CanvasKit/Skwasm), interop, deploying to GitHub Pages and Firebase.",
+      "description_ru": "Сборка под веб, рендереры (HTML/CanvasKit/Skwasm), interop, деплой на GitHub Pages и Firebase."
+    },
+    {
+      "id": 14,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter on Desktop",
+      "title_ru": "Flutter на десктопе",
+      "url": "https://docs.flutter.dev/platform-integration/desktop",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "desktop"
+      ],
+      "duration": "reference",
+      "official": true,
+      "free": true,
+      "description_en": "Windows/macOS/Linux specifics: window sizing, file IO, system menus, distribution.",
+      "description_ru": "Особенности Windows/macOS/Linux: окна, файлы, системные меню, дистрибуция."
+    },
+    {
+      "id": 15,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "FlutterFire — Firebase for Flutter",
+      "title_ru": "FlutterFire — Firebase для Flutter",
+      "url": "https://firebase.flutter.dev/",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "firebase",
+        "backend"
+      ],
+      "duration": "reference",
+      "official": true,
+      "free": true,
+      "description_en": "Auth, Firestore, Functions, Storage, Crashlytics, Analytics — official Flutter bindings for Firebase.",
+      "description_ru": "Auth, Firestore, Functions, Storage, Crashlytics, Analytics — официальные привязки Firebase для Flutter."
+    },
+    {
+      "id": 16,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Dart asynchronous programming",
+      "title_ru": "Асинхронность в Dart",
+      "url": "https://dart.dev/codelabs/async-await",
+      "source": "dart.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "dart",
+        "async"
+      ],
+      "duration": "30 min",
+      "official": true,
+      "free": true,
+      "description_en": "Codelab on Future, async/await, Stream, error handling — a must before touching networking.",
+      "description_ru": "Codelab по Future, async/await, Stream, обработке ошибок — обязательно до сети."
+    },
+    {
+      "id": 17,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter performance best practices",
+      "title_ru": "Перформанс — лучшие практики",
+      "url": "https://docs.flutter.dev/perf/best-practices",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "performance",
+        "optimisation"
+      ],
+      "duration": "45 min",
+      "official": true,
+      "free": true,
+      "description_en": "const, builder splitting, opacity vs Visibility, ListView.builder vs Column, image caching.",
+      "description_ru": "const, дробление билдеров, Opacity vs Visibility, ListView.builder vs Column, кэш изображений."
+    },
+    {
+      "id": 18,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter testing — full guide",
+      "title_ru": "Полный гайд по тестированию во Flutter",
+      "url": "https://docs.flutter.dev/testing",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "testing"
+      ],
+      "duration": "2 h",
+      "official": true,
+      "free": true,
+      "description_en": "Unit, widget, integration tests, golden files, mocking, CI integration. Start here before writing tests.",
+      "description_ru": "Unit, widget, integration тесты, golden-файлы, моки, CI. Сюда — перед тем как писать тесты."
+    },
+    {
+      "id": 19,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Dart 3 patterns & records",
+      "title_ru": "Dart 3: паттерны и записи",
+      "url": "https://dart.dev/language/patterns",
+      "source": "dart.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "dart",
+        "language"
+      ],
+      "duration": "45 min",
+      "official": true,
+      "free": true,
+      "description_en": "Records, patterns, switch expressions, sealed classes — the language features that changed Dart in 2023.",
+      "description_ru": "Records, patterns, switch-выражения, sealed-классы — фичи, изменившие Dart в 2023."
+    },
+    {
+      "id": 20,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Adaptive & responsive design",
+      "title_ru": "Адаптивный и responsive дизайн",
+      "url": "https://docs.flutter.dev/ui/adaptive-responsive",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "ui",
+        "adaptive"
+      ],
+      "duration": "1 h",
+      "official": true,
+      "free": true,
+      "description_en": "LayoutBuilder, MediaQuery, breakpoints, NavigationRail vs Drawer, platform widgets vs Material/Cupertino.",
+      "description_ru": "LayoutBuilder, MediaQuery, breakpoints, NavigationRail vs Drawer, платформенные виджеты vs Material/Cupertino."
+    },
+    {
+      "id": 21,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter accessibility",
+      "title_ru": "Доступность во Flutter",
+      "url": "https://docs.flutter.dev/ui/accessibility-and-internationalization/accessibility",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "a11y"
+      ],
+      "duration": "1 h",
+      "official": true,
+      "free": true,
+      "description_en": "Semantics, screen readers, contrast, dynamic type. The bare-minimum to ship to a global audience.",
+      "description_ru": "Semantics, скринридеры, контраст, динамический шрифт. Минимум, чтобы выкатить на глобальную аудиторию."
+    },
+    {
+      "id": 22,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Internationalisation (i18n)",
+      "title_ru": "Интернационализация (i18n)",
+      "url": "https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "i18n",
+        "l10n"
+      ],
+      "duration": "1 h",
+      "official": true,
+      "free": true,
+      "description_en": ".arb files, intl_utils, gen-l10n, plural rules, RTL — official i18n setup walkthrough.",
+      "description_ru": ".arb-файлы, intl_utils, gen-l10n, plural rules, RTL — официальная настройка i18n."
+    },
+    {
+      "id": 23,
+      "category": "docs",
+      "media_type": "docs",
+      "title_en": "Flutter codelabs hub",
+      "title_ru": "Хаб codelabs Flutter",
+      "url": "https://docs.flutter.dev/codelabs",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "tutorials"
+      ],
+      "duration": "varies",
+      "official": true,
+      "free": true,
+      "description_en": "Every official codelab in one place — first app, layouts, animations, Firebase, AI features.",
+      "description_ru": "Все официальные codelabs в одном месте — первое приложение, лейауты, анимации, Firebase, AI."
+    },
+    {
+      "id": 100,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Code With Andrea — articles",
+      "title_ru": "Code With Andrea — статьи",
+      "url": "https://codewithandrea.com/articles/",
+      "source": "Andrea Bizzotto",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "state-management",
+        "testing"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "One of the most consistent long-form Flutter blogs — architecture, layered design, Riverpod deep dives, testing.",
+      "description_ru": "Один из самых стабильных Flutter-блогов с длинными разборами — архитектура, слоистый дизайн, Riverpod, тестирование."
+    },
+    {
+      "id": 101,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Flutter — official Medium",
+      "title_ru": "Flutter — официальный Medium",
+      "url": "https://blog.flutter.dev/",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "news",
+        "patterns"
+      ],
+      "duration": "browse",
+      "official": true,
+      "free": true,
+      "description_en": "Release notes, deep dives by the framework team, design notes, performance tips. Subscribe.",
+      "description_ru": "Релизы, глубокие материалы команды фреймворка, заметки про дизайн и перформанс."
+    },
+    {
+      "id": 102,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Dart on Medium",
+      "title_ru": "Dart — Medium",
+      "url": "https://blog.dart.dev/",
+      "source": "Dart team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "dart",
+        "language"
+      ],
+      "duration": "browse",
+      "official": true,
+      "free": true,
+      "description_en": "Language announcements, deep dives on records/patterns/macros, perf and memory analysis.",
+      "description_ru": "Анонсы языка, глубокие разборы записей/паттернов/макросов, перф и память."
+    },
+    {
+      "id": 103,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Flutter Awesome",
+      "title_ru": "Flutter Awesome",
+      "url": "https://flutterawesome.com/",
+      "source": "flutterawesome.com",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "ui",
+        "components",
+        "showcase"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "A daily-updated showcase of Flutter UI snippets, libraries, demo apps. Use as a visual idea source.",
+      "description_ru": "Ежедневно обновляемая витрина UI-сниппетов, библиотек, демо. Источник визуальных идей."
+    },
+    {
+      "id": 104,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Flutter By Example",
+      "title_ru": "Flutter By Example",
+      "url": "https://flutterbyexample.com/",
+      "source": "flutterbyexample.com",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "widgets"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Small, opinionated tutorials that build a single concept at a time — great for second-week learners.",
+      "description_ru": "Маленькие, четкие туториалы по одной концепции за раз — отлично для второй недели обучения."
+    },
+    {
+      "id": 105,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Habr — Flutter hub",
+      "title_ru": "Хабр — Flutter",
+      "url": "https://habr.com/ru/hub/flutter/",
+      "source": "habr.com",
+      "lang": "ru",
+      "level": "mid",
+      "topics": [
+        "fundamentals",
+        "architecture"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Russian-language Flutter feed on Habr — practical write-ups from Russian-speaking teams.",
+      "description_ru": "Русскоязычная лента про Flutter на Хабре — практические разборы от русскоговорящих команд."
+    },
+    {
+      "id": 106,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "VeryGood Engineering Blog",
+      "title_ru": "Блог VeryGood Engineering",
+      "url": "https://verygood.ventures/blog",
+      "source": "Very Good Ventures",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "architecture",
+        "testing",
+        "ci-cd"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Production-grade Flutter engineering: architecture, testing strategies, CI/CD, monorepo tooling.",
+      "description_ru": "Продакшн-инжиниринг во Flutter: архитектура, стратегии тестов, CI/CD, инструменты монорепо."
+    },
+    {
+      "id": 107,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Code With Andrea — newsletter",
+      "title_ru": "Code With Andrea — рассылка",
+      "url": "https://codewithandrea.com/newsletter/",
+      "source": "Andrea Bizzotto",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "news",
+        "architecture"
+      ],
+      "duration": "weekly",
+      "official": false,
+      "free": true,
+      "description_en": "Weekly curated Flutter news + tutorial roundup — the lowest-effort way to stay current.",
+      "description_ru": "Еженедельная подборка новостей и туториалов Flutter — минимальные усилия, чтобы быть в курсе."
+    },
+    {
+      "id": 108,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Flutter Weekly Newsletter",
+      "title_ru": "Flutter Weekly — рассылка",
+      "url": "https://flutterweekly.net/",
+      "source": "flutterweekly.net",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "news"
+      ],
+      "duration": "weekly",
+      "official": false,
+      "free": true,
+      "description_en": "Long-running weekly digest of Flutter articles, packages, videos, jobs.",
+      "description_ru": "Давно идущий еженедельный дайджест статей, пакетов, видео и вакансий по Flutter."
+    },
+    {
+      "id": 109,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Felix Angelov — articles",
+      "title_ru": "Felix Angelov — статьи",
+      "url": "https://felangelov.medium.com/",
+      "source": "Felix Angelov",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "bloc",
+        "mason",
+        "tooling"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Author of bloc, mason, very_good_cli — the engineering blog behind half of the Flutter ecosystem's tooling.",
+      "description_ru": "Автор bloc, mason, very_good_cli — инженерный блог за половиной инструментария экосистемы Flutter."
+    },
+    {
+      "id": 110,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Remi Rousselet — articles",
+      "title_ru": "Remi Rousselet — статьи",
+      "url": "https://remi-rousselet.medium.com/",
+      "source": "Remi Rousselet",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "riverpod",
+        "provider",
+        "language"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Author of Provider, Riverpod, Freezed. The deepest takes on Dart's type system you'll find on Medium.",
+      "description_ru": "Автор Provider, Riverpod, Freezed. Самые глубокие тексты про систему типов Dart на Medium."
+    },
+    {
+      "id": 111,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Inside the Flutter framework",
+      "title_ru": "Внутри Flutter-фреймворка",
+      "url": "https://docs.flutter.dev/resources/inside-flutter",
+      "source": "flutter.dev",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "framework",
+        "internals",
+        "performance"
+      ],
+      "duration": "45 min",
+      "official": true,
+      "free": true,
+      "description_en": "How Flutter renders: widget/element/render trees, build/layout/paint phases, sublinear algorithms. Required senior reading.",
+      "description_ru": "Как Flutter рендерит: деревья widget/element/render, фазы build/layout/paint, сублинейные алгоритмы. Обязательно для senior."
+    },
+    {
+      "id": 112,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Flutter Architecture Samples",
+      "title_ru": "Flutter Architecture Samples",
+      "url": "https://fluttersamples.com/",
+      "source": "Brian Egan",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "state-management",
+        "comparison"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Same TodoMVC built in 12+ architectures — Riverpod, Bloc, Redux, MobX, GetX. Best way to compare side by side.",
+      "description_ru": "Одно и то же TodoMVC на 12+ архитектурах — Riverpod, Bloc, Redux, MobX, GetX. Лучший способ сравнить."
+    },
+    {
+      "id": 114,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "FlutterCommunity on Medium",
+      "title_ru": "FlutterCommunity — Medium",
+      "url": "https://medium.com/flutter-community",
+      "source": "FlutterCommunity",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "patterns"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Community-run Medium pub — high volume of mid-quality tutorials. Great for breadth of topics.",
+      "description_ru": "Комьюнити-Medium с большим потоком туториалов среднего качества. Подойдёт для охвата."
+    },
+    {
+      "id": 116,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "itnext.io — Flutter tag",
+      "title_ru": "itnext.io — Flutter",
+      "url": "https://itnext.io/tagged/flutter",
+      "source": "itnext.io",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "patterns"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Engineering-blog Flutter feed — usually deeper than the average Medium post.",
+      "description_ru": "Инженерная Flutter-лента — обычно глубже среднего поста на Medium."
+    },
+    {
+      "id": 117,
+      "category": "articles",
+      "media_type": "article",
+      "title_en": "Vandad Nahavandipoor — blog",
+      "title_ru": "Vandad Nahavandipoor — блог",
+      "url": "https://vandadnp.medium.com/",
+      "source": "Vandad Nahavandipoor",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "fundamentals",
+        "best-practices"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "The author of the famous free 38h Flutter course — concise text follow-ups to the videos.",
+      "description_ru": "Автор знаменитого бесплатного 38-часового курса — короткие текстовые сопровождения к видео."
+    },
+    {
+      "id": 200,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Flutter — official YouTube channel",
+      "title_ru": "Flutter — официальный YouTube",
+      "url": "https://www.youtube.com/@flutterdev",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "widgets",
+        "events"
+      ],
+      "duration": "ongoing",
+      "official": true,
+      "free": true,
+      "description_en": "'Widget of the Week', 'Decoding Flutter', conferences. Subscribe and watch one video a week.",
+      "description_ru": "«Widget of the Week», «Decoding Flutter», конференции. Подпишись и смотри по видео в неделю."
+    },
+    {
+      "id": 201,
+      "category": "videos",
+      "media_type": "playlist",
+      "playlist_id": "PLjxrf2q8roU23XGwz3Km7sQZFTdB996iG",
+      "cover_video_id": "WnzHARTIZww",
+      "title_en": "Widget of the Week — playlist",
+      "title_ru": "Widget of the Week — плейлист",
+      "url": "https://www.youtube.com/playlist?list=PLjxrf2q8roU23XGwz3Km7sQZFTdB996iG",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "widgets"
+      ],
+      "duration": "60+ × 1 min",
+      "official": true,
+      "free": true,
+      "description_en": "60-second deep dives into one widget at a time. The single best widget-discovery resource — watch one a day.",
+      "description_ru": "Минутные разборы по одному виджету. Лучший ресурс «узнать новый виджет» — по одному в день."
+    },
+    {
+      "id": 202,
+      "category": "videos",
+      "media_type": "playlist",
+      "playlist_id": "PLjxrf2q8roU2HdJQDjJzOeO6J3FoFLWr2",
+      "cover_video_id": "wgTBLj7rMPM",
+      "title_en": "Decoding Flutter — playlist",
+      "title_ru": "Decoding Flutter — плейлист",
+      "url": "https://www.youtube.com/playlist?list=PLjxrf2q8roU2HdJQDjJzOeO6J3FoFLWr2",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "patterns",
+        "best-practices",
+        "framework"
+      ],
+      "duration": "15+ × 5 min",
+      "official": true,
+      "free": true,
+      "description_en": "Five-minute episodes from the Flutter team explaining tricky concepts (rebuilds, keys, slivers, accessibility).",
+      "description_ru": "Пятиминутки от команды Flutter про сложные темы (rebuilds, keys, slivers, доступность)."
+    },
+    {
+      "id": 204,
+      "category": "videos",
+      "media_type": "playlist",
+      "playlist_id": "PLjxrf2q8roU3ahJVrSgAnPjzkpGmL9Czl",
+      "cover_video_id": "yr8F2S3Amas",
+      "title_en": "The Boring Flutter Development Show",
+      "title_ru": "The Boring Flutter Development Show",
+      "url": "https://www.youtube.com/playlist?list=PLjxrf2q8roU3ahJVrSgAnPjzkpGmL9Czl",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "live-coding",
+        "patterns"
+      ],
+      "duration": "30+ × 1 h",
+      "official": true,
+      "free": true,
+      "description_en": "Long-form, unedited live coding by the Flutter team — see how they actually debug, refactor, and ship.",
+      "description_ru": "Длинные нерезаные стримы команды Flutter — видишь, как они реально дебажат, рефакторят и катят."
+    },
+    {
+      "id": 205,
+      "category": "videos",
+      "media_type": "playlist",
+      "playlist_id": "PLjxrf2q8roU2v6UqYlt_KPaXlnjbYySua",
+      "cover_video_id": "GXIJJkq_H8g",
+      "title_en": "Flutter Engage — talks",
+      "title_ru": "Flutter Engage — доклады",
+      "url": "https://www.youtube.com/playlist?list=PLjxrf2q8roU2v6UqYlt_KPaXlnjbYySua",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "roadmap",
+        "framework"
+      ],
+      "duration": "6 h",
+      "official": true,
+      "free": true,
+      "description_en": "Flutter 2 launch event — null safety, web stable, desktop alpha, Material You preview.",
+      "description_ru": "Запуск Flutter 2 — null safety, стабильный web, alpha desktop, превью Material You."
+    },
+    {
+      "id": 206,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Reso Coder",
+      "title_ru": "Reso Coder",
+      "url": "https://www.youtube.com/@ResoCoder",
+      "source": "Matej Rešetár",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "ddd",
+        "state-management",
+        "testing"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Clean architecture, DDD, Riverpod, BLoC — multi-hour deep dives. Best in class for 'how to structure'.",
+      "description_ru": "Чистая архитектура, DDD, Riverpod, BLoC — многочасовые глубокие видео. Лучший канал «как структурировать»."
+    },
+    {
+      "id": 207,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Robert Brunhage",
+      "title_ru": "Robert Brunhage",
+      "url": "https://www.youtube.com/@RobertBrunhage",
+      "source": "Robert Brunhage",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "state-management",
+        "patterns",
+        "career"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Practical mid-length tutorials: Riverpod patterns, app builds, career advice for Flutter devs.",
+      "description_ru": "Практичные туториалы средней длины: паттерны Riverpod, сборка приложений, советы по карьере во Flutter."
+    },
+    {
+      "id": 208,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "FilledStacks",
+      "title_ru": "FilledStacks",
+      "url": "https://www.youtube.com/@FilledStacks",
+      "source": "Dane Mackier",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "stacked",
+        "patterns"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Production patterns and the Stacked architecture — long, project-style videos building real apps.",
+      "description_ru": "Продакшн-паттерны и архитектура Stacked — длинные, проектные видео, которые собирают реальные приложения."
+    },
+    {
+      "id": 209,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Code With Andrea",
+      "title_ru": "Code With Andrea",
+      "url": "https://www.youtube.com/@codewithandrea",
+      "source": "Andrea Bizzotto",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "riverpod",
+        "testing"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Layered architecture, Riverpod, testing — companion channel to the blog.",
+      "description_ru": "Слоистая архитектура, Riverpod, тесты — канал-дополнение к блогу."
+    },
+    {
+      "id": 210,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Flutter Mapp",
+      "title_ru": "Flutter Mapp",
+      "url": "https://www.youtube.com/@FlutterMapp",
+      "source": "Flutter Mapp",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "ui",
+        "tutorials"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Short, punchy tutorials. Great visual reference for nailing a UI snippet quickly.",
+      "description_ru": "Короткие сильные туториалы. Удобный визуальный референс, когда нужно быстро повторить UI."
+    },
+    {
+      "id": 211,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Vandad Nahavandipoor",
+      "title_ru": "Vandad Nahavandipoor",
+      "url": "https://www.youtube.com/@vandadnp",
+      "source": "Vandad Nahavandipoor",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "first-app",
+        "bloc"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Author of the famous 37-hour free Flutter & Dart course — pinned on his channel.",
+      "description_ru": "Автор знаменитого бесплатного 37-часового курса Flutter & Dart — закреплён на канале."
+    },
+    {
+      "id": 212,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "HeyFlutter (Johannes Milke)",
+      "title_ru": "HeyFlutter (Johannes Milke)",
+      "url": "https://www.youtube.com/@HeyFlutter",
+      "source": "Johannes Milke",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "packages",
+        "tutorials"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "500+ short tutorials, one per package. Search the channel when you want to know how to use a specific package.",
+      "description_ru": "500+ коротких уроков по одному пакету каждый. Ищи по каналу, если хочешь разобраться с конкретным пакетом."
+    },
+    {
+      "id": 213,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Flutter Mentor (RU)",
+      "title_ru": "Flutter Ментор",
+      "url": "https://www.youtube.com/@FlutterMentor",
+      "source": "Flutter Mentor",
+      "lang": "ru",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "ui",
+        "ru"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Russian-language Flutter walkthroughs — fundamentals, UI, packages, project breakdowns.",
+      "description_ru": "Русскоязычные разборы Flutter — основы, UI, пакеты, проектные тутора."
+    },
+    {
+      "id": 218,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Tadas Petra",
+      "title_ru": "Tadas Petra",
+      "url": "https://www.youtube.com/@TadasPetra",
+      "source": "Tadas Petra",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "fundamentals",
+        "patterns",
+        "reactive"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Reactive programming, animations, and 'Flutter package of the week'-style breakdowns.",
+      "description_ru": "Реактивное программирование, анимации, разборы пакетов в стиле «package of the week»."
+    },
+    {
+      "id": 219,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Marcus Ng",
+      "title_ru": "Marcus Ng",
+      "url": "https://www.youtube.com/@MarcusNg",
+      "source": "Marcus Ng",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "ui",
+        "clones",
+        "tutorials"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "UI-clone tutorials (Apple Music, Instagram, Discord) — copy them to learn the framework's expressiveness.",
+      "description_ru": "UI-клоны (Apple Music, Instagram, Discord) — копируй их, чтобы прочувствовать выразительность фреймворка."
+    },
+    {
+      "id": 220,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "The Flutter Way",
+      "title_ru": "The Flutter Way",
+      "url": "https://www.youtube.com/@TheFlutterWay",
+      "source": "The Flutter Way",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "ui",
+        "clones"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Polished UI tutorials — full app clones (food, e-commerce, music) with downloadable source.",
+      "description_ru": "Полированные UI-туториалы — полные клоны приложений (еда, e-commerce, музыка) с открытым исходником."
+    },
+    {
+      "id": 221,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Flutter Explained",
+      "title_ru": "Flutter Explained",
+      "url": "https://www.youtube.com/@FlutterExplained",
+      "source": "Max Weber",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "state-management",
+        "architecture",
+        "tutorials"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "State management deep dives, app architecture, lots of side-by-side comparisons.",
+      "description_ru": "Глубокие разборы state management, архитектура, много сравнений рядом."
+    },
+    {
+      "id": 222,
+      "category": "videos",
+      "media_type": "channel",
+      "title_en": "Random Coding",
+      "title_ru": "Random Coding",
+      "url": "https://www.youtube.com/@randomcoding",
+      "source": "Random Coding",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "bloc",
+        "architecture"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Flutter + Bloc focused channel — long-form architecture tutorials and clean code patterns.",
+      "description_ru": "Канал про Flutter + Bloc — длинные туториалы по архитектуре и чистому коду."
+    },
+    {
+      "id": 300,
+      "category": "courses",
+      "media_type": "course",
+      "title_en": "Codelabs — Write Your First Flutter App",
+      "title_ru": "Codelab — твоё первое Flutter-приложение",
+      "url": "https://codelabs.developers.google.com/codelabs/flutter-codelab-first",
+      "source": "Google",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "first-app"
+      ],
+      "duration": "2 h",
+      "official": true,
+      "free": true,
+      "description_en": "Official codelab — by the end you've built a complete responsive app with state management and navigation.",
+      "description_ru": "Официальный codelab — к концу ты собрал полноценное адаптивное приложение со state management и навигацией."
+    },
+    {
+      "id": 301,
+      "category": "courses",
+      "media_type": "course",
+      "title_en": "Flutter & Dart — The Complete Guide (Maximilian)",
+      "title_ru": "Flutter & Dart — полный курс (Максимилиан)",
+      "url": "https://www.udemy.com/course/learn-flutter-dart-to-build-ios-android-apps/",
+      "source": "Maximilian Schwarzmüller (Udemy)",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "navigation",
+        "state",
+        "deployment"
+      ],
+      "duration": "60 h",
+      "official": false,
+      "free": false,
+      "description_en": "Most-rated Udemy Flutter course. End-to-end: language, widgets, state, networking, native, deployment.",
+      "description_ru": "Самый рейтинговый курс Flutter на Udemy. End-to-end: язык, виджеты, состояние, сеть, нативное, деплой."
+    },
+    {
+      "id": 302,
+      "category": "courses",
+      "media_type": "course",
+      "title_en": "Flutter Apprentice paths (Kodeco)",
+      "title_ru": "Flutter Apprentice paths (Kodeco)",
+      "url": "https://www.kodeco.com/flutter/paths",
+      "source": "Kodeco (raywenderlich)",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "patterns",
+        "production"
+      ],
+      "duration": "40 h",
+      "official": false,
+      "free": false,
+      "description_en": "Project-based Flutter learning paths from beginner to advanced — well-edited, includes books and videos.",
+      "description_ru": "Проектные пути обучения Flutter от начинающего до продвинутого — хорошо смонтировано, включает книги и видео."
+    },
+    {
+      "id": 303,
+      "category": "courses",
+      "media_type": "course",
+      "title_en": "Flutter Foundations — Code With Andrea",
+      "title_ru": "Flutter Foundations — Code With Andrea",
+      "url": "https://codewithandrea.com/courses/flutter-foundations/",
+      "source": "Andrea Bizzotto",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "riverpod",
+        "testing"
+      ],
+      "duration": "20 h",
+      "official": false,
+      "free": false,
+      "description_en": "Strict, opinionated take on app architecture, Riverpod, routing, error handling, and testing.",
+      "description_ru": "Строгий, аргументированный взгляд на архитектуру, Riverpod, роутинг, обработку ошибок и тесты."
+    },
+    {
+      "id": 304,
+      "category": "courses",
+      "media_type": "playlist",
+      "playlist_id": "PL4cUxeGkcC9jLYyp2Aoh6hcWuxFDX6PBJ",
+      "cover_video_id": "1ukSR1GRtMU",
+      "title_en": "The Net Ninja — Flutter & Dart Crash Course",
+      "title_ru": "The Net Ninja — Flutter & Dart",
+      "url": "https://www.youtube.com/playlist?list=PL4cUxeGkcC9jLYyp2Aoh6hcWuxFDX6PBJ",
+      "source": "Shaun Pelling",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "first-app"
+      ],
+      "duration": "5 h",
+      "official": false,
+      "free": true,
+      "description_en": "Free, fast, focused YouTube playlist — perfect first crash course before paying for anything.",
+      "description_ru": "Бесплатный, быстрый, сфокусированный плейлист — идеальный первый краш-курс до того, как платить."
+    },
+    {
+      "id": 305,
+      "category": "courses",
+      "media_type": "course",
+      "title_en": "Stepik — Flutter (RU)",
+      "title_ru": "Stepik — Flutter",
+      "url": "https://stepik.org/course/121765",
+      "source": "Stepik",
+      "lang": "ru",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "first-app",
+        "ru"
+      ],
+      "duration": "20 h",
+      "official": false,
+      "free": true,
+      "description_en": "Russian-language Flutter course on Stepik — popular free pick for Russian-speaking beginners.",
+      "description_ru": "Русскоязычный курс по Flutter на Stepik — популярный бесплатный старт для начинающих."
+    },
+    {
+      "id": 309,
+      "category": "courses",
+      "media_type": "course",
+      "title_en": "Otus — Flutter-разработчик (RU)",
+      "title_ru": "Otus — Flutter-разработчик",
+      "url": "https://otus.ru/lessons/flutter-developer/",
+      "source": "Otus",
+      "lang": "ru",
+      "level": "mid",
+      "topics": [
+        "fundamentals",
+        "architecture",
+        "ru"
+      ],
+      "duration": "5 months",
+      "official": false,
+      "free": false,
+      "description_en": "Russian-language paid course with live lectures, mentor reviews, and a final project.",
+      "description_ru": "Русскоязычный платный курс с живыми лекциями, проверкой ментором и финальным проектом."
+    },
+    {
+      "id": 400,
+      "category": "books",
+      "media_type": "book",
+      "title_en": "Flutter Apprentice (book)",
+      "title_ru": "Flutter Apprentice (книга)",
+      "url": "https://www.kodeco.com/books/flutter-apprentice",
+      "source": "Kodeco",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "fundamentals",
+        "patterns"
+      ],
+      "duration": "book",
+      "official": false,
+      "free": false,
+      "description_en": "Hand-held, project-based intro — by the end you've built a recipe app with persistence, networking, navigation.",
+      "description_ru": "Подробный проектный гайд — к концу собрано приложение-рецептник с базой, сетью и навигацией."
+    },
+    {
+      "id": 401,
+      "category": "books",
+      "media_type": "book",
+      "title_en": "Real-World Flutter by Tutorials",
+      "title_ru": "Real-World Flutter by Tutorials",
+      "url": "https://www.kodeco.com/books/real-world-flutter-by-tutorials",
+      "source": "Kodeco",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "architecture",
+        "production",
+        "ci-cd"
+      ],
+      "duration": "book",
+      "official": false,
+      "free": false,
+      "description_en": "Architecture, navigation 2.0, CI/CD, monorepo, modular packages — production concerns Apprentice book skips.",
+      "description_ru": "Архитектура, navigation 2.0, CI/CD, монорепо, модульные пакеты — всё продакшн, которое первая книга пропускает."
+    },
+    {
+      "id": 402,
+      "category": "books",
+      "media_type": "book",
+      "title_en": "Flutter Complete Reference 2.0",
+      "title_ru": "Flutter Complete Reference 2.0",
+      "url": "https://fluttercompletereference.com/",
+      "source": "Alberto Miola",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "dart",
+        "framework",
+        "reference"
+      ],
+      "duration": "book",
+      "official": false,
+      "free": true,
+      "description_en": "Free, encyclopedic reference covering Dart and Flutter from the ground up — the longest free book in the ecosystem.",
+      "description_ru": "Бесплатный энциклопедический справочник по Dart и Flutter с нуля — самая длинная бесплатная книга в экосистеме."
+    },
+    {
+      "id": 403,
+      "category": "books",
+      "media_type": "book",
+      "title_en": "Dart Apprentice (book)",
+      "title_ru": "Dart Apprentice (книга)",
+      "url": "https://www.kodeco.com/books/dart-apprentice",
+      "source": "Kodeco",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "dart",
+        "language"
+      ],
+      "duration": "book",
+      "official": false,
+      "free": false,
+      "description_en": "Pure Dart, no Flutter — types, control flow, OOP, async, generics. Ideal warm-up before opening Flutter.",
+      "description_ru": "Чистый Dart, без Flutter — типы, поток управления, ООП, async, generics. Идеальный разогрев перед Flutter."
+    },
+    {
+      "id": 404,
+      "category": "books",
+      "media_type": "book",
+      "title_en": "Flutter in Action (Manning)",
+      "title_ru": "Flutter in Action (Manning)",
+      "url": "https://www.manning.com/books/flutter-in-action",
+      "source": "Manning",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "fundamentals",
+        "architecture"
+      ],
+      "duration": "book",
+      "official": false,
+      "free": false,
+      "description_en": "Long-form intro to Flutter — slower pace, more theory, good if Apprentice felt too hand-holding.",
+      "description_ru": "Большая книга-введение во Flutter — медленнее, больше теории, если Apprentice показался слишком пошаговым."
+    },
+    {
+      "id": 500,
+      "category": "podcasts",
+      "media_type": "podcast",
+      "title_en": "It's All Widgets! Podcast",
+      "title_ru": "It's All Widgets! Podcast",
+      "url": "https://itsallwidgets.com/podcast",
+      "source": "Hillel Coren",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "interviews",
+        "community"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Interview podcast with Flutter app makers — hear how shipped apps were architected and what bit them.",
+      "description_ru": "Интервью-подкаст с авторами Flutter-приложений — слышишь, как реальные приложения архитектурили и что сломалось."
+    },
+    {
+      "id": 502,
+      "category": "podcasts",
+      "media_type": "podcast",
+      "title_en": "Подлодка — выпуски про Flutter (RU)",
+      "title_ru": "Подлодка — выпуски про Flutter",
+      "url": "https://podlodka.io/",
+      "source": "Podlodka Crew",
+      "lang": "ru",
+      "level": "mid",
+      "topics": [
+        "mobile",
+        "architecture",
+        "ru"
+      ],
+      "duration": "selective",
+      "official": false,
+      "free": true,
+      "description_en": "Russian-language mobile dev podcast with several Flutter-focused episodes — search 'Flutter' on the site.",
+      "description_ru": "Русскоязычный мобильный подкаст с несколькими Flutter-выпусками — ищи «Flutter» на сайте."
+    },
+    {
+      "id": 503,
+      "category": "podcasts",
+      "media_type": "podcast",
+      "title_en": "FlutterX talks",
+      "title_ru": "FlutterX talks",
+      "url": "https://flutterx.com/",
+      "source": "FlutterX",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "events",
+        "community"
+      ],
+      "duration": "ongoing",
+      "official": false,
+      "free": true,
+      "description_en": "Talks from FlutterX events — community-organised, often with the speakers from the official conferences.",
+      "description_ru": "Доклады с FlutterX — комьюнити-конференция, часто с теми же спикерами, что и на официальных событиях."
+    },
+    {
+      "id": 600,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "r/FlutterDev",
+      "title_ru": "r/FlutterDev",
+      "url": "https://www.reddit.com/r/FlutterDev/",
+      "source": "Reddit",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "community"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Largest English-language Flutter community. Daily Q&A, ecosystem news, showcase posts, package launches.",
+      "description_ru": "Крупнейшее англоязычное Flutter-сообщество. Каждый день вопросы, новости экосистемы, шоукейсы, релизы пакетов."
+    },
+    {
+      "id": 601,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "Flutter Community Discord",
+      "title_ru": "Flutter Community Discord",
+      "url": "https://discord.gg/flutter",
+      "source": "Flutter Community",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "community",
+        "help"
+      ],
+      "duration": "live",
+      "official": false,
+      "free": true,
+      "description_en": "Active Discord — real-time help in #help, channels per package (Riverpod, Bloc, GoRouter).",
+      "description_ru": "Активный Discord — онлайн-помощь в #help, отдельные каналы под пакеты (Riverpod, Bloc, GoRouter)."
+    },
+    {
+      "id": 602,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "Flutter Russia (Telegram, RU)",
+      "title_ru": "Flutter Russia — Telegram",
+      "url": "https://t.me/flutter_russia",
+      "source": "Telegram",
+      "lang": "ru",
+      "level": "junior",
+      "topics": [
+        "community",
+        "help",
+        "ru"
+      ],
+      "duration": "live",
+      "official": false,
+      "free": true,
+      "description_en": "Russian-speaking Flutter community in Telegram — questions, jobs, ecosystem news.",
+      "description_ru": "Русскоязычное Flutter-сообщество в Telegram — вопросы, вакансии, новости экосистемы."
+    },
+    {
+      "id": 603,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "Flutter Dev — Telegram (RU)",
+      "title_ru": "Flutter Dev — Telegram",
+      "url": "https://t.me/Flutter_dev",
+      "source": "Telegram",
+      "lang": "ru",
+      "level": "junior",
+      "topics": [
+        "community",
+        "help",
+        "ru"
+      ],
+      "duration": "live",
+      "official": false,
+      "free": true,
+      "description_en": "Another active Russian-language Flutter chat with thousands of members.",
+      "description_ru": "Ещё один активный русскоязычный Flutter-чат на тысячи участников."
+    },
+    {
+      "id": 604,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "Stack Overflow — flutter tag",
+      "title_ru": "Stack Overflow — тег flutter",
+      "url": "https://stackoverflow.com/questions/tagged/flutter",
+      "source": "Stack Overflow",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "help",
+        "debug"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "100k+ Q&A — your first Google hit for any Flutter error message will probably end up here.",
+      "description_ru": "100k+ вопросов и ответов — первый клик в Google по любой ошибке Flutter обычно ведёт сюда."
+    },
+    {
+      "id": 605,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "Flutter Jobs (Telegram, RU)",
+      "title_ru": "Flutter Jobs — Telegram",
+      "url": "https://t.me/flutter_jobs",
+      "source": "Telegram",
+      "lang": "ru",
+      "level": "junior",
+      "topics": [
+        "jobs",
+        "community",
+        "ru"
+      ],
+      "duration": "live",
+      "official": false,
+      "free": true,
+      "description_en": "Russian-language Telegram channel with daily Flutter job postings.",
+      "description_ru": "Русскоязычный Telegram-канал с ежедневными вакансиями Flutter."
+    },
+    {
+      "id": 607,
+      "category": "communities",
+      "media_type": "community",
+      "title_en": "Flutter Tashkent (Telegram, RU)",
+      "title_ru": "Flutter Tashkent — Telegram",
+      "url": "https://t.me/flutter_tashkent",
+      "source": "Telegram",
+      "lang": "ru",
+      "level": "junior",
+      "topics": [
+        "community",
+        "ru",
+        "local"
+      ],
+      "duration": "live",
+      "official": false,
+      "free": true,
+      "description_en": "Local Flutter community for Tashkent / Central Asia — meetups, jobs, mentorship.",
+      "description_ru": "Локальное Flutter-комьюнити для Ташкента и Центральной Азии — митапы, вакансии, менторство."
+    },
+    {
+      "id": 700,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "awesome-flutter",
+      "title_ru": "awesome-flutter",
+      "url": "https://github.com/Solido/awesome-flutter",
+      "source": "Solido (GitHub)",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "awesome-list",
+        "packages"
+      ],
+      "duration": "browse",
+      "official": false,
+      "free": true,
+      "description_en": "Canonical Flutter awesome list — articles, videos, components, frameworks, open-source apps. Star it.",
+      "description_ru": "Каноническая awesome-подборка Flutter — статьи, видео, компоненты, фреймворки, опенсорс-приложения."
+    },
+    {
+      "id": 701,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "FVM — Flutter Version Management",
+      "title_ru": "FVM — менеджер версий Flutter",
+      "url": "https://fvm.app/",
+      "source": "Leo Farias",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "tooling",
+        "ci-cd"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Per-project Flutter SDK pinning — like nvm for Node. Mandatory once you have more than one Flutter project.",
+      "description_ru": "Пин Flutter SDK по проекту — аналог nvm для Node. Обязателен с двух+ проектов."
+    },
+    {
+      "id": 702,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "Mason — code generation bricks",
+      "title_ru": "Mason — генерация кода через bricks",
+      "url": "https://docs.brickhub.dev/",
+      "source": "Felix Angelov",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "tooling",
+        "scaffolding"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Reusable templates ('bricks') for scaffolding features — Bloc, Cubit, Riverpod, Clean Architecture screens.",
+      "description_ru": "Переиспользуемые шаблоны («bricks») для скаффолдинга фич — Bloc, Cubit, Riverpod, Clean Architecture."
+    },
+    {
+      "id": 703,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "Very Good CLI",
+      "title_ru": "Very Good CLI",
+      "url": "https://cli.vgv.dev/",
+      "source": "Very Good Ventures",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "tooling",
+        "scaffolding"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Opinionated CLI for spinning up a Flutter app pre-wired with Bloc, l10n, theming, CI, and tests.",
+      "description_ru": "Опинионированный CLI: разворачивает Flutter-приложение, уже подключённое к Bloc, l10n, темам, CI и тестам."
+    },
+    {
+      "id": 704,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "Flutter Gallery",
+      "title_ru": "Flutter Gallery",
+      "url": "https://gallery.flutter.dev/",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "showcase",
+        "components"
+      ],
+      "duration": "browse",
+      "official": true,
+      "free": true,
+      "description_en": "Live demo app of every Material/Cupertino widget. Source code linked from each demo.",
+      "description_ru": "Живое демо со всеми виджетами Material/Cupertino. С каждого демо ведёт ссылка на исходник."
+    },
+    {
+      "id": 705,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "Sentry for Flutter",
+      "title_ru": "Sentry для Flutter",
+      "url": "https://docs.sentry.io/platforms/flutter/",
+      "source": "Sentry",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "observability",
+        "production"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Crash + performance monitoring — drop-in for production apps. The Flutter SDK auto-captures unhandled errors.",
+      "description_ru": "Мониторинг крашей и перформанса — drop-in в продакшн. Flutter SDK ловит необработанные ошибки автоматически."
+    },
+    {
+      "id": 706,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "Codemagic — CI/CD for Flutter",
+      "title_ru": "Codemagic — CI/CD для Flutter",
+      "url": "https://codemagic.io/",
+      "source": "Codemagic",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "ci-cd",
+        "tooling"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Hosted CI/CD with first-class Flutter support — TestFlight, Play Store, screenshots, web deploys.",
+      "description_ru": "Облачный CI/CD с первоклассной поддержкой Flutter — TestFlight, Play Store, скриншоты, веб-деплой."
+    },
+    {
+      "id": 707,
+      "category": "tools",
+      "media_type": "tool",
+      "title_en": "Flutter DevTools",
+      "title_ru": "Flutter DevTools",
+      "url": "https://docs.flutter.dev/tools/devtools/overview",
+      "source": "Flutter team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "tooling",
+        "performance",
+        "debug"
+      ],
+      "duration": "tool",
+      "official": true,
+      "free": true,
+      "description_en": "Inspector, Performance, Memory, Network, CPU profiler — the official debug suite. Learn the keyboard shortcuts.",
+      "description_ru": "Inspector, Performance, Memory, Network, CPU-профайлер — официальный набор отладки. Выучи горячие клавиши."
+    },
+    {
+      "id": 708,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "flutter_bloc",
+      "title_ru": "flutter_bloc",
+      "url": "https://pub.dev/packages/flutter_bloc",
+      "source": "pub.dev / Felix Angelov",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "state-management",
+        "bloc"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "BLoC + Cubit for Flutter — predictable, testable, observable state. Industry-standard for many teams.",
+      "description_ru": "BLoC + Cubit для Flutter — предсказуемое, тестируемое, наблюдаемое состояние. Стандарт для многих команд."
+    },
+    {
+      "id": 709,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "riverpod",
+      "title_ru": "riverpod",
+      "url": "https://pub.dev/packages/flutter_riverpod",
+      "source": "pub.dev / Remi Rousselet",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "state-management",
+        "riverpod"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Compile-safe DI + state container — solves Provider's runtime gotchas with codegen-friendly API.",
+      "description_ru": "Compile-safe DI + контейнер состояния — закрывает runtime-проблемы Provider, удобно с codegen."
+    },
+    {
+      "id": 710,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "go_router",
+      "title_ru": "go_router",
+      "url": "https://pub.dev/packages/go_router",
+      "source": "pub.dev / Flutter team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "navigation",
+        "routing"
+      ],
+      "duration": "package",
+      "official": true,
+      "free": true,
+      "description_en": "Declarative router that wraps Navigator 2.0 — deep links, redirects, type-safe routes (with go_router_builder).",
+      "description_ru": "Декларативный роутер поверх Navigator 2.0 — deep links, редиректы, типобезопасные маршруты (через go_router_builder)."
+    },
+    {
+      "id": 711,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "freezed",
+      "title_ru": "freezed",
+      "url": "https://pub.dev/packages/freezed",
+      "source": "pub.dev / Remi Rousselet",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "codegen",
+        "models",
+        "sealed"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Code generator for unions/sealed classes, copyWith, equality, JSON. The 'no boilerplate' default for models.",
+      "description_ru": "Генератор для union/sealed-классов, copyWith, equality, JSON. Стандарт «без бойлерплейта» для моделей."
+    },
+    {
+      "id": 712,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "json_serializable",
+      "title_ru": "json_serializable",
+      "url": "https://pub.dev/packages/json_serializable",
+      "source": "pub.dev / Dart team",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "codegen",
+        "json"
+      ],
+      "duration": "package",
+      "official": true,
+      "free": true,
+      "description_en": "Annotation-based JSON (de)serialization — no manual fromJson/toJson once configured.",
+      "description_ru": "JSON-(де)сериализация через аннотации — больше не пишешь fromJson/toJson руками."
+    },
+    {
+      "id": 713,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "dio — HTTP client",
+      "title_ru": "dio — HTTP-клиент",
+      "url": "https://pub.dev/packages/dio",
+      "source": "pub.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "networking",
+        "http"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "De-facto HTTP client — interceptors, FormData, cancel tokens, transformers. Replaces the package:http.",
+      "description_ru": "De-facto HTTP-клиент — interceptors, FormData, cancel-tokens, трансформеры. Замена package:http."
+    },
+    {
+      "id": 714,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "drift — typed SQLite",
+      "title_ru": "drift — типизированный SQLite",
+      "url": "https://pub.dev/packages/drift",
+      "source": "pub.dev / Simon Binder",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "storage",
+        "database",
+        "codegen"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Reactive, type-safe SQLite ORM — write SQL, get Dart classes back. Migrations + streams baked in.",
+      "description_ru": "Реактивный типизированный SQLite-ORM — пишешь SQL, получаешь Dart-классы. Миграции и stream'ы из коробки."
+    },
+    {
+      "id": 715,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "isar — fast NoSQL DB",
+      "title_ru": "isar — быстрая NoSQL-база",
+      "url": "https://pub.dev/packages/isar",
+      "source": "pub.dev",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "storage",
+        "database"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Cross-platform, code-gen NoSQL DB. Faster than Hive for most workloads with full-text and queries.",
+      "description_ru": "Кросс-платформенная NoSQL с codegen. Быстрее Hive в большинстве случаев + полнотекстовый поиск и запросы."
+    },
+    {
+      "id": 716,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "hive — local key-value",
+      "title_ru": "hive — локальный key-value",
+      "url": "https://pub.dev/packages/hive",
+      "source": "pub.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "storage",
+        "kv"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Tiny, no-native key-value DB — perfect for prefs, caches, lightweight offline storage.",
+      "description_ru": "Маленькая key-value база без нативки — для префов, кэшей, лёгкого оффлайн-хранения."
+    },
+    {
+      "id": 717,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "mocktail",
+      "title_ru": "mocktail",
+      "url": "https://pub.dev/packages/mocktail",
+      "source": "pub.dev / Felix Angelov",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "testing",
+        "mocking"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Null-safe mocking without code generation — the modern replacement for mockito.",
+      "description_ru": "Null-safe моки без codegen — современная замена mockito."
+    },
+    {
+      "id": 718,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "patrol — e2e testing",
+      "title_ru": "patrol — e2e-тесты",
+      "url": "https://patrol.leancode.co/",
+      "source": "LeanCode",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "testing",
+        "e2e",
+        "native"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Native interaction in Flutter integration tests — taps native dialogs, permissions, deep links, notifications.",
+      "description_ru": "Нативные взаимодействия в integration-тестах — нативные диалоги, пермишены, deep links, нотификации."
+    },
+    {
+      "id": 719,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "flutter_lints",
+      "title_ru": "flutter_lints",
+      "url": "https://pub.dev/packages/flutter_lints",
+      "source": "pub.dev / Flutter team",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "lint",
+        "quality"
+      ],
+      "duration": "package",
+      "official": true,
+      "free": true,
+      "description_en": "Recommended lint set for Flutter projects — included in `flutter create` since Flutter 2.5.",
+      "description_ru": "Рекомендуемый набор lint-правил для Flutter — подключается автоматически в `flutter create` с 2.5."
+    },
+    {
+      "id": 720,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "very_good_analysis",
+      "title_ru": "very_good_analysis",
+      "url": "https://pub.dev/packages/very_good_analysis",
+      "source": "pub.dev / VGV",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "lint",
+        "quality"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Stricter lint pack from VGV — opt-in if flutter_lints feels too lenient.",
+      "description_ru": "Более строгий набор линтов от VGV — если flutter_lints кажется слабым."
+    },
+    {
+      "id": 721,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "shorebird — code push",
+      "title_ru": "shorebird — code push",
+      "url": "https://shorebird.dev/",
+      "source": "Shorebird",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "deployment",
+        "ota",
+        "code-push"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Over-the-air updates for Flutter apps without a store review — patch Dart code in production minutes.",
+      "description_ru": "OTA-обновления Flutter-приложений без ревью сторов — пушишь патч Dart-кода за минуты."
+    },
+    {
+      "id": 722,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "melos — monorepo manager",
+      "title_ru": "melos — менеджер монорепо",
+      "url": "https://melos.invertase.dev/",
+      "source": "Invertase",
+      "lang": "en",
+      "level": "senior",
+      "topics": [
+        "monorepo",
+        "tooling"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Manage multiple Dart/Flutter packages in one repo — bootstrap, scripts, versioning, publish.",
+      "description_ru": "Управление несколькими Dart/Flutter-пакетами в одном репо — bootstrap, скрипты, версионирование, публикация."
+    },
+    {
+      "id": 723,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "flutter_animate",
+      "title_ru": "flutter_animate",
+      "url": "https://pub.dev/packages/flutter_animate",
+      "source": "pub.dev / Grant Skinner",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "animations",
+        "ui"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Concise chainable animation API — `.fadeIn().slideX()`. Hides AnimationController boilerplate for 90% of cases.",
+      "description_ru": "Краткое chainable-API для анимаций — `.fadeIn().slideX()`. Прячет бойлерплейт AnimationController на 90% задач."
+    },
+    {
+      "id": 724,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "rive — runtime animations",
+      "title_ru": "rive — runtime-анимации",
+      "url": "https://rive.app/",
+      "source": "Rive",
+      "lang": "en",
+      "level": "mid",
+      "topics": [
+        "animations",
+        "design"
+      ],
+      "duration": "tool",
+      "official": false,
+      "free": true,
+      "description_en": "Vector animation tool + Flutter runtime — designers ship interactive animations directly to the app.",
+      "description_ru": "Инструмент векторных анимаций + runtime для Flutter — дизайнеры выкатывают интерактивные анимации в приложение."
+    },
+    {
+      "id": 725,
+      "category": "tools",
+      "media_type": "package",
+      "title_en": "lottie — Lottie animations",
+      "title_ru": "lottie — Lottie-анимации",
+      "url": "https://pub.dev/packages/lottie",
+      "source": "pub.dev",
+      "lang": "en",
+      "level": "junior",
+      "topics": [
+        "animations",
+        "ui"
+      ],
+      "duration": "package",
+      "official": false,
+      "free": true,
+      "description_en": "Render After Effects animations exported as Lottie JSON. Perfect for splash, empty states, micro-interactions.",
+      "description_ru": "Рендер After Effects-анимаций (Lottie JSON). Идеально для сплэшей, пустых состояний, микро-интерактива."
+    }
+  ]
+}

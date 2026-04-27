@@ -129,7 +129,7 @@ export default function AdminPage() {
     <div className="bg-page min-h-full">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Header */}
-        <header className="mb-6 border-b-1.5 border-ink pb-5">
+        <header className="mb-6 border-b border-rule/15 pb-5">
           <Eyebrow accent="brand">Codex Admin · local-only</Eyebrow>
           <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
             {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
@@ -151,7 +151,7 @@ export default function AdminPage() {
 
         {/* Toolbar */}
         <div className="mb-5 flex flex-wrap items-center gap-2">
-          <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-md border-1.5 border-ink bg-paper-2 px-3 shadow-codex-sm">
+          <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-xl border border-rule/12 bg-paper-2/60 px-3 transition-all duration-200 focus-within:border-brand/40 focus-within:bg-paper-2 focus-within:ring-2 focus-within:ring-brand/15">
             <SearchIcon className="h-4 w-4 text-muted" />
             <input
               value={search}
@@ -221,7 +221,7 @@ export default function AdminPage() {
 
         {/* Deleted (folded above the list) */}
         {deletedItems.length > 0 && (
-          <div className="mb-4 rounded-md border-1.5 border-coral bg-coral/5 p-3">
+          <div className="mb-4 rounded-xl border border-coral/30 bg-coral/8 p-3">
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-coral">
               {lang === 'ru' ? 'Удалено в diff (можно вернуть)' : 'Deleted in diff (can restore)'}
             </div>
@@ -281,7 +281,7 @@ function FilterPills({ label, value, onChange, options }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-rule-strong bg-paper-2 px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink focus:border-ink outline-none"
+        className="rounded-lg border border-rule/12 bg-paper-2 px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink outline-none transition-all duration-200 focus:border-brand/40 focus:ring-2 focus:ring-brand/15"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -301,8 +301,10 @@ function QuestionRow({ question, topic, lang, t, expanded, onToggle, topics }) {
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-md border-1.5 bg-paper-2 transition-all',
-        expanded ? 'border-ink shadow-codex' : 'border-rule-strong shadow-codex-sm',
+        'overflow-hidden rounded-2xl border bg-paper-2 transition-all duration-300',
+        expanded
+          ? 'border-rule/15 shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.10)]'
+          : 'border-rule/8 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] hover:-translate-y-0.5 hover:border-rule/15',
       )}
     >
       <button
@@ -378,14 +380,14 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
   };
 
   return (
-    <div className="border-t-1.5 border-ink p-4 sm:p-5">
+    <div className="border-t border-rule/15 p-4 sm:p-5">
       {/* Top row: topic, order, difficulty, language */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label={lang === 'ru' ? 'Тема' : 'Topic'}>
           <select
             value={draft.topic_id}
             onChange={(e) => setDraft({ ...draft, topic_id: Number(e.target.value) })}
-            className="w-full rounded-md border border-rule-strong bg-paper px-2 py-1.5 text-sm focus:border-ink outline-none"
+            className="w-full rounded-xl border border-rule/12 bg-paper-2/60 px-2 py-1.5 text-sm outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15"
           >
             {topics.map((tp) => (
               <option key={tp.id} value={tp.id}>{tp.title}</option>
@@ -397,7 +399,7 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
             type="number"
             value={draft.order_index}
             onChange={(e) => setDraft({ ...draft, order_index: Number(e.target.value) })}
-            className="w-full rounded-md border border-rule-strong bg-paper px-2 py-1.5 text-sm focus:border-ink outline-none font-mono"
+            className="w-full rounded-xl border border-rule/12 bg-paper-2/60 px-2 py-1.5 text-sm outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15 font-mono"
           />
         </Field>
         <Field label={lang === 'ru' ? 'Сложность' : 'Difficulty'}>
@@ -408,10 +410,10 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
                 type="button"
                 onClick={() => setDraft({ ...draft, difficulty: d })}
                 className={cn(
-                  'flex-1 rounded-md border px-2 py-1.5 font-mono text-[11px] uppercase transition-colors',
+                  'flex-1 rounded-xl border px-2 py-1.5 font-mono text-[11px] uppercase transition-all duration-200',
                   draft.difficulty === d
                     ? 'border-ink bg-ink text-paper'
-                    : 'border-rule-strong bg-paper text-muted hover:border-ink hover:text-ink',
+                    : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
                 )}
               >
                 {d}
@@ -423,7 +425,7 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           <select
             value={draft.code_language || 'dart'}
             onChange={(e) => setDraft({ ...draft, code_language: e.target.value })}
-            className="w-full rounded-md border border-rule-strong bg-paper px-2 py-1.5 text-sm focus:border-ink outline-none"
+            className="w-full rounded-xl border border-rule/12 bg-paper-2/60 px-2 py-1.5 text-sm outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15"
           >
             {['dart', 'json', 'yaml', 'bash', 'shell', 'javascript', 'typescript', 'xml', 'ruby'].map((l) => (
               <option key={l} value={l}>{l}</option>
@@ -437,7 +439,7 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           value={draft.question}
           onChange={(e) => setDraft({ ...draft, question: e.target.value })}
           rows={2}
-          className="w-full resize-y rounded-md border-1.5 border-rule-strong bg-paper px-3 py-2 text-sm leading-relaxed focus:border-ink outline-none"
+          className="w-full resize-y rounded-xl border border-rule/12 bg-paper-2/60 px-3 py-2 text-sm leading-relaxed outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15"
         />
       </Field>
 
@@ -446,7 +448,7 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           value={draft.answer}
           onChange={(e) => setDraft({ ...draft, answer: e.target.value })}
           rows={10}
-          className="w-full resize-y rounded-md border-1.5 border-rule-strong bg-paper px-3 py-2 text-sm leading-relaxed focus:border-ink outline-none answer-text"
+          className="w-full resize-y rounded-xl border border-rule/12 bg-paper-2/60 px-3 py-2 text-sm leading-relaxed outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15 answer-text"
         />
         <div className="mt-1 font-mono text-[10px] text-muted-2">
           {draft.answer.length} chars · {lang === 'ru' ? 'переносы строк сохраняются' : 'line breaks preserved'}
@@ -459,7 +461,7 @@ function Editor({ question, topics, lang, onClose, isAdded }) {
           onChange={(e) => setDraft({ ...draft, code_example: e.target.value || null })}
           rows={12}
           placeholder={lang === 'ru' ? '// необязательно' : '// optional'}
-          className="w-full resize-y rounded-md border-1.5 border-rule-strong bg-paper-2 px-3 py-2 text-[12.5px] leading-relaxed focus:border-ink outline-none font-mono"
+          className="w-full resize-y rounded-xl border border-rule/12 bg-paper-2/60 px-3 py-2 text-[12.5px] leading-relaxed outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15 font-mono"
         />
       </Field>
 
@@ -518,7 +520,7 @@ function ExportMenu({ topics, questions, diff, lang }) {
         <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
       </Button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-lg">
+        <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-md border border-rule/15 bg-paper-2 shadow-codex-lg">
           <button
             onClick={exportAll}
             className="flex w-full items-center gap-2 border-b border-rule px-3 py-2 text-left text-sm hover:bg-paper"

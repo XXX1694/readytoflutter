@@ -10,6 +10,9 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index.js';
+import VoiceInputButton from '../components/VoiceInputButton.jsx';
+import AnswerText from '../components/AnswerText.jsx';
+import CodeBlock from '../components/CodeBlock.jsx';
 import { cn } from '../lib/cn.js';
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
@@ -70,10 +73,11 @@ export default function MockPage() {
   const [now, setNow] = useState(Date.now());
   const textareaRef = useRef(null);
 
-  // Tick clock once a second while a session is active
+  // Tick clock every second while a session is active. We display seconds,
+  // so a 250ms tick was wasted work.
   useEffect(() => {
     if (phase !== 'running' && phase !== 'review') return;
-    const id = setInterval(() => setNow(Date.now()), 250);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [phase]);
 
@@ -152,6 +156,18 @@ export default function MockPage() {
     }));
   };
 
+  const appendVoice = (chunk) => {
+    if (!current) return;
+    setAnswers((prev) => {
+      const existing = prev[current.id]?.text || '';
+      const sep = existing && !/\s$/.test(existing) ? ' ' : '';
+      return {
+        ...prev,
+        [current.id]: { ...prev[current.id], text: existing + sep + chunk },
+      };
+    });
+  };
+
   // Hotkeys
   useHotkeys('mod+enter', (e) => {
     if (phase !== 'running' || !current) return;
@@ -218,9 +234,9 @@ export default function MockPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Top bar */}
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b-1.5 border-ink pb-4">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
           <div className="flex items-center gap-3">
             <Target className="h-5 w-5 text-brand" aria-hidden />
             <span className="font-display text-xl font-medium text-ink">
@@ -250,7 +266,7 @@ export default function MockPage() {
         <ProgressBar value={cursor} max={queue.length} size="sm" tone="gradient" className="mb-6" />
 
         {/* Question */}
-        <section className="mb-5 rounded-md border-1.5 border-ink bg-paper-2 p-5 shadow-codex sm:p-7">
+        <section className="mb-5 rounded-md border border-rule/15 bg-paper-2 p-5 shadow-codex sm:p-7">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Pill tone={difficultyTone[current.difficulty] || 'neutral'} size="xs">
               {difficultyLabel}
@@ -266,10 +282,11 @@ export default function MockPage() {
         {/* Answer textarea (always present until revealed) */}
         {!revealed && (
           <section className="mb-5">
-            <label className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-              {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
+            <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+              <span>{lang === 'ru' ? 'Твой ответ' : 'Your answer'}</span>
               <span className="h-px flex-1 bg-rule" />
-            </label>
+              <VoiceInputButton lang={lang} onAppend={appendVoice} size="xs" />
+            </div>
             <textarea
               ref={textareaRef}
               value={userText}
@@ -277,11 +294,11 @@ export default function MockPage() {
               placeholder={lang === 'ru' ? 'Печатай — на собеседовании ты будешь говорить, а тут думаешь пальцами…' : 'Type — at the real interview you would speak, here you think out loud…'}
               rows={8}
               autoFocus
-              className="w-full resize-y rounded-md border-1.5 border-ink bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
+              className="w-full resize-y rounded-md border border-rule/15 bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                {userText.length} chars · <kbd className="rounded border border-rule-strong px-1.5 py-0.5">⌘↵</kbd> {lang === 'ru' ? 'показать ответ' : 'reveal answer'}
+                {userText.length} chars · <kbd className="rounded border border-rule/15 px-1.5 py-0.5">⌘↵</kbd> {lang === 'ru' ? 'показать ответ' : 'reveal answer'}
               </span>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={skip}>
@@ -299,7 +316,7 @@ export default function MockPage() {
         {revealed && (
           <>
             <section className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-md border-1.5 border-rule-strong bg-paper p-4">
+              <div className="rounded-md border border-rule/15 bg-paper p-4">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
                 </div>
@@ -311,13 +328,22 @@ export default function MockPage() {
                   )}
                 </div>
               </div>
-              <div className="rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm">
+              <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {lang === 'ru' ? 'Эталонный ответ' : 'Reference'}
                 </div>
-                <div className="answer-text whitespace-pre-wrap text-sm leading-relaxed text-ink-2">
-                  {answerText(current)}
-                </div>
+                <AnswerText
+                  text={answerText(current)}
+                  className="answer-text text-sm leading-relaxed text-ink-2"
+                />
+                {current.code_example && (
+                  <div className="mt-3">
+                    <CodeBlock
+                      code={current.code_example}
+                      language={current.code_language || 'dart'}
+                    />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -328,7 +354,7 @@ export default function MockPage() {
                   type="button"
                   onClick={() => rate(r.key)}
                   className={cn(
-                    'group flex flex-col items-center gap-1 rounded-md border-1.5 border-ink bg-paper-2 px-3 py-3 shadow-codex-sm transition-all',
+                    'group flex flex-col items-center gap-1 rounded-md border border-rule/15 bg-paper-2 px-3 py-3 shadow-codex-sm transition-all',
                     'hover:-translate-x-px hover:-translate-y-px hover:shadow-codex',
                     r.tone === 'coral' && 'hover:bg-coral/15',
                     r.tone === 'amber' && 'hover:bg-amber/15',
@@ -336,7 +362,7 @@ export default function MockPage() {
                     r.tone === 'mint' && 'hover:bg-mint/15',
                   )}
                 >
-                  <kbd className="rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
+                  <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
                     {r.hotkey}
                   </kbd>
                   <span className="font-display text-base font-medium text-ink">
@@ -359,20 +385,28 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
 
   return (
     <div className="bg-page flex min-h-full items-center justify-center px-4 py-10">
-      <div className="w-full max-w-2xl rounded-md border-1.5 border-ink bg-paper-2 p-6 shadow-codex sm:p-10">
-        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
+      <div className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 p-8 shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_24px_64px_-12px_rgb(var(--shadow)/0.16)] sm:p-12">
+        {/* Aurora glows behind the form */}
+        <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand/20 via-brand-sky/10 to-transparent blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -left-20 -bottom-20 h-60 w-60 rounded-full bg-gradient-to-tr from-mint/15 via-brand/8 to-transparent blur-3xl" />
+
+        <div className="relative mb-2 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-brand backdrop-blur">
           <Target className="h-3 w-3" /> Mock Interview · Setup
         </div>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
-          {lang === 'ru' ? 'Симулятор собеседования' : 'Interview simulator'}
+        <h1 className="relative mt-3 font-display text-display-xs font-semibold leading-tight tracking-tightest text-ink sm:text-display-sm">
+          {lang === 'ru' ? (
+            <>Симулятор <span className="text-gradient-brand">собеседования</span>.</>
+          ) : (
+            <>Interview <span className="text-gradient-brand">simulator</span>.</>
+          )}
         </h1>
-        <p className="mt-2 max-w-xl text-sm text-muted">
+        <p className="relative mt-3 max-w-xl text-sm leading-relaxed text-ink-2">
           {lang === 'ru'
             ? 'Случайная подборка вопросов, таймер и self-grade. Чем чаще проходишь — тем спокойнее на реальном собесе.'
             : 'Randomized set, optional timer, self-grade. The more you run it, the cooler you get on the real one.'}
         </p>
 
-        <div className="mt-7 space-y-6">
+        <div className="relative mt-8 space-y-7">
           <Field label={lang === 'ru' ? 'Уровень' : 'Level'}>
             <div className="flex flex-wrap gap-2">
               {LEVELS.map((l) => (
@@ -416,7 +450,7 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
           </Field>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 border-t border-rule pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative mt-8 flex flex-col gap-3 border-t border-rule/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
             {insufficient
               ? (lang === 'ru' ? 'Нет вопросов в этом скоупе' : 'No questions in this scope')
@@ -450,10 +484,10 @@ function ToggleChip({ active, onClick, children }) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex items-center rounded-md border-1.5 px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-all',
+        'inline-flex items-center rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wider transition-all duration-200',
         active
-          ? 'border-ink bg-ink text-paper shadow-codex-sm'
-          : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+          ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.20)]'
+          : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
       )}
     >
       {children}
@@ -463,7 +497,7 @@ function ToggleChip({ active, onClick, children }) {
 
 function ClockBadge({ label, seconds, tone = 'ink', pulse }) {
   const TONE = {
-    ink: 'border-ink text-ink',
+    ink: 'border-rule/15 text-ink',
     brand: 'border-brand text-brand',
     amber: 'border-[rgb(var(--amber))] text-[rgb(var(--amber))]',
     coral: 'border-coral text-[rgb(var(--coral))]',
@@ -472,7 +506,7 @@ function ClockBadge({ label, seconds, tone = 'ink', pulse }) {
   const s = seconds % 60;
   return (
     <div className={cn(
-      'inline-flex items-center gap-1.5 rounded-md border-1.5 bg-paper-2 px-2.5 py-1 font-mono text-xs tabular-nums shadow-codex-sm',
+      'inline-flex items-center gap-1.5 rounded-md border bg-paper-2 px-2.5 py-1 font-mono text-xs tabular-nums shadow-codex-sm',
       TONE[tone],
       pulse && 'animate-pulse',
     )}>
@@ -496,8 +530,8 @@ function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answe
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <header className="mb-8 border-b-1.5 border-ink pb-6">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <header className="mb-8 border-b border-rule/15 pb-6">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
             Mock Interview · {lang === 'ru' ? 'Итоги' : 'Recap'}
           </span>
@@ -513,15 +547,22 @@ function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answe
 
         <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
-            { key: 'easy',    label: lang === 'ru' ? 'Идеально' : 'Nailed', accent: 'text-mint' },
-            { key: 'good',    label: lang === 'ru' ? 'Уверенно' : 'Solid',  accent: 'text-brand' },
-            { key: 'hard',    label: lang === 'ru' ? 'С трудом' : 'Rough',  accent: 'text-[rgb(var(--amber))]' },
-            { key: 'again',   label: lang === 'ru' ? 'Провалил' : 'Bombed', accent: 'text-coral' },
-            { key: 'skipped', label: lang === 'ru' ? 'Скип' : 'Skipped',     accent: 'text-muted' },
+            { key: 'easy',    label: lang === 'ru' ? 'Идеально' : 'Nailed', accent: 'text-mint',                     dot: 'bg-mint',                     glow: 'from-mint/[0.10] to-transparent' },
+            { key: 'good',    label: lang === 'ru' ? 'Уверенно' : 'Solid',  accent: 'text-brand',                    dot: 'bg-brand',                    glow: 'from-brand/[0.10] to-transparent' },
+            { key: 'hard',    label: lang === 'ru' ? 'С трудом' : 'Rough',  accent: 'text-[rgb(var(--amber))]',      dot: 'bg-[rgb(var(--amber))]',      glow: 'from-amber/[0.10] to-transparent' },
+            { key: 'again',   label: lang === 'ru' ? 'Провалил' : 'Bombed', accent: 'text-coral',                    dot: 'bg-coral',                    glow: 'from-coral/[0.10] to-transparent' },
+            { key: 'skipped', label: lang === 'ru' ? 'Скип' : 'Skipped',    accent: 'text-muted',                    dot: 'bg-muted',                    glow: 'from-muted/[0.06] to-transparent' },
           ].map((b) => (
-            <div key={b.key} className="rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm">
-              <div className={cn('num text-3xl', b.accent)}>{buckets[b.key] || 0}</div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">{b.label}</div>
+            <div
+              key={b.key}
+              className="group relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 p-5 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <span aria-hidden className={cn('pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100', b.glow)} />
+              <div className="relative flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{b.label}</span>
+                <span className={cn('h-1.5 w-1.5 rounded-full', b.dot)} aria-hidden />
+              </div>
+              <div className={cn('num relative text-display-xs sm:text-display-sm', b.accent)}>{buckets[b.key] || 0}</div>
             </div>
           ))}
         </section>
@@ -564,7 +605,15 @@ function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answe
                       <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-brand">
                         {lang === 'ru' ? 'Эталон' : 'Reference'}
                       </div>
-                      <div className="whitespace-pre-wrap text-xs text-ink-2">{answerText(q)}</div>
+                      <AnswerText text={answerText(q)} className="text-xs text-ink-2" />
+                      {q.code_example && (
+                        <div className="mt-2">
+                          <CodeBlock
+                            code={q.code_example}
+                            language={q.code_language || 'dart'}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </details>

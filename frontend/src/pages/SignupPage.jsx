@@ -101,7 +101,7 @@ export default function SignupPage() {
   if (step === 'sync' && syncSummary) {
     return (
       <div className="bg-page flex min-h-full items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-md border-1.5 border-ink bg-paper-2 p-6 shadow-codex sm:p-8">
+        <div className="w-full max-w-md rounded-md border border-rule/15 bg-paper-2 p-6 shadow-codex sm:p-8">
           <Eyebrow accent="brand">
             <Cloud className="mr-1 inline h-3 w-3" />
             {T.syncEyebrow}
@@ -146,7 +146,7 @@ export default function SignupPage() {
           {T.back}
         </Link>
 
-        <div className="rounded-md border-1.5 border-ink bg-paper-2 p-6 shadow-codex sm:p-8">
+        <div className="rounded-md border border-rule/15 bg-paper-2 p-6 shadow-codex sm:p-8">
           <Eyebrow accent="brand">
             <UserPlus className="mr-1 inline h-3 w-3" />
             {T.eyebrow}
@@ -256,8 +256,10 @@ function Field({ label, icon, error, hint, trailing, optional, children }) {
 }
 
 const inputClass = (hasErr) => cn(
-  'w-full rounded-md border-1.5 bg-paper px-3 py-2 text-sm text-ink placeholder:text-muted-2 outline-none transition-colors',
-  hasErr ? 'border-coral focus:border-coral' : 'border-rule-strong focus:border-ink focus:ring-1 focus:ring-brand/30',
+  'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
+  hasErr
+    ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'
+    : 'border-rule/12 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/20',
 );
 
 // Translate localStorage progress shape into the bulk-import payload shape.

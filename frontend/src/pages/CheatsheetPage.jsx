@@ -111,7 +111,7 @@ export default function CheatsheetPage() {
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-rule-strong bg-paper-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 transition-all hover:-translate-x-px hover:-translate-y-px hover:border-ink hover:text-ink hover:shadow-codex-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-rule/25 hover:text-ink hover:shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.08)]"
           >
             {copied ? <Check className="h-3 w-3 text-mint" /> : <ClipboardCopy className="h-3 w-3" />}
             {copied
@@ -121,7 +121,7 @@ export default function CheatsheetPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-ink bg-paper-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-rule/25 hover:shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.08)]"
           >
             <Printer className="h-3 w-3" />
             {lang === 'ru' ? 'Печать' : 'Print'}
@@ -129,7 +129,7 @@ export default function CheatsheetPage() {
           <button
             type="button"
             onClick={() => navigate(`/topic/${slug}`)}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
           >
             <ArrowLeft className="h-3 w-3" />
             {lang === 'ru' ? 'Назад' : 'Back'}
@@ -140,7 +140,7 @@ export default function CheatsheetPage() {
       {/* Cheatsheet body — 2-col grid on screen + print */}
       <article className="mx-auto max-w-[920px] px-5 py-6 sm:px-7 sm:py-8">
         {/* Cover */}
-        <header className="mb-5 border-b-2 border-ink pb-3">
+        <header className="mb-5 border-b-2 border-rule/15 pb-3">
           <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
             <span>ReadyToFlutter · Cheatsheet</span>
             <span>{today}</span>

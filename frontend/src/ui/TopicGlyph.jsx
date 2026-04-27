@@ -1,26 +1,25 @@
 import { cn } from '../lib/cn.js';
 
 const SIZES = {
-  sm: 'h-6 w-6 text-[11px]',
-  md: 'h-9 w-9 text-sm',
-  lg: 'h-14 w-14 text-2xl',
+  sm: 'h-7 w-7 text-[11px] rounded-lg',
+  md: 'h-10 w-10 text-sm rounded-xl',
+  lg: 'h-14 w-14 text-2xl rounded-2xl',
 };
 
+// Atlas: gradient-tinted glyph instead of border + flat fill — more premium feel.
 const TONES = {
-  junior: 'bg-brand/12 text-brand border-brand/30',
-  mid:    'bg-plum/12 text-plum border-plum/30',
-  senior: 'bg-mint/12 text-mint border-mint/30',
-  default:'bg-paper text-ink border-rule-strong',
+  junior:  'bg-gradient-to-br from-brand/15 to-brand/5 text-brand ring-1 ring-brand/20',
+  mid:     'bg-gradient-to-br from-plum/15 to-plum/5 text-plum ring-1 ring-plum/20',
+  senior:  'bg-gradient-to-br from-mint/15 to-mint/5 text-mint ring-1 ring-mint/20',
+  default: 'bg-gradient-to-br from-rule/8 to-transparent text-ink-2 ring-1 ring-rule/15',
 };
 
 /**
- * A monogram-style glyph for a topic. Replaces the old emoji slot — pulls a
- * 1–2 character mark from the title and frames it in a small box that picks
- * up the topic's level color. Falls back to the topic's category initial.
+ * A monogram-style glyph for a topic. Atlas: gradient tint + ring instead of
+ * a hard border, sits softer against the new aurora background.
  */
 export function TopicGlyph({ topic, size = 'md', className }) {
   const title = topic?.title || topic?.category || '';
-  // Monogram: first letter of first two title words, capped at 2 chars
   const mark = title
     .split(/[\s/&-]+/)
     .filter(Boolean)
@@ -34,7 +33,8 @@ export function TopicGlyph({ topic, size = 'md', className }) {
     <span
       aria-hidden
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-md border-1.5 font-mono font-medium tabular-nums',
+        'inline-flex shrink-0 items-center justify-center font-display font-semibold tabular-nums',
+        'shadow-[inset_0_1px_0_0_rgb(255_255_255/0.15)]',
         SIZES[size],
         tone,
         className,

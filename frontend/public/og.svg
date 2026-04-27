@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1B2540" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#0C1422"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.6"/>
+
+  <!-- Monogram -->
+  <g transform="translate(80,140)">
+    <rect width="200" height="200" rx="32" fill="#1B2540" stroke="#3A4D7A" stroke-width="3"/>
+    <text x="100" y="142" text-anchor="middle"
+          font-family="'Fraunces','Georgia',serif" font-size="150" font-weight="700"
+          fill="#FCFAF6" letter-spacing="-4">R</text>
+    <circle cx="148" cy="148" r="18" fill="#127CC4" stroke="#FCFAF6" stroke-width="3"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(330,170)">
+    <text x="0" y="0" font-family="'JetBrains Mono', ui-monospace, monospace"
+          font-size="22" letter-spacing="6" fill="#60C0F0">READYTOFLUTTER · CODEX</text>
+    <text x="0" y="120" font-family="'Fraunces','Georgia',serif" font-size="120"
+          font-weight="500" letter-spacing="-3" fill="#DAE4F6">Be ready.</text>
+    <text x="0" y="220" font-family="'Fraunces','Georgia',serif" font-size="120"
+          font-weight="500" letter-spacing="-3" fill="#FCFAF6">Stay calm.</text>
+    <text x="0" y="290" font-family="'Inter','SF Pro Text',system-ui,sans-serif"
+          font-size="22" fill="#94A4C0">
+      210 questions · spaced repetition · mock interview · in-app player
+    </text>
+  </g>
+
+  <!-- Hard-edge corner mark -->
+  <g transform="translate(1080,540)">
+    <rect width="60" height="60" rx="8" fill="none" stroke="#127CC4" stroke-width="2"/>
+    <circle cx="30" cy="30" r="5" fill="#127CC4"/>
+  </g>
+</svg>

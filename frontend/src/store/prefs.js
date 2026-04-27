@@ -1,16 +1,29 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+// Three reading themes: cool paper / warm ink / sepia (eye-friendly evenings).
+// Cycle in this order when toggling so users discover sepia naturally.
+export const THEMES = ['light', 'sepia', 'dark'];
+
 const initialTheme = () => {
   if (typeof window === 'undefined') return 'light';
   const saved = localStorage.getItem('theme');
-  if (saved === 'light' || saved === 'dark') return saved;
+  if (THEMES.includes(saved)) return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
 const applyTheme = (theme) => {
   if (typeof document === 'undefined') return;
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+  const root = document.documentElement;
+  // Toggle one class per theme so CSS can target each variant; light is the
+  // default (no class).
+  root.classList.toggle('dark', theme === 'dark');
+  root.classList.toggle('sepia', theme === 'sepia');
+};
+
+const nextTheme = (current) => {
+  const i = THEMES.indexOf(current);
+  return THEMES[(i + 1) % THEMES.length];
 };
 
 export const usePrefs = create(
@@ -19,11 +32,12 @@ export const usePrefs = create(
       // Theme
       theme: 'light',
       setTheme: (theme) => {
+        if (!THEMES.includes(theme)) return;
         applyTheme(theme);
         set({ theme });
       },
       toggleTheme: () => {
-        const next = get().theme === 'dark' ? 'light' : 'dark';
+        const next = nextTheme(get().theme);
         applyTheme(next);
         set({ theme: next });
       },
@@ -74,12 +88,10 @@ export const usePrefs = create(
   ),
 );
 
-// Hydrate theme synchronously on module load so the dark class is applied before
-// React mounts (avoids the FOUC of light → dark on first paint).
+// Hydrate theme synchronously on module load so the dark/sepia class is applied
+// before React mounts (avoids the FOUC of light → dark on first paint).
 if (typeof window !== 'undefined') {
   const t = initialTheme();
   applyTheme(t);
-  // Push it into the store too so the rest of the app reads consistent state
-  // even before persist rehydrates.
   usePrefs.setState({ theme: t });
 }

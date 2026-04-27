@@ -108,7 +108,7 @@ export default function TopicPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         {/* Breadcrumb */}
         <Button
           variant="ghost"
@@ -121,7 +121,7 @@ export default function TopicPage() {
         </Button>
 
         {/* Header */}
-        <header className="mb-8 flex flex-col gap-4 border-b-1.5 border-ink pb-6">
+        <header className="mb-8 flex flex-col gap-4 border-b border-rule/15 pb-6">
           <div className="flex items-start gap-4">
             <TopicGlyph topic={topic} size="lg" />
             <div className="min-w-0 flex-1">
@@ -216,10 +216,10 @@ export default function TopicPage() {
                 onClick={() => setFilter(f)}
                 aria-pressed={active}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md border-1.5 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-all',
+                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
                   active
-                    ? 'border-ink bg-ink text-paper shadow-codex-sm'
-                    : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+                    ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.20)]'
+                    : 'border-rule/12 bg-paper-2 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
                 )}
               >
                 <span>{label}</span>
@@ -230,10 +230,10 @@ export default function TopicPage() {
             );
           })}
           <span className="ml-auto hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-2 sm:inline-flex">
-            <kbd className="rounded border border-rule-strong px-1 py-0.5">J</kbd>
-            <kbd className="rounded border border-rule-strong px-1 py-0.5">K</kbd>
+            <kbd className="rounded border border-rule/15 px-1 py-0.5">J</kbd>
+            <kbd className="rounded border border-rule/15 px-1 py-0.5">K</kbd>
             <span>· nav</span>
-            <kbd className="rounded border border-rule-strong px-1 py-0.5">Space</kbd>
+            <kbd className="rounded border border-rule/15 px-1 py-0.5">Space</kbd>
             <span>· open</span>
           </span>
         </div>
@@ -272,9 +272,9 @@ export default function TopicPage() {
 function TopicSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
-        <header className="mb-8 border-b-1.5 border-ink pb-6">
+        <header className="mb-8 border-b border-rule/15 pb-6">
           <div className="flex items-start gap-4">
             <Skeleton className="h-14 w-14 rounded-md" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -300,7 +300,7 @@ function TopicSkeleton() {
         </div>
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-4 shadow-codex-sm">
+            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
               <div className="flex items-start gap-3">
                 <Skeleton className="h-7 w-7 rounded-md" />
                 <div className="flex-1 space-y-2">

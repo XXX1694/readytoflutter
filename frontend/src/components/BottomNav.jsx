@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home as HomeIcon, Brain, Search, User } from 'lucide-react';
+import { Home as HomeIcon, Brain, Library, Bookmark, User } from 'lucide-react';
 import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { cn } from '../lib/cn.js';
@@ -37,23 +37,31 @@ export default function BottomNav() {
   const accountTo = token ? '/settings' : '/login';
   const showAccount = backendAvailable !== false;
 
+  // Five-slot layout: Home · Study · Knowledge · Saved · Account.
+  // On very narrow phones (<360px) we drop "Knowledge" to keep tap targets
+  // at a comfortable size — Knowledge is still reachable via the sidebar
+  // and command palette.
+  const isNarrow = typeof window !== 'undefined' && window.innerWidth < 360;
   const items = [
     { to: '/', end: true, icon: HomeIcon, label: isRu ? 'Главная' : 'Home' },
-    { to: '/bookmarks', icon: Brain, label: isRu ? 'Закладки' : 'Saved' },
-    { to: '/search', icon: Search, label: isRu ? 'Поиск' : 'Search' },
-    showAccount && { to: accountTo, icon: User, label: isRu ? 'Профиль' : 'Account' },
+    { to: '/study', icon: Brain, label: isRu ? 'Учить' : 'Study' },
+    !isNarrow && { to: '/knowledge', icon: Library, label: isRu ? 'Знания' : 'Learn' },
+    { to: '/bookmarks', icon: Bookmark, label: isRu ? 'Закладки' : 'Saved' },
+    showAccount && { to: accountTo, icon: User, label: isRu ? 'Я' : 'Me' },
   ].filter(Boolean);
+
+  const cols = items.length === 5 ? 'grid-cols-5' : 'grid-cols-4';
 
   return (
     <nav
       className={cn(
         'lg:hidden',
-        'sticky bottom-0 z-30 shrink-0 border-t-1.5 border-ink bg-paper/95 backdrop-blur',
+        'sticky bottom-0 z-30 shrink-0 border-t border-rule/15 bg-paper/95 backdrop-blur',
         'pb-[env(safe-area-inset-bottom,0px)]',
       )}
       aria-label={isRu ? 'Нижняя навигация' : 'Bottom navigation'}
     >
-      <ul className="grid grid-cols-4">
+      <ul className={cn('grid', cols)}>
         {items.map((it) => (
           <li key={it.to}>
             <NavLink
@@ -61,7 +69,7 @@ export default function BottomNav() {
               end={it.end}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors',
+                  'flex flex-col items-center justify-center gap-0.5 py-2 transition-colors',
                   'font-mono text-[9px] uppercase tracking-wider',
                   isActive
                     ? 'text-ink'
@@ -73,15 +81,15 @@ export default function BottomNav() {
                 <>
                   <span
                     className={cn(
-                      'inline-flex h-8 w-12 items-center justify-center rounded-md border-1.5 transition-colors',
+                      'inline-flex h-7 w-10 items-center justify-center rounded-md border transition-all duration-200',
                       isActive
-                        ? 'border-ink bg-ink text-paper'
+                        ? 'border-ink bg-ink text-paper shadow-codex-sm'
                         : 'border-transparent',
                     )}
                   >
                     <it.icon className="h-4 w-4" aria-hidden />
                   </span>
-                  <span>{it.label}</span>
+                  <span className="leading-none">{it.label}</span>
                 </>
               )}
             </NavLink>

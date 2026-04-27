@@ -2,14 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💙</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0175C2" />
-    <title>ReadyToFlutter — Codex</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Brand favicon — brutalist Codex monogram (replaces the legacy heart emoji). -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#0E1627" />
+    <link rel="apple-touch-icon" href="/maskable-icon.svg" />
+
+    <!-- Theme color matches paper / dark paper — kept light by default; the script
+         below upgrades it for dark/sepia before paint to avoid a flash. -->
+    <meta name="theme-color" content="#FCFAF6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0C1422" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <title>ReadyToFlutter — Codex · Flutter interview prep</title>
+    <meta name="description" content="Curated 210-question Flutter & Dart interview workspace — SRS study, mock-interview simulator, in-app YouTube player, and a knowledge base of articles, courses and tools. Bilingual (EN/RU)." />
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ReadyToFlutter — Codex" />
+    <meta property="og:description" content="A calm, focused workspace for Flutter & Dart interview prep. SRS, mock interviews, in-app videos, curated knowledge base." />
+    <meta property="og:image" content="/og.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ReadyToFlutter — Codex" />
+    <meta name="twitter:description" content="A calm, focused workspace for Flutter & Dart interview prep." />
+    <meta name="twitter:image" content="/og.svg" />
+
     <!--
       Theme is hydrated synchronously by src/store/prefs.js before React mounts,
-      so the .dark class lands on <html> in time to avoid FOUC. Fonts are
-      self-hosted via @fontsource-variable (loaded from src/index.css).
+      so the .dark / .sepia class lands on <html> in time to avoid FOUC. Fonts
+      are self-hosted via @fontsource-variable (loaded from src/index.css).
     -->
   </head>
   <body>

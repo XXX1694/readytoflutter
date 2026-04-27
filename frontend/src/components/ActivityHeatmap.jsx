@@ -5,14 +5,14 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { cn } from '../lib/cn.js';
 
+// Atlas: aurora-ramp from rule-faint to brand-glow, with brand-sky on the
+// max bucket so the hottest days feel like little aurora pixels.
 const INTENSITY_CLASS = [
-  // Empty cell needs to stay visible in both themes — dark mode lifts to
-  // rule-strong so the grid reads against the deep paper background.
-  'bg-rule-strong/25 dark:bg-rule-strong/40',
-  'bg-brand/30 dark:bg-brand/35',
-  'bg-brand/55 dark:bg-brand/55',
-  'bg-brand/80 dark:bg-brand/80',
-  'bg-brand',
+  'bg-rule/8 dark:bg-rule/10',
+  'bg-brand/20 dark:bg-brand/25',
+  'bg-brand/45 dark:bg-brand/50',
+  'bg-brand/70 dark:bg-brand/75',
+  'bg-gradient-to-br from-brand to-brand-sky shadow-[0_0_8px_-1px_rgb(var(--brand)/0.5)]',
 ];
 
 export default function ActivityHeatmap({ weeks = 14 }) {
@@ -62,7 +62,7 @@ export default function ActivityHeatmap({ weeks = 14 }) {
                       <Tooltip.Trigger asChild>
                         <span
                           className={cn(
-                            'h-3 w-3 rounded-[3px] ring-1 ring-rule/40 transition-transform hover:scale-110 dark:ring-rule-strong/50 sm:h-3.5 sm:w-3.5',
+                            'h-3 w-3 rounded transition-all duration-200 hover:scale-125 sm:h-3.5 sm:w-3.5',
                             INTENSITY_CLASS[intensity(cell.count)],
                           )}
                           aria-label={`${fmt(cell.date)} — ${cell.count}`}
@@ -72,7 +72,7 @@ export default function ActivityHeatmap({ weeks = 14 }) {
                         <Tooltip.Content
                           side="top"
                           sideOffset={6}
-                          className="z-50 rounded-md border-1.5 border-ink bg-paper-2 px-2 py-1 font-mono text-[11px] text-ink shadow-codex-sm"
+                          className="z-50 rounded-md border border-rule/15 bg-paper-2 px-2 py-1 font-mono text-[11px] text-ink shadow-codex-sm"
                         >
                           <span className="text-muted">{fmt(cell.date)}</span>
                           <span className="ml-2">{cell.count}</span>
@@ -91,7 +91,7 @@ export default function ActivityHeatmap({ weeks = 14 }) {
             {INTENSITY_CLASS.map((c, i) => (
               <span
                 key={i}
-                className={cn('h-2.5 w-2.5 rounded-[2px] ring-1 ring-rule/40 dark:ring-rule-strong/50', c)}
+                className={cn('h-2.5 w-2.5 rounded-[2px] ring-1 ring-rule/15 dark:ring-rule/20', c)}
                 aria-hidden
               />
             ))}

@@ -46,7 +46,7 @@ export default function AccountMenu() {
   // Probing — render a placeholder of the same dimensions to avoid layout
   // jumps when the probe resolves.
   if (backendAvailable === null) {
-    return <div className="h-9 w-9 rounded-md border-1.5 border-rule-strong/40 bg-paper-2/50" aria-hidden />;
+    return <div className="h-9 w-9 rounded-xl border border-rule/10 bg-paper-2/40" aria-hidden />;
   }
 
   // Logged out
@@ -54,7 +54,7 @@ export default function AccountMenu() {
     return (
       <Link
         to="/login"
-        className="inline-flex h-9 items-center gap-1.5 rounded-md border-1.5 border-ink bg-paper-2 px-3 font-mono text-[11px] uppercase tracking-wider text-ink shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2/60 px-3 font-mono text-[11px] uppercase tracking-wider text-ink transition-all hover:border-rule/25 hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
       >
         <LogIn className="h-3.5 w-3.5" aria-hidden />
         {isRu ? 'Войти' : 'Sign in'}
@@ -121,10 +121,10 @@ export default function AccountMenu() {
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="inline-flex h-9 items-center gap-2 rounded-md border-1.5 border-rule-strong bg-paper-2 px-1.5 transition-colors hover:border-ink"
+          className="inline-flex h-9 items-center gap-2 rounded-xl border border-rule/12 bg-paper-2/60 px-1.5 transition-all hover:border-rule/25 hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
           aria-label={isRu ? 'Меню аккаунта' : 'Account menu'}
         >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-sm bg-ink font-mono text-[10px] font-medium uppercase text-paper">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-brand-sky font-mono text-[10px] font-semibold uppercase text-white shadow-[0_2px_4px_-1px_rgb(var(--brand)/0.40)]">
             {initialsOf(user)}
           </span>
           <ChevronDown className="hidden h-3 w-3 text-muted sm:block" aria-hidden />
@@ -136,11 +136,11 @@ export default function AccountMenu() {
           align="end"
           sideOffset={6}
           className={cn(
-            'z-50 w-64 overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 p-1 shadow-codex-lg',
+            'z-50 w-64 overflow-hidden rounded-2xl border border-rule/12 glass p-1 shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_48px_-12px_rgb(var(--shadow)/0.20)]',
             'data-[state=open]:animate-fade-in',
           )}
         >
-          <div className="border-b-1.5 border-ink px-3 py-3">
+          <div className="border-b border-rule/15 px-3 py-3">
             <div className="font-display text-sm font-medium text-ink truncate">
               {user?.name || user?.email}
             </div>

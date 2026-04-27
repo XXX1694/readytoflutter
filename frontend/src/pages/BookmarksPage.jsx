@@ -24,7 +24,7 @@ export default function BookmarksPage() {
   if (isLoading) {
     return (
       <div className="bg-page">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
           <Skeleton className="mb-5 h-4 w-32" />
           <Skeleton className="mb-2 h-3 w-20" />
           <Skeleton className="mb-1 h-9 w-2/3" />
@@ -41,7 +41,7 @@ export default function BookmarksPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Button
           variant="ghost"
           size="sm"
@@ -52,7 +52,7 @@ export default function BookmarksPage() {
           {t.backToDashboard}
         </Button>
 
-        <header className="mb-6 flex flex-col gap-3 border-b-1.5 border-ink pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-6 flex flex-col gap-3 border-b border-rule/15 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[rgb(var(--amber))]">
               ★ {lang === 'ru' ? 'Избранное' : 'Bookmarks'}
@@ -104,10 +104,15 @@ export default function BookmarksPage() {
         </header>
 
         {bookmarked.length === 0 ? (
-          <div className="mt-10 flex flex-col items-center gap-4 rounded-md border-1.5 border-dashed border-rule-strong bg-paper-2/40 px-6 py-14 text-center sm:py-20">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-sm">
-              <Star className="h-5 w-5 text-[rgb(var(--amber))]" aria-hidden />
-            </span>
+          <div className="relative mt-10 overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 px-6 py-16 text-center sm:py-24">
+            {/* Aurora glow behind the empty card */}
+            <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-amber/15 via-brand/10 to-transparent blur-3xl" />
+            <span aria-hidden className="pointer-events-none absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-brand-sky/15 via-mint/8 to-transparent blur-3xl" />
+
+            <div className="relative mx-auto flex flex-col items-center gap-4">
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber/20 to-amber/5 ring-1 ring-amber/30">
+                <Star className="h-6 w-6 text-[rgb(var(--amber))]" aria-hidden />
+              </span>
             <div className="space-y-1">
               <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
                 {lang === 'ru' ? 'Список «добить» пуст' : 'Your tough list is empty'}
@@ -118,10 +123,11 @@ export default function BookmarksPage() {
                   : 'Tap ★ on any question — anything you want to drill before the interview lands here.'}
               </p>
             </div>
-            <Button variant="brand" size="md" onClick={() => navigate('/')}>
-              <ArrowRight className="h-4 w-4" />
-              {lang === 'ru' ? 'Перейти к темам' : 'Browse topics'}
-            </Button>
+              <Button variant="brand" size="md" onClick={() => navigate('/')}>
+                <ArrowRight className="h-4 w-4" />
+                {lang === 'ru' ? 'Перейти к темам' : 'Browse topics'}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

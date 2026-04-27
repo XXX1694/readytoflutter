@@ -1,11 +1,12 @@
 import { cn } from '../lib/cn.js';
 
 const TONES = {
-  brand: 'bg-brand',
-  mint: 'bg-mint',
-  amber: 'bg-[rgb(var(--amber))]',
-  ink: 'bg-ink',
-  gradient: 'bg-codex-gradient',
+  brand:    'bg-brand',
+  mint:     'bg-mint',
+  amber:    'bg-[rgb(var(--amber))]',
+  ink:      'bg-ink',
+  // Atlas signature gradient — indigo → violet, with a soft inner highlight
+  gradient: 'bg-gradient-to-r from-brand to-brand-sky shadow-[inset_0_0_0_1px_rgb(255_255_255/0.10)]',
 };
 
 const SIZES = {
@@ -35,7 +36,7 @@ export function ProgressBar({
         aria-valuemax={100}
         aria-label={label}
         className={cn(
-          'w-full overflow-hidden rounded-full bg-rule/60',
+          'w-full overflow-hidden rounded-full bg-rule/10',
           SIZES[size],
           trackClassName,
         )}

@@ -19,15 +19,19 @@ const LANG_LOADERS = {
   typescript: () => import('@shikijs/langs/typescript'),
 };
 
-const THEMES = ['github-light', 'github-dark-default'];
+// Themes use static imports because Vite's dynamic-import-vars can't analyze
+// template-literal paths into the @shikijs/themes package (silent failure →
+// the highlighter promise rejects and CodeBlock falls back to unstyled <pre>).
+const THEME_LOADERS = [
+  () => import('@shikijs/themes/github-light'),
+  () => import('@shikijs/themes/github-dark-default'),
+];
 
 async function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = (async () => {
       const langs = await Promise.all(Object.values(LANG_LOADERS).map((l) => l()));
-      const themes = await Promise.all(
-        THEMES.map((t) => import(`@shikijs/themes/${t}`)),
-      );
+      const themes = await Promise.all(THEME_LOADERS.map((l) => l()));
       return createHighlighterCore({
         themes: themes.map((m) => m.default),
         langs: langs.map((m) => m.default),

@@ -13,7 +13,9 @@ export function Skeleton({ className, ...rest }) {
       role="presentation"
       aria-hidden
       className={cn(
-        'animate-pulse rounded-sm bg-rule-strong/30 dark:bg-rule-strong/45',
+        // Soft shimmer (brand-tinted) — feels like the page is breathing,
+        // not waiting. Falls back to a flat block under reduced-motion.
+        'skeleton-shine rounded-sm',
         'h-4 w-full',
         className,
       )}
@@ -30,7 +32,7 @@ export function SkeletonCard({ className, children, ...rest }) {
   return (
     <div
       className={cn(
-        'rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-4 shadow-codex-sm',
+        'rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm',
         className,
       )}
       {...rest}

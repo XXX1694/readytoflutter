@@ -91,7 +91,7 @@ export default function StatsPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Button
           variant="ghost"
           size="sm"
@@ -103,7 +103,7 @@ export default function StatsPage() {
         </Button>
 
         {/* Header */}
-        <header className="mb-8 flex flex-col gap-3 border-b-1.5 border-ink pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-8 flex flex-col gap-3 border-b border-rule/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <Eyebrow accent="brand">
               <TrendingUp className="mr-1 inline h-3 w-3" />
@@ -161,7 +161,7 @@ export default function StatsPage() {
                   key={row.topic.id}
                   type="button"
                   onClick={() => navigate(`/topic/${row.topic.slug}`)}
-                  className="flex flex-col gap-2 rounded-md border-1.5 border-coral bg-coral/5 p-4 text-left shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+                  className="flex flex-col gap-2 rounded-2xl border border-coral/30 bg-coral/5 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-coral/50 hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_12px_24px_-6px_rgb(var(--shadow)/0.10)]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-display text-base font-medium text-ink line-clamp-1">
@@ -190,7 +190,7 @@ export default function StatsPage() {
           const levelMastery = Math.round(rows.reduce((s, r) => s + mastery(r), 0) / rows.length);
           return (
             <section key={level} className="mb-10">
-              <header className="mb-4 flex items-end justify-between border-b-1.5 border-ink pb-2">
+              <header className="mb-4 flex items-end justify-between border-b border-rule/15 pb-2">
                 <div>
                   <Eyebrow index={idx + 1} accent="brand" className="mb-1">
                     {levelT.short}
@@ -237,7 +237,7 @@ function BigTile({ label, value, suffix, tone = 'ink' }) {
     ink:   'text-ink',
   };
   return (
-    <div className="flex flex-col gap-2 rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm sm:p-5">
+    <div className="flex flex-col gap-2 rounded-2xl border border-rule/8 bg-paper-2 p-5 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] sm:p-6">
       <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{label}</span>
       <div className="flex items-baseline gap-1">
         <span className={cn('num text-display-xs sm:text-display-sm', ACCENTS[tone])}>{value}</span>
@@ -250,7 +250,7 @@ function BigTile({ label, value, suffix, tone = 'ink' }) {
 function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }) {
   const easeInfo = row.avgEase ? easeBucket(row.avgEase) : null;
   return (
-    <div className="group flex items-center gap-3 rounded-md border border-rule bg-paper-2 px-4 py-3 transition-all hover:border-ink hover:shadow-codex-sm">
+    <div className="group flex items-center gap-3 rounded-xl border border-rule/8 bg-paper-2 px-4 py-3 transition-all duration-200 hover:border-rule/15 hover:bg-rule/5">
       <TopicGlyph topic={row.topic} size="sm" />
       <button
         type="button"
@@ -285,7 +285,7 @@ function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }) {
         type="button"
         onClick={onDrill}
         aria-label="Drill"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rule-strong text-muted opacity-0 transition-all hover:border-ink hover:text-brand group-hover:opacity-100"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-rule/12 text-muted opacity-0 transition-all duration-200 hover:border-brand/40 hover:bg-brand/5 hover:text-brand group-hover:opacity-100"
       >
         <Brain className="h-4 w-4" />
       </button>
@@ -296,16 +296,16 @@ function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }) {
 function StatsSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
-        <header className="mb-8 border-b-1.5 border-ink pb-6">
+        <header className="mb-8 border-b border-rule/15 pb-6">
           <Skeleton className="h-3 w-20" />
           <Skeleton className="mt-2 h-9 w-2/3" />
           <Skeleton className="mt-1 h-3 w-1/2" />
         </header>
         <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-5 shadow-codex-sm">
+            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="mt-3 h-9 w-12" />
             </div>
@@ -313,7 +313,7 @@ function StatsSkeleton() {
         </div>
         {[1, 2, 3].map((row) => (
           <section key={row} className="mb-10">
-            <div className="mb-4 border-b-1.5 border-ink pb-2">
+            <div className="mb-4 border-b border-rule/15 pb-2">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="mt-2 h-6 w-40" />
             </div>

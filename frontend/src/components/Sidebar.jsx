@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp } from 'lucide-react';
+import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library } from 'lucide-react';
 import { useTopics, useStats } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -11,10 +11,10 @@ import { cn } from '../lib/cn.js';
 
 const NAV_LINK_CLASS = ({ isActive }) =>
   cn(
-    'mx-2 mt-px flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
+    'mx-2 mt-0.5 flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200',
     isActive
-      ? 'bg-ink text-paper shadow-codex-sm'
-      : 'text-ink-2 hover:bg-paper hover:text-ink',
+      ? 'bg-ink text-paper shadow-[0_1px_2px_0_rgb(var(--shadow)/0.16),0_4px_12px_-2px_rgb(var(--shadow)/0.20)]'
+      : 'text-ink-2 hover:bg-rule/8 hover:text-ink',
   );
 
 function MainNavLink({ to, end, onClose, icon: Icon, children }) {
@@ -63,27 +63,30 @@ export default function Sidebar() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col border-r-1.5 border-ink bg-paper-2',
+          'fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col',
+          'glass border-r border-rule/8',
           'transition-transform duration-300 ease-out lg:static lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         {/* Brand */}
-        <div className="flex items-start justify-between gap-2 border-b-1.5 border-ink px-5 py-5">
+        <div className="flex items-start justify-between gap-2 border-b border-rule/8 px-5 py-5">
           <NavLink
             to="/"
             onClick={close}
-            className="group flex flex-col gap-0.5"
+            className="group flex items-center gap-2.5"
             aria-label={t.goToHomepage}
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted">
-              ReadyToFlutter
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-sky text-white shadow-[0_4px_12px_-2px_rgb(var(--brand)/0.40)]">
+              <span className="font-display text-base font-bold leading-none">R</span>
             </span>
-            <span className="font-display text-2xl font-medium leading-none tracking-tightest text-ink">
-              Codex<span className="text-brand">.</span>
-            </span>
-            <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-2">
-              {t.interviewPrep}
+            <span className="flex flex-col">
+              <span className="font-display text-[15px] font-semibold leading-tight tracking-tight text-ink">
+                ReadyToFlutter
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-2">
+                Codex · {t.interviewPrep}
+              </span>
             </span>
           </NavLink>
           <IconButton
@@ -99,7 +102,7 @@ export default function Sidebar() {
 
         {/* Overall progress */}
         {total > 0 && (
-          <div className="border-b-1.5 border-ink px-5 py-4">
+          <div className="border-b border-rule/8 px-5 py-4">
             <div className="mb-2 flex items-baseline justify-between">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                 {t.overallProgress}
@@ -127,6 +130,9 @@ export default function Sidebar() {
           <MainNavLink to="/mock" onClose={close} icon={Target}>
             {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
           </MainNavLink>
+          <MainNavLink to="/knowledge" onClose={close} icon={Library}>
+            {lang === 'ru' ? 'База знаний' : 'Knowledge'}
+          </MainNavLink>
           <MainNavLink to="/bookmarks" onClose={close} icon={Bookmark}>
             {lang === 'ru' ? 'Закладки' : 'Bookmarks'}
           </MainNavLink>
@@ -134,7 +140,7 @@ export default function Sidebar() {
             {lang === 'ru' ? 'Статистика' : 'Mastery'}
           </MainNavLink>
 
-          <div className="my-3 mx-5 h-px bg-rule" />
+          <div className="my-3 mx-5 h-px bg-rule/10" />
 
           {LEVELS.map((level, idx) => {
             const levelT = t[level.key];
@@ -142,7 +148,7 @@ export default function Sidebar() {
             if (!items.length) return null;
             const isOpen = expanded[level.key];
             return (
-              <div key={level.key} className="mb-1">
+              <div key={level.key} className="mb-0.5">
                 <button
                   type="button"
                   onClick={(ev) => {
@@ -150,20 +156,20 @@ export default function Sidebar() {
                     setExpanded((e) => ({ ...e, [level.key]: !e[level.key] }));
                   }}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between px-5 py-3 text-left transition-colors hover:bg-paper sm:py-2"
+                  className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-3 py-2 text-left transition-all duration-200 hover:bg-rule/8"
                 >
-                  <span className="flex items-center gap-2.5">
-                    <span className="font-mono text-[10px] tabular-nums text-brand">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
+                  <span className="flex items-center gap-2">
                     <span className={cn('h-1.5 w-1.5 rounded-full', level.dot)} />
-                    <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-2">
                       {levelT.short}
+                    </span>
+                    <span className="font-mono text-[10px] tabular-nums text-muted-2">
+                      {items.length}
                     </span>
                   </span>
                   <ChevronRight
                     className={cn(
-                      'h-3.5 w-3.5 text-muted transition-transform',
+                      'h-3.5 w-3.5 text-muted transition-transform duration-200',
                       isOpen && 'rotate-90',
                     )}
                     aria-hidden
@@ -183,11 +189,10 @@ export default function Sidebar() {
                             onClick={close}
                             className={({ isActive }) =>
                               cn(
-                                'group flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
-                                'mx-1',
+                                'group mx-3 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-all duration-200',
                                 isActive
-                                  ? 'bg-brand/10 text-ink dark:bg-brand/15'
-                                  : 'text-ink-2 hover:bg-paper hover:text-ink',
+                                  ? 'bg-brand/10 text-ink ring-1 ring-brand/20'
+                                  : 'text-ink-2 hover:bg-rule/8 hover:text-ink',
                               )
                             }
                           >
@@ -220,7 +225,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="border-t-1.5 border-ink px-5 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-2">
+        <div className="border-t border-rule/8 px-5 py-3 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-2">
           {t.footerText}
         </div>
       </aside>

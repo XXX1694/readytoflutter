@@ -16,14 +16,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 → clear local session. The fallbacks below take over for any caller
-// that depends on progress reads.
+// 401 → clear local session AND drop the TanStack Query cache so stale
+// auth-scoped data doesn't keep rendering. Fallbacks below then take over
+// for any caller that depends on progress reads.
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
+  async (err) => {
     if (err?.response?.status === 401) {
       const { token, clearSession } = useAuth.getState();
-      if (token) clearSession();
+      if (token) {
+        // Lazy-load the queryClient — avoids a top-level circular import.
+        try {
+          const { queryClient } = await import('../lib/queryClient.js');
+          queryClient.clear();
+        } catch { /* noop */ }
+        clearSession();
+        // Surface why the user got logged out
+        try {
+          const { toast } = await import('sonner');
+          toast.message('Session expired', { description: 'Please sign in again.' });
+        } catch { /* noop */ }
+      }
     }
     return Promise.reject(err);
   },
@@ -248,10 +261,28 @@ const fallbackResetProgress = async () => {
   return { success: true };
 };
 
-const tryRemote = async (fn, fallbackFn) => {
+// Throttle the "saved locally" toast so a burst of writes (e.g. rating 10
+// cards in a row while offline) doesn't fire 10 toasts.
+let lastOfflineToastAt = 0;
+const tryRemote = async (fn, fallbackFn, opts = {}) => {
   try {
     return await fn();
-  } catch {
+  } catch (err) {
+    // 401 is handled by the interceptor (clears session). For other failures
+    // — likely network/5xx — fall back to localStorage. If the user has a
+    // session token (i.e. *expected* server sync) and the failure is a write,
+    // surface a single toast every 30s so they know writes aren't reaching the
+    // server.
+    if (opts.notifyOnWrite && useAuth.getState().token && (Date.now() - lastOfflineToastAt) > 30_000) {
+      lastOfflineToastAt = Date.now();
+      // Lazy-import sonner to avoid pulling it into modules that don't need it
+      try {
+        const { toast } = await import('sonner');
+        toast.message('Saved locally', {
+          description: 'Backend unreachable — your progress will sync once you reconnect.',
+        });
+      } catch { /* noop */ }
+    }
     return fallbackFn();
   }
 };
@@ -284,12 +315,14 @@ export const updateProgress = (questionId, status, notes) =>
   tryRemote(
     () => api.post(`/progress/${questionId}`, { status, notes }).then((r) => r.data),
     () => fallbackUpdateProgress(questionId, status, notes),
+    { notifyOnWrite: true },
   );
 
 export const resetProgress = () =>
   tryRemote(
     () => api.delete('/progress/reset').then((r) => r.data),
     fallbackResetProgress,
+    { notifyOnWrite: true },
   );
 
 // ── Auth ────────────────────────────────────────────────────────────────────

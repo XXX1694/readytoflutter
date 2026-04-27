@@ -5,6 +5,8 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { FullPageLoader } from '../ui/index.js';
+import AnswerText from '../components/AnswerText.jsx';
+import CodeBlock from '../components/CodeBlock.jsx';
 
 /**
  * Clean printable view for a topic. The page renders ALL questions fully
@@ -75,14 +77,14 @@ export default function PrintTopicPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-md border-1.5 border-ink bg-paper-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink shadow-codex-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-codex transition-all"
+            className="rounded-xl border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-rule/25 hover:shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.08)]"
           >
             {lang === 'ru' ? 'Печать снова' : 'Print again'}
           </button>
           <button
             type="button"
             onClick={() => navigate(`/topic/${slug}`)}
-            className="rounded-md px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
+            className="rounded-xl px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
           >
             {lang === 'ru' ? 'Назад' : 'Back'}
           </button>
@@ -92,7 +94,7 @@ export default function PrintTopicPage() {
       {/* Printable content */}
       <article className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-10">
         {/* Cover header */}
-        <header className="mb-6 border-b-2 border-ink pb-4">
+        <header className="mb-6 border-b-2 border-rule/15 pb-4">
           <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
             <span>ReadyToFlutter · Codex</span>
             <span>{today}</span>
@@ -127,14 +129,18 @@ export default function PrintTopicPage() {
                 </div>
 
                 <div className="ml-9 mt-2">
-                  <div className="answer-text whitespace-pre-wrap text-[12.5px] leading-[1.55] text-ink-2">
-                    {answerText(q)}
-                  </div>
+                  <AnswerText
+                    text={answerText(q)}
+                    className="answer-text text-[12.5px] leading-[1.55] text-ink-2"
+                  />
 
                   {q.code_example && (
-                    <pre className="mt-2 overflow-hidden rounded border border-rule bg-paper-2 p-2.5 font-mono text-[10.5px] leading-[1.45] text-ink whitespace-pre-wrap">
-                      <code>{q.code_example}</code>
-                    </pre>
+                    <div className="mt-2">
+                      <CodeBlock
+                        code={q.code_example}
+                        language={q.code_language || 'dart'}
+                      />
+                    </div>
                   )}
                 </div>
               </li>

@@ -53,14 +53,23 @@ export default function CodeBlock({ code, language = 'dart', className }) {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-sm',
+        'group relative overflow-hidden rounded-2xl border border-rule/8 bg-paper-2',
+        'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2 border-b-1.5 border-ink bg-paper px-3 py-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-          {language}
-        </span>
+      {/* Atlas code header — three-dot 'window' on left + actions on right */}
+      <div className="flex items-center justify-between gap-2 border-b border-rule/8 bg-rule/[0.02] px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="flex gap-1" aria-hidden>
+            <span className="h-2 w-2 rounded-full bg-coral/60" />
+            <span className="h-2 w-2 rounded-full bg-amber/60" />
+            <span className="h-2 w-2 rounded-full bg-mint/60" />
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-2">
+            {language}
+          </span>
+        </div>
         <div className="flex items-center gap-1">
           {isDart && (
             <button
@@ -68,7 +77,7 @@ export default function CodeBlock({ code, language = 'dart', className }) {
               onClick={openInDartPad}
               aria-label={lang === 'ru' ? 'Открыть в DartPad' : 'Open in DartPad'}
               title={lang === 'ru' ? 'Скопировать и открыть DartPad' : 'Copy + open DartPad'}
-              className="inline-flex h-6 items-center gap-1 rounded px-1.5 font-mono text-[10px] uppercase text-brand transition-colors hover:bg-brand/10"
+              className="inline-flex h-6 items-center gap-1 rounded-lg px-2 font-mono text-[10px] uppercase text-brand transition-colors hover:bg-brand/10"
             >
               <Play className="h-3 w-3" />
               DartPad
@@ -78,7 +87,7 @@ export default function CodeBlock({ code, language = 'dart', className }) {
             type="button"
             onClick={copy}
             aria-label="Copy code"
-            className="inline-flex h-6 items-center gap-1 rounded px-1.5 font-mono text-[10px] uppercase text-muted transition-colors hover:bg-paper-2 hover:text-ink"
+            className="inline-flex h-6 items-center gap-1 rounded-lg px-2 font-mono text-[10px] uppercase text-muted transition-colors hover:bg-rule/8 hover:text-ink"
           >
             {copied ? <Check className="h-3 w-3 text-mint" /> : <Copy className="h-3 w-3" />}
             {copied ? (lang === 'ru' ? 'Скоп.' : 'Copied') : (lang === 'ru' ? 'Копир.' : 'Copy')}

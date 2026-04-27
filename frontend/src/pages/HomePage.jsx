@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Command, Sparkles, Target } from 'lucide-react';
+import { Command, Sparkles, Target, Brain, Library } from 'lucide-react';
 import { useTopics, useStats, useResetProgress, useQuestions } from '../lib/queries.js';
 import { getCardState } from '../lib/srs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -82,50 +82,63 @@ export default function HomePage() {
   return (
     <div className="bg-page">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-        {/* HERO */}
+        {/* HERO — oversized gradient title, single brand-glow CTA. */}
         <section className="mb-10 sm:mb-14">
-          <Eyebrow index={0} accent="brand">
-            ReadyToFlutter · Codex
-          </Eyebrow>
-          <h1 className="mt-4 font-display text-display-sm font-medium leading-[1.02] tracking-tightest text-ink sm:text-display-md lg:text-display-lg">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
+            ReadyToFlutter · Atlas
+          </div>
+          <h1 className="font-display text-display-md font-semibold leading-[1.02] tracking-tightest sm:text-display-lg lg:text-display-xl">
             {lang === 'ru' ? (
               <>
-                Готов к <em className="not-italic text-brand">собеседованию</em>?
+                <span className="text-ink">Готов к</span>
                 <br />
-                <span className="font-display italic text-ink-2">Соберись.</span>
+                <span className="text-gradient-brand">собеседованию.</span>
               </>
             ) : (
               <>
-                Ready for the <em className="not-italic text-brand">interview</em>?
+                <span className="text-ink">Ready for the</span>
                 <br />
-                <span className="font-display italic text-ink-2">Drill it.</span>
+                <span className="text-gradient-brand">interview.</span>
               </>
             )}
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-2 sm:text-lg">
+          <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-2 sm:text-lg">
             {t.heroDesc}
           </p>
 
-          {/* CTA row */}
+          {/* CTA row — primary is the session you'll actually run today */}
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Button variant="brand" onClick={() => navigate('/mock')}>
+            <Button variant="brand" onClick={() => navigate('/study')}>
+              <Brain className="h-4 w-4" />
+              {lang === 'ru' ? 'Начать сессию' : 'Start a session'}
+              <kbd className="ml-1 rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px]">{modKey}S</kbd>
+            </Button>
+            <Button variant="codex" onClick={() => navigate('/mock')}>
               <Target className="h-4 w-4" />
-              {lang === 'ru' ? 'Mock-собеседование' : 'Mock interview'}
-              <kbd className="ml-1 rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px]">{modKey}M</kbd>
+              {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
+              <kbd className="ml-1 rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px]">{modKey}M</kbd>
             </Button>
-            <Button variant="codex" onClick={() => setCommandOpen(true)}>
-              <Command className="h-4 w-4" />
-              <span>{t.searchOpenHint}</span>
-              <kbd className="ml-1 rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px]">{modKey}K</kbd>
+            <Button variant="ghost" onClick={() => navigate('/knowledge')}>
+              <Library className="h-4 w-4" />
+              {lang === 'ru' ? 'База знаний' : 'Knowledge'}
             </Button>
-            <a
-              href="#levels"
-              className="inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider text-muted hover:text-ink"
+            <button
+              type="button"
+              onClick={() => setCommandOpen(true)}
+              className="ml-auto hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink sm:inline-flex"
             >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              {lang === 'ru' ? 'Открыть программу' : 'Browse syllabus'}
-            </a>
+              <Command className="h-3.5 w-3.5" aria-hidden />
+              <span>{t.searchOpenHint}</span>
+              <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px]">{modKey}K</kbd>
+            </button>
           </div>
+        </section>
+
+        {/* TODAY'S PLAN — hoisted above stats so the very next thing users
+            see after the hero is "what should I do right now?". */}
+        <section className="mb-8 sm:mb-10">
+          <TodayPlan />
         </section>
 
         {/* STATS */}
@@ -141,17 +154,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* TODAY'S PLAN */}
-        <section className="mb-8 sm:mb-10">
-          <TodayPlan />
-        </section>
-
         {/* ACTIVITY */}
         <section className="mb-12 sm:mb-16">
           <Eyebrow index={2} className="mb-4">
             {lang === 'ru' ? 'Активность · 14 недель' : 'Activity · last 14 weeks'}
           </Eyebrow>
-          <div className="rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm sm:p-6">
+          <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm sm:p-6">
             <ActivityHeatmap weeks={14} />
           </div>
         </section>
@@ -164,7 +172,7 @@ export default function HomePage() {
             const levelT = t[level];
             return (
               <div key={level} className="mb-12 sm:mb-16">
-                <header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b-1.5 border-ink pb-3">
+                <header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-rule/15 pb-3">
                   <div>
                     <Eyebrow index={idx + 1} accent="brand" className="mb-2">
                       {levelT.short}
@@ -197,7 +205,7 @@ export default function HomePage() {
 
         {/* RESET */}
         {completed > 0 && (
-          <div className="mt-8 flex justify-end border-t-1.5 border-rule pt-6">
+          <div className="mt-8 flex justify-end border-t border-rule pt-6">
             <Button
               variant="ghost"
               size="sm"
@@ -233,7 +241,7 @@ function DashboardSkeleton() {
         {/* Stat tiles */}
         <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-5 shadow-codex-sm">
+            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="mt-3 h-8 w-12" />
             </div>
@@ -242,7 +250,7 @@ function DashboardSkeleton() {
 
         {/* TodayPlan */}
         <section className="mb-8">
-          <div className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-6 shadow-codex">
+          <div className="rounded-md border border-rule/15 bg-paper-2/80 p-6 shadow-codex">
             <Skeleton className="h-3 w-28" />
             <Skeleton className="mt-3 h-8 w-2/3 max-w-md" />
             <div className="mt-4 flex flex-wrap gap-2">
@@ -257,7 +265,7 @@ function DashboardSkeleton() {
         {/* Activity */}
         <section className="mb-12">
           <Skeleton className="mb-4 h-3 w-44" />
-          <div className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-5 shadow-codex-sm">
+          <div className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
             <div className="flex flex-wrap gap-1">
               {Array.from({ length: 14 * 7 }).map((_, i) => (
                 <Skeleton key={i} className="h-3 w-3 rounded-[3px]" />
@@ -273,7 +281,7 @@ function DashboardSkeleton() {
             <Skeleton className="mb-2 h-8 w-56" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-md border-1.5 border-ink/30 bg-paper-2/80 p-4 shadow-codex-sm">
+                <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
                   <Skeleton className="h-9 w-9 rounded-md" />
                   <Skeleton className="mt-3 h-5 w-3/4" />
                   <Skeleton className="mt-2 h-4 w-1/2" />

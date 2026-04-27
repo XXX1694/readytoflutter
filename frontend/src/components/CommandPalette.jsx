@@ -7,13 +7,16 @@ import { toast } from 'sonner';
 import {
   Home,
   Search,
-  SunMoon,
+  Sun,
+  Moon,
+  Coffee,
   Languages,
   RotateCcw,
   Layers,
   ArrowRight,
   Brain,
   Target,
+  Library,
   Bookmark,
   Pencil,
   TrendingUp,
@@ -39,7 +42,8 @@ import { useQueryClient } from '@tanstack/react-query';
 export default function CommandPalette() {
   const open = usePrefs((s) => s.commandOpen);
   const setOpen = usePrefs((s) => s.setCommandOpen);
-  const toggleTheme = usePrefs((s) => s.toggleTheme);
+  const theme = usePrefs((s) => s.theme);
+  const setTheme = usePrefs((s) => s.setTheme);
   const recallMode = usePrefs((s) => s.recallMode);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
   const authToken = useAuth((s) => s.token);
@@ -90,23 +94,23 @@ export default function CommandPalette() {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm data-[state=open]:animate-fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-[18vh] z-50 w-[92vw] max-w-2xl -translate-x-1/2 outline-none data-[state=open]:animate-slide-up">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
+        <Dialog.Content className="fixed left-1/2 top-[16vh] z-50 w-[92vw] max-w-2xl -translate-x-1/2 outline-none data-[state=open]:animate-slide-up">
           <Dialog.Title className="sr-only">{t.commandPlaceholder}</Dialog.Title>
           <Dialog.Description className="sr-only">{t.commandHint}</Dialog.Description>
           <Command
             label={t.commandPlaceholder}
-            className="overflow-hidden rounded-md border-1.5 border-ink bg-paper-2 shadow-codex-lg"
+            className="overflow-hidden rounded-2xl border border-rule/12 glass shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_64px_-12px_rgb(var(--shadow)/0.30)]"
           >
-            <div className="flex items-center gap-2 border-b-1.5 border-ink px-4 py-3">
+            <div className="flex items-center gap-2 border-b border-rule/8 px-4 py-3.5">
               <Search className="h-4 w-4 text-muted shrink-0" aria-hidden />
               <Command.Input
                 value={query}
                 onValueChange={setQuery}
                 placeholder={t.commandPlaceholder}
-                className="flex-1 bg-transparent text-sm text-ink placeholder:text-muted-2 outline-none"
+                className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
               />
-              <kbd className="hidden sm:flex items-center gap-1 rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
+              <kbd className="hidden sm:flex items-center gap-1 rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-2">
                 ESC
               </kbd>
             </div>
@@ -139,6 +143,12 @@ export default function CommandPalette() {
                   trailing="⌘+M"
                 >
                   {lang === 'ru' ? 'Mock-собеседование' : 'Mock interview'}
+                </CmdItem>
+                <CmdItem
+                  icon={<Library />}
+                  onSelect={run(() => navigate('/knowledge'))}
+                >
+                  {lang === 'ru' ? 'База знаний' : 'Knowledge base'}
                 </CmdItem>
                 <CmdItem
                   icon={<Bookmark />}
@@ -236,8 +246,26 @@ export default function CommandPalette() {
                 heading={t.cmdAppearance}
                 className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
               >
-                <CmdItem icon={<SunMoon />} onSelect={run(toggleTheme)}>
-                  {t.cmdToggleTheme}
+                <CmdItem
+                  icon={<Sun />}
+                  onSelect={run(() => setTheme('light'))}
+                  trailing={theme === 'light' ? '●' : ''}
+                >
+                  {lang === 'ru' ? 'Тема — светлая' : 'Theme — light'}
+                </CmdItem>
+                <CmdItem
+                  icon={<Coffee />}
+                  onSelect={run(() => setTheme('sepia'))}
+                  trailing={theme === 'sepia' ? '●' : ''}
+                >
+                  {lang === 'ru' ? 'Тема — сепия' : 'Theme — sepia'}
+                </CmdItem>
+                <CmdItem
+                  icon={<Moon />}
+                  onSelect={run(() => setTheme('dark'))}
+                  trailing={theme === 'dark' ? '●' : ''}
+                >
+                  {lang === 'ru' ? 'Тема — тёмная' : 'Theme — dark'}
                 </CmdItem>
                 <CmdItem
                   icon={<Languages />}

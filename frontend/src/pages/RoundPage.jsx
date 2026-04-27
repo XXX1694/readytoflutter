@@ -12,6 +12,8 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, Eyebrow, FullPageLoader, difficultyTone } from '../ui/index.js';
+import AnswerText from '../components/AnswerText.jsx';
+import CodeBlock from '../components/CodeBlock.jsx';
 import { cn } from '../lib/cn.js';
 
 /* Static follow-up prompts shown under each question — same set every time
@@ -174,9 +176,9 @@ export default function RoundPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Top bar */}
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b-1.5 border-ink pb-4">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
           <div className="flex flex-wrap items-center gap-3">
             <MessagesSquare className="h-5 w-5 text-brand" aria-hidden />
             <span className="font-display text-xl font-medium text-ink">
@@ -196,7 +198,7 @@ export default function RoundPage() {
         <ChainStrip chain={chain} cursor={cursor} answers={answers} />
 
         {/* Question */}
-        <section className="mb-5 mt-5 rounded-md border-1.5 border-ink bg-paper-2 p-5 shadow-codex sm:p-7">
+        <section className="mb-5 mt-5 rounded-md border border-rule/15 bg-paper-2 p-5 shadow-codex sm:p-7">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Pill tone={difficultyTone[current.difficulty] || 'neutral'} size="xs">
               {difficultyLabel}
@@ -228,10 +230,10 @@ export default function RoundPage() {
                     onClick={() => setOpenFollowUp(open ? null : fu.key)}
                     aria-pressed={open}
                     className={cn(
-                      'inline-flex items-center gap-1 rounded-md border-1.5 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors',
+                      'inline-flex items-center gap-1 rounded-md border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors',
                       open
                         ? 'border-ink bg-ink text-paper'
-                        : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+                        : 'border-rule/15 bg-paper-2 text-muted hover:border-rule/15 hover:text-ink',
                     )}
                   >
                     <CornerDownRight className="h-3 w-3" aria-hidden />
@@ -275,11 +277,11 @@ export default function RoundPage() {
                 : 'Type the way you would speak aloud…'}
               rows={6}
               autoFocus
-              className="w-full resize-y rounded-md border-1.5 border-ink bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
+              className="w-full resize-y rounded-md border border-rule/15 bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                {userText.length} chars · <kbd className="rounded border border-rule-strong px-1.5 py-0.5">⌘↵</kbd>{' '}
+                {userText.length} chars · <kbd className="rounded border border-rule/15 px-1.5 py-0.5">⌘↵</kbd>{' '}
                 {lang === 'ru' ? 'показать ответ' : 'reveal answer'}
               </span>
               <div className="flex gap-2">
@@ -295,7 +297,7 @@ export default function RoundPage() {
         ) : (
           <>
             <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-md border-1.5 border-rule-strong bg-paper p-4">
+              <div className="rounded-md border border-rule/15 bg-paper p-4">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
                 </div>
@@ -307,13 +309,22 @@ export default function RoundPage() {
                   )}
                 </div>
               </div>
-              <div className="rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm">
+              <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {lang === 'ru' ? 'Эталон' : 'Reference'}
                 </div>
-                <div className="answer-text whitespace-pre-wrap text-sm leading-relaxed text-ink-2">
-                  {answerText(current)}
-                </div>
+                <AnswerText
+                  text={answerText(current)}
+                  className="answer-text text-sm leading-relaxed text-ink-2"
+                />
+                {current.code_example && (
+                  <div className="mt-3">
+                    <CodeBlock
+                      code={current.code_example}
+                      language={current.code_language || 'dart'}
+                    />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -324,7 +335,7 @@ export default function RoundPage() {
                   type="button"
                   onClick={() => rate(r.key)}
                   className={cn(
-                    'group flex flex-col items-center gap-1 rounded-md border-1.5 border-ink bg-paper-2 px-3 py-3 shadow-codex-sm transition-all',
+                    'group flex flex-col items-center gap-1 rounded-md border border-rule/15 bg-paper-2 px-3 py-3 shadow-codex-sm transition-all',
                     'hover:-translate-x-px hover:-translate-y-px hover:shadow-codex',
                     r.tone === 'coral' && 'hover:bg-coral/15',
                     r.tone === 'amber' && 'hover:bg-amber/15',
@@ -332,7 +343,7 @@ export default function RoundPage() {
                     r.tone === 'mint'  && 'hover:bg-mint/15',
                   )}
                 >
-                  <kbd className="rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
+                  <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
                     {r.hotkey}
                   </kbd>
                   <span className="font-display text-base font-medium text-ink">
@@ -358,8 +369,8 @@ function ChainStrip({ chain, cursor, answers }) {
     hard:  'bg-[rgb(var(--amber))]',
     good:  'bg-brand',
     easy:  'bg-mint',
-    skipped: 'bg-rule-strong',
-  }[rating] || 'bg-rule');
+    skipped: 'bg-rule/30',
+  }[rating] || 'bg-rule/20');
 
   return (
     <div className="flex items-end gap-1.5">
@@ -372,8 +383,8 @@ function ChainStrip({ chain, cursor, answers }) {
             <div
               className={cn(
                 heightFor(q.difficulty),
-                'rounded-sm border border-rule-strong/60 transition-all',
-                isCurrent && 'border-ink ring-2 ring-brand ring-offset-2 ring-offset-paper',
+                'rounded-sm border border-rule/15 transition-all',
+                isCurrent && 'border-rule/15 ring-2 ring-brand ring-offset-2 ring-offset-paper',
                 isPast && a?.rating ? ratingTone(a.rating) : (isCurrent ? 'bg-brand/20' : 'bg-paper-2'),
               )}
             />
@@ -404,8 +415,8 @@ function DoneScreen({
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <header className="mb-8 border-b-1.5 border-ink pb-6">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <header className="mb-8 border-b border-rule/15 pb-6">
           <Eyebrow accent="brand">
             <MessagesSquare className="mr-1 inline h-3 w-3" />
             {lang === 'ru' ? 'Раунд · Итоги' : 'Round · Recap'}
@@ -429,7 +440,7 @@ function DoneScreen({
             { key: 'again',   label: lang === 'ru' ? 'Провалил' : 'Bombed', accent: 'text-coral' },
             { key: 'skipped', label: lang === 'ru' ? 'Скип' : 'Skipped',     accent: 'text-muted' },
           ].map((b) => (
-            <div key={b.key} className="rounded-md border-1.5 border-ink bg-paper-2 p-4 shadow-codex-sm">
+            <div key={b.key} className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm">
               <div className={cn('num text-3xl', b.accent)}>{buckets[b.key] || 0}</div>
               <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">{b.label}</div>
             </div>
@@ -492,7 +503,15 @@ function DoneScreen({
                       <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-brand">
                         {lang === 'ru' ? 'Эталон' : 'Reference'}
                       </div>
-                      <div className="whitespace-pre-wrap text-xs text-ink-2">{answerText(q)}</div>
+                      <AnswerText text={answerText(q)} className="text-xs text-ink-2" />
+                      {q.code_example && (
+                        <div className="mt-2">
+                          <CodeBlock
+                            code={q.code_example}
+                            language={q.code_language || 'dart'}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </details>

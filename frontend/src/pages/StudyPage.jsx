@@ -14,6 +14,8 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index.js';
 import CodeBlock from '../components/CodeBlock.jsx';
+import AnswerText from '../components/AnswerText.jsx';
+import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import { cn } from '../lib/cn.js';
 
 const RATINGS = [
@@ -109,6 +111,16 @@ export default function StudyPage() {
     setGists((g) => ({ ...g, [current.id]: text }));
   };
 
+  const appendGistVoice = (chunk) => {
+    if (!current) return;
+    setGists((g) => {
+      const existing = g[current.id] || '';
+      const sep = existing && !/\s$/.test(existing) ? ' ' : '';
+      const next = (existing + sep + chunk).slice(0, 280);
+      return { ...g, [current.id]: next };
+    });
+  };
+
   // Hotkeys
   useHotkeys('space', (e) => { e.preventDefault(); if (!finished) setFlipped((v) => !v); }, [finished]);
   useHotkeys('1', () => handleRate('again'), [current, flipped]);
@@ -163,7 +175,7 @@ export default function StudyPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-3xl flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         {/* Top bar */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -187,10 +199,10 @@ export default function StudyPage() {
               aria-pressed={recallMode}
               aria-label={lang === 'ru' ? 'Режим активного припоминания' : 'Active recall mode'}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md border-1.5 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-all shadow-codex-sm',
+                'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition-all shadow-codex-sm',
                 recallMode
                   ? 'border-ink bg-ink text-paper'
-                  : 'border-rule-strong bg-paper-2 text-muted hover:border-ink hover:text-ink',
+                  : 'border-rule/15 bg-paper-2 text-muted hover:border-rule/15 hover:text-ink',
               )}
               title={lang === 'ru' ? 'Печатать суть до раскрытия' : 'Type a gist before revealing'}
             >
@@ -228,12 +240,16 @@ export default function StudyPage() {
                 onClick={() => setFlipped(true)}
                 aria-label={lang === 'ru' ? 'Показать ответ' : 'Reveal answer'}
                 className={cn(
-                  'block w-full rounded-md border-1.5 border-ink bg-paper-2 p-6 text-left shadow-codex sm:p-10',
-                  'backface-hidden',
+                  'group/card block w-full overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 p-7 text-left sm:p-12',
+                  'shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_24px_64px_-12px_rgb(var(--shadow)/0.16)]',
+                  'transition-shadow duration-300 hover:shadow-[0_4px_8px_0_rgb(var(--shadow)/0.08),0_32px_80px_-16px_rgb(var(--shadow)/0.20)]',
+                  'backface-hidden relative',
                   recallMode ? 'min-h-[42vh]' : 'min-h-[60vh]',
                 )}
                 style={{ backfaceVisibility: 'hidden' }}
               >
+                {/* Aurora orb behind the question — subtle ambient lighting */}
+                <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand/20 via-brand-sky/10 to-transparent blur-3xl" />
                 <div className="mb-6 flex flex-wrap items-center gap-2">
                   <Pill tone={difficultyTone[current.difficulty] || 'neutral'} size="xs">
                     {difficultyLabel}
@@ -256,7 +272,7 @@ export default function StudyPage() {
                   {questionText(current)}
                 </p>
                 <div className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
-                  <kbd className="rounded border border-rule-strong px-1.5 py-0.5">Space</kbd>
+                  <kbd className="rounded border border-rule/15 px-1.5 py-0.5">Space</kbd>
                   {recallMode
                     ? (lang === 'ru' ? 'когда готов — раскрыть' : 'when ready — reveal')
                     : (lang === 'ru' ? 'показать ответ' : 'reveal answer')}
@@ -266,7 +282,8 @@ export default function StudyPage() {
               {/* Back */}
               <div
                 className={cn(
-                  'absolute inset-0 overflow-y-auto rounded-md border-1.5 border-ink bg-paper-2 p-6 shadow-codex sm:p-10',
+                  'absolute inset-0 overflow-y-auto rounded-3xl border border-rule/8 bg-paper-2 p-7 sm:p-12',
+                  'shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_24px_64px_-12px_rgb(var(--shadow)/0.16)]',
                   'backface-hidden',
                   recallMode ? 'min-h-[42vh]' : 'min-h-[60vh]',
                 )}
@@ -276,7 +293,7 @@ export default function StudyPage() {
                 }}
               >
                 {recallMode && gists[current.id]?.trim() && (
-                  <div className="mb-4 rounded-md border border-rule-strong bg-paper px-3 py-2">
+                  <div className="mb-4 rounded-md border border-rule/15 bg-paper-2 px-3 py-2">
                     <div className="mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                       <Edit3 className="h-2.5 w-2.5" aria-hidden />
                       {lang === 'ru' ? 'Твоя суть' : 'Your gist'}
@@ -290,9 +307,10 @@ export default function StudyPage() {
                   {t.answer}
                   <span className="h-px flex-1 bg-rule" aria-hidden />
                 </div>
-                <div className="answer-text text-[15px] leading-relaxed text-ink-2">
-                  {answerText(current)}
-                </div>
+                <AnswerText
+                  text={answerText(current)}
+                  className="answer-text text-[15px] leading-relaxed text-ink-2"
+                />
 
                 {current.code_example && (
                   <div className="mt-5">
@@ -324,14 +342,15 @@ export default function StudyPage() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.18 }}
               >
-                <label className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   <Edit3 className="h-2.5 w-2.5" aria-hidden />
-                  {lang === 'ru' ? 'Суть в двух словах' : 'Gist — two lines'}
+                  <span>{lang === 'ru' ? 'Суть в двух словах' : 'Gist — two lines'}</span>
                   <span className="h-px flex-1 bg-rule" aria-hidden />
+                  <VoiceInputButton lang={lang} onAppend={appendGistVoice} size="xs" />
                   <span className="font-mono text-[10px] tabular-nums normal-case tracking-normal text-muted-2">
                     {(gists[current.id] || '').length} / 280
                   </span>
-                </label>
+                </div>
                 <textarea
                   ref={gistRef}
                   value={gists[current.id] || ''}
@@ -340,7 +359,7 @@ export default function StudyPage() {
                     ? 'Напечатай ключевую идею пальцами — даже одно слово фиксирует мозг…'
                     : 'Type the key idea — even one word commits your brain…'}
                   rows={3}
-                  className="w-full resize-none rounded-md border-1.5 border-rule-strong bg-paper-2 px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-ink focus:ring-1 focus:ring-brand/30"
+                  className="w-full resize-none rounded-md border border-rule/15 bg-paper-2 px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-rule/15 focus:ring-1 focus:ring-brand/30"
                 />
               </motion.div>
             )}
@@ -363,21 +382,22 @@ export default function StudyPage() {
                   type="button"
                   onClick={() => handleRate(r.key)}
                   className={cn(
-                    'group flex flex-col items-center gap-1 rounded-md border-1.5 border-ink bg-paper-2 px-3 py-3 shadow-codex-sm transition-all',
-                    'hover:-translate-x-px hover:-translate-y-px hover:shadow-codex',
-                    r.tone === 'coral'  && 'hover:bg-coral/15',
-                    r.tone === 'amber'  && 'hover:bg-amber/15',
-                    r.tone === 'brand'  && 'hover:bg-brand/15',
-                    r.tone === 'mint'   && 'hover:bg-mint/15',
+                    'group/rate relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 px-3 py-4 transition-all duration-200',
+                    'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04)]',
+                    'hover:-translate-y-0.5 hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.08),0_12px_24px_-6px_rgb(var(--shadow)/0.10)]',
+                    r.tone === 'coral'  && 'hover:border-coral/40 hover:bg-coral/8',
+                    r.tone === 'amber'  && 'hover:border-amber/40 hover:bg-amber/8',
+                    r.tone === 'brand'  && 'hover:border-brand/40 hover:bg-brand/8',
+                    r.tone === 'mint'   && 'hover:border-mint/40 hover:bg-mint/8',
                   )}
                 >
-                  <kbd className="rounded border border-rule-strong px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
+                  <kbd className="rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-2">
                     {r.hotkey}
                   </kbd>
-                  <span className="font-display text-base font-medium text-ink">
+                  <span className="font-display text-[15px] font-semibold text-ink">
                     {lang === 'ru' ? r.labelRu : r.labelEn}
                   </span>
-                  <span className="font-mono text-[10px] uppercase text-muted">{r.description}</span>
+                  <span className="font-mono text-[10px] uppercase text-muted-2">{r.description}</span>
                 </button>
               ))}
             </motion.div>
@@ -412,7 +432,7 @@ function EmptyShell({ title, subtitle, onClose }) {
 function CompletionScreen({ stats, total, lang, onClose, onAgain }) {
   return (
     <div className="bg-page flex h-full items-center justify-center px-4">
-      <div className="flex max-w-lg flex-col items-center gap-5 rounded-md border-1.5 border-ink bg-paper-2 p-8 text-center shadow-codex">
+      <div className="flex max-w-lg flex-col items-center gap-5 rounded-md border border-rule/15 bg-paper-2 p-8 text-center shadow-codex">
         <Sparkles className="h-10 w-10 text-mint" aria-hidden />
         <h1 className="font-display text-3xl font-medium text-ink">
           {lang === 'ru' ? `Готово · ${total} карточек` : `Done · ${total} cards`}

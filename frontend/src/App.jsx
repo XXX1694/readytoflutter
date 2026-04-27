@@ -23,6 +23,7 @@ const RoundPage = lazy(() => import('./pages/RoundPage.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const SignupPage = lazy(() => import('./pages/SignupPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const KnowledgePage = lazy(() => import('./pages/KnowledgePage.jsx'));
 
 export default function App() {
   return (
@@ -144,6 +145,14 @@ export default function App() {
                   element={
                     <Suspense fallback={<FullPageLoader />}>
                       <SettingsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="knowledge"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <KnowledgePage />
                     </Suspense>
                   }
                 />

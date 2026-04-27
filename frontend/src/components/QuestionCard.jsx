@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import CodeBlock from './CodeBlock.jsx';
+import AnswerText from './AnswerText.jsx';
 import { useUpdateProgress } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -109,11 +110,11 @@ const QuestionCard = forwardRef(function QuestionCard(
       ref={ref}
       data-question-id={question.id}
       className={cn(
-        'overflow-hidden rounded-md border-1.5 bg-paper-2 transition-all duration-150',
+        'overflow-hidden rounded-2xl border bg-paper-2 transition-all duration-300 ease-out',
         open
-          ? 'border-ink shadow-codex'
-          : 'border-rule-strong shadow-codex-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-codex hover:border-ink',
-        focused && !open && 'ring-2 ring-brand ring-offset-2 ring-offset-paper',
+          ? 'border-rule/15 shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.10)]'
+          : 'border-rule/8 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] hover:-translate-y-0.5 hover:border-rule/15',
+        focused && !open && 'ring-2 ring-brand/60 ring-offset-2 ring-offset-paper',
       )}
     >
       {/* Header — clickable to toggle */}
@@ -125,7 +126,7 @@ const QuestionCard = forwardRef(function QuestionCard(
       >
         <span
           className={cn(
-            'shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md border-1.5 border-ink bg-paper font-mono text-[11px] tabular-nums text-ink',
+            'shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md border border-rule/15 bg-paper font-mono text-[11px] tabular-nums text-ink',
             status === 'completed' && 'border-mint bg-mint/15 text-mint',
             status === 'in_progress' && 'border-[rgb(var(--amber))] bg-amber/15 text-[rgb(var(--amber))]',
           )}
@@ -194,13 +195,13 @@ const QuestionCard = forwardRef(function QuestionCard(
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t-1.5 border-ink">
+            <div className="border-t border-rule/15">
               {/* Status segmented control */}
               <div className="flex flex-wrap items-center gap-2 border-b border-rule bg-paper px-4 py-3 sm:px-5">
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {t.markAs}
                 </span>
-                <div className="inline-flex items-center gap-px rounded-md border-1.5 border-ink bg-paper-2 p-0.5 shadow-codex-sm">
+                <div className="inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm">
                   {STATUS_KEYS.map((key) => {
                     const Icon = STATUS_META[key].icon;
                     const active = status === key;
@@ -247,7 +248,7 @@ const QuestionCard = forwardRef(function QuestionCard(
                       type="button"
                       onClick={() => setReveal('hidden')}
                       aria-label={lang === 'ru' ? 'Скрыть ответ снова' : 'Hide again'}
-                      className="inline-flex items-center gap-1 rounded-md border border-rule-strong px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted transition-colors hover:border-ink hover:text-ink"
+                      className="inline-flex items-center gap-1 rounded-md border border-rule/15 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted transition-colors hover:border-rule/15 hover:text-ink"
                     >
                       <Eye className="h-3 w-3" />
                       {lang === 'ru' ? 'Скрыть' : 'Hide'}
@@ -274,10 +275,10 @@ const QuestionCard = forwardRef(function QuestionCard(
                         ? (lang === 'ru' ? 'Остановить' : 'Stop')
                         : (lang === 'ru' ? 'Озвучить' : 'Listen')}
                       className={cn(
-                        'inline-flex items-center gap-1 rounded-md border border-rule-strong px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors',
+                        'inline-flex items-center gap-1 rounded-md border border-rule/15 px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors',
                         thisSpeakingToken !== null
                           ? 'border-brand bg-brand/10 text-brand'
-                          : 'text-muted hover:border-ink hover:text-ink',
+                          : 'text-muted hover:border-rule/15 hover:text-ink',
                       )}
                     >
                       {thisSpeakingToken !== null ? (
@@ -296,7 +297,7 @@ const QuestionCard = forwardRef(function QuestionCard(
                 </header>
 
                 {recallMode && reveal === 'hidden' ? (
-                  <div className="recall-veil relative overflow-hidden rounded-md border-1.5 border-dashed border-rule-strong">
+                  <div className="recall-veil relative overflow-hidden rounded-md border border-dashed border-rule/15">
                     {/* Blurred peek of the actual answer — strong blur so it
                         teases shape and length without leaking content. */}
                     <div
@@ -319,7 +320,7 @@ const QuestionCard = forwardRef(function QuestionCard(
                           <button
                             type="button"
                             onClick={() => setReveal('hint')}
-                            className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-rule-strong bg-paper-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:border-ink hover:text-ink hover:shadow-codex"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-rule/15 bg-paper-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:border-rule/15 hover:text-ink hover:shadow-codex"
                           >
                             <Lightbulb className="h-3.5 w-3.5" aria-hidden />
                             {lang === 'ru' ? 'Подсказка' : 'Hint'}
@@ -328,7 +329,7 @@ const QuestionCard = forwardRef(function QuestionCard(
                         <button
                           type="button"
                           onClick={() => setReveal('full')}
-                          className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
                         >
                           <Eye className="h-3.5 w-3.5" aria-hidden />
                           {lang === 'ru' ? 'Показать ответ' : 'Reveal answer'}
@@ -350,16 +351,17 @@ const QuestionCard = forwardRef(function QuestionCard(
                     <button
                       type="button"
                       onClick={() => setReveal('full')}
-                      className="inline-flex items-center gap-1.5 rounded-md border-1.5 border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
                     >
                       <Eye className="h-3.5 w-3.5" aria-hidden />
                       {lang === 'ru' ? 'Полный ответ' : 'Full answer'}
                     </button>
                   </div>
                 ) : (
-                  <div className="answer-text text-[14.5px] leading-relaxed text-ink-2 sm:text-[15px]">
-                    {answerText(question)}
-                  </div>
+                  <AnswerText
+                    text={answerText(question)}
+                    className="answer-text text-[14.5px] leading-relaxed text-ink-2 sm:text-[15px]"
+                  />
                 )}
               </section>
 
@@ -454,7 +456,7 @@ function NotesEditor({ questionId, initialNotes, status }) {
         rows={3}
         maxLength={1000}
         aria-label={t.personalNotes}
-        className="w-full resize-none rounded-md border border-rule-strong bg-paper px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-ink focus:ring-1 focus:ring-brand/30"
+        className="w-full resize-none rounded-md border border-rule/15 bg-paper px-3 py-2 text-sm text-ink-2 placeholder:text-muted-2 outline-none transition-colors focus:border-rule/15 focus:ring-1 focus:ring-brand/30"
       />
       <div className="mt-1 text-right font-mono text-[10px] text-muted-2">
         {notes.length}/1000

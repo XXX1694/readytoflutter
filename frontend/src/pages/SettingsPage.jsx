@@ -41,7 +41,7 @@ export default function SettingsPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           to="/"
           className="mb-5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-ink"
@@ -51,7 +51,7 @@ export default function SettingsPage() {
         </Link>
 
         {/* Header */}
-        <header className="mb-8 border-b-1.5 border-ink pb-6">
+        <header className="mb-8 border-b border-rule/15 pb-6">
           <Eyebrow accent="brand">
             <User className="mr-1 inline h-3 w-3" />
             {T.eyebrow}
@@ -66,7 +66,7 @@ export default function SettingsPage() {
 
         <Tabs.Root defaultValue="profile">
           <Tabs.List
-            className="mb-6 inline-flex items-center gap-px rounded-md border-1.5 border-ink bg-paper-2 p-0.5 shadow-codex-sm"
+            className="mb-6 inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm"
             aria-label={T.tabs}
           >
             <TabTrigger value="profile" icon={<User className="h-3.5 w-3.5" />}>{T.tabProfile}</TabTrigger>
@@ -108,7 +108,7 @@ function TabTrigger({ value, icon, children }) {
 
 function Section({ title, subtitle, children }) {
   return (
-    <section className="rounded-md border-1.5 border-ink bg-paper-2 p-5 shadow-codex-sm sm:p-6">
+    <section className="rounded-md border border-rule/15 bg-paper-2 p-5 shadow-codex-sm sm:p-6">
       <div className="mb-5 border-b border-rule pb-3">
         <h2 className="font-display text-xl font-medium tracking-tight text-ink">{title}</h2>
         {subtitle && <p className="mt-1 text-xs text-muted">{subtitle}</p>}
@@ -408,7 +408,7 @@ function DeleteAccountSection({ T, onAfter }) {
   };
 
   return (
-    <section className="rounded-md border-1.5 border-coral/60 bg-coral/5 p-5 shadow-codex-sm sm:p-6">
+    <section className="rounded-md border border-coral/60 bg-coral/5 p-5 shadow-codex-sm sm:p-6">
       <div className="mb-5 border-b border-coral/30 pb-3">
         <h2 className="inline-flex items-center gap-2 font-display text-xl font-medium tracking-tight text-[rgb(var(--coral))]">
           <Trash2 className="h-4 w-4" />
@@ -467,8 +467,10 @@ function Field({ label, icon, hint, trailing, children }) {
 }
 
 const inputClass = (hasErr) => cn(
-  'w-full rounded-md border-1.5 bg-paper px-3 py-2 text-sm text-ink placeholder:text-muted-2 outline-none transition-colors',
-  hasErr ? 'border-coral focus:border-coral' : 'border-rule-strong focus:border-ink focus:ring-1 focus:ring-brand/30',
+  'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
+  hasErr
+    ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'
+    : 'border-rule/12 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/20',
 );
 
 const RU = {
