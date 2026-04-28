@@ -26,9 +26,12 @@ const STATUS_META = {
 const STATUS_KEYS = ['not_started', 'in_progress', 'completed'];
 
 const QuestionCard = forwardRef(function QuestionCard(
-  { question, index, expanded: controlledExpanded, onToggleExpand, focused },
+  { question, index, expanded: controlledExpanded, onToggleExpand, focused, topicSlug },
   ref,
 ) {
+  // Fall back to the slug carried on the question itself (search/bookmarks
+  // results include it; topic pages should pass it explicitly).
+  const effectiveTopicSlug = topicSlug || question.topic_slug;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledExpanded ?? internalOpen;
   const toggleOpen = onToggleExpand || (() => setInternalOpen((v) => !v));
@@ -92,13 +95,14 @@ const QuestionCard = forwardRef(function QuestionCard(
           questionId: question.id,
           status: next,
           notes: question.notes || null,
+          topicSlug: effectiveTopicSlug,
         });
       } catch {
         setStatus(prev);
         toast.error(t.failedUpdateStatus);
       }
     },
-    [status, update, question.id, question.notes, t],
+    [status, update, question.id, question.notes, t, effectiveTopicSlug],
   );
 
   const difficultyLabel =
@@ -398,6 +402,7 @@ const QuestionCard = forwardRef(function QuestionCard(
                 questionId={question.id}
                 initialNotes={question.notes || ''}
                 status={status}
+                topicSlug={effectiveTopicSlug}
               />
             </div>
           </motion.div>
@@ -407,7 +412,7 @@ const QuestionCard = forwardRef(function QuestionCard(
   );
 });
 
-function NotesEditor({ questionId, initialNotes, status }) {
+function NotesEditor({ questionId, initialNotes, status, topicSlug }) {
   const { lang } = useLang();
   const t = useT(lang);
   const update = useUpdateProgress();
@@ -422,7 +427,7 @@ function NotesEditor({ questionId, initialNotes, status }) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       try {
-        await update.mutateAsync({ questionId, status, notes });
+        await update.mutateAsync({ questionId, status, notes, topicSlug });
         lastSaved.current = notes;
         setSavedAt(Date.now());
       } catch {

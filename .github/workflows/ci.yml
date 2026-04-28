@@ -25,6 +25,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Test
+        run: npm run test --if-present
+
       - name: Build frontend
         run: npm run build
 
@@ -48,4 +54,19 @@ jobs:
         run: npm ci
 
       - name: Backend smoke test
-        run: node -e "const db=require('./database');db.init();console.log('topics=',db.getTopics().length);"
+        run: node -e "const db=require('./database');db.init();const s=db.getStats();if(s.totalQuestions<1)process.exit(1);console.log('topics=',db.getTopics().length,'questions=',s.totalQuestions);db.close();"
+
+  static-data-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify static-data.json matches backend seeds
+        # Pure-Node script — no install needed, just runs against checked-in seed JSON.
+        run: node backend/scripts/generate-static-data.js --check

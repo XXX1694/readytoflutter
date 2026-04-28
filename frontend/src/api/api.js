@@ -46,55 +46,40 @@ export { api, apiBaseUrl };
 
 const STATIC_DATA_URL = `${import.meta.env.BASE_URL}seed/static-data.json`;
 const PROGRESS_STORAGE_KEY = 'readytoflutter_progress_v1';
+// Re-fetch the static bundle once an hour. Without this, a user with an
+// open tab keeps serving the in-memory copy from the first load — so seed
+// changes deployed mid-session never appear until the next hard reload.
+const STATIC_DATA_TTL_MS = 60 * 60 * 1000;
 
 let staticDataPromise = null;
-let isLoadingStaticData = false;
+let staticDataLoadedAt = 0;
 
-const loadStaticData = async () => {
-  // If already loaded, return cached promise
-  if (staticDataPromise) {
-    return staticDataPromise;
-  }
-
-  // If currently loading, wait for it
-  if (isLoadingStaticData) {
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        if (staticDataPromise) {
-          clearInterval(checkInterval);
-          resolve(staticDataPromise);
-        }
-      }, 50);
-
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        reject(new Error('Static data loading timeout'));
-      }, 10000);
-    });
-  }
-
-  // Start loading
-  isLoadingStaticData = true;
+const loadStaticData = () => {
+  const fresh = staticDataPromise && (Date.now() - staticDataLoadedAt) < STATIC_DATA_TTL_MS;
+  if (fresh) return staticDataPromise;
 
   staticDataPromise = fetch(STATIC_DATA_URL)
     .then(async (res) => {
-      if (!res.ok) {
-        throw new Error(`Failed to load static data: ${res.status}`);
-      }
-      return res.json();
+      if (!res.ok) throw new Error(`Failed to load static data: ${res.status}`);
+      const data = await res.json();
+      staticDataLoadedAt = Date.now();
+      return data;
     })
-    .catch((error) => {
-      // Reset on error so it can be retried
+    .catch((err) => {
+      // Reset on error so the next caller retries instead of memoizing failure.
       staticDataPromise = null;
-      isLoadingStaticData = false;
-      throw error;
-    })
-    .finally(() => {
-      isLoadingStaticData = false;
+      staticDataLoadedAt = 0;
+      throw err;
     });
 
   return staticDataPromise;
+};
+
+// Force a reload of the static bundle on next read — used after admin edits
+// or after the user signs in (server data may now differ from baked seed).
+export const invalidateStaticData = () => {
+  staticDataPromise = null;
+  staticDataLoadedAt = 0;
 };
 
 const readProgress = () => {
@@ -372,3 +357,15 @@ export const readLocalProgress = () => {
 export const clearLocalProgress = () => {
   try { localStorage.removeItem(PROGRESS_STORAGE_KEY); } catch { /* ignore */ }
 };
+
+// Translate localStorage progress shape into the /api/progress/bulk payload.
+// Used by signup (first-time import) and login (merge any anonymous activity).
+export const serializeLocalProgress = (progress) =>
+  Object.entries(progress || {})
+    .map(([key, value]) => ({
+      questionId: Number(key),
+      status: value?.status,
+      notes: value?.notes || null,
+      updated_at: value?.updated_at || new Date().toISOString(),
+    }))
+    .filter((p) => p.questionId && p.status);

@@ -5,6 +5,8 @@ on:
     branches: [ main, master ]
     paths:
       - 'frontend/**'
+      - 'backend/data/seed/**'
+      - 'backend/scripts/generate-static-data.js'
       - '.github/workflows/deploy-frontend-pages.yml'
   workflow_dispatch:
 
@@ -34,6 +36,11 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Regenerate static-data.json from backend seeds
+        # Keeps the Pages build in sync with the canonical backend seed JSON
+        # so the no-backend fallback never serves stale questions.
+        run: node backend/scripts/generate-static-data.js
 
       - name: Build
         working-directory: frontend

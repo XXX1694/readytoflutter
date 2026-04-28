@@ -37,6 +37,9 @@ export const UI = {
     resetAllProgress: 'Reset All Progress',
     resetConfirm: 'Reset all progress? This cannot be undone.',
     failedReset: 'Failed to reset progress. Please try again.',
+    progressReset: 'Progress reset',
+    offline: 'Offline',
+    offlineHint: 'Offline — writes are local',
     topicCount: (n) => `${n} topic${n !== 1 ? 's' : ''}`,
     completedOf: 'completed',
 
@@ -156,6 +159,9 @@ export const UI = {
     resetAllProgress: 'Сбросить весь прогресс',
     resetConfirm: 'Сбросить весь прогресс? Это действие нельзя отменить.',
     failedReset: 'Не удалось сбросить прогресс. Попробуйте ещё раз.',
+    progressReset: 'Прогресс сброшен',
+    offline: 'Офлайн',
+    offlineHint: 'Нет сети — пишем локально',
     topicCount: (n) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
     completedOf: 'пройдено',
 

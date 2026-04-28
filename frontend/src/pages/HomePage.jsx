@@ -51,11 +51,11 @@ export default function HomePage() {
     if (!window.confirm(t.resetConfirm)) return;
     try {
       await reset.mutateAsync();
-      toast.success(lang === 'ru' ? 'Прогресс сброшен' : 'Progress reset');
+      toast.success(t.progressReset);
     } catch {
       toast.error(t.failedReset);
     }
-  }, [reset, t, lang]);
+  }, [reset, t]);
 
   if (topicsQ.isLoading || statsQ.isLoading) {
     return <DashboardSkeleton />;

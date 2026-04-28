@@ -160,12 +160,28 @@ function init() {
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `);
 
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS migrations (
+      name TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL
+    );
+  `);
+
   migrateProgressToUserScoped();
   seedIfEmpty();
-  removeGeneralQuestions();
-  normalizeExistingQuestions();
-  stripTopicIcons();
-  dropKnownDuplicates();
+  runOnce('remove_general_questions', removeGeneralQuestions);
+  runOnce('normalize_existing_questions', normalizeExistingQuestions);
+  runOnce('strip_topic_icons', stripTopicIcons);
+  runOnce('drop_known_duplicates', dropKnownDuplicates);
+}
+
+function runOnce(name, fn) {
+  const row = sqlite.prepare('SELECT 1 FROM migrations WHERE name = ?').get(name);
+  if (row) return;
+  fn();
+  sqlite
+    .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
+    .run(name, new Date().toISOString());
 }
 
 // Idempotent: progress used `question_id` as PK; with auth each user gets a
@@ -528,11 +544,31 @@ function deleteUser(id) {
   sqlite.prepare('DELETE FROM users WHERE id = ?').run(Number(id));
 }
 
+// ── Lifecycle ───────────────────────────────────────────────────────────────
+
+function questionExists(questionId) {
+  const row = sqlite
+    .prepare('SELECT 1 FROM questions WHERE id = ?')
+    .get(Number(questionId));
+  return !!row;
+}
+
+function ping() {
+  return sqlite.prepare('SELECT 1 AS ok').get().ok === 1;
+}
+
+function close() {
+  try { sqlite.close(); } catch { /* already closed */ }
+}
+
 module.exports = {
   init,
+  close,
+  ping,
   getTopics,
   getTopic,
   getQuestions,
+  questionExists,
   setProgress,
   bulkSetProgress,
   getStats,

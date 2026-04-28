@@ -61,13 +61,22 @@ export default function VoiceInputButton({
           <span className="ml-0.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" aria-hidden />
         )}
       </Button>
+      {/* Screen-reader-only state announcement. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {listening ? L.listening : ''}
+      </span>
       {showInterim && listening && interim && (
-        <span className="hidden truncate font-mono text-[10px] uppercase tracking-wider text-muted sm:inline" title={interim}>
+        <span
+          role="status"
+          aria-live="polite"
+          className="hidden truncate font-mono text-[10px] uppercase tracking-wider text-muted sm:inline"
+          title={interim}
+        >
           {interim.length > 32 ? `…${interim.slice(-32)}` : interim}
         </span>
       )}
       {error && error !== 'aborted' && error !== 'no-speech' && !listening && (
-        <span className="font-mono text-[10px] uppercase tracking-wider text-coral">
+        <span role="alert" className="font-mono text-[10px] uppercase tracking-wider text-coral">
           {error}
         </span>
       )}

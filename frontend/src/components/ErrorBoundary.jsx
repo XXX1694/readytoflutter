@@ -37,7 +37,7 @@ class ErrorBoundary extends Component {
                 {t.unexpectedError}
               </p>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <details className="mb-5">
                   <summary className="text-[11px] font-mono uppercase tracking-wider text-muted cursor-pointer mb-2">
                     {t.errorDetails}

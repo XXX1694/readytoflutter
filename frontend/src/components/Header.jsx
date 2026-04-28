@@ -1,12 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Sun, Moon, Coffee, ExternalLink } from 'lucide-react';
+import { Menu, Search, Sun, Moon, Coffee, ExternalLink, WifiOff } from 'lucide-react';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { IconButton } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import AccountMenu from './AccountMenu.jsx';
+
+// Subscribes to navigator.onLine so the header can show a small offline
+// badge when writes are going to localStorage instead of the server.
+function useOnlineStatus() {
+  const [online, setOnline] = useState(
+    typeof navigator === 'undefined' ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
+  return online;
+}
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const modKey = isMac ? '⌘' : 'Ctrl';
@@ -19,6 +38,7 @@ export default function Header() {
   const toggleTheme = usePrefs((s) => s.toggleTheme);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const online = useOnlineStatus();
 
   // Subtle scroll-shadow on the header — gives the page a sense of depth
   // when the user starts scrolling the main content.
@@ -70,6 +90,21 @@ export default function Header() {
       </button>
 
       <div className="flex items-center gap-1.5">
+        {/* Offline pill — shown only when navigator reports we're offline.
+            Writes still succeed (they fall back to localStorage), but this
+            tells the user their progress isn't reaching the server. */}
+        {!online && (
+          <span
+            role="status"
+            aria-live="polite"
+            title={t.offlineHint}
+            className="hidden h-7 items-center gap-1 rounded-full border border-rule/15 bg-paper-2 px-2 font-mono text-[10px] uppercase tracking-wider text-coral sm:inline-flex"
+          >
+            <WifiOff className="h-3 w-3" aria-hidden />
+            {t.offline}
+          </span>
+        )}
+
         {/* Language — segmented EN / RU control */}
         <div className="hidden h-9 items-center rounded-xl border border-rule/12 bg-paper-2/60 p-0.5 font-mono text-[11px] uppercase sm:inline-flex">
           {(['en', 'ru']).map((code) => {

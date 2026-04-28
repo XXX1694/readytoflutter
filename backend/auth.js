@@ -6,12 +6,13 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const rateLimit = require('express-rate-limit');
 const db = require('./database');
+const { LIMITS, SECURITY } = require('./config');
 
 // Default 7d for production; overridable via env. Shorter expiry reduces
 // the blast radius of a stolen token at the cost of asking users to sign in
 // once a week.
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-const BCRYPT_ROUNDS = 11;
+const BCRYPT_ROUNDS = SECURITY.BCRYPT_ROUNDS;
 
 // Resolve the JWT secret with a stable fallback so tokens survive dev restarts.
 //   1. JWT_SECRET env var — production path.
@@ -124,8 +125,8 @@ function optionalAuth(req, res, next) {
 // ── Rate limiters ────────────────────────────────────────────────────────────
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 30,                  // 30 register/login attempts per window per IP
+  windowMs: LIMITS.AUTH_WINDOW_MS,
+  max: LIMITS.AUTH_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many auth attempts. Try again in a few minutes.' },

@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+    open-pull-requests-limit: 5
+    groups:
+      backend-prod:
+        dependency-type: production
+        update-types: [minor, patch]
+      backend-dev:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Native bindings — pin manually so we don't churn `better-sqlite3`
+      # rebuild caches on every patch.
+      - dependency-name: better-sqlite3
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+    open-pull-requests-limit: 5
+    groups:
+      frontend-prod:
+        dependency-type: production
+        update-types: [minor, patch]
+      frontend-dev:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

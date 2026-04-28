@@ -260,6 +260,7 @@ export default function TopicPage() {
                 expanded={openId === q.id}
                 onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
                 focused={cursor === i}
+                topicSlug={slug}
               />
             ))
           )}

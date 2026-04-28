@@ -5,7 +5,13 @@ import { toast } from 'sonner';
 import { UserPlus, Eye, EyeOff, ArrowLeft, Lock, AtSign, User, Cloud, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../store/auth.js';
-import { authRegister, bulkSyncProgress, readLocalProgress, clearLocalProgress } from '../api/api.js';
+import {
+  authRegister,
+  bulkSyncProgress,
+  readLocalProgress,
+  clearLocalProgress,
+  serializeLocalProgress,
+} from '../api/api.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
@@ -287,16 +293,6 @@ const inputClass = (hasErr) => cn(
     ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'
     : 'border-rule/12 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/20',
 );
-
-// Translate localStorage progress shape into the bulk-import payload shape.
-function serializeLocalProgress(progress) {
-  return Object.entries(progress || {}).map(([key, value]) => ({
-    questionId: Number(key),
-    status: value?.status,
-    notes: value?.notes || null,
-    updated_at: value?.updated_at || new Date().toISOString(),
-  })).filter((p) => p.questionId && p.status);
-}
 
 const RU = {
   back: 'На главную',

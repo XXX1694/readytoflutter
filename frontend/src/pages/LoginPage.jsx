@@ -5,7 +5,13 @@ import { toast } from 'sonner';
 import { LogIn, Eye, EyeOff, ArrowLeft, Lock, AtSign } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../store/auth.js';
-import { authLogin } from '../api/api.js';
+import {
+  authLogin,
+  bulkSyncProgress,
+  readLocalProgress,
+  clearLocalProgress,
+  serializeLocalProgress,
+} from '../api/api.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
@@ -29,6 +35,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const setSession = useAuth((s) => s.setSession);
+  const markSynced = useAuth((s) => s.markSynced);
   const qc = useQueryClient();
   const { lang } = useLang();
   const isRu = lang === 'ru';
@@ -61,6 +68,27 @@ export default function LoginPage() {
     try {
       const { user, token } = await authLogin(parsed.data.email, parsed.data.password);
       setSession(token, user);
+
+      // Push any progress accumulated in localStorage (during offline /
+      // anonymous use) up to the server. The server upserts last-write-wins
+      // by updated_at, so it never clobbers fresher server rows.
+      try {
+        const localItems = serializeLocalProgress(readLocalProgress());
+        if (localItems.length > 0) {
+          const result = await bulkSyncProgress(localItems);
+          clearLocalProgress();
+          markSynced();
+          if (result?.imported > 0) {
+            toast.message(
+              isRu ? `Синхронизировано ${result.imported} карточек` : `Synced ${result.imported} cards`,
+            );
+          }
+        }
+      } catch {
+        // Sync failure is non-fatal — the local data stays in place and the
+        // user can retry by signing out and back in.
+      }
+
       // Invalidate all queries so subsequent fetches go out with the new
       // Authorization header and reflect the user's server-side progress.
       qc.invalidateQueries();

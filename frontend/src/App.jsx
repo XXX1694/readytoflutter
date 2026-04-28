@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
@@ -6,6 +6,8 @@ import Layout from './components/Layout.jsx';
 import { LangProvider } from './i18n/LangContext.jsx';
 import { queryClient } from './lib/queryClient.js';
 import { FullPageLoader } from './ui/index.js';
+import { useAuth } from './store/auth.js';
+import { apiBaseUrl } from './api/api.js';
 import './store/prefs.js'; // side-effect: hydrate theme before paint
 
 // Code splitting: lazy load pages
@@ -26,6 +28,14 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage.jsx'));
 
 export default function App() {
+  // Probe the backend exactly once on app boot so the auth UI knows whether
+  // to render before the user clicks anything. Doing it lazily on first
+  // AccountMenu interaction caused a flicker race where backendAvailable
+  // was still null at first paint.
+  useEffect(() => {
+    useAuth.getState().probeBackend(apiBaseUrl);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>

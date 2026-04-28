@@ -9,6 +9,7 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Skeleton } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import { useAdmin, applyDiff } from '../store/admin.js';
 
 const FACETS = {
   level: ['junior', 'mid', 'senior'],
@@ -31,7 +32,17 @@ export default function SearchPage() {
   const inputRef = useRef(null);
   const debounceTimer = useRef(null);
 
-  const { data: questions = [], isLoading } = useQuestions();
+  const { data: rawQuestions = [], isLoading } = useQuestions();
+
+  // Layer admin edits/adds/deletes onto the server data so newly-authored
+  // questions appear in search without requiring a backend round-trip.
+  const edits = useAdmin((s) => s.edits);
+  const adds = useAdmin((s) => s.adds);
+  const deletes = useAdmin((s) => s.deletes);
+  const questions = useMemo(
+    () => applyDiff(rawQuestions, { edits, adds, deletes }),
+    [rawQuestions, edits, adds, deletes],
+  );
 
   // Sync input → query (debounced) and URL
   useEffect(() => {
