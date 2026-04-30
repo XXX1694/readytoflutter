@@ -16,6 +16,7 @@ import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui
 import CodeBlock from '../components/CodeBlock.jsx';
 import AnswerText from '../components/AnswerText.jsx';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
+import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn.js';
 
 const RATINGS = [
@@ -38,6 +39,9 @@ export default function StudyPage() {
   const { questionText, answerText } = useContent(lang);
   const recallMode = usePrefs((s) => s.recallMode);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
+  // Pre-warm /ai/health so the grader appears instantly after card flip in
+  // recall mode, instead of after a 200ms probe race.
+  useAiHealth();
 
   const { data: allQuestions = [], isLoading } = useQuestions();
 
@@ -374,6 +378,19 @@ export default function StudyPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* AI grader — only useful when the user actually wrote a gist
+            (recall mode + flipped). Hidden when the answer is < 15 chars,
+            so two-word gists don't render an awkward "waiting" state. */}
+        {flipped && recallMode && (
+          <div className="mt-5">
+            <AnswerGrader
+              questionId={current.id}
+              userAnswer={gists[current.id] || ''}
+              lang={lang}
+            />
+          </div>
+        )}
 
         {/* Rating bar */}
         <AnimatePresence>

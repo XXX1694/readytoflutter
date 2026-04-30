@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Sparkles, Loader2, AlertCircle, Check, X, ChevronRight,
+  Sparkles, Loader2, AlertCircle, Check, X, ChevronRight, MessagesSquare,
 } from 'lucide-react';
 import { Button, Pill } from '../ui/index.js';
 import { aiHealth, aiGradeAnswer } from '../api/api.js';
@@ -260,6 +260,16 @@ function ResultPanel({ result, lang, onRetry }) {
           <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
           <span>{result.suggestion}</span>
         </p>
+      )}
+
+      {result.followUp && (
+        <div className="mt-3 rounded-md border border-brand/25 bg-brand/5 p-3">
+          <div className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
+            <MessagesSquare className="h-3 w-3" />
+            {lang === 'ru' ? 'А интервьюер бы спросил' : 'An interviewer might ask'}
+          </div>
+          <p className="text-sm leading-relaxed text-ink">{result.followUp}</p>
+        </div>
       )}
     </section>
   );

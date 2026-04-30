@@ -73,7 +73,8 @@ Verdict scale:
 Score band (0-100) must roughly match the verdict: 85-100 great, 65-84 good, 35-64 rough, 0-34 off.
 Strengths and gaps: 1-3 concrete bullets each, drawn from the candidate's answer text. Keep them short.
 Summary: one sentence. Suggestion: one actionable next step.
-Respond in the language requested by the user (ru or en) — including the labels in summary/strengths/gaps/suggestion.`;
+Follow-up: one short question a real interviewer would ask NEXT, given how the candidate answered — to dig deeper, probe an edge case, or test scaling. Keep it under 100 chars and self-contained.
+Respond in the language requested by the user (ru or en) — including the labels in summary/strengths/gaps/suggestion/followUp.`;
 
 const GRADE_TOOL = {
   name: 'submit_grade',
@@ -87,8 +88,9 @@ const GRADE_TOOL = {
       strengths: { type: 'array', items: { type: 'string' }, maxItems: 3 },
       gaps: { type: 'array', items: { type: 'string' }, maxItems: 3 },
       suggestion: { type: 'string' },
+      followUp: { type: 'string', description: 'One short interviewer follow-up question to dig deeper, given the candidate\'s answer.' },
     },
-    required: ['verdict', 'score', 'summary', 'strengths', 'gaps', 'suggestion'],
+    required: ['verdict', 'score', 'summary', 'strengths', 'gaps', 'suggestion', 'followUp'],
     additionalProperties: false,
   },
 };
@@ -203,6 +205,98 @@ async function gradeHandler(req, res) {
   }
 }
 
+// ── Draft-question endpoint ────────────────────────────────────────────────
+// Generates a draft Flutter/Dart interview question + reference answer from
+// a one-line prompt. Used by the in-app admin so the author has a starting
+// point instead of a blank textarea. The draft is editable in the UI before
+// it ships into the local diff.
+const draftSchema = z.object({
+  prompt: z.string().min(8).max(400),
+  topicTitle: z.string().max(120).optional(),
+  topicLevel: z.enum(['junior', 'mid', 'senior']).optional(),
+  lang: z.enum(['ru', 'en']).default('en'),
+});
+
+const DRAFT_SYSTEM = `You are an expert Flutter/Dart interviewer drafting a study question.
+Given a short idea from the author, produce ONE focused interview question with a strong reference answer.
+Use the submit_draft tool — return strict JSON.
+
+- question: the prompt the candidate sees. Concrete, single-focus, 1-2 sentences.
+- answer: a strong reference answer. 3-6 short paragraphs separated by blank lines. Cover the "why", trade-offs, and a concrete example. Avoid filler.
+- difficulty: easy | medium | hard. Calibrate honestly: easy = standard syntax/concepts; medium = needs trade-off thinking; hard = deep, edge-case, or perf-sensitive.
+- tags: 2-4 short kebab/lowercase tags (e.g., "state-management", "async", "rendering"). No spaces.
+- codeExample: dart code that supports the answer. Self-contained, runnable in isolation if possible. Return null if code wouldn't help.
+- codeLanguage: "dart" unless the question explicitly is about another language.
+
+Respond IN THE LANGUAGE requested (ru or en) — for question + answer text. Tags stay english/kebab.`;
+
+const DRAFT_TOOL = {
+  name: 'submit_draft',
+  description: 'Return a structured draft question for a Flutter/Dart interview-prep app.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      question: { type: 'string' },
+      answer: { type: 'string' },
+      difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+      tags: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+      codeExample: { type: ['string', 'null'] },
+      codeLanguage: { type: 'string' },
+    },
+    required: ['question', 'answer', 'difficulty', 'tags', 'codeExample', 'codeLanguage'],
+    additionalProperties: false,
+  },
+};
+
+async function draftHandler(req, res) {
+  const client = buildClient();
+  if (!client) {
+    return res.status(503).json({ error: 'AI is not configured.', code: 'ai_disabled' });
+  }
+  const parsed = draftSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input', code: 'bad_input', details: parsed.error.issues });
+  }
+  const { prompt, topicTitle, topicLevel, lang } = parsed.data;
+
+  const userBlock = [
+    `Language for response: ${lang === 'ru' ? 'Russian' : 'English'}`,
+    topicTitle ? `Topic: ${topicTitle}` : null,
+    topicLevel ? `Target level: ${topicLevel}` : null,
+    '',
+    'AUTHOR PROMPT:',
+    prompt.trim(),
+  ].filter(Boolean).join('\n');
+
+  const startedAt = Date.now();
+  try {
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1500,
+      system: [
+        { type: 'text', text: DRAFT_SYSTEM, cache_control: { type: 'ephemeral' } },
+      ],
+      tools: [DRAFT_TOOL],
+      tool_choice: { type: 'tool', name: 'submit_draft' },
+      messages: [{ role: 'user', content: userBlock }],
+    });
+    const block = (message.content || []).find(
+      (b) => b.type === 'tool_use' && b.name === 'submit_draft',
+    );
+    if (!block || !block.input) throw new Error('No submit_draft tool_use block');
+    const usage = message.usage || {};
+    console.log(
+      `[ai] draft userId=${req.user?.id || 0} `
+      + `in=${usage.input_tokens || 0} out=${usage.output_tokens || 0} ms=${Date.now() - startedAt}`,
+    );
+    res.json({ draft: block.input, usage });
+  } catch (err) {
+    const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 600 ? err.status : 502;
+    console.error(`[ai] draft error status=${status}:`, err?.message || err);
+    res.status(status).json({ error: 'AI draft failed. Try again.', code: 'upstream_error' });
+  }
+}
+
 function attach(app) {
   app.get('/api/ai/health', (_req, res) => {
     const enabled = !!buildClient();
@@ -212,6 +306,7 @@ function attach(app) {
   // optionalAuth: we don't require sign-in to grade (the user wants
   // friction-free study), but we log the user_id when present.
   app.post('/api/ai/grade', aiLimiter, auth.optionalAuth, gradeHandler);
+  app.post('/api/ai/draft-question', aiLimiter, auth.optionalAuth, draftHandler);
 }
 
 module.exports = { attach };

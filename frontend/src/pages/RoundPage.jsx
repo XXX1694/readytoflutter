@@ -14,6 +14,7 @@ import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, Eyebrow, FullPageLoader, difficultyTone } from '../ui/index.js';
 import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
+import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn.js';
 
 /* Static follow-up prompts shown under each question — same set every time
@@ -51,6 +52,8 @@ export default function RoundPage() {
 
   const chain = useMemo(() => buildRound(topic?.questions || [], 5), [topic]);
   const concepts = useMemo(() => chainConcepts(chain), [chain]);
+  // Pre-warm /ai/health so the first grade after Reveal doesn't race the probe.
+  useAiHealth();
 
   const [phase, setPhase] = useState('running'); // running | done
   const [cursor, setCursor] = useState(0);
@@ -305,6 +308,15 @@ export default function RoundPage() {
           </section>
         ) : (
           <>
+            {/* AI grader sits above the side-by-side compare — same flow as
+                MockPage so muscle memory carries over. Hidden when backend
+                AI is disabled or the answer is too short. */}
+            <AnswerGrader
+              questionId={current.id}
+              userAnswer={userText}
+              lang={lang}
+            />
+
             {/* Mobile: reference first so the user can compare against truth
                 immediately; their own attempt sits below for self-review. */}
             <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">

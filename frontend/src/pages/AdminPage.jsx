@@ -15,6 +15,9 @@ import {
 } from '../lib/exportData.js';
 import { Button, Pill, FullPageLoader, Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import { aiDraftQuestion } from '../api/api.js';
+import { useAiHealth } from '../components/AnswerGrader.jsx';
+import { Loader2 } from 'lucide-react';
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 const LEVELS = ['junior', 'mid', 'senior'];
@@ -68,6 +71,8 @@ export default function AdminPage() {
 
   const topicById = useMemo(() => Object.fromEntries(topics.map((t) => [t.id, t])), [topics]);
 
+  const { enabled: aiEnabled } = useAiHealth();
+
   // Filtering
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -117,6 +122,57 @@ export default function AdminPage() {
     addAction(newQ);
     setOpenId(newQ.id);
     toast.success(lang === 'ru' ? 'Создана новая карточка' : 'New question added');
+  };
+
+  // AI draft — author types a one-line idea, Claude returns a full draft
+  // (question text, reference answer, difficulty, tags, optional code).
+  // Result is editable in the admin UI like any other added question.
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const handleAiDraft = async () => {
+    const topicId = filterTopic !== 'all' ? Number(filterTopic) : topics[0]?.id;
+    if (!topicId) return;
+    const topic = topicById[topicId];
+    const prompt = window.prompt(
+      lang === 'ru'
+        ? `Что должна проверить новая карточка по теме «${topic?.title || ''}»?\nНапример: «Объясни, как работают Streams в Dart и когда нужны broadcast-стримы»`
+        : `What should this new card cover for topic "${topic?.title || ''}"?\nE.g. "Explain how Streams work in Dart and when broadcast streams matter"`,
+      '',
+    );
+    if (!prompt || prompt.trim().length < 8) return;
+    setAiDrafting(true);
+    try {
+      const { draft } = await aiDraftQuestion({
+        prompt: prompt.trim(),
+        topicTitle: topic?.title,
+        topicLevel: topic?.level,
+        lang,
+      });
+      const tagsString = Array.isArray(draft.tags) ? draft.tags.join(', ') : '';
+      const newQ = {
+        id: nextQuestionId(baseQuestions, diff, topicId),
+        topic_id: topicId,
+        order_index: 99,
+        difficulty: draft.difficulty || 'medium',
+        question: draft.question || '',
+        answer: draft.answer || '',
+        code_example: draft.codeExample || null,
+        code_language: draft.codeLanguage || 'dart',
+        tags: tagsString,
+      };
+      addAction(newQ);
+      setOpenId(newQ.id);
+      toast.success(lang === 'ru' ? 'AI-черновик готов — отредактируй и сохрани' : 'AI draft ready — review and save');
+    } catch (err) {
+      const code = err?.response?.data?.code;
+      const msg = code === 'ai_disabled'
+        ? (lang === 'ru' ? 'AI выключен на сервере' : 'AI is disabled on the server')
+        : code === 'rate_limited'
+        ? (lang === 'ru' ? 'Лимит запросов — попробуй позже' : 'Rate limit reached — try later')
+        : (lang === 'ru' ? 'Не получилось сгенерировать черновик' : 'Couldn\'t draft the question');
+      toast.error(msg);
+    } finally {
+      setAiDrafting(false);
+    }
   };
 
   const handleResetAll = () => {
@@ -172,6 +228,19 @@ export default function AdminPage() {
             <Plus className="h-4 w-4" />
             {lang === 'ru' ? 'Новый' : 'New'}
           </Button>
+
+          {/* AI draft — only when backend AI is reachable. Hidden on Pages-only deploys. */}
+          {aiEnabled && (
+            <Button
+              variant="outline"
+              onClick={handleAiDraft}
+              disabled={aiDrafting}
+              className="text-brand hover:bg-brand/8"
+            >
+              {aiDrafting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {lang === 'ru' ? 'AI-черновик' : 'AI draft'}
+            </Button>
+          )}
 
           <ExportMenu topics={topics} questions={baseQuestions} diff={diff} lang={lang} />
 

@@ -379,3 +379,6 @@ export const aiHealth = () =>
 
 export const aiGradeAnswer = ({ questionId, userAnswer, lang }) =>
   api.post('/ai/grade', { questionId, userAnswer, lang }).then((r) => r.data);
+
+export const aiDraftQuestion = ({ prompt, topicTitle, topicLevel, lang }) =>
+  api.post('/ai/draft-question', { prompt, topicTitle, topicLevel, lang }).then((r) => r.data);
