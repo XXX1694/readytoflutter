@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogIn, LogOut, UserPlus, Cloud, Trash2, Shield, ChevronDown, Settings } from 'lucide-react';
+import { LogIn, LogOut, Cloud, Trash2, Shield, ChevronDown, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth.js';
 import {

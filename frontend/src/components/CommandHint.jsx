@@ -16,7 +16,6 @@ const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
  * to either, instead of nesting a span[role=button] inside another button.
  */
 export default function CommandHint() {
-  const commandOpen = usePrefs((s) => s.commandOpen);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
   const { lang } = useLang();
   const [visible, setVisible] = useState(false);
@@ -41,10 +40,17 @@ export default function CommandHint() {
     return () => clearTimeout(t);
   }, [visible, dismiss]);
 
-  // Once the palette opens for the first time, mark dismissed permanently.
+  // Subscribe outside React so we can react to "palette opened" without
+  // the setState-in-effect cascade pattern. Fires once on the false→true
+  // transition; dismiss() is idempotent if already hidden.
   useEffect(() => {
-    if (commandOpen && visible) dismiss();
-  }, [commandOpen, visible, dismiss]);
+    let prev = usePrefs.getState().commandOpen;
+    return usePrefs.subscribe((state) => {
+      const open = state.commandOpen;
+      if (open && !prev) dismiss();
+      prev = open;
+    });
+  }, [dismiss]);
 
   if (!visible) return null;
 

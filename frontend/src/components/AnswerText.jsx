@@ -1,8 +1,6 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { useMemo } from 'react';
 import { cn } from '../lib/cn.js';
-
-// CodeBlock is heavy (Shiki). Keep it lazy so prose-only answers don't pay.
-const CodeBlock = lazy(() => import('./CodeBlock.jsx'));
+import CodeBlock from './CodeBlock.jsx';
 
 const FENCE_RE = /```([a-zA-Z0-9_+-]*)\r?\n?([\s\S]*?)```/g;
 
@@ -85,16 +83,7 @@ export default function AnswerText({ text, className, codeClassName }) {
           );
         }
         return (
-          <Suspense
-            key={i}
-            fallback={
-              <pre className="overflow-x-auto rounded-md border border-rule/15 bg-paper-2 p-3 font-mono text-[12.5px] leading-relaxed">
-                {seg.value}
-              </pre>
-            }
-          >
-            <CodeBlock code={seg.value} language={seg.lang} className={codeClassName} />
-          </Suspense>
+          <CodeBlock key={i} code={seg.value} language={seg.lang} className={codeClassName} />
         );
       })}
     </div>

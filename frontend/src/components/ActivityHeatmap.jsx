@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { buildHeatmap, computeStreaks, buildDayMap, intensity } from '../lib/activity.js';
 import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
 import { cn } from '../lib/cn.js';
 
 // Atlas: aurora-ramp from rule-faint to brand-glow, with brand-sky on the
@@ -17,7 +16,6 @@ const INTENSITY_CLASS = [
 
 export default function ActivityHeatmap({ weeks = 14 }) {
   const { lang } = useLang();
-  const t = useT(lang);
 
   // The heatmap reads localStorage, which only changes via user actions during
   // the session. Computing once per render is fine, but memoize for smoothness.

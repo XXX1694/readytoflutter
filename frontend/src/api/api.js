@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { toast } from 'sonner';
+import { queryClient } from '../lib/queryClient.js';
 import { useAuth } from '../store/auth.js';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -25,17 +27,9 @@ api.interceptors.response.use(
     if (err?.response?.status === 401) {
       const { token, clearSession } = useAuth.getState();
       if (token) {
-        // Lazy-load the queryClient — avoids a top-level circular import.
-        try {
-          const { queryClient } = await import('../lib/queryClient.js');
-          queryClient.clear();
-        } catch { /* noop */ }
+        queryClient.clear();
         clearSession();
-        // Surface why the user got logged out
-        try {
-          const { toast } = await import('sonner');
-          toast.message('Session expired', { description: 'Please sign in again.' });
-        } catch { /* noop */ }
+        toast.message('Session expired', { description: 'Please sign in again.' });
       }
     }
     return Promise.reject(err);
@@ -252,7 +246,7 @@ let lastOfflineToastAt = 0;
 const tryRemote = async (fn, fallbackFn, opts = {}) => {
   try {
     return await fn();
-  } catch (err) {
+  } catch {
     // 401 is handled by the interceptor (clears session). For other failures
     // — likely network/5xx — fall back to localStorage. If the user has a
     // session token (i.e. *expected* server sync) and the failure is a write,
@@ -260,13 +254,9 @@ const tryRemote = async (fn, fallbackFn, opts = {}) => {
     // server.
     if (opts.notifyOnWrite && useAuth.getState().token && (Date.now() - lastOfflineToastAt) > 30_000) {
       lastOfflineToastAt = Date.now();
-      // Lazy-import sonner to avoid pulling it into modules that don't need it
-      try {
-        const { toast } = await import('sonner');
-        toast.message('Saved locally', {
-          description: 'Backend unreachable — your progress will sync once you reconnect.',
-        });
-      } catch { /* noop */ }
+      toast.message('Saved locally', {
+        description: 'Backend unreachable — your progress will sync once you reconnect.',
+      });
     }
     return fallbackFn();
   }
