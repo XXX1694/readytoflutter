@@ -3,7 +3,16 @@ import { toast } from 'sonner';
 import { queryClient } from '../lib/queryClient.js';
 import { useAuth } from '../store/auth.js';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+// Production fallback for GitHub Pages: when we're served from *.github.io
+// and the build wasn't given an explicit VITE_API_BASE_URL, point at the
+// Render-hosted backend so auth/sync still work.
+const PROD_API_FALLBACK = 'https://readytoflutter.onrender.com/api';
+const onGithubPages = typeof window !== 'undefined'
+  && window.location.hostname.endsWith('.github.io');
+
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL
+  || (onGithubPages ? PROD_API_FALLBACK : '/api');
 const api = axios.create({ baseURL: apiBaseUrl });
 
 // Attach the auth token (if any) to every outgoing request. Reading from the
