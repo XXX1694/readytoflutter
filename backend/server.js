@@ -35,12 +35,25 @@ app.use(
   }),
 );
 
-// CORS — when FRONTEND_ORIGIN is set, lock to that origin (production setup
-// for cross-origin GitHub Pages → Render). Otherwise allow all (dev). The
-// Authorization header must be explicitly allowed for cross-origin auth.
+// CORS — FRONTEND_ORIGIN can be a single value or a comma-separated list.
+// Match case-insensitively because browsers normalise the Origin header to
+// lowercase, while the env var often comes in mixed case (e.g.
+// 'https://XXX1694.github.io' vs the lowercased 'xxx1694.github.io' the
+// browser actually sends). Empty FRONTEND_ORIGIN allows everything (dev).
+const allowedOrigins = (FRONTEND_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN || true,
+    origin: allowedOrigins.length === 0
+      ? true
+      : (origin, cb) => {
+          // No-origin requests (curl, server-to-server, same-origin) are fine.
+          if (!origin) return cb(null, true);
+          cb(null, allowedOrigins.includes(origin.toLowerCase()));
+        },
     credentials: false,
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
