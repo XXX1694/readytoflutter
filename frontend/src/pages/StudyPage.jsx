@@ -2,10 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, RotateCcw, ArrowRight, Sparkles, Brain, Code2, ChevronDown, Edit3, EyeOff,
+  X, RotateCcw, ArrowRight, Sparkles, Brain, Code2, ChevronDown, Edit3,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { toast } from 'sonner';
 import { useQuestions } from '../lib/queries.js';
 import { pickDueQueue, rateCard, getCardState } from '../lib/srs.js';
 import { usePrefs } from '../store/prefs.js';
@@ -385,6 +384,7 @@ export default function StudyPage() {
         {flipped && recallMode && (
           <div className="mt-5">
             <AnswerGrader
+              key={current.id}
               questionId={current.id}
               userAnswer={gists[current.id] || ''}
               lang={lang}

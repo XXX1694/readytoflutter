@@ -312,6 +312,7 @@ export default function RoundPage() {
                 MockPage so muscle memory carries over. Hidden when backend
                 AI is disabled or the answer is too short. */}
             <AnswerGrader
+              key={current.id}
               questionId={current.id}
               userAnswer={userText}
               lang={lang}

@@ -337,6 +337,7 @@ export default function MockPage() {
                 first thing the user sees after Reveal, no scrolling needed.
                 Logical flow: AI feedback → visual compare → self-rate. */}
             <AnswerGrader
+              key={current.id}
               questionId={current.id}
               userAnswer={userText}
               lang={lang}

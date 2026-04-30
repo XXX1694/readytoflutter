@@ -70,11 +70,9 @@ export default function AnswerGrader({ questionId, userAnswer, lang }) {
   const [state, setState] = useState({ loading: false, result: null, error: null });
   const reqIdRef = useRef(0);
 
-  // Reset whenever we move to a new question — stale grade for the prior
-  // question should not flash when the next one renders.
-  useEffect(() => {
-    setState({ loading: false, result: null, error: null });
-  }, [questionId]);
+  // Stale grade for the prior question is avoided by giving this component a
+  // `key={questionId}` from the parent — React remounts on key change, which
+  // resets the local state cleanly without a setState-in-effect.
 
   // The grader sits at the top of the revealed section, so the result
   // lands right where the user's eye already is — no auto-scroll needed.

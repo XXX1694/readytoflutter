@@ -72,6 +72,9 @@ export default function AdminPage() {
   const topicById = useMemo(() => Object.fromEntries(topics.map((t) => [t.id, t])), [topics]);
 
   const { enabled: aiEnabled } = useAiHealth();
+  // useState must run before any conditional return — keep the AI-draft
+  // state up here with the rest of the hooks.
+  const [aiDrafting, setAiDrafting] = useState(false);
 
   // Filtering
   const filtered = useMemo(() => {
@@ -127,7 +130,6 @@ export default function AdminPage() {
   // AI draft — author types a one-line idea, Claude returns a full draft
   // (question text, reference answer, difficulty, tags, optional code).
   // Result is editable in the admin UI like any other added question.
-  const [aiDrafting, setAiDrafting] = useState(false);
   const handleAiDraft = async () => {
     const topicId = filterTopic !== 'all' ? Number(filterTopic) : topics[0]?.id;
     if (!topicId) return;
