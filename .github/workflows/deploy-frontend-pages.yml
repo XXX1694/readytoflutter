@@ -2,7 +2,7 @@ name: Deploy Frontend to GitHub Pages
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
       - 'frontend/**'
       - 'backend/data/seed/**'
@@ -15,25 +15,25 @@ permissions:
   pages: write
   id-token: write
 
+# Pages allows only one in-flight deploy. Don't cancel a deploy mid-flight,
+# but coalesce queued runs so we don't ship stale builds back-to-back.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install
         working-directory: frontend
         run: npm ci
 
@@ -61,8 +61,33 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # Post-deploy smoke: hit the deployed URL and check that index.html
+      # actually renders the app shell. Catches Pages CDN cache holes,
+      # broken base path, or upload artifact corruption.
+      - name: Smoke the deployed page
+        run: |
+          set -euo pipefail
+          URL="${{ steps.deployment.outputs.page_url }}"
+          echo "Smoking $URL"
+          # Pages can take a few seconds to propagate after deploy reports done
+          for i in $(seq 1 12); do
+            if curl -fsSL "$URL" -o /tmp/index.html; then
+              echo "Got 200 from $URL"
+              break
+            fi
+            echo "attempt $i — not yet, sleeping 5s"
+            sleep 5
+          done
+          if ! grep -q '<div id="root"' /tmp/index.html; then
+            echo "::error::Deployed index.html missing #root mount."
+            head -c 2000 /tmp/index.html
+            exit 1
+          fi
+          echo "Smoke OK."

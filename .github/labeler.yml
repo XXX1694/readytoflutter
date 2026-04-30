@@ -1,0 +1,38 @@
+# Path-based labels for PRs. Add or move entries here when the area names
+# stop matching how we think about the codebase.
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/**'
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+deps:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/package.json'
+          - 'frontend/package-lock.json'
+          - 'backend/package.json'
+          - 'backend/package-lock.json'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+content:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/data/seed/**'
+          - 'frontend/public/seed/**'
+          - 'frontend/src/i18n/**'

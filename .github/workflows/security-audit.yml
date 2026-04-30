@@ -1,0 +1,58 @@
+name: Security Audit
+
+# `npm audit` for both packages. Runs on every PR and weekly so a freshly
+# disclosed CVE doesn't sit unnoticed for a sprint.
+#
+# We fail only on high+critical so noisy moderate advisories in transitive
+# deps don't block routine PRs — they still appear in the run summary.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  schedule:
+    # Mondays 07:23 UTC — runs before the dependabot bumps land at 08:00.
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: security-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit · ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [frontend, backend]
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ matrix.package }}/package-lock.json
+
+      # Surface the full report in the run summary regardless of severity.
+      - name: Audit (full report → step summary)
+        run: |
+          {
+            echo "## ${{ matrix.package }} npm audit"
+            echo ""
+            echo '```'
+            npm audit --omit=dev || true
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+      # The actual gate. Production deps only; dev advisories rarely affect
+      # shipped artifacts and bloat the noise floor.
+      - name: Gate on high+critical (production deps)
+        run: npm audit --omit=dev --audit-level=high

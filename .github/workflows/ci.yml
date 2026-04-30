@@ -2,71 +2,172 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
+  workflow_dispatch:
+
+# Cancel stale runs on the same ref so a fresh push doesn't queue behind
+# a now-irrelevant build. Cuts feedback time on rapid iteration.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Default to read-only — workflows that need write narrow it per-job.
+permissions:
+  contents: read
+
+# Pin Node once at the top so all jobs match. Bumping is a one-line change.
+env:
+  NODE_VERSION: '20'
+  # Lint baseline — ratchet downward when we clean up. Set to current count
+  # so any new warning fails CI without forcing a full backlog cleanup.
+  LINT_MAX_WARNINGS: '64'
 
 jobs:
-  frontend-build:
+  # ── Frontend ────────────────────────────────────────────────────────────
+  frontend-lint:
+    name: Frontend · lint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     defaults:
       run:
         working-directory: frontend
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
+      - name: Install
         run: npm ci
+      - name: ESLint (gate at baseline)
+        run: npx eslint . --max-warnings=${{ env.LINT_MAX_WARNINGS }}
 
-      - name: Lint
-        run: npm run lint --if-present
-
-      - name: Test
-        run: npm run test --if-present
-
-      - name: Build frontend
-        run: npm run build
-
-  backend-smoke:
+  frontend-test:
+    name: Frontend · test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Vitest (single run)
+        run: npm test
+
+  frontend-build:
+    name: Frontend · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Upload dist for downstream jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+          if-no-files-found: error
+
+  # ── Backend ─────────────────────────────────────────────────────────────
+  backend-smoke:
+    name: Backend · smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     defaults:
       run:
         working-directory: backend
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
+      - name: Install (better-sqlite3 needs build tools on first install)
         run: npm ci
+      - name: Smoke (db init + getStats)
+        run: |
+          node -e "
+          const db = require('./database');
+          db.init();
+          const s = db.getStats();
+          if (!s || typeof s.totalQuestions !== 'number' || s.totalQuestions < 1) {
+            console.error('Smoke failed:', s);
+            process.exit(1);
+          }
+          console.log('topics=', db.getTopics().length, 'questions=', s.totalQuestions);
+          db.close();
+          "
+      - name: Boot server briefly and hit /healthz
+        run: |
+          npm start &
+          SERVER_PID=$!
+          # Wait up to 15s for the server to come up
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost:3001/healthz >/dev/null 2>&1; then
+              echo "Server is up"
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://localhost:3001/healthz | head -c 200
+          kill $SERVER_PID || true
 
-      - name: Backend smoke test
-        run: node -e "const db=require('./database');db.init();const s=db.getStats();if(s.totalQuestions<1)process.exit(1);console.log('topics=',db.getTopics().length,'questions=',s.totalQuestions);db.close();"
-
+  # ── Repo-level invariants ───────────────────────────────────────────────
   static-data-sync:
+    name: Repo · static-data parity
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-
+          node-version: ${{ env.NODE_VERSION }}
+      # Pure-Node script — no install. Fails the PR if the committed
+      # frontend/public/seed/static-data.json drifts from backend seed JSON.
       - name: Verify static-data.json matches backend seeds
-        # Pure-Node script — no install needed, just runs against checked-in seed JSON.
         run: node backend/scripts/generate-static-data.js --check
+
+  # ── Aggregate gate ──────────────────────────────────────────────────────
+  # Single required check for branch protection — succeeds only if every
+  # parallel job succeeded. Lets us add/remove jobs without touching the
+  # branch-protection rule.
+  ci-passed:
+    name: CI · all checks
+    runs-on: ubuntu-latest
+    needs:
+      - frontend-lint
+      - frontend-test
+      - frontend-build
+      - backend-smoke
+      - static-data-sync
+    if: always()
+    steps:
+      - name: Verify all required jobs succeeded
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi
+          echo "All checks passed."

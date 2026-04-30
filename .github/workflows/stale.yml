@@ -1,0 +1,43 @@
+name: Stale issues and PRs
+
+# Auto-tag inactive issues/PRs after 60 days, close after another 14 if
+# nobody responds. Bots, security advisories, and pinned items are exempt.
+on:
+  schedule:
+    # Daily at 04:13 UTC. Off-peak so it competes with nothing else.
+    - cron: '13 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 60
+          days-before-close: 14
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: 'pinned,security,help-wanted'
+          exempt-pr-labels: 'pinned,security,wip'
+          stale-issue-message: |
+            This issue has had no activity for 60 days. It will close in 14 days
+            unless someone leaves a comment or removes the `stale` label.
+          stale-pr-message: |
+            This PR has had no activity for 60 days. It will close in 14 days
+            unless someone leaves a comment, pushes a commit, or removes the
+            `stale` label.
+          close-issue-message: |
+            Closing for inactivity. Reopen any time if it still matters — no
+            ceremony.
+          close-pr-message: |
+            Closing for inactivity. Reopen any time if you want to pick it
+            back up.
+          # Cap per-run work so a backlog of 500 stale items doesn't burn the
+          # whole runner minute on one cron tick.
+          operations-per-run: 50

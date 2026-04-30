@@ -2,20 +2,71 @@ name: Deploy Backend (Render Hook)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend-render.yml'
+      - 'render.yaml'
   workflow_dispatch:
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render deploy hook
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
-        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+permissions:
+  contents: read
 
-      - name: Skip (hook not configured)
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
-        run: echo "RENDER_DEPLOY_HOOK_URL is not set. Skipping backend deploy."
+# Don't fire two deploys at once — Render will queue them anyway, but
+# canceling the older trigger keeps the GH Actions UI honest.
+concurrency:
+  group: render-deploy
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    name: Trigger Render deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      triggered: ${{ steps.fire.outputs.triggered }}
+    steps:
+      - name: Trigger deploy hook
+        id: fire
+        env:
+          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [[ -z "${HOOK_URL:-}" ]]; then
+            echo "RENDER_DEPLOY_HOOK_URL is not set. Skipping backend deploy."
+            echo "triggered=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "Firing deploy hook…"
+          curl -fsS -X POST "$HOOK_URL" -o /tmp/render.json
+          cat /tmp/render.json | head -c 500 || true
+          echo
+          echo "triggered=true" >> $GITHUB_OUTPUT
+
+  smoke:
+    name: Post-deploy /healthz
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: trigger
+    if: needs.trigger.outputs.triggered == 'true' && vars.BACKEND_PUBLIC_URL != ''
+    steps:
+      # Render's free tier takes 30–90s to redeploy. Poll /healthz with a
+      # generous window so a cold-start doesn't show as a deploy failure.
+      - name: Wait for /healthz to report ok
+        env:
+          HEALTH_URL: ${{ vars.BACKEND_PUBLIC_URL }}/healthz
+        run: |
+          set -euo pipefail
+          echo "Polling $HEALTH_URL for up to 8 minutes…"
+          for i in $(seq 1 96); do
+            if curl -fsS --max-time 5 "$HEALTH_URL" -o /tmp/h.json 2>/dev/null; then
+              if grep -qE '"ok"\s*:\s*true|"status"\s*:\s*"ok"' /tmp/h.json; then
+                echo "Backend healthy after $((i*5))s"
+                cat /tmp/h.json
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "::error::Backend /healthz did not report ok within timeout"
+          curl -sS "$HEALTH_URL" || true
+          exit 1

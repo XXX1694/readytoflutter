@@ -1,0 +1,114 @@
+name: Bundle Size
+
+# Builds the frontend and reports chunk sizes as a PR comment, so reviewers
+# can spot regressions (e.g. an accidental top-level import of shiki) without
+# pulling and building locally.
+#
+# Hard-fails if the main entry chunk grows past a generous ceiling — gives
+# us an early warning before the first paint gets unusably heavy.
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/bundle-size.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: bundle-size-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  measure:
+    name: Measure dist
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Build a markdown table of the top 15 chunks by raw size + total dist.
+      - name: Summarize bundle
+        id: summary
+        run: |
+          set -euo pipefail
+          {
+            echo "## Frontend bundle"
+            echo ""
+            TOTAL=$(du -sh dist | cut -f1)
+            echo "**Total dist:** \`$TOTAL\`"
+            echo ""
+            echo "| Chunk | Raw |"
+            echo "|---|---:|"
+            find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -printf '%s\t%P\n' \
+              | sort -rn \
+              | head -15 \
+              | awk -F'\t' '{
+                  size = $1;
+                  human = (size > 1048576) ? sprintf("%.2f MB", size/1048576) :
+                          (size > 1024) ? sprintf("%.1f KB", size/1024) :
+                          sprintf("%d B", size);
+                  print "| `" $2 "` | " human " |"
+                }'
+          } > $GITHUB_WORKSPACE/bundle-summary.md
+          cat $GITHUB_WORKSPACE/bundle-summary.md >> $GITHUB_STEP_SUMMARY
+
+      # Hard ceilings. Bumping these is a deliberate decision, not a drift.
+      # Main entry: 700KB raw. Shiki chunk: 1500KB raw (it's already 1.18MB).
+      - name: Enforce ceilings
+        run: |
+          set -euo pipefail
+          INDEX=$(find dist/assets -name 'index-*.js' -printf '%s\n' | head -1)
+          SHIKI=$(find dist/assets -name 'shiki-*.js' -printf '%s\n' | head -1)
+          INDEX_KB=$(( ${INDEX:-0} / 1024 ))
+          SHIKI_KB=$(( ${SHIKI:-0} / 1024 ))
+          echo "index=${INDEX_KB} KB; shiki=${SHIKI_KB} KB"
+          fail=0
+          if [[ ${INDEX_KB} -gt 700 ]]; then
+            echo "::error::Main entry chunk is ${INDEX_KB} KB (ceiling 700 KB)."
+            fail=1
+          fi
+          if [[ ${SHIKI_KB} -gt 1500 ]]; then
+            echo "::error::Shiki chunk is ${SHIKI_KB} KB (ceiling 1500 KB)."
+            fail=1
+          fi
+          exit $fail
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/bundle-summary.md`, 'utf8');
+            const marker = '<!-- bundle-size-bot -->';
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number: prNumber, per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            const fullBody = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: prNumber, body: fullBody,
+              });
+            }
