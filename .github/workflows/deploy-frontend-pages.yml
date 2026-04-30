@@ -66,7 +66,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       # Post-deploy smoke: hit the deployed URL and check that index.html
       # actually renders the app shell. Catches Pages CDN cache holes,
