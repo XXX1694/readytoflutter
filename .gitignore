@@ -21,3 +21,13 @@ backend/data/interview.db
 backend/data/interview.db-*
 backend/data/progress.json
 backend/data/.jwt-secret
+
+# Claude Code — keep shared commands/config in repo, but never the local
+# permission grants (machine-specific paths, one-off allow-rules).
+.claude/settings.local.json
+
+# Playwright MCP session artifacts (snapshots, console logs)
+.playwright-mcp/
+
+# Ad-hoc audit screenshots from /visual sessions
+audit-*.png
