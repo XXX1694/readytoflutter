@@ -41,7 +41,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.4",
     "@tailwindcss/typography": "^0.5.10",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
