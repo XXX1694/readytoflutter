@@ -108,7 +108,7 @@ export default function TopicPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         {/* Breadcrumb */}
         <Button
           variant="ghost"
@@ -152,50 +152,59 @@ export default function TopicPage() {
             </span>
           </div>
 
-          {/* Drill this topic */}
-          <div className="flex flex-wrap gap-2">
+          {/* Drill this topic — three tiers of CTA so the primary action
+              isn't lost in a wall of equal-weight buttons.
+              Mobile: Drill full-width brand → Round/Mock side-by-side →
+              tools (Cheatsheet/Print) compact at the bottom.
+              Desktop: all flow in one row, primary still visually heavier. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
               variant="brand"
-              size="sm"
+              size="md"
+              className="w-full sm:w-auto"
               onClick={() => navigate(`/study?topic=${topic.slug}&label=${encodeURIComponent(topicTitle(topic))}`)}
             >
-              <Brain className="h-3.5 w-3.5" />
+              <Brain className="h-4 w-4" />
               {lang === 'ru' ? 'Повторение' : 'Drill'}
             </Button>
-            <Button
-              variant="codex"
-              size="sm"
-              onClick={() => navigate(`/round/${topic.slug}`)}
-            >
-              <MessagesSquare className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Раунд' : 'Round'}
-            </Button>
-            <Button
-              variant="codex"
-              size="sm"
-              onClick={() => navigate(`/mock?topic=${topic.slug}`)}
-            >
-              <Target className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/cheatsheet`, '_blank', 'noopener')}
-              className="text-muted hover:text-ink"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/print`, '_blank', 'noopener')}
-              className="text-muted hover:text-ink"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Печать / PDF' : 'Print / PDF'}
-            </Button>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+              <Button
+                variant="codex"
+                size="sm"
+                onClick={() => navigate(`/round/${topic.slug}`)}
+              >
+                <MessagesSquare className="h-3.5 w-3.5" />
+                {lang === 'ru' ? 'Раунд' : 'Round'}
+              </Button>
+              <Button
+                variant="codex"
+                size="sm"
+                onClick={() => navigate(`/mock?topic=${topic.slug}`)}
+              >
+                <Target className="h-3.5 w-3.5" />
+                {lang === 'ru' ? 'Mock-собес' : 'Mock'}
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1 sm:ml-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/cheatsheet`, '_blank', 'noopener')}
+                className="text-muted hover:text-ink"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                {lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/print`, '_blank', 'noopener')}
+                className="text-muted hover:text-ink"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                {lang === 'ru' ? 'PDF' : 'Print'}
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -273,7 +282,7 @@ export default function TopicPage() {
 function TopicSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
         <header className="mb-8 border-b border-rule/15 pb-6">
           <div className="flex items-start gap-4">

@@ -113,8 +113,10 @@ export default function BottomNav() {
                   // Min-height 56px gives a comfy hit area for the whole tab,
                   // not just the icon pill — important since the label sits
                   // under the icon and users tap the whole stack.
-                  'flex min-h-[56px] flex-col items-center justify-center gap-0.5 py-2 transition-colors',
-                  'font-mono text-[10px] uppercase tracking-wider',
+                  'flex min-h-[56px] flex-col items-center justify-center gap-1 py-2 transition-colors',
+                  // Was text-[10px] which renders ~8px on narrow phones —
+                  // below readable threshold for low-vision users.
+                  'font-mono text-[11px] uppercase tracking-wider',
                   isActive
                     ? 'text-ink'
                     : 'text-muted hover:text-ink',
@@ -125,13 +127,13 @@ export default function BottomNav() {
                 <>
                   <span
                     className={cn(
-                      'inline-flex h-7 w-10 items-center justify-center rounded-md border transition-all duration-200',
+                      'inline-flex h-8 w-11 items-center justify-center rounded-md border transition-all duration-200',
                       isActive
                         ? 'border-ink bg-ink text-paper shadow-codex-sm'
                         : 'border-transparent',
                     )}
                   >
-                    <it.icon className="h-4 w-4" aria-hidden />
+                    <it.icon className="h-[18px] w-[18px]" aria-hidden />
                   </span>
                   <span className="leading-none">{it.label}</span>
                 </>

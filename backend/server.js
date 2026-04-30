@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const db = require('./database');
 const auth = require('./auth');
+const ai = require('./ai');
 const { LIMITS } = require('./config');
 
 db.init();
@@ -99,6 +100,11 @@ app.get('/healthz', (_req, res) => {
 // ── Auth ─────────────────────────────────────────────────────────────────────
 auth.attach(app);
 
+// ── AI grader (Anthropic) ────────────────────────────────────────────────────
+// Mounted regardless of whether ANTHROPIC_API_KEY is set — the /health
+// endpoint reports `enabled: false` and the frontend hides the UI.
+ai.attach(app);
+
 // ── Topics (public reads — show personalized progress when authenticated) ───
 app.get('/api/topics', auth.optionalAuth, readLimiter, (req, res) => {
   res.json(db.getTopics(req.query.level, req.user?.id || 0));
@@ -183,7 +189,8 @@ const server = app.listen(PORT, () => {
   console.log(`\n🚀 Server running at http://localhost:${PORT}`);
   console.log(`📚 Loaded ${stats.totalQuestions} questions from SQLite`);
   console.log(`🔐 Auth ready (JWT, ${jwtExpiry} expiry)`);
-  console.log(`🛡  Hardening: helmet${IS_PROD ? ' + HSTS' : ''}, rate-limit, CORS=${FRONTEND_ORIGIN || '*'}\n`);
+  console.log(`🛡  Hardening: helmet${IS_PROD ? ' + HSTS' : ''}, rate-limit, CORS=${FRONTEND_ORIGIN || '*'}`);
+  console.log(`🤖 AI grader: ${process.env.ANTHROPIC_API_KEY ? 'enabled (Haiku 4.5)' : 'disabled (set ANTHROPIC_API_KEY to enable)'}\n`);
 });
 
 // Graceful shutdown — flush WAL, close SQLite cleanly, give in-flight

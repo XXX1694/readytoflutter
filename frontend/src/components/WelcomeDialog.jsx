@@ -101,7 +101,7 @@ export default function WelcomeDialog() {
             <div className="flex items-center justify-between border-b border-rule/15 px-5 py-3">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-                  {lang === 'ru' ? 'Добро пожаловать' : 'Welcome'} · Codex
+                  {lang === 'ru' ? 'Знакомство · 4 шага' : 'Quick tour · 4 steps'}
                 </span>
               </div>
               <Dialog.Title className="sr-only">

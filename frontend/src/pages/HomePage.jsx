@@ -81,12 +81,12 @@ export default function HomePage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
         {/* HERO — oversized gradient title, single brand-glow CTA. */}
         <section className="mb-10 sm:mb-14">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
-            ReadyToFlutter · Atlas
+            {lang === 'ru' ? 'Подготовка · Flutter & Dart' : 'Interview prep · Flutter & Dart'}
           </div>
           {/* Display-xl (6.5rem ≈ 104px) overflows on narrow phones — start
               smaller and ramp up only when there's real horizontal space. */}
@@ -109,22 +109,30 @@ export default function HomePage() {
             {t.heroDesc}
           </p>
 
-          {/* CTA row — primary is the session you'll actually run today */}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Button variant="brand" onClick={() => navigate('/study')}>
+          {/* CTA row — primary is the session you'll actually run today.
+              On mobile the primary takes the full width so it dominates;
+              secondary CTAs sit below in a paired row, then ghost links. */}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button
+              variant="brand"
+              className="w-full sm:w-auto"
+              onClick={() => navigate('/study')}
+            >
               <Brain className="h-4 w-4" />
               {lang === 'ru' ? 'Начать сессию' : 'Start a session'}
               <kbd className="ml-1 rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px]">{modKey}S</kbd>
             </Button>
-            <Button variant="codex" onClick={() => navigate('/mock')}>
-              <Target className="h-4 w-4" />
-              {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
-              <kbd className="ml-1 rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px]">{modKey}M</kbd>
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/knowledge')}>
-              <Library className="h-4 w-4" />
-              {lang === 'ru' ? 'База знаний' : 'Knowledge'}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <Button variant="codex" onClick={() => navigate('/mock')}>
+                <Target className="h-4 w-4" />
+                {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
+                <kbd className="ml-1 rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px]">{modKey}M</kbd>
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/knowledge')}>
+                <Library className="h-4 w-4" />
+                {lang === 'ru' ? 'База знаний' : 'Knowledge'}
+              </Button>
+            </div>
             <button
               type="button"
               onClick={() => setCommandOpen(true)}
@@ -226,7 +234,7 @@ export default function HomePage() {
 function DashboardSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
         {/* Hero */}
         <section className="mb-10 sm:mb-14">
           <Skeleton className="h-3 w-40" />

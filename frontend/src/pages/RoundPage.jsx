@@ -176,7 +176,7 @@ export default function RoundPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1400px] flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Top bar */}
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -307,7 +307,7 @@ export default function RoundPage() {
           <>
             {/* Mobile: reference first so the user can compare against truth
                 immediately; their own attempt sits below for self-review. */}
-            <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
               <div className="order-2 rounded-md border border-rule/15 bg-paper p-4 lg:order-1">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
@@ -426,7 +426,7 @@ function DoneScreen({
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <header className="mb-8 border-b border-rule/15 pb-6">
           <Eyebrow accent="brand">
             <MessagesSquare className="mr-1 inline h-3 w-3" />

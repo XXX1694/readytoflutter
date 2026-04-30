@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library } from 'lucide-react';
+import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library, Rocket } from 'lucide-react';
 import { useTopics, useStats } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -78,14 +78,17 @@ export default function Sidebar() {
             aria-label={t.goToHomepage}
           >
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-sky text-white shadow-[0_4px_12px_-2px_rgb(var(--brand)/0.40)]">
-              <span className="font-display text-base font-bold leading-none">R</span>
+              <Rocket className="h-[18px] w-[18px]" aria-hidden />
             </span>
             <span className="flex flex-col">
               <span className="font-display text-[15px] font-semibold leading-tight tracking-tight text-ink">
                 ReadyToFlutter
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-2">
-                Codex · {t.interviewPrep}
+              {/* Tracking dropped from 0.22em → 0.08em — at the previous
+                  spacing the Cyrillic подписи split into ghost-words; the
+                  English "Interview prep" looked too sparse too. */}
+              <span className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted-2">
+                {t.interviewPrep}
               </span>
             </span>
           </NavLink>

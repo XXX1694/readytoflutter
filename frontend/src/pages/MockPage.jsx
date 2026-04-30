@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Play, Timer, Target, ChevronRight, RotateCcw, ArrowRight, Eye, SkipForward,
+  AlertCircle,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useQuestions } from '../lib/queries.js';
@@ -13,6 +14,7 @@ import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
+import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn.js';
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
@@ -55,6 +57,10 @@ export default function MockPage() {
   const t = useT(lang);
   const { questionText, answerText } = useContent(lang);
   const { data: questions = [], isLoading } = useQuestions();
+  // Warm the AI-health probe as soon as the page mounts. Without this the
+  // first /api/ai/grade call would race the /api/ai/health response and
+  // the AnswerGrader would render `null` for a beat after Reveal.
+  useAiHealth();
 
   const [phase, setPhase] = useState('setup'); // setup | running | review | done
   const [config, setConfig] = useState({
@@ -234,7 +240,7 @@ export default function MockPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-6xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1400px] flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Top bar */}
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
           <div className="flex items-center gap-3">
@@ -327,7 +333,16 @@ export default function MockPage() {
             on the left, reference on the right (Western reading order). */}
         {revealed && (
           <>
-            <section className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* AI grader sits ABOVE the side-by-side compare — that's the
+                first thing the user sees after Reveal, no scrolling needed.
+                Logical flow: AI feedback → visual compare → self-rate. */}
+            <AnswerGrader
+              questionId={current.id}
+              userAnswer={userText}
+              lang={lang}
+            />
+
+            <section className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
               <div className="order-2 rounded-md border border-rule/15 bg-paper p-4 lg:order-1">
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
@@ -463,11 +478,20 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
         </div>
 
         <div className="relative mt-8 flex flex-col gap-3 border-t border-rule/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
-            {insufficient
-              ? (lang === 'ru' ? 'Нет вопросов в этом скоупе' : 'No questions in this scope')
-              : (lang === 'ru' ? `Будет ${realCount} вопросов из ${availableCount}` : `${realCount} of ${availableCount} available`)}
-          </span>
+          {insufficient ? (
+            <span className="inline-flex items-center gap-2 rounded-md border border-coral/30 bg-coral/8 px-3 py-1.5 text-sm text-coral">
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+              {lang === 'ru'
+                ? 'Нет вопросов под эти настройки. Смягчи фильтры.'
+                : 'No questions match these filters. Loosen them.'}
+            </span>
+          ) : (
+            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+              {lang === 'ru'
+                ? `Будет ${realCount} вопросов из ${availableCount}`
+                : `${realCount} of ${availableCount} available`}
+            </span>
+          )}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onCancel}>{lang === 'ru' ? 'Отмена' : 'Cancel'}</Button>
             <Button variant="brand" disabled={insufficient} onClick={onStart}>
@@ -542,7 +566,7 @@ function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answe
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <header className="mb-8 border-b border-rule/15 pb-6">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
             Mock Interview · {lang === 'ru' ? 'Итоги' : 'Recap'}

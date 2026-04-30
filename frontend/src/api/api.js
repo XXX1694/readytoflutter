@@ -368,3 +368,14 @@ export const serializeLocalProgress = (progress) =>
       updated_at: value?.updated_at || new Date().toISOString(),
     }))
     .filter((p) => p.questionId && p.status);
+
+// ── AI grader ───────────────────────────────────────────────────────────────
+// Server-side feature: the Anthropic API key lives on the backend, the
+// frontend just probes /health and posts the user's answer. Both calls
+// fail closed — if the backend isn't reachable, aiHealth() resolves to
+// { enabled: false } so the UI hides the button silently.
+export const aiHealth = () =>
+  api.get('/ai/health').then((r) => r.data).catch(() => ({ enabled: false }));
+
+export const aiGradeAnswer = ({ questionId, userAnswer, lang }) =>
+  api.post('/ai/grade', { questionId, userAnswer, lang }).then((r) => r.data);

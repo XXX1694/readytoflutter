@@ -10,6 +10,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      # Set in the Render dashboard (sync:false keeps it out of the YAML).
+      # When unset, the AI grading feature stays off; everything else works.
+      - key: ANTHROPIC_API_KEY
+        sync: false
     disks:
       - name: readytoflutter-data
         mountPath: /opt/render/project/src/backend/data

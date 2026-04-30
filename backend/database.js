@@ -553,6 +553,24 @@ function questionExists(questionId) {
   return !!row;
 }
 
+// Used by the AI-grading endpoint. Joins the topic so we can include the
+// reference answer + topic context in the prompt without trusting the
+// client to send the reference text (which could be tampered with to bias
+// the grade or just to waste tokens on stuff that isn't real).
+function getQuestionForGrading(questionId) {
+  return sqlite
+    .prepare(`
+      SELECT
+        q.id, q.question, q.answer, q.code_example, q.code_language,
+        q.difficulty,
+        t.title AS topic_title, t.level
+      FROM questions q
+      JOIN topics t ON t.id = q.topic_id
+      WHERE q.id = ?
+    `)
+    .get(Number(questionId));
+}
+
 function ping() {
   return sqlite.prepare('SELECT 1 AS ok').get().ok === 1;
 }
@@ -569,6 +587,7 @@ module.exports = {
   getTopic,
   getQuestions,
   questionExists,
+  getQuestionForGrading,
   setProgress,
   bulkSetProgress,
   getStats,

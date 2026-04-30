@@ -91,7 +91,7 @@ export default function StatsPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Button
           variant="ghost"
           size="sm"
@@ -296,7 +296,7 @@ function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }) {
 function StatsSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
         <header className="mb-8 border-b border-rule/15 pb-6">
           <Skeleton className="h-3 w-20" />

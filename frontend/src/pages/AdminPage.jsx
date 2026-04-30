@@ -127,10 +127,12 @@ export default function AdminPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {/* Header */}
         <header className="mb-6 border-b border-rule/15 pb-5">
-          <Eyebrow accent="brand">Codex Admin · local-only</Eyebrow>
+          <Eyebrow accent="brand">
+            {lang === 'ru' ? 'Локальный редактор · экспорт в JSON' : 'Local editor · export to JSON'}
+          </Eyebrow>
           <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
             {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
           </h1>

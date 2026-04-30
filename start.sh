@@ -34,8 +34,13 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
-# Backend
-node "$ROOT/backend/server.js" &
+# Backend. --env-file-if-exists so a missing .env doesn't crash the script
+# (Render-style deploys put env vars in process.env directly).
+if [ -f "$ROOT/backend/.env" ]; then
+  node --env-file="$ROOT/backend/.env" "$ROOT/backend/server.js" &
+else
+  node "$ROOT/backend/server.js" &
+fi
 BACKEND_PID=$!
 echo "✅ Backend started (PID: $BACKEND_PID) → http://localhost:3001"
 

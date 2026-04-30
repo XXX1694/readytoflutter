@@ -4,10 +4,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
+    "dev": "node --env-file=.env --watch server.js",
     "generate:static-data": "node scripts/generate-static-data.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.7.0",
     "cors": "^2.8.5",
