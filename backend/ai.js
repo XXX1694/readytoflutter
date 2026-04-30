@@ -299,8 +299,13 @@ async function draftHandler(req, res) {
 
 function attach(app) {
   app.get('/api/ai/health', (_req, res) => {
-    const enabled = !!buildClient();
-    res.json({ enabled, model: MODEL, minChars: MIN_USER_ANSWER_CHARS });
+    // Report why we're disabled so misconfigurations can be diagnosed from
+    // a single curl. Never echo the key itself; only whether one is set.
+    let reason = null;
+    if (!AnthropicCtor) reason = 'sdk_missing';
+    else if (!process.env.ANTHROPIC_API_KEY) reason = 'key_missing';
+    const enabled = reason === null;
+    res.json({ enabled, reason, model: MODEL, minChars: MIN_USER_ANSWER_CHARS });
   });
 
   // optionalAuth: we don't require sign-in to grade (the user wants
