@@ -11,9 +11,23 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['seed/static-data.json', 'favicon.svg', 'maskable-icon.svg'],
+      // `prompt` lets us surface an "Update available — refresh" toast
+      // instead of the user discovering a stale UI on next reload. The
+      // SW skips waiting + claims clients in one click.
+      registerType: 'prompt',
+      includeAssets: [
+        'seed/static-data.json', 'favicon.svg', 'icon-source.svg',
+        'pwa/apple-touch-icon.png',
+        'pwa/apple-touch-icon-167.png',
+        'pwa/apple-touch-icon-152.png',
+        'pwa/apple-touch-icon-120.png',
+        'pwa/favicon-32.png',
+        'pwa/favicon-16.png',
+      ],
       manifest: {
+        // Stable identifier so `start_url` query strings don't fork the
+        // installed PWA into multiple "apps" in Chrome.
+        id: '/',
         name: 'prepiroshi — Mobile Interview Prep',
         short_name: 'prepiroshi',
         description: 'Flutter, iOS, Android & cross-platform mobile interview workspace with spaced repetition, mock interviews and a curated knowledge base.',
@@ -24,39 +38,118 @@ export default defineConfig({
         theme_color: '#FAFAFB',
         background_color: '#FAFAFB',
         display: 'standalone',
-        display_override: ['standalone', 'minimal-ui'],
+        // `window-controls-overlay` lets the desktop PWA pull title-bar
+        // real estate; falls back gracefully on browsers that ignore it.
+        display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         orientation: 'portrait',
-        start_url: '.',
-        scope: '.',
+        start_url: '/',
+        scope: '/',
         lang: 'en',
+        dir: 'ltr',
         categories: ['education', 'productivity'],
-        icons: [
+        prefer_related_applications: false,
+        // Long-press the home-screen icon on Android → these jump straight
+        // into the relevant flow.
+        shortcuts: [
           {
-            src: 'favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            name: 'Start a study session',
+            short_name: 'Study',
+            description: 'Open the SRS queue',
+            url: '/study',
+            icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Mock interview',
+            short_name: 'Mock',
+            description: 'Run a timed mock interview',
+            url: '/mock',
+            icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Knowledge base',
+            short_name: 'Knowledge',
+            description: 'Curated learning resources',
+            url: '/knowledge',
+            icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Saved questions',
+            short_name: 'Saved',
+            description: 'Your bookmarked questions',
+            url: '/bookmarks',
+            icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
+        icons: [
+          // PNG icons take priority on platforms (Android, iOS) that do
+          // not yet honour SVG manifest entries reliably. SVG is kept as
+          // a fallback for desktop browsers / Chromium install UI which
+          // can sharpen to any DPI.
+          {
+            src: 'pwa/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'maskable-icon.svg',
+            src: 'pwa/icon-512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: 'maskable',
+          },
+          {
+            src: 'icon-source.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
           },
         ],
       },
       workbox: {
         // Bump the cache size cap so Shiki's WASM bundle doesn't blow it.
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,svg,woff2,json}'],
-        navigateFallback: 'index.html',
+        // Precache the entire build output, including images, fonts and the
+        // generated PWA bitmap assets so the app cold-boots offline.
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,avif,woff2,json,ico}'],
+        // Routes inside the SPA — workbox serves index.html for any
+        // navigation that doesn't match a real precached file. Excluding
+        // /api/* keeps the backend reachable.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.endsWith('/seed/static-data.json'),
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'rtf-static-data' },
           },
+          {
+            // Cache YouTube thumbnails (Knowledge page recents strip) so
+            // they appear instantly on revisit and survive offline.
+            urlPattern: /^https:\/\/i\.ytimg\.com\/.*$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'rtf-youtube-thumbs',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
+        // Skip-waiting + clients-claim wired through `messageSkipWaiting`
+        // — the React update toast triggers it on user click.
+        skipWaiting: false,
+        clientsClaim: true,
+      },
+      // Make the service worker available in `npm run dev` too so we can
+      // test the install + update flow without a production build.
+      devOptions: {
+        enabled: false, // SW in dev confuses HMR; flip to `true` for PWA QA.
+        type: 'module',
       },
     }),
   ],

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1290 2796" role="img" aria-label="prepiroshi">
+  <!-- Splash template tuned for the largest iPhone (15 Pro Max). The script
+       renders this SVG into every required Apple resolution; aspect-aware
+       cropping keeps the glyph centred on smaller devices. -->
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#FAFAFB"/>
+      <stop offset="100%" stop-color="#F4F4F7"/>
+    </linearGradient>
+    <linearGradient id="glyph" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <radialGradient id="aurora" cx="50%" cy="50%" r="55%">
+      <stop offset="0%"  stop-color="#6366F1" stop-opacity="0.10"/>
+      <stop offset="60%" stop-color="#8B5CF6" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1290" height="2796" fill="url(#bg)"/>
+  <rect width="1290" height="2796" fill="url(#aurora)"/>
+
+  <!-- Centered brand mark -->
+  <g transform="translate(645, 1280)">
+    <rect x="-200" y="-200" width="400" height="400" rx="80" fill="url(#glyph)"/>
+    <text x="0" y="60" text-anchor="middle"
+          font-family="-apple-system, 'Inter', system-ui, sans-serif"
+          font-size="280" font-weight="700" letter-spacing="-12"
+          fill="#FFFFFF">p</text>
+  </g>
+
+  <!-- Wordmark below -->
+  <text x="645" y="1620" text-anchor="middle"
+        font-family="-apple-system, 'Inter', system-ui, sans-serif"
+        font-size="80" font-weight="600" letter-spacing="-2"
+        fill="#0A0A0C">prepiroshi</text>
+  <text x="645" y="1700" text-anchor="middle"
+        font-family="-apple-system, 'Inter', system-ui, sans-serif"
+        font-size="36" font-weight="500" letter-spacing="6"
+        fill="#71717A">MOBILE INTERVIEW PREP</text>
+</svg>

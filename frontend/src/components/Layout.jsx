@@ -6,6 +6,7 @@ import Header from './Header.jsx';
 import MobileHeader from './MobileHeader.jsx';
 import GlobalHotkeys from './GlobalHotkeys.jsx';
 import LazyOverlays from './LazyOverlays.jsx';
+import PwaPrompts from './PwaPrompts.jsx';
 import PlatformUrlSync from './PlatformUrlSync.jsx';
 import BottomNav from './BottomNav.jsx';
 import RouteTransition from './RouteTransition.jsx';
@@ -68,6 +69,7 @@ export default function Layout() {
           downloads. The actual UI overlays are gated and lazy. */}
       <GlobalHotkeys />
       <LazyOverlays />
+      <PwaPrompts />
       <Toaster
         theme={theme === 'dark' ? 'dark' : 'light'}
         position="bottom-right"
