@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library, Rocket } from 'lucide-react';
-import { useTopics, useStats } from '../lib/queries.js';
+import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
@@ -40,7 +40,6 @@ export default function Sidebar() {
   const { topicTitle } = useContent(lang);
 
   const { data: allTopics = [] } = useTopics();
-  const { data: stats } = useStats();
   const platform = usePrefs((s) => s.platform);
   // Sidebar honors the dashboard's platform filter so the topic tree doesn't
   // re-merge Flutter / iOS / Android once the user has chosen a stack.
@@ -48,6 +47,20 @@ export default function Sidebar() {
     () => filterTopicsByPlatform(allTopics, platform),
     [allTopics, platform],
   );
+
+  // Per-group totals so the platform header can show its own progress bar
+  // instead of one global percentage that hides where you actually stand.
+  const groupStats = useMemo(() => {
+    const map = new Map();
+    for (const topic of topics) {
+      const key = topicPlatform(topic);
+      const row = map.get(key) || { total: 0, completed: 0 };
+      row.total += topic.question_count || 0;
+      row.completed += topic.completed_count || 0;
+      map.set(key, row);
+    }
+    return map;
+  }, [topics]);
 
   // Default-expand the platform that's currently selected; when 'all', open
   // the first non-empty group so the user always sees something on first paint.
@@ -58,9 +71,14 @@ export default function Sidebar() {
     return key === PLATFORM_GROUPS.find((g) => topics.some((t) => topicPlatform(t) === g.key))?.key;
   };
 
-  const total = stats?.totalQuestions ?? 0;
-  const completed = stats?.completed ?? 0;
+  // Totals scoped to the currently visible topics — a global stats blob
+  // would still show 392 here even when the user is on iOS-only.
+  const total = topics.reduce((s, tp) => s + (tp.question_count || 0), 0);
+  const completed = topics.reduce((s, tp) => s + (tp.completed_count || 0), 0);
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const overallLabel = platform === 'all'
+    ? t.overallProgress
+    : `${t.overallProgress} · ${t[PLATFORM_GROUPS.find((g) => g.key === platform)?.labelKey] || ''}`;
 
   const close = () => setSidebarOpen(false);
 
@@ -117,12 +135,13 @@ export default function Sidebar() {
           </IconButton>
         </div>
 
-        {/* Overall progress */}
+        {/* Stack-scoped progress — re-computes when the user switches stack
+            so they see "where am I on iOS" instead of the global blend. */}
         {total > 0 && (
           <div className="border-b border-rule/8 px-5 py-4">
-            <div className="mb-2 flex items-baseline justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                {t.overallProgress}
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <span className="truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                {overallLabel}
               </span>
               <span className="num text-2xl text-ink">
                 {pct}
@@ -163,6 +182,10 @@ export default function Sidebar() {
             const items = topics.filter((tp) => topicPlatform(tp) === group.key);
             if (!items.length) return null;
             const isOpen = expandedFor(group.key);
+            const groupRow = groupStats.get(group.key) || { total: 0, completed: 0 };
+            const groupPct = groupRow.total > 0
+              ? Math.round((groupRow.completed / groupRow.total) * 100)
+              : 0;
             return (
               <div key={group.key} className="mb-0.5">
                 <button
@@ -172,24 +195,41 @@ export default function Sidebar() {
                     setExpanded((e) => ({ ...e, [group.key]: !isOpen }));
                   }}
                   aria-expanded={isOpen}
-                  className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-3 py-2 text-left transition-all duration-200 hover:bg-rule/8"
+                  className="mx-2 flex w-[calc(100%-1rem)] flex-col gap-1.5 rounded-xl px-3 py-2 text-left transition-all duration-200 hover:bg-rule/8"
                 >
-                  <span className="flex items-center gap-2">
-                    <span className={cn('h-1.5 w-1.5 rounded-full', group.dot)} />
-                    <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-2">
-                      {t[group.labelKey]}
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <span className={cn('h-1.5 w-1.5 rounded-full', group.dot)} />
+                      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-2">
+                        {t[group.labelKey]}
+                      </span>
+                      <span className="font-mono text-[10px] tabular-nums text-muted-2">
+                        {items.length}
+                      </span>
                     </span>
-                    <span className="font-mono text-[10px] tabular-nums text-muted-2">
-                      {items.length}
+                    <span className="flex items-center gap-1.5">
+                      {groupRow.total > 0 && (
+                        <span className="font-mono text-[10px] tabular-nums text-muted-2">
+                          {groupPct}%
+                        </span>
+                      )}
+                      <ChevronRight
+                        className={cn(
+                          'h-3.5 w-3.5 text-muted transition-transform duration-200',
+                          isOpen && 'rotate-90',
+                        )}
+                        aria-hidden
+                      />
                     </span>
                   </span>
-                  <ChevronRight
-                    className={cn(
-                      'h-3.5 w-3.5 text-muted transition-transform duration-200',
-                      isOpen && 'rotate-90',
-                    )}
-                    aria-hidden
-                  />
+                  {groupRow.total > 0 && (
+                    <ProgressBar
+                      value={groupRow.completed}
+                      max={groupRow.total}
+                      tone={groupPct === 100 ? 'mint' : 'brand'}
+                      size="xs"
+                    />
+                  )}
                 </button>
 
                 {isOpen && (

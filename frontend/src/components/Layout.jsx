@@ -7,6 +7,7 @@ import CommandHint from './CommandHint.jsx';
 import ShortcutsOverlay from './ShortcutsOverlay.jsx';
 import WelcomeDialog from './WelcomeDialog.jsx';
 import StackPickerDialog from './StackPickerDialog.jsx';
+import PlatformUrlSync from './PlatformUrlSync.jsx';
 import BottomNav from './BottomNav.jsx';
 import RouteTransition from './RouteTransition.jsx';
 import { usePrefs } from '../store/prefs.js';
@@ -33,6 +34,7 @@ export default function Layout() {
         <BottomNav />
       </div>
 
+      <PlatformUrlSync />
       <CommandPalette />
       <CommandHint />
       <ShortcutsOverlay />
