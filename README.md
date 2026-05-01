@@ -1,6 +1,6 @@
 <div align="center">
 
-# ReadyToFlutter · Codex
+# prepiroshi · Codex
 
 **Серьёзная подготовка к собеседованию по Flutter и Dart.**
 210 вопросов, 23 темы, SRS, mock-собеседование, активное припоминание, шпаргалки и интервью-раунды.

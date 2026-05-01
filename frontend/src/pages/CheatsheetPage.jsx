@@ -32,7 +32,7 @@ export default function CheatsheetPage() {
     if (!topic) return;
     const original = document.title;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    document.title = `${safe} · Cheatsheet — ReadyToFlutter`;
+    document.title = `${safe} · Cheatsheet — prepiroshi`;
     return () => { document.title = original; };
   }, [topic, topicTitle]);
 
@@ -142,7 +142,7 @@ export default function CheatsheetPage() {
         {/* Cover */}
         <header className="mb-5 border-b-2 border-rule/15 pb-3">
           <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-            <span>ReadyToFlutter · Cheatsheet</span>
+            <span>prepiroshi · Cheatsheet</span>
             <span>{today}</span>
           </div>
           <h1 className="mt-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
@@ -191,7 +191,7 @@ export default function CheatsheetPage() {
         </ol>
 
         <footer className="mt-6 border-t border-rule pt-2 text-center font-mono text-[9px] uppercase tracking-wider text-muted-2">
-          ReadyToFlutter · {topicTitle(topic)} · cheatsheet · {today}
+          prepiroshi · {topicTitle(topic)} · cheatsheet · {today}
         </footer>
       </article>
     </div>

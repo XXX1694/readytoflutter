@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['seed/static-data.json'],
       manifest: {
-        name: 'ReadyToFlutter — Codex',
-        short_name: 'Codex',
+        name: 'prepiroshi',
+        short_name: 'prepiroshi',
         description: 'Flutter & Dart interview prep with spaced repetition.',
         theme_color: '#0175C2',
         background_color: '#FAF8F4',

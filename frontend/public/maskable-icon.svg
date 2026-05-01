@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ReadyToFlutter Codex">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="prepiroshi">
   <!-- Maskable icon: full-bleed background so platforms can crop into circles, etc. -->
   <rect width="512" height="512" fill="#0E1627"/>
   <!-- Brutalist outlined frame, kept inside the safe zone (~80% of canvas). -->
   <rect x="80" y="80" width="352" height="352" rx="56" fill="#1B2540" stroke="#3A4D7A" stroke-width="6"/>
   <text x="50%" y="63%" text-anchor="middle"
         font-family="'Fraunces','Georgia',serif" font-size="280" font-weight="700"
-        fill="#FCFAF6" letter-spacing="-8">R</text>
+        fill="#FCFAF6" letter-spacing="-8">p</text>
   <circle cx="370" cy="370" r="34" fill="#127CC4"/>
   <circle cx="370" cy="370" r="34" fill="none" stroke="#FCFAF6" stroke-width="7"/>
 </svg>
