@@ -11,6 +11,7 @@ import { Button, Skeleton } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import { useAdmin, applyDiff } from '../store/admin.js';
 import PlatformFilter from '../components/PlatformFilter.jsx';
+import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';
 import { usePrefs } from '../store/prefs.js';
 import { filterQuestionsByPlatform } from '../lib/platform.js';
 
@@ -31,6 +32,7 @@ export default function SearchPage() {
   const [input, setInput] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery);
   const [facets, setFacets] = useState({ level: null, difficulty: null, status: null });
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const inputRef = useRef(null);
   const debounceTimer = useRef(null);
@@ -150,14 +152,18 @@ export default function SearchPage() {
 
   if (isLoading) return <SearchSkeleton lang={lang} />;
 
+  // Active facet count drives the badge on the mobile filters trigger.
+  const facetCount = ['level', 'difficulty', 'status'].filter((k) => facets[k]).length;
+
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
+        {/* Back row — desktop only, mobile uses header arrow. */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/')}
-          className="-ml-2 mb-5 text-muted hover:text-ink"
+          className="-ml-2 mb-5 hidden text-muted hover:text-ink lg:inline-flex"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           {t.backToDashboard}
@@ -216,8 +222,30 @@ export default function SearchPage() {
           <PlatformFilter />
         </div>
 
-        {/* Facets */}
-        <div className="mb-6 space-y-3">
+        {/* Facets — mobile shows a single Filters trigger that opens a
+            bottom-sheet with the same controls. Desktop keeps the inline
+            stack so the full surface is visible at once. */}
+        <div className="mb-5 sm:hidden">
+          <div className="flex items-center gap-2">
+            <FilterSheetTrigger
+              onClick={() => setFilterSheetOpen(true)}
+              count={facetCount}
+              label={lang === 'ru' ? 'Фильтры' : 'Filters'}
+            />
+            {hasFacets && (
+              <button
+                type="button"
+                onClick={clearFacets}
+                className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-coral active:underline"
+              >
+                <X className="h-3 w-3" />
+                {lang === 'ru' ? 'Сброс' : 'Clear'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-6 hidden space-y-3 sm:block">
           {Object.keys(FACETS).map((key) => (
             <div key={key} className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted w-24">
@@ -255,6 +283,53 @@ export default function SearchPage() {
             </button>
           )}
         </div>
+
+        {/* Bottom-sheet filters — same control set, larger touch targets,
+            stacked vertically. */}
+        <FilterSheet
+          open={filterSheetOpen}
+          onOpenChange={setFilterSheetOpen}
+          title={lang === 'ru' ? 'Фильтры' : 'Filters'}
+          footer={
+            <FilterSheet.Footer
+              onApply={() => setFilterSheetOpen(false)}
+              onClear={hasFacets ? clearFacets : null}
+              applyLabel={lang === 'ru' ? 'Готово' : 'Done'}
+              clearLabel={lang === 'ru' ? 'Сброс' : 'Clear'}
+            />
+          }
+        >
+          <div className="space-y-5 pt-1">
+            {Object.keys(FACETS).map((key) => (
+              <div key={key}>
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                  {groupHeading[key]}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {FACETS[key].map((value) => {
+                    const active = facets[key] === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setFacet(key, value)}
+                        aria-pressed={active}
+                        className={cn(
+                          'inline-flex min-h-[44px] items-center rounded-full border px-4 py-2 font-display text-[13px] font-medium transition-all active:scale-95',
+                          active
+                            ? 'border-ink bg-ink text-paper'
+                            : 'border-rule/15 bg-paper-2 text-ink-2',
+                        )}
+                      >
+                        {labelFor(key, value)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </FilterSheet>
 
         {/* Results meta */}
         <div className="mb-4 flex items-center justify-between border-b border-rule pb-3">

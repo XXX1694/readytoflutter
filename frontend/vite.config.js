@@ -12,21 +12,36 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['seed/static-data.json'],
+      includeAssets: ['seed/static-data.json', 'favicon.svg', 'maskable-icon.svg'],
       manifest: {
-        name: 'prepiroshi',
+        name: 'prepiroshi — Mobile Interview Prep',
         short_name: 'prepiroshi',
-        description: 'Flutter & Dart interview prep with spaced repetition.',
-        theme_color: '#0175C2',
-        background_color: '#FAF8F4',
+        description: 'Flutter, iOS, Android & cross-platform mobile interview workspace with spaced repetition, mock interviews and a curated knowledge base.',
+        // Theme color tracks the app's light surface so the iOS status bar
+        // and the Android system chrome blend with the paper background.
+        // The dark variant is exposed via <meta name="theme-color"> in
+        // index.html, keyed off prefers-color-scheme.
+        theme_color: '#FAFAFB',
+        background_color: '#FAFAFB',
         display: 'standalone',
+        display_override: ['standalone', 'minimal-ui'],
+        orientation: 'portrait',
         start_url: '.',
         scope: '.',
+        lang: 'en',
+        categories: ['education', 'productivity'],
         icons: [
           {
-            src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💙</text></svg>",
+            src: 'favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: 'maskable-icon.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
+            purpose: 'maskable',
           },
         ],
       },

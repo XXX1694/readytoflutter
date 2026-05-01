@@ -12,6 +12,12 @@ const initialTheme = () => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
+const THEME_COLORS = {
+  light: '#FAFAFB',
+  sepia: '#FAF5EB',
+  dark:  '#09090B',
+};
+
 const applyTheme = (theme) => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
@@ -19,6 +25,19 @@ const applyTheme = (theme) => {
   // default (no class).
   root.classList.toggle('dark', theme === 'dark');
   root.classList.toggle('sepia', theme === 'sepia');
+
+  // Sync the iOS status-bar / Android chrome theme-color so the app shell
+  // visually merges with the chosen surface. We override every existing
+  // theme-color tag (including the prefers-color-scheme keyed pair in the
+  // HTML head) since user choice trumps system pref.
+  const color = THEME_COLORS[theme] || THEME_COLORS.light;
+  let meta = document.querySelector('meta[name="theme-color"]:not([media])');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', color);
 };
 
 const nextTheme = (current) => {

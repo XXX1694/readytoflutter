@@ -126,6 +126,16 @@
     color: rgb(var(--ink));
     /* Prevent body bouncing when a nested scroller hits its end on iOS. */
     overscroll-behavior-y: none;
+    /* Hint to the browser that we have a custom viewport — needed for
+       PWA standalone mode on iOS to honour `viewport-fit=cover`. */
+    -webkit-touch-callout: none;
+  }
+  /* All scroll containers get inertial momentum + contained overscroll so
+     panning never bleeds into a parent scroller. The brutalist framework
+     used to opt-in per-element; we now opt-in everywhere by default. */
+  main, .scroll-area, [data-scroll-container] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   /* Inputs: keep the default text caret + selection but no tap flash. */
   input, textarea, select, button, a {
@@ -323,6 +333,120 @@
       0 0 0 1px rgb(var(--brand) / 0.45),
       0 0 24px rgb(var(--brand) / 0.18);
   }
+
+  /* ── Touch-target — Apple HIG 44px / Material 48px. Apply to small icons
+       sitting inside dense rows so the tap area covers a full finger pad
+       even when the icon visual is 18-20px. */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .touch-target-lg {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  /* ── Safe-area paddings — wrap UI that hits screen edges on iPhones with
+       a notch / home indicator. Combine with sticky bottoms / tops. */
+  .safe-pt    { padding-top:    env(safe-area-inset-top, 0px); }
+  .safe-pb    { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .safe-pl    { padding-left:   env(safe-area-inset-left, 0px); }
+  .safe-pr    { padding-right:  env(safe-area-inset-right, 0px); }
+  .safe-px    { padding-left:   env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .safe-py    { padding-top:    env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Active-state ripple-ish feedback. Tailwind's `active:` variant scales
+     the visual; this combines a subtle bg-tint + scale for buttons that
+     don't already have their own active state. */
+  .tap-feedback {
+    transition: transform 80ms ease-out, background-color 120ms ease-out;
+  }
+  .tap-feedback:active {
+    transform: scale(0.97);
+    background-color: rgb(var(--rule) / 0.10);
+  }
+
+  /* Hide scrollbars while keeping scroll behaviour — used by horizontal
+     filter chip strips so the bar stays clean on mobile. */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Reserves space for the fixed MobileHeader (56px high, plus the iPhone
+     status-bar safe-area). Cleared at lg+ where the desktop header is in
+     the document flow and consumes its own row. */
+  .mobile-header-spacer {
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  }
+  @media (min-width: 1024px) {
+    .mobile-header-spacer { padding-top: 0; }
+  }
+
+  /* Snap utility for horizontal swiping panels (filter chips, tab strips). */
+  .snap-x-mandatory {
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+  }
+  .snap-start { scroll-snap-align: start; }
+
+  /* Mobile sidebar drawer override — under <lg we want a *solid*, slightly
+     ink-tinted surface so the drawer doesn't wash out against bright page
+     content. The desktop `.glass` look (frosted near-white) stays intact
+     at lg+ where the sidebar is permanent and benefits from translucency. */
+  @media (max-width: 1023px) {
+    [data-drawer-mobile] {
+      background: rgb(var(--paper));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      box-shadow:
+        inset 0 0 0 1px rgb(var(--rule) / 0.06),
+        4px 0 24px -4px rgb(var(--shadow) / 0.20);
+    }
+    /* Add a subtle ink wash so the drawer reads "darker than the page"
+       in light/sepia themes where paper and paper-2 are nearly identical. */
+    [data-drawer-mobile]::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgb(var(--ink) / 0.04);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Lift the drawer's children above the wash so they paint on top. */
+    [data-drawer-mobile] > * {
+      position: relative;
+      z-index: 1;
+    }
+    .dark [data-drawer-mobile] {
+      background: rgb(var(--paper-2));
+    }
+    .dark [data-drawer-mobile]::before {
+      background: rgb(var(--rule) / 0.04);
+    }
+  }
+}
+
+/* ── Vaul bottom-sheet polish — the library renders an unstyled drawer; we
+     skin it to match the Atlas surfaces. */
+[data-vaul-drawer] {
+  background: rgb(var(--paper-2));
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow:
+    0 -2px 8px 0 rgb(var(--shadow) / 0.08),
+    0 -16px 48px -8px rgb(var(--shadow) / 0.18);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+[data-vaul-overlay] {
+  background: rgb(var(--ink) / 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.vaul-handle {
+  margin: 8px auto 4px;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--rule) / 0.30);
 }
 
 /* Shiki output — make highlighter respect surface */

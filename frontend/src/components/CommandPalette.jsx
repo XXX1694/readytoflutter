@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useHotkeys } from 'react-hotkeys-hook';
 import { toast } from 'sonner';
 import {
   Home,
@@ -64,74 +63,9 @@ export default function CommandPalette() {
   const qc = useQueryClient();
   const [query, setQuery] = useState('');
 
-  useHotkeys('mod+k', (e) => { e.preventDefault(); setOpen(!open); }, { enableOnFormTags: true });
-  useHotkeys('mod+/', (e) => { e.preventDefault(); setOpen(!open); }, { enableOnFormTags: true });
-  useHotkeys('mod+s', (e) => { e.preventDefault(); navigate('/study'); }, { enableOnFormTags: true });
-  useHotkeys('mod+m', (e) => { e.preventDefault(); navigate('/mock'); }, { enableOnFormTags: true });
-  useHotkeys('mod+b', (e) => { e.preventDefault(); navigate('/bookmarks'); }, { enableOnFormTags: true });
-  useHotkeys('mod+e', (e) => { e.preventDefault(); navigate('/admin'); }, { enableOnFormTags: true });
-  useHotkeys('mod+,', (e) => { e.preventDefault(); navigate('/settings'); }, { enableOnFormTags: true });
-
-  // Vim-style "go" prefix: press `g` then a letter within ~1.2s for navigation.
-  // Skipped while typing or when the palette is open. Matches GitHub/Linear UX.
-  const goPending = useRef(0);
-  const isTyping = (e) => {
-    const tag = (e.target?.tagName || '').toLowerCase();
-    return ['input', 'textarea', 'select'].includes(tag) || e.target?.isContentEditable;
-  };
-  const armGo = (e) => {
-    if (isTyping(e) || open) return;
-    e.preventDefault();
-    goPending.current = Date.now();
-  };
-  const consumeGo = (e, to) => {
-    if (isTyping(e) || open) return false;
-    if (Date.now() - goPending.current >= 1200) return false;
-    e.preventDefault();
-    goPending.current = 0;
-    navigate(to);
-    return true;
-  };
-
-  useHotkeys('g', armGo);
-  useHotkeys('h', (e) => consumeGo(e, '/'));
-  useHotkeys('y', (e) => consumeGo(e, '/study'));         // y = study (s is search)
-  useHotkeys('k', (e) => consumeGo(e, '/knowledge'));
-  useHotkeys('a', (e) => consumeGo(e, '/settings'));      // a = account/settings
-
-  // `g s`, `g m`, `g b`, `g t` are handled below alongside the bare `s/m/b/t`
-  // keys so we don't double-register the same letter twice with conflicting
-  // behaviour.
-
-  useHotkeys('s', (e) => {
-    if (consumeGo(e, '/search')) return;
-    // bare `s` does nothing — Cmd+S already covers Study.
-  });
-  useHotkeys('m', (e) => {
-    if (consumeGo(e, '/mock')) return;
-  });
-  useHotkeys('b', (e) => {
-    if (consumeGo(e, '/bookmarks')) return;
-  });
-
-  // Single-key power-user toggles. Skipped while typing or while `g` is armed.
-  useHotkeys('t', (e) => {
-    if (consumeGo(e, '/stats')) return; // `g t` → mastery
-    if (isTyping(e) || open) return;
-    e.preventDefault();
-    const next = theme === 'light' ? 'sepia' : theme === 'sepia' ? 'dark' : 'light';
-    setTheme(next);
-  });
-  useHotkeys('r', (e) => {
-    if (isTyping(e) || open) return;
-    e.preventDefault();
-    toggleRecallMode();
-    toast.success(
-      lang === 'ru'
-        ? `Режим recall: ${!recallMode ? 'вкл' : 'выкл'}`
-        : `Recall mode: ${!recallMode ? 'on' : 'off'}`,
-    );
-  });
+  // All keyboard shortcuts now live in `GlobalHotkeys` so they work even
+  // before the user opens the palette for the first time (this whole
+  // module is lazy-loaded the moment `commandOpen` flips to true).
 
   useEffect(() => { if (!open) setQuery(''); }, [open]);
 

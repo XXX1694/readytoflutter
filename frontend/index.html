@@ -4,16 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Brand favicon — brutalist Codex monogram (replaces the legacy heart emoji). -->
+    <!-- Brand favicon — Atlas monogram. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="mask-icon" href="/favicon.svg" color="#0E1627" />
     <link rel="apple-touch-icon" href="/maskable-icon.svg" />
 
-    <!-- Theme color matches paper / dark paper — kept light by default; the script
-         below upgrades it for dark/sepia before paint to avoid a flash. -->
-    <meta name="theme-color" content="#FCFAF6" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0C1422" media="(prefers-color-scheme: dark)" />
+    <!-- Theme color tracks the Atlas paper tokens so the iOS status bar /
+         Android chrome blend with the app surface. The dark variant flips
+         when the system prefers-color-scheme is dark. -->
+    <meta name="theme-color" content="#FAFAFB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#09090B" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
+
+    <!-- iOS PWA hints — when the user "Add to Home Screen", these turn
+         the saved app into a standalone fullscreen experience and pick a
+         status-bar style that doesn't crash with the paper background. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="prepiroshi" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="prepiroshi" />
+    <meta name="format-detection" content="telephone=no" />
 
     <title>prepiroshi - Mobile interview prep</title>
     <meta name="description" content="Mobile developer interview workspace — Flutter, Swift / SwiftUI / UIKit, Kotlin / Jetpack Compose, KMP. SRS study, mock-interview simulator, in-app videos, curated knowledge base. Bilingual (EN/RU)." />

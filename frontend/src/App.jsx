@@ -8,6 +8,7 @@ import { queryClient } from './lib/queryClient.js';
 import { FullPageLoader } from './ui/index.js';
 import { useAuth } from './store/auth.js';
 import { apiBaseUrl } from './api/api.js';
+import { prefetchIdle } from './lib/prefetch.js';
 import './store/prefs.js'; // side-effect: hydrate theme before paint
 
 // Code splitting: lazy load pages
@@ -34,6 +35,9 @@ export default function App() {
   // was still null at first paint.
   useEffect(() => {
     useAuth.getState().probeBackend(apiBaseUrl);
+    // Warm bottom-nav route chunks during idle so the first tap on any
+    // tab doesn't spend ~150ms waiting on a network round-trip.
+    prefetchIdle();
   }, []);
 
   return (

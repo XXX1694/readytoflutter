@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Home as HomeIcon, Brain, Library, Bookmark, User } from 'lucide-react';
 import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
+import { useQuestions } from '../lib/queries.js';
+import { getCardState } from '../lib/srs.js';
+import { tapLight } from '../lib/haptics.js';
+import { prefetch } from '../lib/prefetch.js';
 import { cn } from '../lib/cn.js';
 
 // Reactive narrow-screen check — `window.innerWidth` once at render time
@@ -22,14 +27,30 @@ function useNarrow(maxWidth = 360) {
   return narrow;
 }
 
+// Counts questions whose SRS card is overdue. Used for the Study tab badge so
+// the user sees "the queue grew while I was away" without opening the page.
+function useDueCount() {
+  const { data: questions = [] } = useQuestions();
+  return useMemo(() => {
+    const now = Date.now();
+    let n = 0;
+    for (const q of questions) {
+      const s = getCardState(q.id);
+      if (s.reps > 0 && s.dueAt <= now) n++;
+    }
+    return n;
+  }, [questions]);
+}
+
 /**
  * Mobile bottom navigation — visible under the `lg` breakpoint, hidden on
  * full-screen flows where the bar would compete for attention (Study card,
  * Mock interview, Round, the auth pages, the print/cheatsheet routes).
  *
- * The Account tab is conditional — it links to /settings when signed in,
- * /login otherwise. When the backend is unreachable the menu is suppressed
- * entirely (matches AccountMenu's behaviour).
+ * The active tab is marked with a sliding pill driven by framer-motion's
+ * shared layout — the pill animates between tabs on click instead of cutting.
+ * Haptic feedback fires on tap (Android-only on real devices; no-ops on iOS
+ * Safari which blocks `navigator.vibrate`).
  */
 export default function BottomNav() {
   const { lang } = useLang();
@@ -62,11 +83,8 @@ export default function BottomNav() {
     };
   }, []);
 
-  // Five-slot layout: Home · Study · Knowledge · Saved · Account.
-  // On very narrow phones (<360px) we drop "Knowledge" to keep tap targets
-  // at a comfortable size — Knowledge is still reachable via the sidebar
-  // and command palette. Reactive so rotating the device works.
   const isNarrow = useNarrow(360);
+  const dueCount = useDueCount();
 
   // Hide on routes where the bar would clash with the running UI
   const HIDE_PATTERNS = [
@@ -85,13 +103,21 @@ export default function BottomNav() {
   const showAccount = backendAvailable !== false;
   const items = [
     { to: '/', end: true, icon: HomeIcon, label: isRu ? 'Главная' : 'Home' },
-    { to: '/study', icon: Brain, label: isRu ? 'Учить' : 'Study' },
+    { to: '/study', icon: Brain, label: isRu ? 'Учить' : 'Study', badge: dueCount },
     !isNarrow && { to: '/knowledge', icon: Library, label: isRu ? 'Знания' : 'Learn' },
     { to: '/bookmarks', icon: Bookmark, label: isRu ? 'Закладки' : 'Saved' },
     showAccount && { to: accountTo, icon: User, label: isRu ? 'Я' : 'Me' },
   ].filter(Boolean);
 
   const cols = items.length === 5 ? 'grid-cols-5' : 'grid-cols-4';
+
+  // Determine which tab matches the current path so framer can place the
+  // pill. End-matched routes (Home) need exact equality; others match by
+  // prefix so /topic/* still highlights nothing (none of the tabs match).
+  const activeIndex = items.findIndex((it) => {
+    if (it.end) return path === it.to;
+    return path === it.to || path.startsWith(it.to + '/');
+  });
 
   return (
     <nav
@@ -103,44 +129,56 @@ export default function BottomNav() {
       aria-label={isRu ? 'Нижняя навигация' : 'Bottom navigation'}
     >
       <ul className={cn('grid', cols)}>
-        {items.map((it) => (
-          <li key={it.to}>
-            <NavLink
-              to={it.to}
-              end={it.end}
-              className={({ isActive }) =>
-                cn(
-                  // Min-height 56px gives a comfy hit area for the whole tab,
-                  // not just the icon pill — important since the label sits
-                  // under the icon and users tap the whole stack.
-                  'flex min-h-[56px] flex-col items-center justify-center gap-1 py-2 transition-colors',
-                  // Was text-[10px] which renders ~8px on narrow phones —
-                  // below readable threshold for low-vision users.
-                  'font-mono text-[11px] uppercase tracking-wider',
-                  isActive
-                    ? 'text-ink'
-                    : 'text-muted hover:text-ink',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span
+        {items.map((it, idx) => {
+          const isActive = idx === activeIndex;
+          return (
+            <li key={it.to}>
+              <NavLink
+                to={it.to}
+                end={it.end}
+                onClick={() => tapLight()}
+                onPointerDown={() => prefetch(it.to)}
+                onTouchStart={() => prefetch(it.to)}
+                className="relative flex min-h-[56px] flex-col items-center justify-center gap-1 py-2 font-mono text-[11px] uppercase tracking-wider text-muted transition-colors aria-[current=page]:text-ink"
+              >
+                {/* Sliding active pill — shared layoutId so framer animates
+                    the indicator across taps. Behind icon (z-0). */}
+                <span className="relative inline-flex h-8 w-11 items-center justify-center">
+                  {isActive && (
+                    <motion.span
+                      layoutId="bn-active-pill"
+                      className="absolute inset-0 rounded-md bg-ink shadow-[0_2px_8px_-2px_rgb(var(--shadow)/0.30)]"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <it.icon
                     className={cn(
-                      'inline-flex h-8 w-11 items-center justify-center rounded-md border transition-all duration-200',
-                      isActive
-                        ? 'border-ink bg-ink text-paper shadow-codex-sm'
-                        : 'border-transparent',
+                      'relative h-[18px] w-[18px] transition-colors',
+                      isActive ? 'text-paper' : 'text-muted',
                     )}
-                  >
-                    <it.icon className="h-[18px] w-[18px]" aria-hidden />
-                  </span>
-                  <span className="leading-none">{it.label}</span>
-                </>
-              )}
-            </NavLink>
-          </li>
-        ))}
+                    aria-hidden
+                  />
+                  {/* Due-count badge — top-right corner of the icon pill.
+                      Capped at 9+ so the pill keeps a tidy width. */}
+                  {it.badge > 0 && (
+                    <span
+                      className={cn(
+                        'absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1',
+                        'bg-coral text-[9px] font-semibold leading-none text-white shadow-[0_1px_3px_0_rgb(var(--shadow)/0.30)]',
+                      )}
+                      aria-label={isRu ? `${it.badge} к повторению` : `${it.badge} due`}
+                    >
+                      {it.badge > 9 ? '9+' : it.badge}
+                    </span>
+                  )}
+                </span>
+                <span className={cn('leading-none transition-colors', isActive ? 'text-ink' : 'text-muted')}>
+                  {it.label}
+                </span>
+              </NavLink>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

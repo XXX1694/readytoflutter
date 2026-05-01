@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library, Rocket } from 'lucide-react';
 import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
@@ -8,6 +9,8 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { ProgressBar, IconButton, TopicGlyph } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import { tapLight } from '../lib/haptics.js';
+import { useIsCompact } from '../lib/useMediaQuery.js';
 import { filterTopicsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform.js';
 
 const NAV_LINK_CLASS = ({ isActive }) =>
@@ -80,26 +83,62 @@ export default function Sidebar() {
     ? t.overallProgress
     : `${t.overallProgress} · ${t[PLATFORM_GROUPS.find((g) => g.key === platform)?.labelKey] || ''}`;
 
-  const close = () => setSidebarOpen(false);
+  const isCompact = useIsCompact();
+  const close = () => { tapLight(); setSidebarOpen(false); };
+
+  // Pointer-driven drag to close — committed when the user pulls the drawer
+  // > 80px to the left or flicks it. Below threshold it springs back.
+  // Disabled at lg+ since the drawer is static (always visible).
+  const onDragEnd = (_, info) => {
+    if (info.offset.x < -80 || info.velocity.x < -300) close();
+  };
 
   return (
     <>
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm lg:hidden"
-          onClick={close}
-          aria-hidden
-        />
-      )}
-
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col',
-          'glass border-r border-rule/8',
-          'transition-transform duration-300 ease-out lg:static lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+      {/* Mobile overlay — fades in/out under the drawer. AnimatePresence
+          keeps the unmount transition smooth so the backdrop doesn't blink. */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            key="sidebar-overlay"
+            className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm lg:hidden"
+            onClick={close}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            aria-hidden
+          />
         )}
+      </AnimatePresence>
+
+      <motion.aside
+        // Use framer-motion under <lg so we get spring open/close + drag.
+        // At lg+ we drop the inline transform entirely and let Tailwind hold
+        // the drawer in its static slot.
+        drag={isCompact ? 'x' : false}
+        dragDirectionLock
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{ left: 0.08, right: 0 }}
+        dragMomentum={false}
+        onDragEnd={onDragEnd}
+        animate={isCompact ? { x: sidebarOpen ? 0 : '-100%' } : { x: 0 }}
+        transition={{ type: 'spring', stiffness: 360, damping: 38, mass: 0.9 }}
+        // `data-drawer-mobile` lets us override the `glass` look at <lg
+        // via a media-query rule in index.css — solid, slightly darker
+        // paper instead of frosted near-white that washes out on bright
+        // backgrounds.
+        data-drawer-mobile
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-72 max-w-[86vw] shrink-0 flex-col',
+          'glass border-r border-rule/8',
+          'lg:static lg:w-64 lg:max-w-none',
+          'touch-pan-y', // allow vertical scroll inside, horizontal drag steals
+        )}
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
         {/* Brand */}
         <div className="flex items-start justify-between gap-2 border-b border-rule/8 px-5 py-5">
@@ -284,7 +323,7 @@ export default function Sidebar() {
         <div className="border-t border-rule/8 px-5 py-3 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-2">
           {t.footerText}
         </div>
-      </aside>
+      </motion.aside>
     </>
   );
 }

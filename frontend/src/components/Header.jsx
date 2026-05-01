@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Sun, Moon, Coffee, ExternalLink, WifiOff } from 'lucide-react';
+import { Search, Sun, Moon, Coffee, ExternalLink, WifiOff } from 'lucide-react';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
@@ -37,7 +37,6 @@ export default function Header() {
   const t = useT(lang);
   const theme = usePrefs((s) => s.theme);
   const toggleTheme = usePrefs((s) => s.toggleTheme);
-  const toggleSidebar = usePrefs((s) => s.toggleSidebar);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
   const platform = usePrefs((s) => s.platform);
   const online = useOnlineStatus();
@@ -58,23 +57,16 @@ export default function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex shrink-0 items-center gap-2 border-b bg-paper/80 px-3 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-paper/60 sm:px-6',
+        // The desktop header now lives only at `lg+`. The compact mobile
+        // chrome is a separate component (MobileHeader) so it can hide on
+        // scroll without leaving a gap in the flex column.
+        'sticky top-0 z-30 hidden shrink-0 items-center gap-2 border-b bg-paper/80 px-3 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-paper/60 lg:flex sm:px-6',
         'transition-shadow duration-300',
         scrolled
           ? 'border-rule/12 shadow-[0_4px_16px_-8px_rgb(var(--shadow)/0.10)]'
           : 'border-rule/8 shadow-none',
       )}
     >
-      {/* Mobile menu */}
-      <IconButton
-        size="md"
-        variant="ghost"
-        label={t.openMenu}
-        className="lg:hidden"
-        onClick={toggleSidebar}
-      >
-        <Menu className="h-5 w-5" />
-      </IconButton>
 
       {/* Active stack — always-visible context. Clicking opens the command
           palette where the Stack group lets you switch in one keystroke. */}

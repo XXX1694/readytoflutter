@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '../lib/cn.js';
 
 const ACCENTS = {
@@ -7,7 +8,7 @@ const ACCENTS = {
   ink:   { num: 'text-ink',                    dot: 'bg-ink-2',                  glow: 'from-ink/[0.04] to-transparent' },
 };
 
-export default function StatTile({
+function StatTile({
   label,
   value,
   suffix,
@@ -20,7 +21,10 @@ export default function StatTile({
       className={cn(
         'group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 p-5 sm:p-6',
         'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
-        'transition-all duration-300 ease-out',
+        // Was `transition-all` — we only animate transform/shadow/border, so
+        // limit the property list to keep paint cost low when many tiles
+        // mount at once.
+        'transition-[transform,box-shadow,border-color] duration-300 ease-out',
         'hover:-translate-y-0.5 hover:border-rule/15',
         'hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.10)]',
         className,
@@ -44,3 +48,5 @@ export default function StatTile({
     </div>
   );
 }
+
+export default memo(StatTile);

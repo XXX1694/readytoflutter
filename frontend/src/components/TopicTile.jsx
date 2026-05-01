@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Flame } from 'lucide-react';
 import { ProgressBar, TopicGlyph } from '../ui/index.js';
@@ -9,7 +10,7 @@ const LEVEL_DOT = {
   senior: 'bg-mint',
 };
 
-export default function TopicTile({ topic, level, t, topicTitle, topicDesc, dueCount = 0 }) {
+function TopicTile({ topic, level, t, topicTitle, topicDesc, dueCount = 0 }) {
   const navigate = useNavigate();
   const pct = topic.question_count > 0
     ? Math.round((topic.completed_count / topic.question_count) * 100)
@@ -25,7 +26,9 @@ export default function TopicTile({ topic, level, t, topicTitle, topicDesc, dueC
       className={cn(
         'group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-paper-2 p-5 text-left',
         'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
-        'transition-all duration-300 ease-out',
+        // Was `transition-all` — narrowing the property list keeps the GPU
+        // composite layer cheap when 50+ tiles render at once.
+        'transition-[transform,box-shadow,border-color] duration-300 ease-out',
         'hover:-translate-y-0.5 hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.12)]',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
         hasDue ? 'border-[rgb(var(--amber))]/30 hover:border-[rgb(var(--amber))]/50' : 'border-rule/8 hover:border-rule/20',
@@ -82,10 +85,12 @@ export default function TopicTile({ topic, level, t, topicTitle, topicDesc, dueC
       {/* Hover arrow — slides in from off-corner */}
       {!hasDue && (
         <ArrowUpRight
-          className="absolute right-4 top-4 h-4 w-4 -translate-y-1 translate-x-1 text-brand opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100"
+          className="absolute right-4 top-4 h-4 w-4 -translate-y-1 translate-x-1 text-brand opacity-0 transition-[transform,opacity] duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100"
           aria-hidden
         />
       )}
     </button>
   );
 }
+
+export default memo(TopicTile);

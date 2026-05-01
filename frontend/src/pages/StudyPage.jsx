@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,6 +19,8 @@ import AnswerText from '../components/AnswerText.jsx';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn.js';
+import { tapMedium, tapLight } from '../lib/haptics.js';
+import { useSwipe } from '../lib/useSwipe.js';
 
 const RATINGS = [
   { key: 'again', tone: 'coral',  hotkey: '1', labelEn: 'Again', labelRu: 'Снова', description: '< 1d' },
@@ -110,10 +113,26 @@ export default function StudyPage() {
 
   const handleRate = (key) => {
     if (!current || !flipped) return;
+    tapMedium();
     rateCard(current.id, key);
     setStats((s) => ({ ...s, [key]: s[key] + 1 }));
     next();
   };
+
+  // Swipe gestures on the card stack — on mobile a tap already flips, but
+  // a swipe-up to flip / swipe-down to un-flip feels closer to a stack of
+  // cards. We bind on the card wrapper so vertical scroll inside the
+  // back-side answer still works (off-axis swipes are ignored).
+  const cardSwipe = useSwipe({
+    onSwipeUp: () => {
+      if (!flipped) { tapLight(); setFlipped(true); }
+    },
+    onSwipeDown: () => {
+      if (flipped && !showCode) { tapLight(); setFlipped(false); }
+    },
+    minDistance: 60,
+    maxOffAxis: 80,
+  });
 
   const updateGist = (text) => {
     if (!current) return;
@@ -184,9 +203,11 @@ export default function StudyPage() {
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-        {/* Top bar */}
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-5xl flex-col px-4 pb-32 pt-3 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8">
+        {/* Top bar — desktop / tablet only. On mobile the close (X) lives in
+            the global header chrome, and the recall toggle moves into the
+            progress row to free up vertical space. */}
+        <header className="mb-6 hidden flex-wrap items-center justify-between gap-3 sm:flex">
           <div className="flex flex-wrap items-center gap-3">
             <Brain className="h-5 w-5 text-brand" aria-hidden />
             <span className="font-display text-xl font-medium text-ink">
@@ -225,17 +246,39 @@ export default function StudyPage() {
           </div>
         </header>
 
-        {/* Progress */}
-        <div className="mb-6 flex items-center gap-3">
+        {/* Progress + recall toggle (mobile) */}
+        <div className="mb-4 flex items-center gap-3 sm:mb-6">
           <ProgressBar value={cursor} max={total} size="sm" tone="gradient" />
           <span className="font-mono text-[11px] tabular-nums text-muted shrink-0">
             {cursor}/{total}
           </span>
+          <button
+            type="button"
+            onClick={toggleRecallMode}
+            aria-pressed={recallMode}
+            aria-label={lang === 'ru' ? 'Активное припоминание' : 'Active recall'}
+            className={cn(
+              'inline-flex shrink-0 touch-target items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-all sm:hidden',
+              recallMode
+                ? 'border-ink bg-ink text-paper'
+                : 'border-rule/15 bg-paper-2 text-muted',
+            )}
+          >
+            <Edit3 className="h-3 w-3" aria-hidden />
+            Recall
+          </button>
         </div>
+        {hasScope && scopeText && (
+          <div className="mb-4 sm:hidden">
+            <Pill tone="brand" size="xs">
+              {lang === 'ru' ? 'Скоуп' : 'Scope'}: {scopeText}
+            </Pill>
+          </div>
+        )}
 
         {/* Card + (optional) gist input */}
         <div className="flex flex-1 flex-col items-stretch justify-center gap-4">
-          <div className="w-full perspective-[1500px]">
+          <div className="w-full perspective-[1500px]" {...cardSwipe} style={{ touchAction: 'pan-y' }}>
             <motion.div
               key={current.id}
               animate={{ rotateY: flipped ? 180 : 0 }}
@@ -398,7 +441,9 @@ export default function StudyPage() {
           </div>
         )}
 
-        {/* Rating bar */}
+        {/* Rating bar — desktop / tablet inline, mobile sticky to viewport
+            bottom (study route hides BottomNav so the bar gets the whole
+            edge). Both branches share the same RATINGS map. */}
         <AnimatePresence>
           {flipped && (
             <motion.div
@@ -406,7 +451,7 @@ export default function StudyPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
               transition={{ duration: 0.18 }}
-              className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4"
+              className="mt-6 hidden grid-cols-4 gap-2 sm:grid"
             >
               {RATINGS.map((r) => (
                 <button
@@ -437,11 +482,72 @@ export default function StudyPage() {
         </AnimatePresence>
 
         {!flipped && (
-          <p className="mt-6 text-center font-mono text-[11px] uppercase tracking-wider text-muted-2">
+          <p className="mt-6 hidden text-center font-mono text-[11px] uppercase tracking-wider text-muted-2 sm:block">
             {lang === 'ru' ? 'Подумай, потом нажми пробел' : 'Think, then press space'}
           </p>
         )}
+        {!flipped && (
+          <p className="mt-4 text-center font-mono text-[10px] uppercase tracking-wider text-muted-2 sm:hidden">
+            {lang === 'ru' ? 'Тапни карту чтобы раскрыть' : 'Tap card to reveal'}
+          </p>
+        )}
       </div>
+
+      {/* Mobile sticky rating bar — portaled into <body> so the parent's
+          framer-motion transform (RouteTransition slide) doesn't trap the
+          fixed positioning inside its containing block. Only visible on
+          the back of the card (flipped). */}
+      {typeof document !== 'undefined' && createPortal(
+      <AnimatePresence>
+        {flipped && (
+          <motion.div
+            key="mobile-ratings"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-rule/12 bg-paper/95 backdrop-blur sm:hidden"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          >
+            <div className="grid grid-cols-4 gap-1.5 px-3 pt-2">
+              {RATINGS.map((r) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  onClick={() => handleRate(r.key)}
+                  className={cn(
+                    'tap-feedback flex min-h-[60px] flex-col items-center justify-center gap-0.5 rounded-xl border border-rule/12 bg-paper-2 px-2 py-2 active:scale-95 transition-transform',
+                    r.tone === 'coral' && 'active:bg-coral/10 active:border-coral/30',
+                    r.tone === 'amber' && 'active:bg-amber/10 active:border-amber/30',
+                    r.tone === 'brand' && 'active:bg-brand/10 active:border-brand/30',
+                    r.tone === 'mint'  && 'active:bg-mint/10 active:border-mint/30',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'font-display text-[14px] font-semibold leading-none',
+                      r.tone === 'coral' && 'text-coral',
+                      r.tone === 'amber' && 'text-[rgb(var(--amber))]',
+                      r.tone === 'brand' && 'text-brand',
+                      r.tone === 'mint'  && 'text-mint',
+                    )}
+                  >
+                    {lang === 'ru' ? r.labelRu : r.labelEn}
+                  </span>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-muted-2">
+                    {r.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="pb-1 pt-0.5 text-center font-mono text-[9px] uppercase tracking-[0.18em] text-muted-2">
+              {lang === 'ru' ? 'Оцени, как вспомнил' : 'Rate your recall'}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body,
+      )}
     </div>
   );
 }

@@ -90,16 +90,17 @@ export default function HomePage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-        {/* HERO — oversized gradient title, single brand-glow CTA. */}
-        <section className="mb-10 sm:mb-14">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur">
+      <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        {/* HERO — oversized gradient title, single brand-glow CTA. On
+            mobile the type ramps down a step (display-xs) so a 320px
+            iPhone SE viewport doesn't overflow, and vertical rhythm is
+            tightened to give the dashboard a "above the fold" feel. */}
+        <section className="mb-7 sm:mb-14">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur sm:mb-5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
             {lang === 'ru' ? 'Подготовка · Mobile' : 'Interview prep · Mobile'}
           </div>
-          {/* Display-xl (6.5rem ≈ 104px) overflows on narrow phones — start
-              smaller and ramp up only when there's real horizontal space. */}
-          <h1 className="font-display text-display-sm font-semibold leading-[1.02] tracking-tightest sm:text-display-md lg:text-display-lg xl:text-display-xl">
+          <h1 className="font-display text-display-xs font-semibold leading-[1.04] tracking-tightest sm:text-display-md sm:leading-[1.02] lg:text-display-lg xl:text-display-xl">
             {lang === 'ru' ? (
               <>
                 <span className="text-ink">Готов к</span>
@@ -114,19 +115,19 @@ export default function HomePage() {
               </>
             )}
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-2 sm:text-lg">
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-2 sm:mt-6 sm:text-lg">
             {t.heroDesc}
           </p>
 
           {/* AI-grader highlight — first-time visitors don't otherwise see this
               feature until they reveal an answer in Mock/Study. Brand-tinted
               pill with a one-line hint. */}
-          <div className="mt-5 inline-flex max-w-2xl items-start gap-3 rounded-2xl border border-brand/20 bg-brand/5 px-4 py-3 backdrop-blur">
+          <div className="mt-4 flex max-w-2xl items-start gap-3 rounded-2xl border border-brand/20 bg-brand/5 px-3.5 py-3 backdrop-blur sm:mt-5 sm:px-4">
             <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-sky text-white shadow-[0_4px_12px_-2px_rgb(var(--brand)/0.40)]">
               <Wand2 className="h-3.5 w-3.5" aria-hidden />
             </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
                   {t.heroAiGrader}
                 </span>
@@ -141,27 +142,29 @@ export default function HomePage() {
           </div>
 
           {/* CTA row — primary is the session you'll actually run today.
-              On mobile the primary takes the full width so it dominates;
-              secondary CTAs sit below in a paired row, then ghost links. */}
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              On mobile the primary CTA dominates with full-width 48px touch
+              target; secondaries split 50/50 underneath so both stay reachable
+              with the thumb. */}
+          <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <Button
               variant="brand"
-              className="w-full sm:w-auto"
+              size="lg"
+              className="w-full sm:w-auto sm:size-md"
               onClick={() => navigate('/study')}
             >
               <Brain className="h-4 w-4" />
               {lang === 'ru' ? 'Начать сессию' : 'Start a session'}
-              <kbd className="ml-1 rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px]">{modKey}S</kbd>
+              <kbd className="ml-1 hidden rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px] sm:inline">{modKey}S</kbd>
             </Button>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <Button variant="codex" onClick={() => navigate('/mock')}>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+              <Button variant="codex" className="w-full sm:w-auto" onClick={() => navigate('/mock')}>
                 <Target className="h-4 w-4" />
-                {lang === 'ru' ? 'Mock-собес' : 'Mock interview'}
-                <kbd className="ml-1 rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px]">{modKey}M</kbd>
+                {lang === 'ru' ? 'Mock' : 'Mock'}
+                <kbd className="ml-1 hidden rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px] sm:inline">{modKey}M</kbd>
               </Button>
-              <Button variant="ghost" onClick={() => navigate('/knowledge')}>
+              <Button variant="ghost" className="w-full sm:w-auto" onClick={() => navigate('/knowledge')}>
                 <Library className="h-4 w-4" />
-                {lang === 'ru' ? 'База знаний' : 'Knowledge'}
+                {lang === 'ru' ? 'База' : 'Knowledge'}
               </Button>
             </div>
             <button
@@ -178,16 +181,16 @@ export default function HomePage() {
 
         {/* TODAY'S PLAN — hoisted above stats so the very next thing users
             see after the hero is "what should I do right now?". */}
-        <section className="mb-8 sm:mb-10">
+        <section className="mb-6 sm:mb-10">
           <TodayPlan />
         </section>
 
         {/* STATS */}
-        <section className="mb-10 sm:mb-12">
-          <Eyebrow className="mb-4">
+        <section className="mb-7 sm:mb-12">
+          <Eyebrow className="mb-3 sm:mb-4">
             {lang === 'ru' ? 'Прогресс' : 'Progress'}
           </Eyebrow>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
             <StatTile label={t.totalQuestions} value={total} accent="ink" />
             <StatTile label={t.completed} value={completed} accent="mint" />
             <StatTile label={t.inProgress} value={inProgress} accent="amber" />
@@ -196,18 +199,18 @@ export default function HomePage() {
         </section>
 
         {/* ACTIVITY */}
-        <section className="mb-12 sm:mb-16">
-          <Eyebrow className="mb-4">
+        <section className="mb-8 sm:mb-16">
+          <Eyebrow className="mb-3 sm:mb-4">
             {lang === 'ru' ? 'Активность · 14 недель' : 'Activity · last 14 weeks'}
           </Eyebrow>
-          <div className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm sm:p-6">
+          <div className="rounded-md border border-rule/15 bg-paper-2 p-3 shadow-codex-sm sm:p-6">
             <ActivityHeatmap weeks={14} />
           </div>
         </section>
 
         {/* PLATFORM FILTER — splits the catalog by stack so Flutter / iOS /
             Android don't compete for the same scroll. Selection persists. */}
-        <section className="mb-6 sm:mb-8">
+        <section className="mb-5 sm:mb-8">
           <PlatformFilter />
         </section>
 
@@ -225,13 +228,13 @@ export default function HomePage() {
             if (!items.length) return null;
             const levelT = t[level];
             return (
-              <div key={level} className="mb-12 sm:mb-16">
-                <header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-rule/15 pb-3">
+              <div key={level} className="mb-9 sm:mb-16">
+                <header className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-rule/15 pb-3 sm:mb-5">
                   <div>
                     <Eyebrow accent="brand" className="mb-2">
                       {levelT.short}
                     </Eyebrow>
-                    <h2 className="font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+                    <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-4xl">
                       {levelT.label}
                     </h2>
                     <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
@@ -239,7 +242,7 @@ export default function HomePage() {
                     </p>
                   </div>
                 </header>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {items.map((topic) => (
                     <TopicTile
                       key={topic.id}

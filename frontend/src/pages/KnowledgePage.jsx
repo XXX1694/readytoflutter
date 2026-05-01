@@ -19,6 +19,7 @@ import VideoPlayer from '../components/VideoPlayer.jsx';
 import { Button, Pill, FullPageLoader } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import PlatformFilter from '../components/PlatformFilter.jsx';
+import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';
 import { usePrefs } from '../store/prefs.js';
 import { filterResourcesByPlatform } from '../lib/platform.js';
 
@@ -78,6 +79,7 @@ export default function KnowledgePage() {
   const [freeOnly, setFreeOnly] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [query, setQuery] = useState('');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   // The resource currently playing (in modal), or null.
   const [playing, setPlaying] = useState(null);
@@ -182,27 +184,40 @@ export default function KnowledgePage() {
   const filteredCount = filtered.length;
   const playableCount = allResources.filter(isPlayable).length;
 
+  // Active filter count for the mobile bottom-sheet trigger badge.
+  const filterCount = [
+    level !== 'all',
+    langFilter !== 'all',
+    media !== 'all',
+    freeOnly,
+    savedOnly,
+  ].filter(Boolean).length;
+  const clearAllFilters = () => {
+    setLevel('all'); setLangFilter('all'); setMedia('all');
+    setFreeOnly(false); setSavedOnly(false);
+  };
+
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate('/')}
-          className="-ml-2 mb-5 text-muted hover:text-ink"
+          className="-ml-2 mb-5 hidden text-muted hover:text-ink lg:inline-flex"
         >
           <ArrowLeft className="h-4 w-4" /> {isRu ? 'На главную' : 'Back'}
         </Button>
 
         {/* Header */}
-        <header className="mb-8 border-b border-rule/15 pb-6">
+        <header className="mb-6 border-b border-rule/15 pb-5 sm:mb-8 sm:pb-6">
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
             <Library className="h-3 w-3" /> {isRu ? 'База знаний' : 'Knowledge base'}
           </div>
-          <h1 className="mt-2 font-display text-display-sm font-medium leading-tight tracking-tightest text-ink sm:text-display-md">
+          <h1 className="mt-2 font-display text-2xl font-medium leading-tight tracking-tightest text-ink sm:text-display-sm md:text-display-md">
             {isRu ? 'Учись шире, чем вопросы.' : 'Learn beyond the questions.'}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm text-muted">
+          <p className="mt-2 max-w-2xl text-[14px] text-muted sm:mt-3 sm:text-sm">
             {isRu
               ? 'Подобранные доки, статьи, видео, плейлисты, курсы и комьюнити. Видео и плейлисты с YouTube открываются прямо здесь — никуда уходить не надо.'
               : 'Curated docs, articles, videos, playlists, courses and communities. YouTube videos and playlists open right inside the app — no leaving for the tab graveyard.'}
@@ -284,8 +299,9 @@ export default function KnowledgePage() {
           )}
         </div>
 
-        {/* Category strip */}
-        <div className="mb-4 flex flex-wrap gap-2">
+        {/* Category strip — wraps on desktop, horizontal-scrolls on mobile so
+            12+ categories never break onto a third row. */}
+        <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
           <CategoryChip
             active={category === 'all'}
             onClick={() => setCategory('all')}
@@ -305,8 +321,22 @@ export default function KnowledgePage() {
           ))}
         </div>
 
-        {/* Filter row */}
-        <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-rule py-3 font-mono text-[10px] uppercase tracking-wider text-muted">
+        {/* Mobile filter trigger — opens a bottom-sheet with the full
+            level/lang/type/free/saved control set. Keeps the page surface
+            clean on small screens. */}
+        <div className="mb-5 flex items-center justify-between gap-2 sm:hidden">
+          <FilterSheetTrigger
+            onClick={() => setFilterSheetOpen(true)}
+            count={filterCount}
+            label={isRu ? 'Фильтры' : 'Filters'}
+          />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
+            {filteredCount} / {totalCount}
+          </span>
+        </div>
+
+        {/* Filter row — desktop / tablet inline grid */}
+        <div className="mb-6 hidden flex-wrap items-center gap-x-4 gap-y-2 border-y border-rule py-3 font-mono text-[10px] uppercase tracking-wider text-muted sm:flex">
           <FilterGroup label={isRu ? 'Уровень' : 'Level'}>
             {LEVELS.map((l) => (
               <ToggleChip key={l.key} active={level === l.key} onClick={() => setLevel(l.key)}>
@@ -350,6 +380,63 @@ export default function KnowledgePage() {
             {filteredCount} / {totalCount}
           </span>
         </div>
+
+        {/* Mobile filter bottom-sheet */}
+        <FilterSheet
+          open={filterSheetOpen}
+          onOpenChange={setFilterSheetOpen}
+          title={isRu ? 'Фильтры' : 'Filters'}
+          footer={
+            <FilterSheet.Footer
+              onApply={() => setFilterSheetOpen(false)}
+              onClear={filterCount > 0 ? clearAllFilters : null}
+              applyLabel={isRu ? `Показать ${filteredCount}` : `Show ${filteredCount}`}
+              clearLabel={isRu ? 'Сброс' : 'Clear'}
+            />
+          }
+        >
+          <div className="space-y-5 pt-1">
+            <SheetGroup label={isRu ? 'Уровень' : 'Level'}>
+              {LEVELS.map((l) => (
+                <SheetChip key={l.key} active={level === l.key} onClick={() => setLevel(l.key)}>
+                  {isRu ? l.ru : l.en}
+                </SheetChip>
+              ))}
+            </SheetGroup>
+            <SheetGroup label={isRu ? 'Язык' : 'Lang'}>
+              {LANGS.map((l) => (
+                <SheetChip key={l.key} active={langFilter === l.key} onClick={() => setLangFilter(l.key)}>
+                  {isRu ? l.ru : l.en}
+                </SheetChip>
+              ))}
+            </SheetGroup>
+            <SheetGroup label={isRu ? 'Тип' : 'Type'}>
+              {MEDIA_TYPES.map((m) => {
+                const Icon = m.icon;
+                return (
+                  <SheetChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
+                    <Icon className="h-3.5 w-3.5" />
+                    {isRu ? m.ru : m.en}
+                  </SheetChip>
+                );
+              })}
+            </SheetGroup>
+            <SheetGroup>
+              <SheetChip active={freeOnly} onClick={() => setFreeOnly((v) => !v)}>
+                {isRu ? 'Только бесплатное' : 'Free only'}
+              </SheetChip>
+              <SheetChip active={savedOnly} onClick={() => setSavedOnly((v) => !v)}>
+                <Bookmark className="h-3.5 w-3.5" />
+                {isRu ? 'Сохранённое' : 'Saved'}
+                {savedIds.size > 0 && (
+                  <span className="ml-1 rounded bg-paper-2/40 px-1 font-mono text-[10px] tabular-nums">
+                    {savedIds.size}
+                  </span>
+                )}
+              </SheetChip>
+            </SheetGroup>
+          </div>
+        </FilterSheet>
 
         {/* Results */}
         {filteredCount === 0 ? (
@@ -435,6 +522,39 @@ function FilterGroup({ label, children }) {
       {label && <span className="text-muted-2">{label}</span>}
       {children}
     </div>
+  );
+}
+
+// Bottom-sheet variants — bigger touch targets, sans-mono labels for the
+// scaled-up mobile layout.
+function SheetGroup({ label, children }) {
+  return (
+    <div>
+      {label && (
+        <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+          {label}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function SheetChip({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 py-2 font-display text-[13px] font-medium transition-all active:scale-95',
+        active
+          ? 'border-ink bg-ink text-paper'
+          : 'border-rule/15 bg-paper-2 text-ink-2',
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
