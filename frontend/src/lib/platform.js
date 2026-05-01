@@ -11,12 +11,57 @@
 // all consume this list — so the new tech appears everywhere automatically.
 
 export const PLATFORMS = [
-  { key: 'all',     dot: 'bg-ink',    labelKey: 'platformAll',     descKey: 'platformDescAll' },
-  { key: 'flutter', dot: 'bg-brand',  labelKey: 'platformFlutter', descKey: 'platformDescFlutter' },
-  { key: 'ios',     dot: 'bg-plum',   labelKey: 'platformIos',     descKey: 'platformDescIos' },
-  { key: 'android', dot: 'bg-mint',   labelKey: 'platformAndroid', descKey: 'platformDescAndroid' },
-  { key: 'cross',   dot: 'bg-amber',  labelKey: 'platformCross',   descKey: 'platformDescCross' },
-  { key: 'mobile',  dot: 'bg-coral',  labelKey: 'platformMobile',  descKey: 'platformDescMobile' },
+  {
+    key: 'all',
+    dot: 'bg-ink',
+    labelKey: 'platformAll',
+    descKey: 'platformDescAll',
+    // The catch-all "All" stack sends the user to the most heavily used set
+    // of docs in the catalog (still Flutter today). Update this if the mix
+    // changes.
+    docsUrl: 'https://docs.flutter.dev/',
+    docsLabel: 'Flutter Docs',
+  },
+  {
+    key: 'flutter',
+    dot: 'bg-brand',
+    labelKey: 'platformFlutter',
+    descKey: 'platformDescFlutter',
+    docsUrl: 'https://docs.flutter.dev/',
+    docsLabel: 'Flutter Docs',
+  },
+  {
+    key: 'ios',
+    dot: 'bg-plum',
+    labelKey: 'platformIos',
+    descKey: 'platformDescIos',
+    docsUrl: 'https://developer.apple.com/documentation/',
+    docsLabel: 'Apple Docs',
+  },
+  {
+    key: 'android',
+    dot: 'bg-mint',
+    labelKey: 'platformAndroid',
+    descKey: 'platformDescAndroid',
+    docsUrl: 'https://developer.android.com/',
+    docsLabel: 'Android Docs',
+  },
+  {
+    key: 'cross',
+    dot: 'bg-amber',
+    labelKey: 'platformCross',
+    descKey: 'platformDescCross',
+    docsUrl: 'https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html',
+    docsLabel: 'KMP Docs',
+  },
+  {
+    key: 'mobile',
+    dot: 'bg-coral',
+    labelKey: 'platformMobile',
+    descKey: 'platformDescMobile',
+    docsUrl: 'https://owasp.org/www-project-mobile-top-10/',
+    docsLabel: 'OWASP Mobile',
+  },
 ];
 
 export const PLATFORM_KEYS = PLATFORMS.map((p) => p.key);

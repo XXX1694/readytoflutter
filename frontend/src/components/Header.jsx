@@ -164,14 +164,18 @@ export default function Header() {
               : <Sun className="h-4 w-4" />}
         </IconButton>
 
-        {/* Docs link */}
+        {/* Docs link — retargets to the canonical reference for the active
+            stack (Apple Docs on iOS, developer.android.com on Android, KMP
+            guide on Cross-Platform). Falls back to flutter.dev for the
+            All-stack default. Defined alongside PLATFORMS in lib/platform.js. */}
         <a
-          href="https://flutter.dev/docs"
+          href={platformMeta.docsUrl}
           target="_blank"
           rel="noopener noreferrer"
+          title={platformMeta.docsLabel}
           className="hidden h-9 items-center gap-1 rounded-md px-2 font-mono text-[11px] uppercase tracking-wider text-muted transition-colors hover:text-ink md:inline-flex"
         >
-          {t.docs}
+          {platformMeta.docsLabel}
           <ExternalLink className="h-3 w-3" aria-hidden />
         </a>
 

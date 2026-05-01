@@ -39,17 +39,13 @@ export default function Sidebar() {
   const t = useT(lang);
   const { topicTitle } = useContent(lang);
 
-  const { data: allTopics = [] } = useTopics();
+  const { data: topics = [] } = useTopics();
   const platform = usePrefs((s) => s.platform);
-  // Sidebar honors the dashboard's platform filter so the topic tree doesn't
-  // re-merge Flutter / iOS / Android once the user has chosen a stack.
-  const topics = useMemo(
-    () => filterTopicsByPlatform(allTopics, platform),
-    [allTopics, platform],
-  );
 
-  // Per-group totals so the platform header can show its own progress bar
-  // instead of one global percentage that hides where you actually stand.
+  // Sidebar always shows every stack with its own progress so the user can
+  // size up the whole catalog at a glance. The active stack only controls
+  // which group is expanded by default and which one the top progress block
+  // summarizes — never which groups are visible.
   const groupStats = useMemo(() => {
     const map = new Map();
     for (const topic of topics) {
@@ -71,10 +67,14 @@ export default function Sidebar() {
     return key === PLATFORM_GROUPS.find((g) => topics.some((t) => topicPlatform(t) === g.key))?.key;
   };
 
-  // Totals scoped to the currently visible topics — a global stats blob
-  // would still show 392 here even when the user is on iOS-only.
-  const total = topics.reduce((s, tp) => s + (tp.question_count || 0), 0);
-  const completed = topics.reduce((s, tp) => s + (tp.completed_count || 0), 0);
+  // Top progress block: when a specific stack is active we report just that
+  // stack's progress (with its label), otherwise we show the overall blend.
+  const scopedTopics = useMemo(
+    () => filterTopicsByPlatform(topics, platform),
+    [topics, platform],
+  );
+  const total = scopedTopics.reduce((s, tp) => s + (tp.question_count || 0), 0);
+  const completed = scopedTopics.reduce((s, tp) => s + (tp.completed_count || 0), 0);
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const overallLabel = platform === 'all'
     ? t.overallProgress
