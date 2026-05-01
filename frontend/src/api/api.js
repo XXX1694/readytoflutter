@@ -4,15 +4,31 @@ import { queryClient } from '../lib/queryClient.js';
 import { useAuth } from '../store/auth.js';
 
 // Production fallback for GitHub Pages: when we're served from *.github.io
-// and the build wasn't given an explicit VITE_API_BASE_URL, point at the
-// Render-hosted backend so auth/sync still work.
-const PROD_API_FALLBACK = 'https://readytoflutter.onrender.com/api';
+// and the build wasn't given an explicit VITE_API_BASE_URL, fall back to
+// VITE_PROD_API_FALLBACK_URL (a build-time env). If that's also missing we
+// run anonymous-only — every API call goes through the localStorage path.
+//
+// The fallback URL used to be hardcoded to a specific Render service name,
+// which meant a backend rename or domain change would silently break Pages
+// auth without any code visibility. Keeping it in env makes the wiring
+// inspectable from the workflow / .env.example.
+const PROD_API_FALLBACK = import.meta.env.VITE_PROD_API_FALLBACK_URL || '';
 const onGithubPages = typeof window !== 'undefined'
   && window.location.hostname.endsWith('.github.io');
 
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL
-  || (onGithubPages ? PROD_API_FALLBACK : '/api');
+  || (onGithubPages && PROD_API_FALLBACK ? PROD_API_FALLBACK : '/api');
+
+if (typeof window !== 'undefined' && onGithubPages && !import.meta.env.VITE_API_BASE_URL && !PROD_API_FALLBACK) {
+  // One-time soft warning so a Pages deploy without either env doesn't
+  // silently swallow auth — visible in the browser console for whoever's
+  // wiring up a new fork.
+  console.warn(
+    '[api] Running on GitHub Pages without VITE_API_BASE_URL or VITE_PROD_API_FALLBACK_URL. '
+    + 'Auth/sync will be unavailable; the app stays functional in anonymous mode.',
+  );
+}
 const api = axios.create({ baseURL: apiBaseUrl });
 
 // Attach the auth token (if any) to every outgoing request. Reading from the
