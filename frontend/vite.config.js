@@ -5,9 +5,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
 const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const inferredBase = isGithubActions && repoName ? `/${repoName}/` : '/';
+const base = process.env.VITE_BASE_PATH || inferredBase;
 
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH || inferredBase,
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -118,10 +119,13 @@ export default defineConfig({
         // generated PWA bitmap assets so the app cold-boots offline.
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,avif,woff2,json,ico}'],
         // Routes inside the SPA — workbox serves index.html for any
-        // navigation that doesn't match a real precached file. Excluding
-        // /api/* keeps the backend reachable.
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // navigation that doesn't match a real precached file. Must match
+        // the actual precached path, which includes the base prefix on
+        // sub-path deploys (e.g. /readytoflutter/index.html on GH Pages).
+        navigateFallback: `${base}index.html`,
+        // Exclude /api/* (backend) and the base-prefixed /api/* so the SW
+        // never intercepts backend requests regardless of base path.
+        navigateFallbackDenylist: [/\/api\//],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.endsWith('/seed/static-data.json'),
