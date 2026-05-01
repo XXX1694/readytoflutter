@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- `maximum-scale=1, user-scalable=no` blocks the iOS Safari zoom-on-input-focus
+         behaviour that otherwise zooms the entire viewport when a text field
+         is focused. Pair with the 16px+ font-size rule in index.css so the
+         input itself never falls under the auto-zoom threshold. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
     <!-- Brand favicon — Atlas monogram. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
