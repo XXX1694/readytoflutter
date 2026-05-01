@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 /**
  * Pointer-based swipe detector. No external dep — uses native PointerEvents
