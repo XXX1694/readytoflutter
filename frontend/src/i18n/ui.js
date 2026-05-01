@@ -131,6 +131,19 @@ export const UI = {
     heroAiGraderModel: 'Claude Haiku 4.5',
     heroAiGraderHint: 'Type your answer in Mock or Study — Claude scores you against the reference and points out gaps.',
 
+    // First-launch stack picker
+    stackPickerEyebrow: 'Welcome',
+    stackPickerTitle: 'Which stack are you preparing for?',
+    stackPickerSubtitle: 'Pick one to focus the catalog. You can switch any time from the dashboard or Cmd+K.',
+    stackPickerLater: 'Decide later',
+    stackPickerCount: (n) => `${n} topic${n === 1 ? '' : 's'}`,
+    platformDescAll: 'See every topic across every stack — good for browsing.',
+    platformDescFlutter: 'Flutter & Dart — widgets, state, async, navigation, internals.',
+    platformDescIos: 'Swift, SwiftUI, UIKit, Combine, iOS architecture & performance.',
+    platformDescAndroid: 'Kotlin, Jetpack Compose, Coroutines, Android architecture & DI.',
+    platformDescCross: 'Kotlin Multiplatform & Compose Multiplatform — share code across stores.',
+    platformDescMobile: 'Cross-stack mobile concerns — system design, security, CI/CD.',
+
     // Misc
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
@@ -267,6 +280,19 @@ export const UI = {
     heroAiGrader: 'ИИ-оценка ответа',
     heroAiGraderModel: 'Claude Haiku 4.5',
     heroAiGraderHint: 'Пиши ответ в Mock или Study — Claude сверит с эталоном и подсветит, чего не хватает.',
+
+    // First-launch stack picker
+    stackPickerEyebrow: 'Привет',
+    stackPickerTitle: 'Какой стек готовишь?',
+    stackPickerSubtitle: 'Выбери один — каталог свернётся под него. Поменять можно в любой момент с дашборда или из Cmd+K.',
+    stackPickerLater: 'Позже',
+    stackPickerCount: (n) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
+    platformDescAll: 'Все темы по всем стекам — для общего обзора.',
+    platformDescFlutter: 'Flutter и Dart — виджеты, состояние, async, навигация, внутренности.',
+    platformDescIos: 'Swift, SwiftUI, UIKit, Combine, архитектура и перформанс iOS.',
+    platformDescAndroid: 'Kotlin, Jetpack Compose, корутины, архитектура и DI Android.',
+    platformDescCross: 'Kotlin Multiplatform и Compose Multiplatform — шаринг кода между сторами.',
+    platformDescMobile: 'Cross-stack темы — system design, безопасность, CI/CD.',
 
     // Misc
     openMenu: 'Открыть меню',

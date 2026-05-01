@@ -6,6 +6,7 @@ import CommandPalette from './CommandPalette.jsx';
 import CommandHint from './CommandHint.jsx';
 import ShortcutsOverlay from './ShortcutsOverlay.jsx';
 import WelcomeDialog from './WelcomeDialog.jsx';
+import StackPickerDialog from './StackPickerDialog.jsx';
 import BottomNav from './BottomNav.jsx';
 import RouteTransition from './RouteTransition.jsx';
 import { usePrefs } from '../store/prefs.js';
@@ -35,6 +36,9 @@ export default function Layout() {
       <CommandPalette />
       <CommandHint />
       <ShortcutsOverlay />
+      {/* StackPicker shows first; once dismissed (or platform is already
+          chosen) WelcomeDialog runs through the 4-step tour. */}
+      <StackPickerDialog />
       <WelcomeDialog />
       <Toaster
         theme={theme === 'dark' ? 'dark' : 'light'}

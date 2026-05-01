@@ -6,6 +6,7 @@ import { Button, Pill } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 
 const STORAGE_KEY = 'rtf:welcome:v1';
+const STACK_PICKER_KEY = 'rtf:stackpicker:v1';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const mod = isMac ? '⌘' : 'Ctrl';
@@ -73,7 +74,9 @@ export default function WelcomeDialog() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (localStorage.getItem(STORAGE_KEY)) return;
-    // Tiny delay so the welcome dialog doesn't compete with the first render
+    // Defer to the stack picker — it owns first-launch attention. Only show
+    // the tour after the picker has been dismissed (this run or before).
+    if (!localStorage.getItem(STACK_PICKER_KEY)) return;
     const id = setTimeout(() => setOpen(true), 600);
     return () => clearTimeout(id);
   }, []);

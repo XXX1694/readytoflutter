@@ -11,12 +11,12 @@
 // all consume this list — so the new tech appears everywhere automatically.
 
 export const PLATFORMS = [
-  { key: 'all',     dot: 'bg-ink',    labelKey: 'platformAll' },
-  { key: 'flutter', dot: 'bg-brand',  labelKey: 'platformFlutter' },
-  { key: 'ios',     dot: 'bg-plum',   labelKey: 'platformIos' },
-  { key: 'android', dot: 'bg-mint',   labelKey: 'platformAndroid' },
-  { key: 'cross',   dot: 'bg-amber',  labelKey: 'platformCross' },
-  { key: 'mobile',  dot: 'bg-coral',  labelKey: 'platformMobile' },
+  { key: 'all',     dot: 'bg-ink',    labelKey: 'platformAll',     descKey: 'platformDescAll' },
+  { key: 'flutter', dot: 'bg-brand',  labelKey: 'platformFlutter', descKey: 'platformDescFlutter' },
+  { key: 'ios',     dot: 'bg-plum',   labelKey: 'platformIos',     descKey: 'platformDescIos' },
+  { key: 'android', dot: 'bg-mint',   labelKey: 'platformAndroid', descKey: 'platformDescAndroid' },
+  { key: 'cross',   dot: 'bg-amber',  labelKey: 'platformCross',   descKey: 'platformDescCross' },
+  { key: 'mobile',  dot: 'bg-coral',  labelKey: 'platformMobile',  descKey: 'platformDescMobile' },
 ];
 
 export const PLATFORM_KEYS = PLATFORMS.map((p) => p.key);
