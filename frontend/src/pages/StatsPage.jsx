@@ -10,7 +10,7 @@ import { Button, Eyebrow, ProgressBar, Pill, Skeleton, TopicGlyph, levelTone } f
 import { cn } from '../lib/cn.js';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import { usePrefs } from '../store/prefs.js';
-import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform.js';
+import { filterTopicsByPlatform, filterQuestionsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform.js';
 
 const LEVELS = ['junior', 'mid', 'senior'];
 
@@ -97,6 +97,29 @@ export default function StatsPage() {
     .sort((a, b) => mastery(a) - mastery(b))
     .slice(0, 3);
 
+  // Stack × grade breakdown — only meaningful when the user is looking at
+  // every platform, otherwise the row would always be a single line.
+  const stackBreakdown = platform === 'all'
+    ? PLATFORM_GROUPS.map((group) => {
+        const tIds = new Set(
+          allTopics.filter((tp) => topicPlatform(tp) === group.key).map((tp) => tp.id),
+        );
+        const groupQs = allQuestions.filter((q) => tIds.has(q.topic_id));
+        if (!groupQs.length) return null;
+        const byLevel = ['junior', 'mid', 'senior'].reduce((acc, lv) => {
+          const levelQs = groupQs.filter((q) => q.level === lv);
+          acc[lv] = {
+            total: levelQs.length,
+            completed: levelQs.filter((q) => q.status === 'completed').length,
+          };
+          return acc;
+        }, {});
+        const total = groupQs.length;
+        const completed = groupQs.filter((q) => q.status === 'completed').length;
+        return { group, byLevel, total, completed };
+      }).filter(Boolean)
+    : [];
+
   return (
     <div className="bg-page">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
@@ -162,6 +185,74 @@ export default function StatsPage() {
             tone="brand"
           />
         </section>
+
+        {/* Stack × grade matrix — visible only when stack=all, otherwise the
+            sidebar's per-platform progress already covers the answer. */}
+        {stackBreakdown.length > 0 && (
+          <section className="mb-10">
+            <Eyebrow className="mb-3">{t.masteryByStack}</Eyebrow>
+            <p className="mb-4 max-w-xl text-[13px] text-ink-2">{t.masteryByStackHint}</p>
+            <div className="overflow-hidden rounded-2xl border border-rule/12 bg-paper-2">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-rule/12 bg-paper-2/60 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                    <th className="px-4 py-3">&nbsp;</th>
+                    <th className="px-3 py-3">{t.masteryColJunior}</th>
+                    <th className="px-3 py-3">{t.masteryColMid}</th>
+                    <th className="px-3 py-3">{t.masteryColSenior}</th>
+                    <th className="px-4 py-3 text-right">{t.masteryColTotal}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stackBreakdown.map((row) => {
+                    const overallPct = row.total > 0
+                      ? Math.round((row.completed / row.total) * 100)
+                      : 0;
+                    return (
+                      <tr key={row.group.key} className="border-t border-rule/8">
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-2">
+                            <span className={cn('h-1.5 w-1.5 rounded-full', row.group.dot)} aria-hidden />
+                            <span className="font-display text-base font-medium text-ink">
+                              {t[row.group.labelKey]}
+                            </span>
+                          </span>
+                        </td>
+                        {['junior', 'mid', 'senior'].map((lv) => {
+                          const cell = row.byLevel[lv];
+                          if (!cell.total) {
+                            return (
+                              <td key={lv} className="px-3 py-3 font-mono text-[11px] text-muted-2">—</td>
+                            );
+                          }
+                          const pct = Math.round((cell.completed / cell.total) * 100);
+                          return (
+                            <td key={lv} className="px-3 py-3">
+                              <span className="font-mono text-[12px] tabular-nums text-ink">
+                                {cell.completed}/{cell.total}
+                              </span>
+                              <span className="ml-1.5 font-mono text-[10px] tabular-nums text-muted-2">
+                                · {pct}%
+                              </span>
+                            </td>
+                          );
+                        })}
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-mono text-[13px] tabular-nums text-ink">
+                            {row.completed}/{row.total}
+                          </span>
+                          <span className="ml-1.5 font-mono text-[11px] tabular-nums text-muted-2">
+                            · {overallPct}%
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {/* Weakest topics */}
         {weakest.some((r) => mastery(r) < 80) && (

@@ -131,6 +131,14 @@ export const UI = {
     heroAiGraderModel: 'Claude Haiku 4.5',
     heroAiGraderHint: 'Type your answer in Mock or Study — Claude scores you against the reference and points out gaps.',
 
+    // Mastery breakdown table on /stats when stack=all
+    masteryByStack: 'Mastery by stack',
+    masteryByStackHint: 'Each row is a platform · each column is a grade. Numbers are completed / total questions.',
+    masteryColJunior: 'Junior',
+    masteryColMid: 'Mid',
+    masteryColSenior: 'Senior',
+    masteryColTotal: 'Total',
+
     // First-launch stack picker
     stackPickerEyebrow: 'Welcome',
     stackPickerTitle: 'Which stack are you preparing for?',
@@ -280,6 +288,14 @@ export const UI = {
     heroAiGrader: 'ИИ-оценка ответа',
     heroAiGraderModel: 'Claude Haiku 4.5',
     heroAiGraderHint: 'Пиши ответ в Mock или Study — Claude сверит с эталоном и подсветит, чего не хватает.',
+
+    // Mastery breakdown
+    masteryByStack: 'Mastery по стекам',
+    masteryByStackHint: 'Строка — платформа, колонка — грейд. Цифры — закрыто / всего вопросов.',
+    masteryColJunior: 'Junior',
+    masteryColMid: 'Middle',
+    masteryColSenior: 'Senior',
+    masteryColTotal: 'Всего',
 
     // First-launch stack picker
     stackPickerEyebrow: 'Привет',

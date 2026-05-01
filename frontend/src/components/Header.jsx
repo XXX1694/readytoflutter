@@ -7,6 +7,7 @@ import { useT } from '../i18n/ui.js';
 import { IconButton } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import AccountMenu from './AccountMenu.jsx';
+import { PLATFORMS } from '../lib/platform.js';
 
 // Subscribes to navigator.onLine so the header can show a small offline
 // badge when writes are going to localStorage instead of the server.
@@ -38,7 +39,9 @@ export default function Header() {
   const toggleTheme = usePrefs((s) => s.toggleTheme);
   const toggleSidebar = usePrefs((s) => s.toggleSidebar);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const platform = usePrefs((s) => s.platform);
   const online = useOnlineStatus();
+  const platformMeta = PLATFORMS.find((p) => p.key === platform) || PLATFORMS[0];
 
   // Subtle scroll-shadow on the header — gives the page a sense of depth
   // when the user starts scrolling the main content.
@@ -72,6 +75,19 @@ export default function Header() {
       >
         <Menu className="h-5 w-5" />
       </IconButton>
+
+      {/* Active stack — always-visible context. Clicking opens the command
+          palette where the Stack group lets you switch in one keystroke. */}
+      <button
+        type="button"
+        onClick={() => setCommandOpen(true)}
+        aria-label={`${t.platformLabel}: ${t[platformMeta.labelKey]}`}
+        title={`${t.platformLabel}: ${t[platformMeta.labelKey]}`}
+        className="hidden h-9 shrink-0 items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2/60 px-2.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 transition-all hover:border-rule/25 hover:bg-paper-2 hover:text-ink sm:inline-flex"
+      >
+        <span className={cn('h-1.5 w-1.5 rounded-full', platformMeta.dot)} aria-hidden />
+        <span>{t[platformMeta.labelKey]}</span>
+      </button>
 
       {/* Cmd+K trigger — looks like a modern search input but opens the palette */}
       <button

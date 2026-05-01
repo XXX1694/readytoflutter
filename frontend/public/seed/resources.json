@@ -69,6 +69,7 @@
   "resources": [
     {
       "id": 1,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter Documentation",
@@ -90,6 +91,7 @@
     },
     {
       "id": 2,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Dart Language Tour",
@@ -110,6 +112,7 @@
     },
     {
       "id": 3,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Effective Dart",
@@ -131,6 +134,7 @@
     },
     {
       "id": 4,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter Cookbook",
@@ -153,6 +157,7 @@
     },
     {
       "id": 5,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "tool",
       "title_en": "DartPad",
@@ -174,6 +179,7 @@
     },
     {
       "id": 6,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "API reference (Flutter SDK)",
@@ -194,6 +200,7 @@
     },
     {
       "id": 7,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "tool",
       "title_en": "pub.dev — package registry",
@@ -214,6 +221,7 @@
     },
     {
       "id": 8,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Material 3 Design",
@@ -234,6 +242,7 @@
     },
     {
       "id": 9,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter widget catalog",
@@ -253,6 +262,7 @@
     },
     {
       "id": 10,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "GoRouter — official package docs",
@@ -273,6 +283,7 @@
     },
     {
       "id": 11,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Riverpod — official docs",
@@ -293,6 +304,7 @@
     },
     {
       "id": 12,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Bloc library — full docs",
@@ -313,6 +325,7 @@
     },
     {
       "id": 13,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter on the Web",
@@ -333,6 +346,7 @@
     },
     {
       "id": 14,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter on Desktop",
@@ -352,6 +366,7 @@
     },
     {
       "id": 15,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "FlutterFire — Firebase for Flutter",
@@ -372,6 +387,7 @@
     },
     {
       "id": 16,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Dart asynchronous programming",
@@ -392,6 +408,7 @@
     },
     {
       "id": 17,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter performance best practices",
@@ -412,6 +429,7 @@
     },
     {
       "id": 18,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter testing — full guide",
@@ -431,6 +449,7 @@
     },
     {
       "id": 19,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Dart 3 patterns & records",
@@ -451,6 +470,7 @@
     },
     {
       "id": 20,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Adaptive & responsive design",
@@ -471,6 +491,7 @@
     },
     {
       "id": 21,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter accessibility",
@@ -490,6 +511,7 @@
     },
     {
       "id": 22,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Internationalisation (i18n)",
@@ -510,6 +532,7 @@
     },
     {
       "id": 23,
+      "platform": "flutter",
       "category": "docs",
       "media_type": "docs",
       "title_en": "Flutter codelabs hub",
@@ -530,6 +553,7 @@
     },
     {
       "id": 100,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Code With Andrea — articles",
@@ -551,6 +575,7 @@
     },
     {
       "id": 101,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Flutter — official Medium",
@@ -571,6 +596,7 @@
     },
     {
       "id": 102,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Dart on Medium",
@@ -591,6 +617,7 @@
     },
     {
       "id": 103,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Flutter Awesome",
@@ -612,6 +639,7 @@
     },
     {
       "id": 104,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Flutter By Example",
@@ -632,6 +660,7 @@
     },
     {
       "id": 105,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Habr — Flutter hub",
@@ -652,6 +681,7 @@
     },
     {
       "id": 106,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "VeryGood Engineering Blog",
@@ -673,6 +703,7 @@
     },
     {
       "id": 107,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Code With Andrea — newsletter",
@@ -693,6 +724,7 @@
     },
     {
       "id": 108,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Flutter Weekly Newsletter",
@@ -712,6 +744,7 @@
     },
     {
       "id": 109,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Felix Angelov — articles",
@@ -733,6 +766,7 @@
     },
     {
       "id": 110,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Remi Rousselet — articles",
@@ -754,6 +788,7 @@
     },
     {
       "id": 111,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Inside the Flutter framework",
@@ -775,6 +810,7 @@
     },
     {
       "id": 112,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Flutter Architecture Samples",
@@ -796,6 +832,7 @@
     },
     {
       "id": 114,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "FlutterCommunity on Medium",
@@ -816,6 +853,7 @@
     },
     {
       "id": 116,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "itnext.io — Flutter tag",
@@ -836,6 +874,7 @@
     },
     {
       "id": 117,
+      "platform": "flutter",
       "category": "articles",
       "media_type": "article",
       "title_en": "Vandad Nahavandipoor — blog",
@@ -856,6 +895,7 @@
     },
     {
       "id": 200,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Flutter — official YouTube channel",
@@ -877,6 +917,7 @@
     },
     {
       "id": 201,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "playlist",
       "playlist_id": "PLjxrf2q8roU23XGwz3Km7sQZFTdB996iG",
@@ -898,6 +939,7 @@
     },
     {
       "id": 202,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "playlist",
       "playlist_id": "PLjxrf2q8roU2HdJQDjJzOeO6J3FoFLWr2",
@@ -921,6 +963,7 @@
     },
     {
       "id": 204,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "playlist",
       "playlist_id": "PLjxrf2q8roU3ahJVrSgAnPjzkpGmL9Czl",
@@ -943,6 +986,7 @@
     },
     {
       "id": 205,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "playlist",
       "playlist_id": "PLjxrf2q8roU2v6UqYlt_KPaXlnjbYySua",
@@ -965,6 +1009,7 @@
     },
     {
       "id": 206,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Reso Coder",
@@ -987,6 +1032,7 @@
     },
     {
       "id": 207,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Robert Brunhage",
@@ -1008,6 +1054,7 @@
     },
     {
       "id": 208,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "FilledStacks",
@@ -1029,6 +1076,7 @@
     },
     {
       "id": 209,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Code With Andrea",
@@ -1050,6 +1098,7 @@
     },
     {
       "id": 210,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Flutter Mapp",
@@ -1070,6 +1119,7 @@
     },
     {
       "id": 211,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Vandad Nahavandipoor",
@@ -1091,6 +1141,7 @@
     },
     {
       "id": 212,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "HeyFlutter (Johannes Milke)",
@@ -1111,6 +1162,7 @@
     },
     {
       "id": 213,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Flutter Mentor (RU)",
@@ -1132,6 +1184,7 @@
     },
     {
       "id": 218,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Tadas Petra",
@@ -1153,6 +1206,7 @@
     },
     {
       "id": 219,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Marcus Ng",
@@ -1174,6 +1228,7 @@
     },
     {
       "id": 220,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "The Flutter Way",
@@ -1194,6 +1249,7 @@
     },
     {
       "id": 221,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Flutter Explained",
@@ -1215,6 +1271,7 @@
     },
     {
       "id": 222,
+      "platform": "flutter",
       "category": "videos",
       "media_type": "channel",
       "title_en": "Random Coding",
@@ -1235,6 +1292,7 @@
     },
     {
       "id": 300,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "course",
       "title_en": "Codelabs — Write Your First Flutter App",
@@ -1255,6 +1313,7 @@
     },
     {
       "id": 301,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "course",
       "title_en": "Flutter & Dart — The Complete Guide (Maximilian)",
@@ -1277,6 +1336,7 @@
     },
     {
       "id": 302,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "course",
       "title_en": "Flutter Apprentice paths (Kodeco)",
@@ -1298,6 +1358,7 @@
     },
     {
       "id": 303,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "course",
       "title_en": "Flutter Foundations — Code With Andrea",
@@ -1319,6 +1380,7 @@
     },
     {
       "id": 304,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "playlist",
       "playlist_id": "PL4cUxeGkcC9jLYyp2Aoh6hcWuxFDX6PBJ",
@@ -1341,6 +1403,7 @@
     },
     {
       "id": 305,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "course",
       "title_en": "Stepik — Flutter (RU)",
@@ -1362,6 +1425,7 @@
     },
     {
       "id": 309,
+      "platform": "flutter",
       "category": "courses",
       "media_type": "course",
       "title_en": "Otus — Flutter-разработчик (RU)",
@@ -1383,6 +1447,7 @@
     },
     {
       "id": 400,
+      "platform": "flutter",
       "category": "books",
       "media_type": "book",
       "title_en": "Flutter Apprentice (book)",
@@ -1403,6 +1468,7 @@
     },
     {
       "id": 401,
+      "platform": "flutter",
       "category": "books",
       "media_type": "book",
       "title_en": "Real-World Flutter by Tutorials",
@@ -1424,6 +1490,7 @@
     },
     {
       "id": 402,
+      "platform": "flutter",
       "category": "books",
       "media_type": "book",
       "title_en": "Flutter Complete Reference 2.0",
@@ -1445,6 +1512,7 @@
     },
     {
       "id": 403,
+      "platform": "flutter",
       "category": "books",
       "media_type": "book",
       "title_en": "Dart Apprentice (book)",
@@ -1465,6 +1533,7 @@
     },
     {
       "id": 404,
+      "platform": "flutter",
       "category": "books",
       "media_type": "book",
       "title_en": "Flutter in Action (Manning)",
@@ -1485,6 +1554,7 @@
     },
     {
       "id": 500,
+      "platform": "flutter",
       "category": "podcasts",
       "media_type": "podcast",
       "title_en": "It's All Widgets! Podcast",
@@ -1505,6 +1575,7 @@
     },
     {
       "id": 502,
+      "platform": "flutter",
       "category": "podcasts",
       "media_type": "podcast",
       "title_en": "Подлодка — выпуски про Flutter (RU)",
@@ -1526,6 +1597,7 @@
     },
     {
       "id": 503,
+      "platform": "flutter",
       "category": "podcasts",
       "media_type": "podcast",
       "title_en": "FlutterX talks",
@@ -1546,6 +1618,7 @@
     },
     {
       "id": 600,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "r/FlutterDev",
@@ -1565,6 +1638,7 @@
     },
     {
       "id": 601,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "Flutter Community Discord",
@@ -1585,6 +1659,7 @@
     },
     {
       "id": 602,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "Flutter Russia (Telegram, RU)",
@@ -1606,6 +1681,7 @@
     },
     {
       "id": 603,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "Flutter Dev — Telegram (RU)",
@@ -1627,6 +1703,7 @@
     },
     {
       "id": 604,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "Stack Overflow — flutter tag",
@@ -1647,6 +1724,7 @@
     },
     {
       "id": 605,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "Flutter Jobs (Telegram, RU)",
@@ -1668,6 +1746,7 @@
     },
     {
       "id": 607,
+      "platform": "flutter",
       "category": "communities",
       "media_type": "community",
       "title_en": "Flutter Tashkent (Telegram, RU)",
@@ -1689,6 +1768,7 @@
     },
     {
       "id": 700,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "awesome-flutter",
@@ -1709,6 +1789,7 @@
     },
     {
       "id": 701,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "FVM — Flutter Version Management",
@@ -1729,6 +1810,7 @@
     },
     {
       "id": 702,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "Mason — code generation bricks",
@@ -1749,6 +1831,7 @@
     },
     {
       "id": 703,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "Very Good CLI",
@@ -1769,6 +1852,7 @@
     },
     {
       "id": 704,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "Flutter Gallery",
@@ -1789,6 +1873,7 @@
     },
     {
       "id": 705,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "Sentry for Flutter",
@@ -1809,6 +1894,7 @@
     },
     {
       "id": 706,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "Codemagic — CI/CD for Flutter",
@@ -1829,6 +1915,7 @@
     },
     {
       "id": 707,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "tool",
       "title_en": "Flutter DevTools",
@@ -1850,6 +1937,7 @@
     },
     {
       "id": 708,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "flutter_bloc",
@@ -1870,6 +1958,7 @@
     },
     {
       "id": 709,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "riverpod",
@@ -1890,6 +1979,7 @@
     },
     {
       "id": 710,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "go_router",
@@ -1910,6 +2000,7 @@
     },
     {
       "id": 711,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "freezed",
@@ -1931,6 +2022,7 @@
     },
     {
       "id": 712,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "json_serializable",
@@ -1951,6 +2043,7 @@
     },
     {
       "id": 713,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "dio — HTTP client",
@@ -1971,6 +2064,7 @@
     },
     {
       "id": 714,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "drift — typed SQLite",
@@ -1992,6 +2086,7 @@
     },
     {
       "id": 715,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "isar — fast NoSQL DB",
@@ -2012,6 +2107,7 @@
     },
     {
       "id": 716,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "hive — local key-value",
@@ -2032,6 +2128,7 @@
     },
     {
       "id": 717,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "mocktail",
@@ -2052,6 +2149,7 @@
     },
     {
       "id": 718,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "patrol — e2e testing",
@@ -2073,6 +2171,7 @@
     },
     {
       "id": 719,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "flutter_lints",
@@ -2093,6 +2192,7 @@
     },
     {
       "id": 720,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "very_good_analysis",
@@ -2113,6 +2213,7 @@
     },
     {
       "id": 721,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "shorebird — code push",
@@ -2134,6 +2235,7 @@
     },
     {
       "id": 722,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "melos — monorepo manager",
@@ -2154,6 +2256,7 @@
     },
     {
       "id": 723,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "flutter_animate",
@@ -2174,6 +2277,7 @@
     },
     {
       "id": 724,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "rive — runtime animations",
@@ -2194,6 +2298,7 @@
     },
     {
       "id": 725,
+      "platform": "flutter",
       "category": "tools",
       "media_type": "package",
       "title_en": "lottie — Lottie animations",
@@ -2212,7 +2317,6 @@
       "description_en": "Render After Effects animations exported as Lottie JSON. Perfect for splash, empty states, micro-interactions.",
       "description_ru": "Рендер After Effects-анимаций (Lottie JSON). Идеально для сплэшей, пустых состояний, микро-интерактива."
     },
-
     {
       "id": 801,
       "platform": "ios",
@@ -2224,7 +2328,10 @@
       "source": "swift.org",
       "lang": "en",
       "level": "junior",
-      "topics": ["swift", "language"],
+      "topics": [
+        "swift",
+        "language"
+      ],
       "duration": "book",
       "official": true,
       "free": true,
@@ -2242,7 +2349,11 @@
       "source": "developer.apple.com",
       "lang": "en",
       "level": "junior",
-      "topics": ["uikit", "swiftui", "frameworks"],
+      "topics": [
+        "uikit",
+        "swiftui",
+        "frameworks"
+      ],
       "duration": "ongoing",
       "official": true,
       "free": true,
@@ -2260,7 +2371,12 @@
       "source": "Paul Hudson",
       "lang": "en",
       "level": "junior",
-      "topics": ["swift", "swiftui", "uikit", "tutorials"],
+      "topics": [
+        "swift",
+        "swiftui",
+        "uikit",
+        "tutorials"
+      ],
       "duration": "ongoing",
       "official": false,
       "free": true,
@@ -2278,7 +2394,10 @@
       "source": "Dave Verwer",
       "lang": "en",
       "level": "mid",
-      "topics": ["news", "newsletter"],
+      "topics": [
+        "news",
+        "newsletter"
+      ],
       "duration": "weekly",
       "official": false,
       "free": true,
@@ -2296,7 +2415,11 @@
       "source": "Stanford University",
       "lang": "en",
       "level": "junior",
-      "topics": ["swiftui", "mvvm", "fundamentals"],
+      "topics": [
+        "swiftui",
+        "mvvm",
+        "fundamentals"
+      ],
       "duration": "16 lectures",
       "official": false,
       "free": true,
@@ -2314,7 +2437,11 @@
       "source": "YouTube",
       "lang": "en",
       "level": "mid",
-      "topics": ["interviews", "career", "swift"],
+      "topics": [
+        "interviews",
+        "career",
+        "swift"
+      ],
       "duration": "ongoing",
       "official": false,
       "free": true,
@@ -2332,7 +2459,11 @@
       "source": "Pointfree",
       "lang": "en",
       "level": "senior",
-      "topics": ["functional", "tca", "architecture"],
+      "topics": [
+        "functional",
+        "tca",
+        "architecture"
+      ],
       "duration": "weekly",
       "official": false,
       "free": false,
@@ -2350,14 +2481,17 @@
       "source": "John Sundell",
       "lang": "en",
       "level": "mid",
-      "topics": ["swift", "patterns", "architecture"],
+      "topics": [
+        "swift",
+        "patterns",
+        "architecture"
+      ],
       "duration": "ongoing",
       "official": false,
       "free": true,
       "description_en": "Deep dives into Swift language features, design patterns, testing and architecture by John Sundell. Excellent search by topic.",
       "description_ru": "Глубокие разборы фич Swift, паттернов, тестирования и архитектуры от Джона Санделла. Отличный поиск по теме."
     },
-
     {
       "id": 811,
       "platform": "android",
@@ -2369,7 +2503,11 @@
       "source": "developer.android.com",
       "lang": "en",
       "level": "junior",
-      "topics": ["fundamentals", "compose", "architecture"],
+      "topics": [
+        "fundamentals",
+        "compose",
+        "architecture"
+      ],
       "duration": "ongoing",
       "official": true,
       "free": true,
@@ -2387,7 +2525,11 @@
       "source": "JetBrains",
       "lang": "en",
       "level": "junior",
-      "topics": ["kotlin", "language", "coroutines"],
+      "topics": [
+        "kotlin",
+        "language",
+        "coroutines"
+      ],
       "duration": "ongoing",
       "official": true,
       "free": true,
@@ -2405,7 +2547,11 @@
       "source": "Google for Developers",
       "lang": "en",
       "level": "mid",
-      "topics": ["news", "compose", "architecture"],
+      "topics": [
+        "news",
+        "compose",
+        "architecture"
+      ],
       "duration": "ongoing",
       "official": true,
       "free": true,
@@ -2423,7 +2569,11 @@
       "source": "YouTube",
       "lang": "en",
       "level": "junior",
-      "topics": ["compose", "kotlin", "tutorials"],
+      "topics": [
+        "compose",
+        "kotlin",
+        "tutorials"
+      ],
       "duration": "ongoing",
       "official": false,
       "free": true,
@@ -2441,7 +2591,10 @@
       "source": "Android Weekly",
       "lang": "en",
       "level": "mid",
-      "topics": ["news", "newsletter"],
+      "topics": [
+        "news",
+        "newsletter"
+      ],
       "duration": "weekly",
       "official": false,
       "free": true,
@@ -2459,7 +2612,10 @@
       "source": "developer.android.com",
       "lang": "en",
       "level": "junior",
-      "topics": ["compose", "fundamentals"],
+      "topics": [
+        "compose",
+        "fundamentals"
+      ],
       "duration": "course",
       "official": true,
       "free": true,
@@ -2477,7 +2633,11 @@
       "source": "GitHub",
       "lang": "en",
       "level": "mid",
-      "topics": ["architecture", "mvvm", "samples"],
+      "topics": [
+        "architecture",
+        "mvvm",
+        "samples"
+      ],
       "duration": "repo",
       "official": true,
       "free": true,
@@ -2495,14 +2655,17 @@
       "source": "Joe Birch",
       "lang": "en",
       "level": "mid",
-      "topics": ["compose", "kotlin", "patterns"],
+      "topics": [
+        "compose",
+        "kotlin",
+        "patterns"
+      ],
       "duration": "ongoing",
       "official": false,
       "free": true,
       "description_en": "Long-running Android blog — practical Compose patterns, Kotlin idioms, motion design, accessibility. Strong with diagrams and code samples.",
       "description_ru": "Долгоживущий блог про Android — практические паттерны Compose, Kotlin-идиомы, motion-дизайн, accessibility. Сильно с диаграммами и кодом."
     },
-
     {
       "id": 821,
       "platform": "cross",
@@ -2514,7 +2677,11 @@
       "source": "JetBrains",
       "lang": "en",
       "level": "senior",
-      "topics": ["kmp", "shared-code", "ios-interop"],
+      "topics": [
+        "kmp",
+        "shared-code",
+        "ios-interop"
+      ],
       "duration": "ongoing",
       "official": true,
       "free": true,
@@ -2532,7 +2699,11 @@
       "source": "JetBrains",
       "lang": "en",
       "level": "senior",
-      "topics": ["compose", "ios", "desktop"],
+      "topics": [
+        "compose",
+        "ios",
+        "desktop"
+      ],
       "duration": "ongoing",
       "official": true,
       "free": true,
@@ -2550,7 +2721,11 @@
       "source": "Touchlab",
       "lang": "en",
       "level": "senior",
-      "topics": ["kmp", "ios-interop", "production"],
+      "topics": [
+        "kmp",
+        "ios-interop",
+        "production"
+      ],
       "duration": "ongoing",
       "official": false,
       "free": true,
@@ -2568,14 +2743,17 @@
       "source": "GitHub / Touchlab",
       "lang": "en",
       "level": "senior",
-      "topics": ["kmp", "starter", "template"],
+      "topics": [
+        "kmp",
+        "starter",
+        "template"
+      ],
       "duration": "repo",
       "official": false,
       "free": true,
       "description_en": "Production-grade KMP starter from Touchlab — Ktor, SQLDelight, Kermit, Koin, iOS + Android shells already wired.",
       "description_ru": "Production-grade стартер KMP от Touchlab — Ktor, SQLDelight, Kermit, Koin, готовые shell-ы iOS + Android."
     },
-
     {
       "id": 831,
       "platform": "mobile",
@@ -2587,7 +2765,10 @@
       "source": "OWASP",
       "lang": "en",
       "level": "senior",
-      "topics": ["security", "audit"],
+      "topics": [
+        "security",
+        "audit"
+      ],
       "duration": "guide",
       "official": true,
       "free": true,
@@ -2605,7 +2786,11 @@
       "source": "Substack",
       "lang": "en",
       "level": "senior",
-      "topics": ["system-design", "architecture", "interviews"],
+      "topics": [
+        "system-design",
+        "architecture",
+        "interviews"
+      ],
       "duration": "weekly",
       "official": false,
       "free": true,
@@ -2623,7 +2808,11 @@
       "source": "fastlane.tools",
       "lang": "en",
       "level": "mid",
-      "topics": ["ci-cd", "release", "signing"],
+      "topics": [
+        "ci-cd",
+        "release",
+        "signing"
+      ],
       "duration": "tool",
       "official": true,
       "free": true,
