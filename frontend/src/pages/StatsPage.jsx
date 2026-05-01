@@ -8,6 +8,9 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Eyebrow, ProgressBar, Pill, Skeleton, TopicGlyph, levelTone } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import PlatformFilter from '../components/PlatformFilter.jsx';
+import { usePrefs } from '../store/prefs.js';
+import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform.js';
 
 const LEVELS = ['junior', 'mid', 'senior'];
 
@@ -27,11 +30,16 @@ export default function StatsPage() {
   const topicsQ = useTopics();
   const questionsQ = useQuestions();
   const statsQ = useStats();
+  const platform = usePrefs((s) => s.platform);
 
   if (topicsQ.isLoading || questionsQ.isLoading) return <StatsSkeleton />;
 
-  const topics = topicsQ.data ?? [];
-  const questions = questionsQ.data ?? [];
+  // Mastery numbers feel sharper when scoped to a single stack — staring at
+  // "65% across 53 topics" tells you nothing about your iOS readiness.
+  const allTopics = topicsQ.data ?? [];
+  const allQuestions = questionsQ.data ?? [];
+  const topics = filterTopicsByPlatform(allTopics, platform);
+  const questions = filterQuestionsByPlatform(allQuestions, allTopics, platform);
   const stats = statsQ.data;
 
   // Build per-topic breakdown
@@ -123,6 +131,12 @@ export default function StatsPage() {
             {lang === 'ru' ? 'Сессия SRS' : 'Study session'}
           </Button>
         </header>
+
+        {/* Stack scope — every metric below recomputes against the active
+            platform, so "iOS mastery" doesn't get diluted by Flutter rows. */}
+        <div className="mb-8">
+          <PlatformFilter />
+        </div>
 
         {/* Big number tiles */}
         <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">

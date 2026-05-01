@@ -1,0 +1,62 @@
+[
+  {
+    "id": 3901,
+    "topic_id": 39,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "How do generics, variance, and `out`/`in` modifiers work in Kotlin?",
+    "answer": "Generics give type-safe code that works across types. Kotlin treats generics with declaration-site variance (Scala-style):\n\n• Invariant (default) — `Box<T>` is unrelated to `Box<Subtype>` even when T <: Subtype.\n• `out T` — covariant. `Producer<out T>` — produces T's only. `Producer<Dog>` is a `Producer<Animal>`.\n• `in T` — contravariant. `Consumer<in T>` — consumes T's only. `Consumer<Animal>` is a `Consumer<Dog>`.\n\nUse-site variance with `Box<out T>` / `Box<in T>` exists too (akin to Java wildcards).\n\nReified generics (`inline fun <reified T>`) preserve T at runtime — enables `T::class` checks without `Class<T>` parameter.",
+    "code_example": "// Covariance — produce T\ninterface Producer<out T> { fun produce(): T }\nval dogs: Producer<Dog> = object : Producer<Dog> { override fun produce() = Dog() }\nval animals: Producer<Animal> = dogs   // ✅ covariant\n\n// Contravariance — consume T\ninterface Consumer<in T> { fun consume(value: T) }\nval anyAnimal: Consumer<Animal> = object : Consumer<Animal> { override fun consume(value: Animal) = Unit }\nval dogConsumer: Consumer<Dog> = anyAnimal  // ✅ contravariant\n\n// Invariant by default\nclass Box<T>(val value: T)\n// val animalBox: Box<Animal> = Box(Dog())   // ❌ — Box<Dog> ≠ Box<Animal>\n\n// Use-site variance\nfun copyAll(from: Box<out Any>, to: Box<in Any>) { /* ... */ }\n\n// Bounded generics\nfun <T : Comparable<T>> max(a: T, b: T) = if (a > b) a else b\n\n// Reified type parameter\ninline fun <reified T> Any.castOrNull(): T? = this as? T\nval s: String? = (anyValue).castOrNull()\n\n// Multiple type params\nfun <K, V> Map<K, V>.swap(): Map<V, K> = entries.associate { (k, v) -> v to k }\n\n// Star projection — when you don't care about T\nfun count(list: List<*>) = list.size",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3902,
+    "topic_id": 39,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What are inline functions and reified type parameters in Kotlin?",
+    "answer": "An `inline fun` is replaced at compile time with the body of the function copied into the call site. The lambda parameters are inlined too — no Function<...> object allocation, no extra invocation.\n\nWhy:\n• Performance — avoid lambda allocation in hot loops.\n• Non-local return — `return` inside an inline lambda returns from the ENCLOSING function.\n• Reified generics — when a type parameter is `reified`, the compiler knows T at the call site and you can write `T::class`, `is T`, `as T`.\n\nDownsides:\n• Code bloat if overused — every call site copies the body.\n• `noinline` opts out of inlining for specific lambda parameters; `crossinline` forbids non-local returns from a specific lambda.",
+    "code_example": "// Allocation-free higher-order\ninline fun measure(label: String, block: () -> Unit) {\n  val start = System.nanoTime()\n  block()\n  println(\"\\$label: \\${(System.nanoTime() - start)/1e6} ms\")\n}\n\nmeasure(\"sort\") {\n  list.sort()\n}\n\n// Non-local return — works only with inline lambdas\nfun findFirstEven(list: List<Int>): Int? {\n  list.forEach { if (it % 2 == 0) return it } // returns from findFirstEven\n  return null\n}\n\n// Reified — preserve T at runtime\ninline fun <reified T> List<*>.filterByType(): List<T> =\n  filter { it is T }.map { it as T }\n\nval mixed: List<Any> = listOf(1, \"a\", 2, \"b\")\nval ints: List<Int> = mixed.filterByType()\n\n// JSON parsing example\ninline fun <reified T> Json.parse(text: String): T = decodeFromString(text)\nval user: User = json.parse(jsonText)\n\n// crossinline — forbid non-local return\ninline fun runLater(crossinline block: () -> Unit) {\n  Handler(Looper.getMainLooper()).post { block() }   // can't `return` from caller here\n}",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3903,
+    "topic_id": 39,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What are property delegates? Explain `by lazy`, `by Delegates.observable`, custom delegates.",
+    "answer": "Property delegation lets a property's get/set be implemented by another object — the `by` keyword forwards reads/writes to that object's `getValue` / `setValue`.\n\nBuilt-in delegates:\n• `lazy { ... }` — value computed on first read; thread-safe by default.\n• `Delegates.observable(initial) { prop, old, new -> ... }` — invoke a callback on every set.\n• `Delegates.vetoable(initial) { ... }` — same, but the lambda can reject the change.\n• `notNull()` — required-by-runtime substitute for `lateinit` for primitive types.\n• `by map` — back a property with a Map (great for dynamic schemas, deserialization).\n\nCustom delegates are easy: implement `getValue` / `setValue` operators (or use `ReadOnlyProperty` / `ReadWriteProperty`).",
+    "code_example": "import kotlin.properties.Delegates\nimport kotlin.properties.ReadWriteProperty\nimport kotlin.reflect.KProperty\n\nclass Repository {\n  val client: HttpClient by lazy { buildHttpClient() }   // built once on first access\n}\n\nclass FormState {\n  var name: String by Delegates.observable(\"\") { _, old, new ->\n    println(\"name: \\$old → \\$new\")\n  }\n  var age: Int by Delegates.vetoable(0) { _, _, new ->\n    new in 0..120\n  }\n}\n\n// Map-backed properties\nclass User(map: Map<String, Any?>) {\n  val name: String by map\n  val age: Int by map\n}\nval u = User(mapOf(\"name\" to \"Alice\", \"age\" to 30))\n\n// Custom delegate — preference-backed property (Android idiom)\nclass PrefDelegate(val prefs: SharedPreferences, val key: String, val default: String) : ReadWriteProperty<Any?, String> {\n  override fun getValue(thisRef: Any?, property: KProperty<*>): String =\n    prefs.getString(key, default) ?: default\n  override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {\n    prefs.edit().putString(key, value).apply()\n  }\n}\n\nclass AppPrefs(prefs: SharedPreferences) {\n  var theme: String by PrefDelegate(prefs, \"theme\", \"system\")\n}",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3904,
+    "topic_id": 39,
+    "order_index": 4,
+    "difficulty": "hard",
+    "question": "How do you write a type-safe DSL in Kotlin?",
+    "answer": "Kotlin DSLs leverage three features:\n\n• Lambdas with receiver: `block: A.() -> Unit` — inside the lambda `this` is `A`, members of A are in scope.\n• Extension functions — extend a type for the duration of a builder.\n• `@DslMarker` annotation — restrict which receivers are visible inside nested builders, preventing accidental cross-scope calls.\n\nTypical pattern: a top-level builder function takes a lambda with receiver, instantiates a builder, runs the lambda, returns the constructed result.\n\nFamous DSLs in the wild: Gradle Kotlin DSL, kotlinx.html, Compose, Ktor routing, Exposed SQL DSL.",
+    "code_example": "@DslMarker\nannotation class HtmlDsl\n\n@HtmlDsl\nclass Html { val children = mutableListOf<Tag>() }\n\n@HtmlDsl\nopen class Tag(val name: String) {\n  val children = mutableListOf<Tag>()\n  var text: String? = null\n  override fun toString(): String {\n    val inner = (text ?: \"\") + children.joinToString(\"\")\n    return \"<\\$name>\\$inner</\\$name>\"\n  }\n}\n\nfun html(block: Html.() -> Unit): Html = Html().apply(block)\n\nfun Html.body(block: Tag.() -> Unit) {\n  val t = Tag(\"body\").apply(block)\n  children += t\n}\nfun Tag.h1(text: String) { children += Tag(\"h1\").apply { this.text = text } }\nfun Tag.p(block: Tag.() -> Unit) { children += Tag(\"p\").apply(block) }\nfun Tag.text(s: String) { text = s }\n\n// Usage — looks declarative\nval page = html {\n  body {\n    h1(\"Hello\")\n    p {\n      text(\"Lorem ipsum\")\n    }\n  }\n}\nprintln(page.children.joinToString(\"\")) // <body><h1>Hello</h1><p>Lorem ipsum</p></body>\n\n// @DslMarker prevents calling html { body { html { ... } } } accidentally\n\n// Real-world DSL examples\n// Compose — `Column { Text(\"...\") }`\n// Ktor — `routing { get(\"/x\") { call.respond(...) } }`\n// Exposed — `transaction { Users.select { Users.id eq 1 } }`",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3905,
+    "topic_id": 39,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What are typealiases and when should you use them?",
+    "answer": "`typealias` introduces a name for an existing type. It does NOT create a new type — it's purely a compile-time alias the compiler resolves to the underlying type.\n\nGood uses:\n• Shorten complex generic types: `typealias Cache = Map<String, ByteArray>`.\n• Clarify intent: `typealias UserId = Long` reads better than passing raw Long around.\n• Function-type aliases: `typealias Validator<T> = (T) -> Result<Unit>`.\n• Deprecate old names while moving toward new ones.\n\nLimitations:\n• Not a wrapper — `UserId` and `Long` are the SAME type. The compiler does not enforce that you don't mix them.\n• For real type-safety use a value class (inline class) or a wrapper data class.",
+    "code_example": "typealias UserId = Long\ntypealias Cache = MutableMap<String, ByteArray>\ntypealias EventHandler = (Event) -> Unit\n\nclass Authentication { fun login(): UserId = 42L }\n\n// Mixed up — compiler accepts it because UserId IS Long\nfun store(id: UserId) { /* ... */ }\nstore(123L)             // ✅ — but possibly a bug\n\n// For type-safety: use a value class instead\n@JvmInline\nvalue class Email(val value: String) {\n  init { require(\"@\" in value) }\n}\nfun send(to: Email) {}\n// send(\"oops\")          // ❌ compile error\nsend(Email(\"alice@x.com\")) // ✅\n\n// Function aliases shine for callback-heavy code\ntypealias Validator<T> = (T) -> Result<Unit>\n\nfun <T> validate(value: T, vararg rules: Validator<T>): Result<Unit> {\n  for (r in rules) r(value).onFailure { return Result.failure(it) }\n  return Result.success(Unit)\n}\n\nval emailValid: Validator<String> = { s -> if (\"@\" in s) Result.success(Unit) else Result.failure(IllegalArgumentException(\"bad\")) }",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3906,
+    "topic_id": 39,
+    "order_index": 6,
+    "difficulty": "hard",
+    "question": "What are value classes (inline classes) in Kotlin?",
+    "answer": "A value class is a wrapper around a single value that the compiler can ELIDE at runtime — replacing every use of the wrapper with the underlying value. You get type-safety at the language level and no allocation overhead at the JVM/binary level (in most cases).\n\n• Declared with `@JvmInline value class`.\n• Wraps exactly one property.\n• Compiler still allocates when you use the wrapper as a generic / nullable / interface type — be aware.\n\nIdiomatic uses: domain primitives (UserId, Email, Money), units (Px, Dp, Hz), bitfields.\n\nReplaces the older `inline class` keyword (still works in some Kotlin versions).",
+    "code_example": "@JvmInline\nvalue class Email(val value: String) {\n  init { require(\"@\" in value && \".\" in value) { \"Invalid email\" } }\n}\n\n@JvmInline\nvalue class Px(val value: Int)\n\n@JvmInline\nvalue class UserId(val value: Long)\n\n// Use as a real type\nfun sendEmail(to: Email) { /* ... */ }\n// sendEmail(\"plain string\")    // ❌ compile error\nsendEmail(Email(\"alice@x.com\")) // ✅\n\n// At runtime, no allocation — the JVM sees a String / Int / Long\nval u = UserId(42L)             // erased to long 42 in many contexts\n\n// Pitfall: when boxed (nullable, generic, interface), allocation happens\nval list: List<UserId> = listOf(UserId(1), UserId(2)) // boxed inside the List\nval maybe: UserId? = u           // boxed because nullable\n\n// Methods + extensions allowed\n@JvmInline\nvalue class Money(val cents: Long) {\n  operator fun plus(other: Money) = Money(cents + other.cents)\n  fun format(): String = \"\\$%.2f\".format(cents / 100.0)\n}\n\nval total = Money(199) + Money(300)   // no allocation\nprintln(total.format())                // $4.99",
+    "code_language": "kotlin"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "id": 2601,
+    "topic_id": 26,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "What are generics in Swift? How do where clauses work?",
+    "answer": "Generics let you write code that works for any type while keeping full type-safety — no Any boxing.\n\n• Generic functions: `func swap<T>(_ a: inout T, _ b: inout T)`\n• Generic types: `struct Stack<Element> { var items: [Element] }`\n• Constraints: `<T: Equatable>` requires conformance.\n• `where` clauses add multiple/complex constraints, including same-type and protocol-extension scoping.\n\nThe compiler specializes generic code per call site (often with @inlinable / -O), keeping performance close to hand-written code.",
+    "code_example": "// Generic function with constraint\nfunc clamp<T: Comparable>(_ value: T, to range: ClosedRange<T>) -> T {\n  min(max(value, range.lowerBound), range.upperBound)\n}\n\n// Generic type\nstruct Stack<Element> {\n  private var storage: [Element] = []\n  mutating func push(_ x: Element) { storage.append(x) }\n  mutating func pop() -> Element? { storage.popLast() }\n  var top: Element? { storage.last }\n}\nvar s = Stack<Int>(); s.push(1); s.push(2)\n\n// Where clause — extension scoped by element constraint\nextension Stack where Element: Equatable {\n  func contains(_ x: Element) -> Bool { storage.contains(x) }\n}\n\n// Multiple constraints + same-type requirement\nfunc zip2<C1: Collection, C2: Collection>(\n  _ a: C1,\n  _ b: C2\n) -> [(C1.Element, C2.Element)] where C1.Element: Equatable, C1.Element == C2.Element {\n  Array(zip(a, b))\n}\n\n// Generic + protocol w/ associated type\nfunc total<C: Collection>(_ c: C) -> Int where C.Element == Int { c.reduce(0, +) }\n\n// Type erasure with AnySequence/AnyHashable when generics get unwieldy\nlet seq: AnySequence<Int> = AnySequence([1,2,3])",
+    "code_language": "swift"
+  },
+  {
+    "id": 2602,
+    "topic_id": 26,
+    "order_index": 2,
+    "difficulty": "hard",
+    "question": "What are opaque types (some) vs existentials (any) in Swift?",
+    "answer": "Two ways to refer to a protocol — they look similar but mean very different things:\n\n• `some Protocol` — opaque type. The compiler picks ONE concrete type and hides it. The function always returns the same concrete type at runtime; callers can chain protocol methods without seeing the underlying type. Zero-overhead.\n\n• `any Protocol` — existential. A box (heap when the value is large) holding any conforming type. Two existentials of the same protocol can wrap different concrete types. Has indirection overhead and can't be used as Self / associated type without limits.\n\nRule of thumb: prefer `some` for return types and parameters where the concrete type is fixed; use `any` only when you genuinely need heterogeneous storage (e.g. Array<any Animal>).",
+    "code_example": "protocol Shape { func area() -> Double }\nstruct Circle: Shape { let r: Double; func area() -> Double { .pi * r * r } }\nstruct Square: Shape { let s: Double; func area() -> Double { s * s } }\n\n// some — single concrete type, hidden\nfunc randomShape() -> some Shape { Circle(r: 1) }\n// Compiler knows it's always Circle. Callers see Shape API, but the type stays.\n\n// any — existential box, heterogeneous OK\nfunc shapes() -> [any Shape] { [Circle(r: 1), Square(s: 2)] }\n\n// SwiftUI uses `some View` everywhere — the View tree's concrete generic type is\n// gigantic; opaque return hides that complexity from your code.\nstruct ProfileView: View {\n  var body: some View { /* compiler infers ZStack<...> */ Text(\"hi\") }\n}\n\n// any limitations relaxed in Swift 5.7+: you CAN use existentials with associated\n// types in many positions — but performance and ergonomics still favor `some`.\nlet a: any Collection<Int> = [1,2,3]\n\n// Existential dispatch is dynamic; `some` dispatch is static (faster).",
+    "code_language": "swift"
+  },
+  {
+    "id": 2603,
+    "topic_id": 26,
+    "order_index": 3,
+    "difficulty": "hard",
+    "question": "What are property wrappers in Swift?",
+    "answer": "Property wrappers package storage + behavior into a reusable annotation. The compiler synthesizes the underlying storage and rewrites property access to call wrapper methods. Behind every SwiftUI `@State`, `@Published`, and `@AppStorage` is a property wrapper.\n\nA wrapper is a struct/class/enum marked `@propertyWrapper` exposing `wrappedValue` (and optionally `projectedValue` exposed via `$`).\n\nUse cases: persistence (@AppStorage), validation (@Clamped), lazy thread-safe init, dependency injection, debouncing, instrumentation.",
+    "code_example": "// Define a wrapper\n@propertyWrapper\nstruct Clamped<Value: Comparable> {\n  private var value: Value\n  let range: ClosedRange<Value>\n  init(wrappedValue: Value, _ range: ClosedRange<Value>) {\n    self.range = range\n    self.value = min(max(wrappedValue, range.lowerBound), range.upperBound)\n  }\n  var wrappedValue: Value {\n    get { value }\n    set { value = min(max(newValue, range.lowerBound), range.upperBound) }\n  }\n}\n\nstruct Volume {\n  @Clamped(0...100) var level: Int = 50\n}\nvar v = Volume()\nv.level = 200\nprint(v.level) // 100 — clamped\n\n// projectedValue — exposed via $\n@propertyWrapper\nstruct Trimmed {\n  private var value: String = \"\"\n  var wrappedValue: String {\n    get { value }\n    set { value = newValue.trimmingCharacters(in: .whitespaces) }\n  }\n  var projectedValue: Int { value.count }\n}\n\nstruct Form { @Trimmed var name: String }\nvar f = Form(); f.name = \"  Alice  \"\nprint(f.name)  // \"Alice\"\nprint(f.$name) // 5  — projected via $\n\n// Built-in examples (SwiftUI)\n// @State, @Binding, @StateObject, @ObservedObject, @EnvironmentObject\n// @AppStorage(\"username\") var username: String = \"\"",
+    "code_language": "swift"
+  },
+  {
+    "id": 2604,
+    "topic_id": 26,
+    "order_index": 4,
+    "difficulty": "hard",
+    "question": "What are result builders (DSLs) in Swift?",
+    "answer": "Result builders (originally function builders) let you write declarative DSLs in Swift. The compiler transforms a series of expressions inside a builder-tagged closure into a single composed value via `buildBlock`, `buildOptional`, `buildEither`, `buildArray`.\n\nSwiftUI's `@ViewBuilder`, RegexBuilder, and SwiftPM's package builder are all built this way.\n\nBenefits: readable, declarative client code; static type checking of every clause; easy authoring of testing/UI/parser DSLs.",
+    "code_example": "// A toy HTML builder DSL\n@resultBuilder\nstruct HTMLBuilder {\n  static func buildBlock(_ parts: String...) -> String {\n    parts.joined()\n  }\n  static func buildOptional(_ part: String?) -> String { part ?? \"\" }\n  static func buildEither(first: String) -> String { first }\n  static func buildEither(second: String) -> String { second }\n  static func buildArray(_ parts: [String]) -> String { parts.joined() }\n}\n\nfunc html(@HTMLBuilder content: () -> String) -> String { content() }\nfunc tag(_ name: String, @HTMLBuilder _ content: () -> String) -> String {\n  \"<\\(name)>\\(content())</\\(name)>\"\n}\n\nlet page = html {\n  tag(\"h1\") { \"Hello\" }\n  if true {\n    tag(\"p\") { \"Conditionally rendered\" }\n  }\n  for i in 1...3 {\n    tag(\"li\") { \"Item \\(i)\" }\n  }\n}\nprint(page)\n// <h1>Hello</h1><p>Conditionally rendered</p><li>Item 1</li>...\n\n// SwiftUI's @ViewBuilder — the same pattern\nstruct MyView: View {\n  var body: some View {\n    VStack {\n      Text(\"a\")\n      if Bool.random() { Text(\"b\") }\n      ForEach(0..<3) { Text(\"\\($0)\") }\n    }\n  }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2605,
+    "topic_id": 26,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What are key paths in Swift?",
+    "answer": "A key path is a typed reference to a property — `\\Type.property`. Key paths give you reflection-like ability with full compile-time type safety.\n\nUses:\n• Generic accessors (sort by, group by, dynamic member subscripts)\n• SwiftUI's `Toggle(\"x\", isOn: $store.flag)` style — `WritableKeyPath` lets writes too\n• Combine's `.assign(to: \\.value, on: object)`\n• @dynamicMemberLookup with key paths (used by SwiftUI environment values, MapKit, etc.)\n\nForms: `KeyPath<Root, Value>` (read-only), `WritableKeyPath` (read/write on value types), `ReferenceWritableKeyPath` (write to reference types).",
+    "code_example": "struct User { var name: String; var age: Int }\nlet users = [User(name: \"Alice\", age: 30), User(name: \"Bob\", age: 25)]\n\n// Key path literal\nlet kp = \\User.name      // KeyPath<User, String>\nprint(users[0][keyPath: kp]) // Alice\n\n// Generic helper using key paths\nextension Sequence {\n  func sorted<Value: Comparable>(by kp: KeyPath<Element, Value>) -> [Element] {\n    sorted { $0[keyPath: kp] < $1[keyPath: kp] }\n  }\n  func grouped<Key: Hashable>(by kp: KeyPath<Element, Key>) -> [Key: [Element]] {\n    Dictionary(grouping: self, by: { $0[keyPath: kp] })\n  }\n}\n\nlet byAge = users.sorted(by: \\.age)\nlet byName = users.grouped(by: \\.name)\n\n// Writable key path\nstruct Box { var x: Int }\nvar b = Box(x: 0)\nlet wkp: WritableKeyPath<Box, Int> = \\.x\nb[keyPath: wkp] = 42\n\n// Combine\n// publisher.assign(to: \\.value, on: viewModel)\n\n// SwiftUI bindings rely on this — `$store.flag` returns a Binding via key path",
+    "code_language": "swift"
+  },
+  {
+    "id": 2606,
+    "topic_id": 26,
+    "order_index": 6,
+    "difficulty": "hard",
+    "question": "Explain Codable in Swift and how to customize JSON encoding/decoding.",
+    "answer": "Codable = Encodable & Decodable. Conforming a type lets the compiler synthesize symmetric (de)serialization to/from any DataFormat (JSON, plist, etc.) via JSONEncoder/JSONDecoder.\n\nCustomization options:\n• `CodingKeys` enum — rename / drop fields\n• `keyDecodingStrategy = .convertFromSnakeCase` — auto camelCase ↔ snake_case\n• Custom `init(from:)` and `encode(to:)` — full control\n• `@propertyWrapper` for repetitive patterns (e.g. dates, optionals with default)\n• `userInfo` on encoder/decoder — pass context (e.g. version)\n\nGotchas: Date/Data formats default to ISO8601-ish; configure on encoder. Throws on missing keys unless field is optional.",
+    "code_example": "struct Article: Codable {\n  let id: UUID\n  let title: String\n  let publishedAt: Date\n  let tags: [String]\n  let author: String\n  // Map server snake_case + rename\n  enum CodingKeys: String, CodingKey {\n    case id\n    case title\n    case publishedAt = \"published_at\"\n    case tags\n    case author = \"writer\"\n  }\n}\n\nlet decoder = JSONDecoder()\ndecoder.dateDecodingStrategy = .iso8601\nlet article = try decoder.decode(Article.self, from: jsonData)\n\nlet encoder = JSONEncoder()\nencoder.outputFormatting = [.prettyPrinted, .sortedKeys]\nencoder.dateEncodingStrategy = .iso8601\nlet data = try encoder.encode(article)\n\n// Auto snake_case across the whole payload\ndecoder.keyDecodingStrategy = .convertFromSnakeCase\n\n// Custom init when synthesized version isn't enough\nstruct LooseInt: Codable {\n  let value: Int\n  init(from decoder: Decoder) throws {\n    let c = try decoder.singleValueContainer()\n    if let i = try? c.decode(Int.self) { value = i }\n    else if let s = try? c.decode(String.self), let i = Int(s) { value = i }\n    else { throw DecodingError.dataCorruptedError(in: c, debugDescription: \"Bad int\") }\n  }\n  func encode(to encoder: Encoder) throws { var c = encoder.singleValueContainer(); try c.encode(value) }\n}\n\n// Tagged union via enum + Codable\nenum Event: Codable {\n  case login(user: String)\n  case logout\n  // Implement init(from:) / encode(to:) with a discriminator key\n}",
+    "code_language": "swift"
+  }
+]

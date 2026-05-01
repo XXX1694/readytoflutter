@@ -1,0 +1,62 @@
+[
+  {
+    "id": 2901,
+    "topic_id": 29,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "Explain @State and @Binding in SwiftUI.",
+    "answer": "@State — a property wrapper that gives a SwiftUI view local mutable storage. Marking a struct property with @State tells SwiftUI to allocate persistent storage outside the value-type view; mutating the wrapped value triggers re-evaluation of `body`.\n\n@Binding — a two-way reference to a value owned elsewhere. A child view receives a Binding and reads/writes the parent's @State without owning it.\n\nRules:\n• @State must be `private` and used for view-local state (not shared models).\n• Use $ to project a Binding from @State (`$count`).\n• Bindings drive controls like Toggle, TextField, Picker.",
+    "code_example": "struct Counter: View {\n  @State private var value = 0\n  var body: some View {\n    VStack {\n      Text(\"\\(value)\").font(.largeTitle)\n      Stepper(value: $value, in: 0...100) { Text(\"Count\") }\n      ResetButton(value: $value) // pass binding down\n    }\n  }\n}\n\nstruct ResetButton: View {\n  @Binding var value: Int\n  var body: some View {\n    Button(\"Reset\") { value = 0 }\n  }\n}\n\n// Binding from a non-@State source — Binding<Value> is a value, you can construct it\nstruct LoggedToggle: View {\n  let isOn: Bool\n  let onChange: (Bool) -> Void\n  var body: some View {\n    Toggle(\"On\", isOn: Binding(get: { isOn }, set: onChange))\n  }\n}\n\n// Bindings work with arrays via $array[index]\nstruct ListEditor: View {\n  @State private var items = [\"a\", \"b\", \"c\"]\n  var body: some View {\n    ForEach($items.indices, id: \\.self) { i in\n      TextField(\"item\", text: $items[i])\n    }\n  }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2902,
+    "topic_id": 29,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What is @StateObject vs @ObservedObject? When do you use each?",
+    "answer": "Both wrappers track an `ObservableObject` reference type and re-evaluate body when its `@Published` properties change. The difference is OWNERSHIP and LIFETIME:\n\n• @StateObject — the view OWNS the object. SwiftUI creates it once and keeps it alive across body re-evaluations. Use when this view is responsible for instantiating the model.\n• @ObservedObject — the view OBSERVES an object owned elsewhere. SwiftUI does NOT keep it alive; if you instantiate the object inline, it'll be re-created on every re-render and you'll lose state silently.\n\nRule of thumb: the view that creates the model uses @StateObject; downstream views receive it via @ObservedObject (or environment).",
+    "code_example": "final class CartViewModel: ObservableObject {\n  @Published var items: [String] = []\n  func add(_ item: String) { items.append(item) }\n}\n\n// ✅ Owner — creates and keeps the model alive\nstruct CartView: View {\n  @StateObject private var vm = CartViewModel()\n  var body: some View {\n    VStack {\n      Text(\"\\(vm.items.count) items\")\n      Button(\"Add\") { vm.add(\"x\") }\n      CartFooter(vm: vm) // pass down\n    }\n  }\n}\n\n// ✅ Downstream — observes a model owned elsewhere\nstruct CartFooter: View {\n  @ObservedObject var vm: CartViewModel\n  var body: some View { Text(\"Total: \\(vm.items.count)\") }\n}\n\n// ❌ Wrong — using @ObservedObject for a fresh instance\nstruct Buggy: View {\n  @ObservedObject var vm = CartViewModel() // recreated on every re-render!\n  var body: some View { Text(\"\\(vm.items.count)\") }\n}\n\n// ✅ iOS 17+ — Observation framework, simpler still\n@Observable\nfinal class FeedVM {\n  var items: [String] = []\n}\nstruct FeedView: View {\n  @State private var vm = FeedVM() // @Observable models work with plain @State\n  var body: some View { Text(\"\\(vm.items.count)\") }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2903,
+    "topic_id": 29,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What is @EnvironmentObject? When do you reach for it?",
+    "answer": "@EnvironmentObject reads an ObservableObject from the SwiftUI environment — a global-ish dependency-injection mechanism scoped to a view subtree. You inject the object once at the top of the tree with `.environmentObject(...)` and any descendant can read it without prop-drilling.\n\nUse for cross-cutting state that many views need: the current user, theme, feature flags, navigation router.\n\nForget to inject? The app crashes when the descendant first reads it. Pair with EnvironmentValues + custom keys for value-type / non-ObservableObject values.",
+    "code_example": "final class AppSession: ObservableObject {\n  @Published var currentUser: User?\n  func login(_ user: User) { currentUser = user }\n  func logout() { currentUser = nil }\n}\n\n// Inject at the root\n@main\nstruct MyApp: App {\n  @StateObject private var session = AppSession()\n  var body: some Scene {\n    WindowGroup {\n      RootView()\n        .environmentObject(session)\n    }\n  }\n}\n\n// Anywhere in the subtree\nstruct ProfileButton: View {\n  @EnvironmentObject private var session: AppSession\n  var body: some View {\n    if let user = session.currentUser {\n      Text(user.name)\n    } else {\n      Button(\"Sign in\") { session.login(.demo) }\n    }\n  }\n}\n\n// EnvironmentValues — for non-ObservableObject values (theme, formatter, etc.)\nprivate struct ThemeKey: EnvironmentKey {\n  static let defaultValue: Theme = .system\n}\nextension EnvironmentValues {\n  var theme: Theme {\n    get { self[ThemeKey.self] } set { self[ThemeKey.self] = newValue }\n  }\n}\n\nstruct ThemedView: View {\n  @Environment(\\.theme) private var theme\n  var body: some View { /* ... */ EmptyView() }\n}\n\n// Inject\nRootView().environment(\\.theme, .dark)",
+    "code_language": "swift"
+  },
+  {
+    "id": 2904,
+    "topic_id": 29,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What is the Observation framework (@Observable) introduced in iOS 17?",
+    "answer": "The Observation framework replaces the ObservableObject + @Published pattern with a more granular and ergonomic model.\n\n• Mark a class `@Observable` (a macro) — every stored property automatically becomes observable; no @Published needed.\n• Use a regular `@State var vm = MyVM()` to own it; pass it directly without @ObservedObject.\n• Views only re-render for properties they actually read inside `body` — fine-grained tracking instead of \"any @Published change triggers refresh\".\n• @Bindable creates a Binding to an Observable's property.\n\nResult: less ceremony, fewer accidental re-renders, simpler mental model.",
+    "code_example": "import SwiftUI\nimport Observation\n\n@Observable\nfinal class FeedVM {\n  var posts: [Post] = []\n  var query: String = \"\"\n  var loading: Bool = false\n  func reload() async { /* ... */ }\n}\n\n// Owner uses plain @State\nstruct FeedView: View {\n  @State private var vm = FeedVM()\n  var body: some View {\n    VStack {\n      // Reading vm.query here causes re-render only when query changes\n      TextField(\"Search\", text: $vm.query)\n        .onSubmit { Task { await vm.reload() } }\n      List(vm.posts) { Text($0.title) }\n    }\n  }\n}\n\n// Pass model down — no @ObservedObject\nstruct FeedFooter: View {\n  let vm: FeedVM\n  var body: some View {\n    // Only re-renders if posts.count changes — even if other vm props mutate\n    Text(\"\\(vm.posts.count) items\")\n  }\n}\n\n// @Bindable for editing nested objects\nstruct EditView: View {\n  @Bindable var post: Post // Post is @Observable\n  var body: some View {\n    TextField(\"Title\", text: $post.title)\n  }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2905,
+    "topic_id": 29,
+    "order_index": 5,
+    "difficulty": "hard",
+    "question": "How does SwiftUI know when to re-render a view? Identity, lifetime, dependencies.",
+    "answer": "SwiftUI's render cycle has three concepts:\n\n1) Identity — how SwiftUI distinguishes views across body re-evaluations. Two flavors: structural (position in the tree) and explicit (`.id(...)`, `Identifiable`). Same identity ⇒ same view; different identity ⇒ teardown + new lifetime.\n\n2) Lifetime — span between view creation and removal. State (@State, @StateObject) is bound to lifetime; if identity changes, state resets.\n\n3) Dependencies — what each view reads (state, environment, bindings). When a dependency changes, SwiftUI invalidates and re-runs `body` for the views that read it.\n\nGotcha: changing the structural position (e.g. wrapping in `if`) changes identity and resets state. Use `.id(stableValue)` to control identity explicitly.",
+    "code_example": "// Structural identity reset\nstruct Demo: View {\n  @State var showHeader = false\n  var body: some View {\n    VStack {\n      if showHeader { HeaderView() }\n      DetailView()              // identity changes when HeaderView appears/disappears\n      // because its position in the VStack shifts\n    }\n  }\n}\n\n// Explicit identity — driving full reset\nstruct Quiz: View {\n  @State var question = 0\n  var body: some View {\n    QuestionView(index: question)\n      .id(question) // each new question gets a fresh QuestionView lifetime\n  }\n}\n\n// Identity for ForEach — pass Identifiable models or stable id\nForEach(items, id: \\.id) { item in Row(item: item) }\n// Avoid id: \\.self for mutable models — duplicates and drift cause flicker\n\n// Fine-grained dependency tracking with @Observable\n@Observable final class VM { var x = 0; var y = 0 }\nstruct ReadX: View {\n  let vm: VM\n  var body: some View { Text(\"\\(vm.x)\") } // re-renders only on vm.x change\n}\n\n// Equatable opt-in — skip body when prop hasn't changed\nstruct ExpensiveRow: View, Equatable {\n  let item: Item\n  static func == (l: Self, r: Self) -> Bool { l.item.id == r.item.id }\n  var body: some View { /* ... */ EmptyView() }\n}\nExpensiveRow(item: x).equatable()",
+    "code_language": "swift"
+  },
+  {
+    "id": 2906,
+    "topic_id": 29,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "How do you handle async data loading and tasks in SwiftUI views?",
+    "answer": "Two view modifiers tie SwiftUI to Swift Concurrency:\n\n• `.task { await ... }` — runs an async task when the view appears; cancels automatically when the view disappears. Re-runs if you provide a `id:` value that changes.\n• `.refreshable { await ... }` — wires up pull-to-refresh in List/ScrollView; the closure is async, the system shows a spinner until it finishes.\n\nFor model-owned tasks, use a `@StateObject`/`@Observable` view model with async methods. Bind UI to its loading/error state.",
+    "code_example": "@Observable final class FeedVM {\n  var posts: [Post] = []\n  var error: Error?\n  var isLoading = false\n  func reload() async {\n    isLoading = true\n    defer { isLoading = false }\n    do { posts = try await api.posts() } catch { self.error = error }\n  }\n}\n\nstruct FeedView: View {\n  @State private var vm = FeedVM()\n  let userId: String\n\n  var body: some View {\n    List(vm.posts) { Text($0.title) }\n      .overlay { if vm.isLoading { ProgressView() } }\n      .task(id: userId) {            // re-runs when userId changes\n        await vm.reload()\n      }\n      .refreshable { await vm.reload() }\n      .alert(\"Error\", isPresented: .constant(vm.error != nil)) {\n        Button(\"OK\") { vm.error = nil }\n      } message: { Text(vm.error?.localizedDescription ?? \"\") }\n  }\n}\n\n// .task with cancellation — when the view disappears, the underlying Task is cancelled\n// (URLSession, sleep, TaskGroup, etc. all honor cancellation).\n\n// Custom async work outside the view — use Task.detached only when you need it to\n// outlive the view (rare in SwiftUI).",
+    "code_language": "swift"
+  }
+]

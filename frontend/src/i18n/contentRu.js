@@ -25,6 +25,44 @@ export const TOPICS_RU = {
   21: { title: 'Безопасность', description: 'Безопасное хранилище, certificate pinning, обфускация, OWASP Mobile Top 10' },
   22: { title: 'CI/CD и DevOps', description: 'GitHub Actions, Fastlane, Firebase Distribution, flavors' },
   23: { title: 'Внутреннее устройство Flutter', description: 'Три дерева, RenderObject, дерево Element, BuildOwner, конвейер рендеринга' },
+
+  // ── iOS / Swift ────────────────────────────────────────────────────────────
+  24: { title: 'Основы Swift', description: 'Переменные, optional, типы, control flow, замыкания, value vs reference' },
+  25: { title: 'Swift: ООП и протоколы', description: 'Классы, struct, enum, протоколы, расширения, protocol-oriented programming' },
+  26: { title: 'Swift: дженерики и продвинутое', description: 'Generics, opaque types, property wrappers, result builders, key paths' },
+  27: { title: 'Swift Concurrency', description: 'async/await, Task, акторы, structured concurrency, AsyncSequence' },
+  28: { title: 'Основы SwiftUI', description: 'Протокол View, модификаторы, контейнеры, навигация, списки' },
+  29: { title: 'Состояние в SwiftUI', description: '@State, @Binding, @StateObject, @ObservedObject, @EnvironmentObject, Observation' },
+  30: { title: 'Основы UIKit', description: 'UIView, жизненный цикл UIViewController, иерархия view, обработка касаний' },
+  31: { title: 'Auto Layout и UIKit-вёрстка', description: 'Constraint-ы, intrinsic content size, UIStackView, frame-ы, safe area' },
+  32: { title: 'Архитектура iOS', description: 'MVC, MVVM, VIPER, Coordinators, TCA, Clean Swift' },
+  33: { title: 'Сеть в iOS', description: 'URLSession, Codable, async-API, интерцепторы, обработка ошибок' },
+  34: { title: 'Хранилище iOS', description: 'UserDefaults, Keychain, Core Data, SwiftData, FileManager' },
+  35: { title: 'Производительность iOS и память', description: 'ARC, retain cycles, Instruments, главный поток, оптимизация изображений и таблиц' },
+  36: { title: 'Combine', description: 'Publisher, Subscriber, операторы, Subjects, мост с async/await' },
+
+  // ── Android / Kotlin ───────────────────────────────────────────────────────
+  37: { title: 'Основы Kotlin', description: 'val/var, типы, null safety, control flow, функции, лямбды' },
+  38: { title: 'Kotlin: ООП и функциональщина', description: 'Классы, data class, sealed class, object, extension-функции, scope-функции' },
+  39: { title: 'Продвинутый Kotlin', description: 'Дженерики, inline/reified, делегаты, DSL builder-ы, type alias' },
+  40: { title: 'Coroutines и Flow', description: 'Suspend-функции, scope, dispatcher-ы, Flow, StateFlow, SharedFlow, обработка исключений' },
+  41: { title: 'Основы Jetpack Compose', description: 'Composable-функции, модификаторы, layout, рекомпозиция, Material 3' },
+  42: { title: 'Состояние в Compose', description: 'remember, mutableStateOf, derivedStateOf, поднятие состояния, ViewModel + StateFlow' },
+  43: { title: 'Основы Android', description: 'Activity, Fragment, жизненный цикл, Intent, Manifest, configuration changes' },
+  44: { title: 'Архитектура Android', description: 'MVVM, Clean Architecture, Repository, ViewModel, UseCase, UDF' },
+  45: { title: 'Сеть в Android', description: 'Retrofit, OkHttp, интерцепторы, kotlinx.serialization, обработка ошибок' },
+  46: { title: 'Хранилище Android', description: 'Room, DataStore, SharedPreferences, EncryptedSharedPreferences, файлы' },
+  47: { title: 'Dependency Injection в Android', description: 'Hilt, Dagger, Koin, scope-ы, модули, тестируемость' },
+  48: { title: 'Производительность Android и память', description: 'Профилировщики, leak-и, ANR, baseline profiles, R8, startup, перформанс рекомпозиции' },
+
+  // ── Cross-Platform ─────────────────────────────────────────────────────────
+  49: { title: 'Kotlin Multiplatform (KMP)', description: 'expect/actual, source set-ы, шаринг логики, ktor, SQLDelight, interop с iOS' },
+  50: { title: 'Compose Multiplatform', description: 'Compose для iOS/desktop/web, ресурсы, навигация, мост с платформенным UI' },
+
+  // ── Mobile (cross-platform общие темы) ─────────────────────────────────────
+  51: { title: 'System Design мобилки', description: 'Offline-first, синхронизация, пагинация, кэш, модуляризация, фича-флаги' },
+  52: { title: 'Безопасность мобилки', description: 'Keychain/Keystore, секурное хранилище, certificate pinning, jailbreak/root, ATS' },
+  53: { title: 'CI/CD мобилки', description: 'Fastlane, GitHub Actions, подпись, TestFlight, Play Internal, build flavors' },
 };
 
 export const QUESTIONS_RU = {
@@ -953,6 +991,794 @@ export const QUESTIONS_RU = {
     question: 'Как настроить dependency injection в масштабе (composition root, scope-ы, окружения)?',
     answer: 'Dependency injection в реальном приложении нуждается в трёх вещах помимо «связать конструкторы в main()»:\n\n1) Composition root\n• Единое место, где конструируется граф зависимостей\n• Во Flutter это `main.dart` или инициализатор `inject.dart`\n• Избегайте резолвинга зависимостей внутри бизнес-кода; резольвите в root и передавайте аргументы конструкторов оттуда\n\n2) Scope-ы\n• App scope — singleton-ы, живущие на протяжении жизни приложения: Dio, AuthRepository, Logger\n• User scope — пересоздаётся, когда залогинился другой пользователь: PreferencesNotifier, UserSpecificCache\n• Screen / feature scope — владеет route или state holder; auto-dispose-ится, когда больше не используется\n• Riverpod-овский `.autoDispose` и family-модификатор моделируют это естественно; у get_it ручные scope-ы через `pushNewScope`\n\n3) Окружения / flavor-ы\n• Переопределяйте провайдеры per build flavor (dev / staging / prod) — например, fake API в dev, реальный в prod\n• Runtime-переопределения для QA/feature flag-ов («заставьте slow-net реализацию для тестирования loading state-ов»)\n• Тесты — это просто ещё одно окружение — переопределяйте те же провайдеры fake-ами\n\nGuidelines:\n• Биндите интерфейсы, не конкретные типы — ваш bloc не должен видеть `DioAuthRepositoryImpl`, только `AuthRepository`\n• Не инстанцируйте eagerly singleton-ы, которые не всегда нужны; и Riverpod, и get_it поддерживают lazy по умолчанию\n• Документируйте граф: одностраничный README, перечисляющий, что app-scoped, user-scoped, screen-scoped, экономит новым присоединившимся часы\n• Избегайте service-locator анти-паттерна `MyService.instance.method()`, запечённого в бизнес-код — это просто глобал с лишними шагами',
   },
+  // ── Swift Basics (topic 24) ────────────────────────────────────────────────
+  2401: {
+    question: 'В чём разница между let и var в Swift?',
+    answer: '• let — неизменяемое связывание. Ссылку (или значение) нельзя переприсвоить после инициализации.\n• var — изменяемое связывание. Можно переприсваивать.\n\nВ идиоматичном Swift по умолчанию используют let — компилятор предупредит, если var так и не мутировался. Для value-типов (struct, enum) let замораживает и внутренние свойства тоже. Для reference-типов (class) let замораживает только ссылку — мутабельные свойства самого объекта остаются доступны.',
+  },
+  2402: {
+    question: 'Что такое optional в Swift и как безопасно их разворачивать?',
+    answer: 'Optional<T> — это enum с двумя случаями: .some(T) или .none — Swift-овский способ сказать «значение может отсутствовать». Записывается T?.\n\nБезопасные способы:\n• if let / guard let — биндим только если не nil\n• ?? — оператор nil-coalescing с дефолтом\n• optional chaining ?. — пропагирует nil\n• map / flatMap — трансформируем без unwrap-а\n\nForce-unwrap через ! падает на nil — используйте только когда nil реально невозможен.',
+  },
+  2403: {
+    question: 'Объясните value-типы и reference-типы в Swift.',
+    answer: 'В Swift есть два вида типов:\n\n• Value-типы — struct, enum, tuple. Копируются при присваивании / передаче в функцию. У каждой переменной свой экземпляр. По умолчанию thread-safer.\n• Reference-типы — class, closure, actor. Шарятся по ссылке. Мутации видны всем владельцам.\n\nГайд от Apple: используйте struct по умолчанию. К class идите когда нужна identity (один экземпляр у многих владельцев), наследование, deinit или мост с NSObject. Стандартные коллекции (Array, Dictionary, Set, String) — value-типы с copy-on-write под капотом.',
+  },
+  2404: {
+    question: 'Что такое замыкания в Swift и как работает capture list?',
+    answer: 'Замыкания — самодостаточные блоки кода (именованные или анонимные), которые можно передавать. Они захватывают переменные из окружающей области по ссылке (для reference-типов) или копированием (для value-типов).\n\nCapture list `[weak self]` / `[unowned self]` позволяет выбрать другие memory-семантики — нужен чтобы избежать retain cycle, когда замыкание живёт дольше владельца (например, лежит во view, networking-слое, NotificationCenter).\n\nTrailing-closure синтаксис + сокращённые параметры ($0, $1) делают Swift-замыкания компактными.',
+  },
+  2405: {
+    question: 'В чём разница между Array, Set и Dictionary в Swift?',
+    answer: 'Три основные коллекции стандартной библиотеки — все value-типы, generic, copy-on-write:\n\n• Array<T> — упорядоченный, индексированный, допускает дубликаты. O(1) random access, O(1) амортизированный append.\n• Set<T> — без порядка, уникальные элементы (T должен быть Hashable). O(1) в среднем insert/contains.\n• Dictionary<K, V> — без порядка пары ключ-значение (K Hashable). Уникальные ключи.\n\nВсе три интегрированы с Sequence/Collection, поэтому map/filter/reduce/forEach/sort работают одинаково.',
+  },
+  2406: {
+    question: 'Объясните обработку ошибок в Swift: throws, try, do/catch, Result.',
+    answer: 'Swift использует checked exceptions: функция, которая может упасть, помечается `throws` и вызывающий обязан использовать `try`. Ошибки — это значения, соответствующие протоколу Error (обычно enum-ы).\n\nФормы try:\n• try — пробрасывает ошибку наверх\n• try? — конвертирует в Optional (nil при ошибке)\n• try! — force, упадёт при ошибке\n\ndo/catch обрабатывает ошибки локально. Для async, который возвращает успех или ошибку как данные, — Result<Success, Failure>.',
+  },
+  2407: {
+    question: 'Что такое tuple, range и оператор guard в Swift?',
+    answer: 'Три маленькие, но важные фичи:\n\n• Tuple — фиксированная группа типизированных значений, опционально с именами полей. Удобно для разовых возвратов из функции без объявления struct.\n• Range / ClosedRange — полу-открытый `0..<10` и закрытый `1...10`. Соответствуют Sequence — можно итерироваться, нарезать строки/массивы.\n• guard — early-exit, который требует выйти из текущей области при невыполнении условия. Держит «happy path» без отступов и форсит unwrap значений в остальную часть функции.',
+  },
+
+  // ── Swift OOP & Protocols (topic 25) ───────────────────────────────────────
+  2501: {
+    question: 'В чём разница между struct и class в Swift?',
+    answer: '• struct — value-тип. Копируется при присваивании. Без наследования. Бесплатный memberwise-init. Mutating-методы помечаются `mutating`. Размещается на стеке, если небольшой.\n• class — reference-тип. Шарится по ссылке. Поддерживает наследование и deinit. Доступен оператор identity (===). Размещается в куче, под управлением ARC.\n\nИспользуйте struct по умолчанию. К class идите когда нужно: identity (один экземпляр у нескольких владельцев), наследование, AnyObject для Obj-C, deinit.',
+  },
+  2502: {
+    question: 'Что такое протоколы в Swift и чем они отличаются от интерфейсов?',
+    answer: 'Протокол объявляет контракт — методы, свойства, associated type-ы, инициализаторы — который реализуют conforming-типы.\n\nОтличия от интерфейсов в Java/C#:\n• Соответствуют и классы, и value-типы (struct, enum).\n• У протокола могут быть associated type — нечто вроде type-параметров (`associatedtype Item`).\n• Protocol extensions дают дефолтные реализации и добавляют методы всем conformer-ам без изменения исходника.\n• Existential (`any Protocol`) — runtime-обёртка; opaque type (`some Protocol`) — конкретный тип на этапе компиляции.\n\nProtocol-oriented programming (POP) — идиоматический ответ Swift на наследование.',
+  },
+  2503: {
+    question: 'Объясните enum с associated values и raw values в Swift.',
+    answer: 'Enum в Swift — полноценные типы с двумя мощными расширениями:\n\n• Raw values — у каждого case одинаковый базовый примитив (Int, String, Float). Удобно для сериализации, сетевых констант. Авто-conformance с RawRepresentable.\n• Associated values — каждый case несёт собственную типизированную полезную нагрузку. Позволяет моделировать алгебраические типы — идеально для состояния экрана, Result, токенов парсера и т.д.\n\nEnum — value-тип, у него могут быть методы, computed-свойства, conformance с протоколами. Используйте `switch` для исчерпывающего pattern matching.',
+  },
+  2504: {
+    question: 'Что такое extensions в Swift и что они могут / не могут?',
+    answer: 'Extensions добавляют функциональность к существующему типу — своему, stdlib или из импортированного фреймворка — без подкласса.\n\nМожно:\n• Computed-свойства (instance + static)\n• Методы (instance + static + mutating)\n• Инициализаторы (convenience для классов)\n• Subscript-ы\n• Соответствие протоколам\n• Вложенные типы\n\nНельзя:\n• Stored properties (нет места в исходном layout)\n• Override существующих методов\n• Non-final designated init для классов\n\nИдиоматическое применение: разделить тип по областям ответственности, добавить protocol conformance чужим типам, расширить Array/String, сделать typed namespace.',
+  },
+  2505: {
+    question: 'Что такое protocol-oriented programming и чем он отличается от наследования классов?',
+    answer: 'Protocol-oriented programming (POP) — идиома Swift (WWDC 2015) — собирает поведение из маленьких протоколов и default-реализаций, а не из глубоких иерархий классов.\n\nПочему POP:\n• Работает со struct и enum, не только class.\n• Множественное соответствие — один тип может conform-нуть к множеству протоколов.\n• Композиция вместо наследования — фичи добавляются маленькими порциями (Equatable, Hashable, Identifiable) и комбинируются как угодно.\n• Лучше тестируется — протоколы становятся естественной границей mock-ов.\n• Нет «fragile base class».\n\nКогда оставить наследование: глубокие фреймворки (UIView/NSObject), Cocoa/UIKit interop, template method-ы.',
+  },
+  2506: {
+    question: 'Объясните уровни доступа в Swift.',
+    answer: 'Пять уровней — от наиболее открытого к наиболее закрытому:\n\n• open — доступен везде И сабклассируется/оверрайдится из любого модуля. Только class/method.\n• public — виден из любого модуля, но сабклассы/override-ы только внутри объявляющего модуля.\n• package (Swift 5.9+) — виден из любого модуля, помеченного тем же package.\n• internal (по умолчанию) — только текущий модуль.\n• fileprivate — только текущий файл.\n• private — только текущая объявляющая область (и same-file extensions).\n\nДоступность члена ограничена доступностью контейнера — public-метод на internal-типе фактически internal.',
+  },
+  2507: {
+    question: 'Что такое property observers и lazy properties?',
+    answer: '• willSet / didSet — наблюдатели, срабатывающие до / после смены значения. Не сочетаются с computed-свойствами; только на stored.\n• lazy — stored property, чей инициализатор запускается при первом доступе. Должна быть `var` (на первом доступе значение мутируется). По умолчанию НЕ thread-safe.\n• Computed — нет хранения; геттер (и опционально сеттер) запускается на каждом доступе.\n\nObservers — для side-эффектов на изменение (UI-инвалидация, аналитика). Lazy — для дорогих дефолтов, которые могут не понадобиться. Computed — для производных значений.',
+  },
+
+  // ── Swift Generics & Advanced (topic 26) ───────────────────────────────────
+  2601: {
+    question: 'Что такое дженерики в Swift? Как работает where-клауза?',
+    answer: 'Дженерики позволяют писать код, который работает для любого типа, сохраняя полную типобезопасность — без боксинга в Any.\n\n• Generic-функции: `func swap<T>(_ a: inout T, _ b: inout T)`\n• Generic-типы: `struct Stack<Element> { var items: [Element] }`\n• Constraint-ы: `<T: Equatable>` требует conformance.\n• `where`-клауза добавляет несколько/сложные constraint-ы, включая same-type и протокол-extension scope.\n\nКомпилятор специализирует generic-код под каждый call site (часто с @inlinable / -O), производительность близка к ручной.',
+  },
+  2602: {
+    question: 'Что такое opaque types (some) и existentials (any) в Swift?',
+    answer: 'Два способа сослаться на протокол — выглядят похоже, но означают совсем разное:\n\n• `some Protocol` — opaque type. Компилятор выбирает ОДИН конкретный тип и скрывает его. Функция всегда возвращает один и тот же конкретный тип в рантайме; вызывающие могут чейнить методы протокола, не видя нижележащий тип. Без оверхеда.\n\n• `any Protocol` — existential. Коробка (в куче, если значение большое), внутри которой любой conforming-тип. Два existential одного протокола могут оборачивать разные конкретные типы. Имеет накладные расходы и ограничения с Self / associated types.\n\nЭвристика: используйте `some` для возвратов и параметров, где конкретный тип фиксирован; `any` — только когда реально нужно гетерогенное хранилище (например Array<any Animal>).',
+  },
+  2603: {
+    question: 'Что такое property wrappers в Swift?',
+    answer: 'Property wrapper упаковывает хранилище + поведение в переиспользуемую аннотацию. Компилятор синтезирует backing-стораж и переписывает доступы к свойству, вызывая методы wrapper-а. За каждым SwiftUI-овским @State, @Published и @AppStorage стоит property wrapper.\n\nWrapper — struct/class/enum, помеченный `@propertyWrapper`, с `wrappedValue` (и опционально `projectedValue`, доступным через `$`).\n\nПрименения: персистентность (@AppStorage), валидация (@Clamped), thread-safe ленивая инициализация, DI, debouncing, инструментация.',
+  },
+  2604: {
+    question: 'Что такое result builders (DSL) в Swift?',
+    answer: 'Result builders (бывшие function builders) позволяют писать декларативные DSL на Swift. Компилятор трансформирует серию выражений внутри builder-tagged замыкания в одно итоговое значение через `buildBlock`, `buildOptional`, `buildEither`, `buildArray`.\n\nSwiftUI-овский `@ViewBuilder`, RegexBuilder и SwiftPM package builder — всё это они.\n\nВыгоды: читаемый декларативный клиентский код; статическая проверка типа каждого clause; легко писать DSL для тестов/UI/парсеров.',
+  },
+  2605: {
+    question: 'Что такое key paths в Swift?',
+    answer: 'Key path — типизированная ссылка на свойство — `\\Type.property`. Дают возможности рефлексии при полной типобезопасности на этапе компиляции.\n\nПрименения:\n• Generic-аксессоры (sort by, group by, dynamic member subscript)\n• SwiftUI-стиль `Toggle("x", isOn: $store.flag)` — `WritableKeyPath` разрешает запись\n• Combine `.assign(to: \\.value, on: object)`\n• @dynamicMemberLookup с key path-ами (SwiftUI environment values, MapKit и пр.)\n\nФормы: `KeyPath<Root, Value>` (read-only), `WritableKeyPath` (read/write на value-типы), `ReferenceWritableKeyPath` (запись в reference-типы).',
+  },
+  2606: {
+    question: 'Объясните Codable в Swift и как кастомизировать JSON-сериализацию.',
+    answer: 'Codable = Encodable & Decodable. Conformance даёт компилятору синтезировать симметричную (де)сериализацию в любой формат (JSON, plist) через JSONEncoder/JSONDecoder.\n\nКастомизации:\n• `CodingKeys` enum — переименовать / выбросить поля\n• `keyDecodingStrategy = .convertFromSnakeCase` — авто camelCase ↔ snake_case\n• Кастомные `init(from:)` и `encode(to:)` — полный контроль\n• `@propertyWrapper` для повторяющихся паттернов (даты, optional с дефолтом)\n• `userInfo` на encoder/decoder — пробросить контекст (например, версию)\n\nГотчи: Date/Data по умолчанию ISO8601-ish — настраивайте на encoder. Бросает на отсутствующих ключах, если поле не Optional.',
+  },
+
+  // ── SwiftUI Fundamentals (topic 28) ────────────────────────────────────────
+  2801: {
+    question: 'Что такое SwiftUI и чем он отличается от UIKit?',
+    answer: 'SwiftUI — декларативный UI-фреймворк Apple, представленный в iOS 13 (2019). Вы описываете, как UI должен выглядеть для данного состояния; фреймворк сам диффает и применяет изменения.\n\nКлючевые отличия от UIKit:\n• Декларативный — `var body: some View` возвращает дерево view; UIKit был императивным (создать, потом мутировать UIView).\n• Single source of truth — состояние управляет рендерингом; SwiftUI инвалидирует и перевычисляет `body` при изменении состояния.\n• Композиция — маленькие view собираются в большие; модификаторы — это значения, трансформирующие view.\n• Кросс-платформенность — один и тот же код для iOS, iPadOS, macOS, watchOS, tvOS, visionOS.\n• View — value-тип (struct), дёшево пересоздаётся на каждом вызове body. UIView был reference-типом.',
+  },
+  2802: {
+    question: 'Объясните stack-контейнеры в SwiftUI: VStack, HStack, ZStack, LazyVStack/HStack.',
+    answer: 'Основные layout-контейнеры SwiftUI:\n\n• VStack — дети по вертикали. По умолчанию есть spacing.\n• HStack — дети по горизонтали.\n• ZStack — дети по оси Z (back-to-front), как наложенные слои.\n• LazyVStack / LazyHStack — как обычные, но рендерят детей только в (или около) viewport. Используйте внутри ScrollView для длинных списков.\n• Grid (iOS 16+) — настоящая 2D-таблица с выравниванием по строкам/столбцам.\n\nАргументы alignment + spacing управляют раскладкой. Используйте Spacer() чтобы вытолкнуть контент к краю.',
+  },
+  2803: {
+    question: 'Как работают view modifier-ы в SwiftUI?',
+    answer: 'Модификатор — метод на View, возвращающий новый view, оборачивающий исходный с дополнительным поведением (padding, background, foreground, gesture). Модификаторы композируются слева направо; порядок важен.\n\nКлючевое:\n• Каждый модификатор возвращает `some View` — это новый struct, не мутация.\n• Порядок меняет layout: `.padding().background(.red)` отличается от `.background(.red).padding()` — первый оборачивает контент+padding красным, второй кладёт красный за контент, а потом отступает.\n• Свои модификаторы — через протокол `ViewModifier` или extension на View.\n• Часть модификаторов учитывает environment (например, `.font` читается оттуда).',
+  },
+  2804: {
+    question: 'Как работает навигация в SwiftUI? NavigationStack и NavigationSplitView.',
+    answer: 'Современная (iOS 16+) навигация использует два контейнера:\n\n• NavigationStack — push-стиль; стек view. Программная навигация через path Binding (типизированный массив значений-маршрутов).\n• NavigationSplitView — sidebar / content / detail для iPad/Mac/visionOS, автоматически схлопывается в стек на iPhone.\n\nОба используют `.navigationDestination(for:)` для регистрации типизированных маршрутов. Старая `NavigationView` + `NavigationLink(destination:)` — deprecated.\n\nDeep link — first-class: передайте path Binding значение для push, или последовательность для восстановления глубокого state.',
+  },
+  2805: {
+    question: 'Как делать списки в SwiftUI? List, ForEach, секции, swipe actions.',
+    answer: '• List — преднастроенный скролл-контейнер, аналог UITableView. Поддерживает секции, разделители, swipe actions.\n• ForEach — генерирует серию view из Collection. Используется внутри List, VStack, LazyVStack.\n• Section — группирует строки с опциональным header/footer.\n• Встроены swipe actions, search, refresh, selection, drag-and-drop.\n\nIdentity критичен: используйте Identifiable модели или `id:`, чтобы row identity был стабильным между диффами (анимации, scroll preservation).',
+  },
+  2806: {
+    question: 'Что такое SwiftUI previews и как их эффективно использовать?',
+    answer: 'Previews позволяют видеть и итерировать SwiftUI-view внутри Xcode без запуска полного приложения. Раньше — `PreviewProvider`, сейчас — макрос `#Preview` (iOS 17+ / Xcode 15).\n\nПрактики:\n• Делайте preview для каждой переиспользуемой view.\n• Оборачивайте preview, чтобы покрыть разные состояния (loading, empty, error, тёмная тема, dynamic type, RTL, accessibility).\n• Используйте sample-data фабрики (`User.preview`) вместо инлайновых фикстур.\n• Инжектируйте mock environment objects / сервисы, чтобы preview не ходил в сеть.\n• Закрепляйте preview за конкретными устройствами, когда device-specific layout важен.',
+  },
+
+  // ── SwiftUI State (topic 29) ───────────────────────────────────────────────
+  2901: {
+    question: 'Объясните @State и @Binding в SwiftUI.',
+    answer: '@State — property wrapper, который даёт SwiftUI-view локальное мутабельное хранилище. Помечая свойство struct-а как @State, вы говорите SwiftUI выделить персистентное хранилище вне value-type view; мутация значения триггерит перевычисление `body`.\n\n@Binding — двусторонняя ссылка на значение, владелец которого находится в другом месте. Дочерний view получает Binding и читает/пишет родительский @State, не владея им.\n\nПравила:\n• @State должен быть `private` и использоваться для view-локального состояния (не для шаренных моделей).\n• Через $ берётся проекция Binding из @State (`$count`).\n• Binding-и питают Toggle, TextField, Picker и т.д.',
+  },
+  2902: {
+    question: 'В чём разница между @StateObject и @ObservedObject? Когда что использовать?',
+    answer: 'Оба обёртки следят за `ObservableObject` reference-типом и перевычисляют body при изменении его @Published-свойств. Разница в OWNERSHIP и LIFETIME:\n\n• @StateObject — view ВЛАДЕЕТ объектом. SwiftUI создаёт его один раз и удерживает между перерисовками. Используйте, когда этот view отвечает за инстанцирование модели.\n• @ObservedObject — view НАБЛЮДАЕТ за объектом, владельцем которого является кто-то другой. SwiftUI его НЕ удерживает; если инстанцировать объект инлайном, он будет пересоздаваться на каждом перерендере и состояние тихо теряется.\n\nПравило: view, создающий модель, использует @StateObject; нижестоящие view получают её через @ObservedObject (или environment).',
+  },
+  2903: {
+    question: 'Что такое @EnvironmentObject? Когда его применять?',
+    answer: '@EnvironmentObject читает ObservableObject из SwiftUI environment — глобально-подобный механизм DI, ограниченный поддеревом view. Внедряете объект один раз сверху через `.environmentObject(...)`, и любой потомок может прочитать его без prop-drilling.\n\nПодходит для cross-cutting state, нужного многим экранам: текущий пользователь, тема, фича-флаги, navigation router.\n\nЗабыли инжектнуть? Приложение упадёт, когда потомок впервые прочитает значение. Для value-type / не-ObservableObject — комбинация EnvironmentValues + custom keys.',
+  },
+  2904: {
+    question: 'Что такое Observation framework (@Observable) в iOS 17?',
+    answer: 'Observation framework заменяет паттерн ObservableObject + @Published более гранулярной и эргономичной моделью.\n\n• Помечаете класс `@Observable` (макрос) — каждое stored-свойство автоматически становится наблюдаемым; @Published не нужен.\n• Используете обычный `@State var vm = MyVM()` — без @ObservedObject.\n• View перерисовывается только для свойств, которые он РЕАЛЬНО читает в `body` — fine-grained tracking, а не «любое изменение @Published триггерит refresh».\n• @Bindable создаёт Binding к свойству Observable.\n\nИтог: меньше церемоний, меньше случайных перерендеров, проще модель.',
+  },
+  2905: {
+    question: 'Как SwiftUI решает, когда перерисовать view? Identity, lifetime, dependencies.',
+    answer: 'У рендер-цикла SwiftUI три понятия:\n\n1) Identity — как SwiftUI отличает view между перевычислениями body. Два варианта: структурный (позиция в дереве) и явный (`.id(...)`, `Identifiable`). Та же identity ⇒ тот же view; другая ⇒ teardown + новый lifetime.\n\n2) Lifetime — промежуток между созданием и удалением view. Состояние (@State, @StateObject) привязано к lifetime; смена identity сбрасывает state.\n\n3) Dependencies — что каждый view читает (state, environment, binding). При изменении зависимости SwiftUI инвалидирует и перевычисляет body тех view, которые её читали.\n\nГотча: смена структурной позиции (например, оборачивание в `if`) меняет identity и сбрасывает state. Используйте `.id(stableValue)` для явного управления identity.',
+  },
+  2906: {
+    question: 'Как обрабатывать асинхронную загрузку данных и task-и в SwiftUI?',
+    answer: 'Два модификатора связывают SwiftUI с Swift Concurrency:\n\n• `.task { await ... }` — запускает async-task при появлении view; автоматически отменяется при исчезновении. Перезапускается, если передать `id:` и оно изменится.\n• `.refreshable { await ... }` — подключает pull-to-refresh в List/ScrollView; замыкание async, система показывает спиннер до завершения.\n\nДля model-owned task используйте `@StateObject`/`@Observable` view model с async-методами. Свяжите UI с её loading/error-state.',
+  },
+
+  // ── UIKit Fundamentals (topic 30) ──────────────────────────────────────────
+  3001: {
+    question: 'Что такое UIKit? Как он соотносится со SwiftUI в современных iOS-приложениях?',
+    answer: 'UIKit — императивный UI-фреймворк Apple для iOS, iPadOS, tvOS и Catalyst — двигатель каждого iOS-приложения с 2008. Базовые типы: UIView, UIViewController, UIWindow, UINavigationController, UITableView, UICollectionView.\n\nВ современных приложениях:\n• Greenfield iOS-проекты часто стартуют на SwiftUI; за UIKit идут, когда SwiftUI не покрывает фичу (кастомные переходы, специфичные жесты, сложные коллекции).\n• Можно миксовать: UIHostingController хостит SwiftUI внутри UIKit; UIViewRepresentable / UIViewControllerRepresentable хостят UIKit внутри SwiftUI.\n• UIKit всё ещё стоит за всем сторонним кодом, выпущенным до iOS 13, и остаётся дефолтом во многих enterprise-кодбазах.',
+  },
+  3002: {
+    question: 'Объясните методы жизненного цикла UIViewController.',
+    answer: 'UIViewController проходит чёткий lifecycle. Ключевые методы:\n\n• `init(nibName:bundle:)` / `init(coder:)` — VC создан (view ещё нет).\n• `loadView()` — view создаётся. Override-ить только если вы не используете storyboard/xib и хотите полный контроль.\n• `viewDidLoad()` — view загружен в память. Однократная настройка (subview, networking). НЕ вызывается на каждом появлении.\n• `viewWillAppear(_:)` — сейчас будет видим. Для refresh-перед-показом, подписки.\n• `viewDidAppear(_:)` — стал видим. Запуск анимаций, аналитики.\n• `viewWillDisappear(_:)` / `viewDidDisappear(_:)` — уход с экрана. Поставить работу на паузу, сохранить state.\n• `viewWillLayoutSubviews()` / `viewDidLayoutSubviews()` — layout-проход; может срабатывать много раз.\n• `deinit` — VC деаллоцирован. Последний шанс снять observer-ов (block-based KVO/Notification сами чистятся).',
+  },
+  3003: {
+    question: 'В чём разница между frame и bounds у UIView?',
+    answer: 'Оба — CGRect-ы UIView, но в разных координатных системах:\n\n• `frame` — позиция и размер view в координатах SUPERVIEW. «Где разместить меня и какого я размера».\n• `bounds` — собственная координатная система view. Origin обычно (0,0); size совпадает с view. Изменение bounds.origin меняет, какая часть меня видна (так скроллит UIScrollView).\n\nЕсли у view не identity-трансформ (поворот, scale), `frame` неопределён / не имеет смысла — используйте `bounds` + `center` + `transform`.\n\n`center` — середина в координатах superview, симметрична frame (изменение center двигает frame).',
+  },
+  3004: {
+    question: 'Как UIResponder chain обрабатывает касания и события?',
+    answer: 'UIResponder — суперкласс UIView, UIViewController, UIWindow, UIApplication. События (касания, motion, pressure, key commands) идут по RESPONDER CHAIN, пока кто-то их не обработает.\n\nДля касаний:\n1) Hit-testing — UIWindow обходит дерево view через `hitTest(_:with:)`, ищет самый глубокий view, у которого `pointInside(_:with:)` вернул true. Этот view становится `firstResponder` для касания.\n2) Доставка события — `touchesBegan/Moved/Ended/Cancelled` вызываются на этом view. Если он не override-ит (или зовёт super), событие идёт ВВЕРХ по chain: view → superview → … → vc → vc parent → window → application.\n\nGesture recognizer-ы, прикреплённые к hit view (или любому предку), могут перехватить и потребить касания до того, как они дойдут до event handler-ов.',
+  },
+  3005: {
+    question: 'Как работают UITableView и UICollectionView? Что такое reuse?',
+    answer: 'Оба — скроллящиеся контейнеры, основанные на data source и delegate.\n\n• Data source выдаёт ячейки (и для collection — supplementary view) для индексов.\n• Delegate уведомляет о выборе, размере, скролле.\n• Cell reuse — вместо создания тысяч ячеек view переиспользует offscreen-ячейки через `dequeueReusableCell(withIdentifier:for:)`. Ячейки должны реализовать `prepareForReuse()` для очистки state.\n• Современный API: UITableViewDiffableDataSource / UICollectionViewDiffableDataSource — декларируете снапшоты (Section, Item), фреймворк сам считает дифф и анимирует insert/delete/move.\n• Compositional layout (UICollectionViewCompositionalLayout) — сложные сетки/списки описываются композируемыми секциями.',
+  },
+  3006: {
+    question: 'В чём разница между Storyboard, XIB и программным UI?',
+    answer: 'Три способа делать UIKit-экраны:\n\n• Storyboard — визуальный редактор для целых flow, segue между сценами. Плюсы: быстрое прототипирование, видишь layout. Минусы: merge conflicts, тормоза Xcode на больших, скрытое состояние.\n• XIB — отдельный экран / view-nib. Плюсы: визуально, но узкий scope. Минусы: всё ещё XML; может тихо тлеть и ломаться.\n• Программный — UIView/UIViewController в Swift. Плюсы: review-friendly, refactor-friendly, динамичный. Минусы: больше кода, нет визуального preview (кроме SwiftUI-моста или live-preview через `Preview`).\n\nИндустриальный тренд: большие команды предпочитают программный (или SwiftUI) ради diff-friendliness; storyboard всё ещё в туториалах и небольших приложениях.',
+  },
+
+  // ── UIKit Layout (topic 31) ────────────────────────────────────────────────
+  3101: {
+    question: 'Что такое Auto Layout? Чем отличается от frame-based layout?',
+    answer: 'Auto Layout — constraint-based layout-движок. Вы декларируете отношения между view (например, «top of A — на 16pt ниже bottom of B»), и система решает их на каждом layout-проходе, вычисляя конкретные frame-ы.\n\nПротив frame-based:\n• Адаптируется к size class, dynamic type, повороту, multitasking, RTL.\n• Один и тот же код работает на всех устройствах — без per-screen frame-математики.\n• Медленнее голых frame-ов на экстремальных масштабах (10k+ view), но более чем достаточно для обычных приложений.\n\nТри API от Apple:\n1) NSLayoutConstraint(item:...) — многословный, оригинальный.\n2) NSLayoutAnchor — fluent, типобезопасный (рекомендуется).\n3) UIStackView — flow-layout без явных constraint-ов.\n\nСторонние DSL (SnapKit, PinLayout) добавляют сахар, но обычно достаточно anchors.',
+  },
+  3102: {
+    question: 'Что такое intrinsic content size? Как связан с compression resistance и hugging?',
+    answer: 'Intrinsic content size — размер, который view ХОЧЕТ исходя из контента (label под текст; кнопка под title + insets). Auto Layout использует его как дефолт.\n\nКогда есть конфликт:\n• Content hugging priority — насколько сильно view сопротивляется быть БОЛЬШЕ своего intrinsic-размера. Выше = хочет остаться маленьким.\n• Compression resistance priority — насколько сильно сопротивляется быть МЕНЬШЕ intrinsic-размера. Выше = хочет остаться большим.\n\nПолезно когда два label делят строку: дайте title низкий compression resistance, а badge высокий — title будет truncate-иться, badge сохранит размер.',
+  },
+  3103: {
+    question: 'Как UIStackView упрощает вёрстку?',
+    answer: 'UIStackView выстраивает arrangedSubviews по оси (горизонталь/вертикаль) с настраиваемыми distribution и alignment — без явных constraint-ов между сиблингами.\n\nКлючевые свойства:\n• axis — .horizontal / .vertical\n• distribution — .fill, .fillEqually, .fillProportionally, .equalSpacing, .equalCentering\n• alignment — .leading, .center, .trailing, .fill (перпендикулярная ось)\n• spacing — фиксированный gap; или customSpacing(after:) per child\n\nВложенные stack view моделируют сложную вёрстку чисто — как flexbox в CSS или Compose Column/Row. Также корректно обрабатывает hidden-детей (слот схлопывается).',
+  },
+  3104: {
+    question: 'Что такое safe area? Как работать с ним в UIKit?',
+    answer: 'Safe area — регион экрана, НЕ перекрытый системным UI: status bar, navigation bar, tab bar, home indicator, выемки/notch на современных iPhone. Привязка контента к safe area сохраняет видимость на любом устройстве.\n\n• `view.safeAreaLayoutGuide` — UILayoutGuide, anchor-ы которого описывают safe area для этого view.\n• `view.safeAreaInsets` — значения inset (top/leading/bottom/trailing).\n• Override `safeAreaInsetsDidChange()` чтобы реагировать.\n• `additionalSafeAreaInsets` на UIViewController — отодвинуть контент за свой кастомный overlay (например, плавающий баннер).',
+  },
+  3105: {
+    question: 'Как дебажить Auto Layout «unable to satisfy constraints»?',
+    answer: 'Когда Auto Layout не находит валидное решение, печатается длинная диагностика и ломается одна constraint. Как разбираться:\n\n• Прочитайте диагностику — там перечислены все участвующие constraint-ы с адресами; на паузе выполните `po` каждой, чтобы найти виновника.\n• Identifier — задавайте `constraint.identifier = "contentBottom"`, чтобы лог называл их по имени.\n• Symbolic breakpoint на `UIViewAlertForUnsatisfiableConstraints` — отладчик встанет ровно в момент конфликта.\n• View Debugger (Xcode → Debug → View Debugging → Capture View Hierarchy) — визуализируйте дерево, инспектируйте constraint-ы, видите ambiguous frame-ы красным.\n• `view.hasAmbiguousLayout` и `view.exerciseAmbiguityInLayout()` — переключайте ambiguous view, чтобы найти плавающий.\n• Поставьте более низкий priority (например, 999) на необязательную constraint, чтобы пометить её как «можно сломать».',
+  },
+  3106: {
+    question: 'В чём разница между layoutIfNeeded, setNeedsLayout и layoutSubviews?',
+    answer: 'Эти три метода координируют layout-проход:\n\n• `setNeedsLayout()` — помечает view как dirty; layout-движок раскладёт его на следующем layout-цикле (обычно перед следующей отрисовкой).\n• `layoutIfNeeded()` — форсирует немедленный layout-проход прямо сейчас, если dirty. Блокирующий.\n• `layoutSubviews()` — метод, который UIKit зовёт во время layout-прохода для размещения subview. Override для custom layout (редко при Auto Layout — обычно для скруглений, mask path, зависящих от размера).\n\nТипичный паттерн анимации: меняем constraint constants → вызываем layoutIfNeeded внутри UIView.animate, чтобы UIKit интерполировал между старой и новой раскладкой.',
+  },
+
+  // ── iOS Architecture (topic 32) ────────────────────────────────────────────
+  3201: {
+    question: 'Сравните MVC, MVVM, VIPER и TCA на iOS.',
+    answer: 'Распространённые iOS-архитектуры:\n\n• MVC (Massive View Controller) — дефолт от Apple. UIViewController владеет view + бизнес-логикой. Просто, но VC пухнет; плохо тестируется.\n• MVVM — выносим презентационную логику в ViewModel, экспонирующий observable state. View биндится к VM. Часто с SwiftUI/Combine. VM тестируем, но навигация не решена.\n• VIPER — View, Interactor, Presenter, Entity, Router. Жёсткая сепарация; многословно; классика крупных enterprise UIKit.\n• Coordinators — дополнение к любому паттерну; выносят навигацию в Coordinator. VC/VM не знают о роутинге.\n• TCA (The Composable Architecture) — Redux-стиль от Pointfree: State, Action, Reducer, Effect, Store. Чистые функции, time-travel debugging, исчерпывающие тесты, эргономично интегрируется со SwiftUI.\n• Clean Swift / VIP — MVC + use-case слои; сейчас менее модно.\n\nСеребряной пули нет — выбирайте по размеру команды, требованиям к тестам и SwiftUI vs UIKit.',
+  },
+  3202: {
+    question: 'Как избегать «Massive View Controller» в UIKit?',
+    answer: 'Стратегии держать UIViewController худым:\n\n• Выносим презентационную логику в ViewModel — VC биндится и пробрасывает события.\n• Выносим data source-ы table/collection в отдельные типы — код dataSource/delegate вне VC.\n• Coordinators — выносим навигацию/презентацию.\n• Service-слой — networking, persistence как протоколы, инжектируются.\n• Композиция — собираем сложные экраны из child VC (`addChild` / `view.addSubview` / `didMove(toParent:)`).\n• Dependency injection — collaborators через init; mock в unit-тестах.\n• Protocol-oriented дизайн вместо синглтонов.\n\nЦель: VC оркестрирует, остальные работают. 200-строчный VC — норм; 2000-строчный — запах.',
+  },
+  3203: {
+    question: 'Что такое паттерн Coordinator? Когда он стоит?',
+    answer: 'Coordinator — объект, отвечающий за навигацию. View controller (или SwiftUI-view) просят координатор переходить; не push-ат и не present-ят друг друга напрямую.\n\nПлюсы:\n• Переиспользуемость VC — один VC может появиться в разных flow, потому что flow живёт в координаторе.\n• Проще deep-link — координатор владеет всем path.\n• Проще тесты — VC-тесты не мокают UINavigationController.\n• Чёткие границы flow — login flow, onboarding flow, checkout flow — каждый со своим координатором.\n\nИмеет смысл для middle+ приложений с несколькими flow. Для 2-экранника — overkill. SwiftUI-аналог: NavigationStack с типизированными маршрутами решает ту же задачу.',
+  },
+  3204: {
+    question: 'Как делать dependency injection в iOS?',
+    answer: 'Распространённые DI-стратегии:\n\n• Constructor injection — collaborators через `init`. Самый явный, самый тестируемый. Дефолт.\n• Property injection — задаётся после init. Удобно для VC из storyboard.\n• Method injection — передаётся в вызов. Для разовых нужд.\n• Service locator / DI-контейнер — Swinject, Resolver, Factory, Needle. Скрывают wiring; риск скрытого coupling.\n• Environment / @EnvironmentObject (SwiftUI) — DI через дерево view.\n\nДля большинства проектов: constructor injection + маленький composition root, который проводит проводку в `AppDelegate` / `App`. К контейнеру идти, когда wiring становится больно (10+ сервисов с почти-циклическими зависимостями).',
+  },
+  3205: {
+    question: 'Что такое The Composable Architecture (TCA) и какие проблемы решает?',
+    answer: 'TCA (библиотека Pointfree) — Redux-style архитектура для SwiftUI/UIKit:\n\n• State — единая иммутабельная struct, описывающая экран.\n• Action — enum всех событий.\n• Reducer — чистая функция `(State, Action) -> Effect`, которая мутирует state и эмитит эффекты.\n• Effect — async-работа (сеть, таймеры), резолвится в новые action.\n• Store — держит state + диспатчит action.\n\nЧто решает:\n• Single source of truth: всё проходит через один reducer.\n• Композиция: фичи комбинируются через reducer-комбинаторы; большие приложения остаются аккуратными.\n• Тестируемость: чистые reducer + исчерпывающий `TestStore` позволяет переигрывать каждый action и детерминированно проверять смену state.\n• Управление side-эффектами: structured concurrency обёрнута в Effect, с отменой.\n\nКомпромиссы: тяжелее MVVM, кривая обучения, много boilerplate (смягчается макросами @Reducer + @ObservableState в 1.0+).',
+  },
+  3206: {
+    question: 'Как организовать большую iOS-кодбазу? Модули, фреймворки, SPM-пакеты.',
+    answer: 'Стратегии модуляризации:\n\n• Локальные SPM-пакеты — фичи как локальные Swift Package (`Package.swift` с несколькими product). Каждый модуль компилируется независимо — быстрые инкрементальные сборки, явные API-границы через `public`. Сегодняшний рекомендуемый дефолт.\n• Xcode framework-и — pre-SPM способ; всё ещё в legacy. Медленнее инкрементально.\n• XCFramework-и — для распространения предсобранных бинарей (сторонние SDK).\n\nТипичный layout:\n• `App/` — тонкая оболочка, собирающая модули.\n• `Features/Profile`, `Features/Feed`, `Features/Search` — фича-модули.\n• `Core/Networking`, `Core/Persistence`, `Core/Logging` — cross-cutting.\n• `DesignSystem` — общие UI-компоненты, цвета, типографика.\n\nПлюсы: быстрые сборки (параллельная компиляция), enforced API-границы, проще тесты, переиспользование кода между приложениями.',
+  },
+
+  // ── iOS Networking (topic 33) ──────────────────────────────────────────────
+  3301: {
+    question: 'Что такое URLSession и как сделать GET-запрос с async/await?',
+    answer: 'URLSession — networking-API Apple. Управляет соединениями, cookies, кэшем, фоновыми upload/download, certificate pinning. Обычно используют `URLSession.shared` для простых случаев или сконфигурированный session для большего контроля.\n\nС Swift Concurrency:\n• `URLSession.shared.data(from: URL)` возвращает `(Data, URLResponse)` async.\n• `URLSession.shared.data(for: URLRequest)` — полный контроль над headers, методом, телом.\n• Ошибки бросаются — обрабатывайте через do/catch.\n\nДо async/await был callback-API `dataTask(with:completionHandler:)`; он остаётся для back-deployment.',
+  },
+  3302: {
+    question: 'Как построить типизированный APIClient-слой на Swift?',
+    answer: 'Переиспользуемый APIClient решает общие задачи один раз: base URL, auth-заголовки, retry, декодирование, маппинг ошибок. Кирпичики:\n\n• Endpoint-тип — описывает path, метод, query, body. Часто — протокол или struct.\n• Client — берёт Endpoint, делает URLRequest, декодирует ответ.\n• Request modifiers — interceptors (auth-токен, request id, лог).\n• Error-тип — типизированный `APIError` enum (network, decoding, status, server-message).\n\nКлиент держите untyped по body/response (Data), а строго типизированные обёртки декодируют. Тестируйте инжектируя `protocol Networking`, чтобы подменить fake.',
+  },
+  3303: {
+    question: 'Как отменять сетевые запросы и обрабатывать timeout в Swift?',
+    answer: 'Три ортогональных механизма:\n\n• Cancellation таска — `task.cancel()` пробрасывается в нижележащий URLSessionTask. Async-API URLSession бросают `CancellationError`/`URLError(.cancelled)` и останавливают передачу.\n• Per-request timeout — `request.timeoutInterval` или `URLSessionConfiguration.timeoutIntervalForRequest` + `timeoutIntervalForResource`.\n• Ручная обёртка `withTimeout` — гонка двух задач (работа vs таймер) через `withThrowingTaskGroup`, чтобы навязать soft-deadline.\n\nDebounce + cancel-previous — стандартный паттерн для typeahead: каждый ввод отменяет in-flight task и стартует новый.',
+  },
+  3304: {
+    question: 'Как обрабатывать токены авторизации и автообновление?',
+    answer: 'Паттерн: тонкий `AuthInterceptor`/middleware в API-клиенте подкладывает bearer-токен в каждый запрос и retry-ит 401 после refresh.\n\nВажно:\n• Access + refresh-токен храните в Keychain.\n• Сам refresh-вызов НЕ должен идти через interceptor (иначе бесконечный цикл).\n• Refresh должен быть concurrent-safe — несколько 401 in-flight должны разделить один refresh.\n• Logout, если refresh упал (очистить Keychain, переход в login).\n\nВ iOS authentication challenge handler в URLSession помогает с HTTP Basic / Digest, но для JWT-стиля код-логика interceptor проще.',
+  },
+  3305: {
+    question: 'Как загружать файлы и делать multipart/form-data в Swift?',
+    answer: 'Два основных пути:\n\n• `URLSession.upload(for:from:)` — небольшие in-memory upload-ы. URLRequest + Data; работает с async/await.\n• `URLSession.uploadTask(with:fromFile:)` — большие файлы с прогрессом. Сочетается с делегатом или `URLSession.bytes` API.\n\nMultipart form-data собирает тело вручную: boundary, части с заголовками Content-Disposition / Content-Type и закрывающий boundary. Бинарные данные — инлайном. Content-Type — `multipart/form-data; boundary=…`.\n\nДля больших workflow (фоновые upload, resumable transfer) используйте `URLSessionConfiguration.background(...)`, чтобы система могла обрабатывать аплоад после сборки приложения в фон.',
+  },
+  3306: {
+    question: 'Как реализовать certificate pinning в iOS?',
+    answer: 'Certificate pinning усиливает TLS, доверяя только конкретным сертификатам / public-ключам сервера; защищает от MITM с rogue CA.\n\n• Пин leaf или intermediate-сертификата (ротировать при ротации сервера).\n• Пин public-ключа (rotation-friendly — только при ротации keypair).\n• App Transport Security (ATS) даёт pinning через `NSPinnedDomains` plist (iOS 14+).\n• Ручной — реализуйте `urlSession(_:didReceive:completionHandler:)` и проверьте server trust против хеша захардкоженного сертификата.\n• Всегда планируйте ротацию — кладите несколько пинов, ship kill-switch, держите out-of-band update path.',
+  },
+
+  // ── iOS Persistence (topic 34) ─────────────────────────────────────────────
+  3401: {
+    question: 'Какие варианты persistence на iOS и когда что выбирать?',
+    answer: 'Берите самый лёгкий инструмент под задачу:\n\n• UserDefaults — мелкие key-value preferences (тема, последняя вкладка). На plist; не зашифровано.\n• Keychain — секурное хранилище для токенов, паролей, biometric-protected секретов. Зашифровано, по умолчанию переживает переустановку.\n• FileManager / Codable + JSON — небольшие/средние структурированные данные. Легко смотреть, легко бэкапить.\n• Core Data — Apple-овский object graph + persistence. Лучше для сложных реляционных моделей, sync, batch-апдейтов.\n• SwiftData (iOS 17+) — Swift-first обёртка над Core Data. Лаконичная декларация схемы через @Model.\n• SQLite (например, через GRDB) — голый SQL, raw скорость, полный контроль.\n• CloudKit — Apple iCloud DB; пара с Core Data sync.\n\nUserDefaults — не для секретов, Core Data — не для крошечных словарей.',
+  },
+  3402: {
+    question: 'Что такое Core Data и каковы его базовые понятия?',
+    answer: 'Core Data — фреймворк object graph + persistence от Apple (с iOS 3). НЕ просто ORM — отслеживает связи объектов, undo/redo, change-уведомления, и только под капотом использует SQLite как backing store.\n\nКлючевые понятия:\n• NSManagedObjectModel — схема (entity, атрибуты, связи). Обычно в .xcdatamodeld.\n• NSPersistentContainer — владеет моделью, store coordinator и context-ами. Удобный entry-point.\n• NSManagedObjectContext — рабочее пространство для объектов. Fetch/insert/update в context-е и `save()` для записи. Каждый context привязан к очереди.\n• NSManagedObject — базовый класс сгенерированных entity-классов.\n• NSFetchRequest / NSPredicate — query-API.\n\nЧастые ловушки: thread-confined контексты (нельзя пробрасывать NSManagedObject между очередями), тяжёлые fetch на main-context, отсутствие batch-операций для крупных апдейтов.',
+  },
+  3403: {
+    question: 'Что такое SwiftData и чем отличается от Core Data?',
+    answer: 'SwiftData (iOS 17+) — современный Swift-first persistence-фреймворк Apple — построен поверх Core Data, но описывается на Swift-коде, а не редактированием .xcdatamodeld.\n\n• Схема через макрос `@Model` на обычных классах.\n• Атрибуты свойств: `@Attribute(.unique)`, `@Relationship(deleteRule:)`.\n• `ModelContainer` ↔ NSPersistentContainer; `ModelContext` ↔ NSManagedObjectContext.\n• Интеграция со SwiftUI через макрос `@Query` и `.modelContainer(for:)`.\n• CloudKit-sync через `ModelConfiguration(cloudKitDatabase:)`.\n\nCore Data всё ещё нужен в legacy и для edge-фич, которые SwiftData ещё не покрывает (compound predicates, некоторые миграции). Для нового кода — SwiftData.',
+  },
+  3404: {
+    question: 'Как безопасно хранить секреты в iOS через Keychain?',
+    answer: 'Keychain — управляемая системой зашифрованная база credentials. Каждый item:\n• Принадлежит keychain access group приложения (или шарится через entitlement).\n• Имеет accessibility class — когда система может расшифровать его (например, `kSecAttrAccessibleAfterFirstUnlock`, `…WhenUnlocked`).\n• Опционально требует биометрию (`kSecAttrAccessibleBiometryAny` + LAContext).\n\nПрямые SecItem* API многословны; обычно их оборачивают в helper или используют библиотеку (KeychainAccess, Valet).\n\nГотчи:\n• Keychain-items по умолчанию переживают переустановку — чистите при первом запуске, если хотите fresh state.\n• Некоторые accessibility-классы (`…ThisDeviceOnly`) не синкаются в iCloud Keychain.\n• Не суйте большие блобы в Keychain — он для коротких секретов.',
+  },
+  3405: {
+    question: 'Как делать миграции Core Data / SwiftData безопасно?',
+    answer: 'Когда схема меняется между релизами, нужна стратегия миграции — иначе приложение упадёт при старте (несовместимый store).\n\n• Lightweight миграция — добавить/убрать атрибут, добавить entity, простой rename. Core Data делает автоматом с `NSMigratePersistentStoresAutomaticallyOption` + `NSInferMappingModelAutomaticallyOption`.\n• Custom mapping models — для нетривиальных трансформаций (split entity, merge атрибутов). Делаете `.xcmappingmodel` и сабкласс `NSEntityMigrationPolicy`.\n• SwiftData VersionedSchema — декларируете цепочку схем; SwiftData запускает миграции между ними.\n\nВсегда:\n• Тестируйте миграции на prod-like данных; в debug-сборке имейте кнопку «снести store» как last resort.\n• Бэкап старого store перед миграцией.\n• Не оставляйте на launch-path несколько медленных миграций — слипайте в одну in-place трансформацию, если можно.',
+  },
+  3406: {
+    question: 'Когда выбирать сторонний SQLite-слой (GRDB) вместо Core Data / SwiftData?',
+    answer: 'К прямому SQLite (например, GRDB.swift) идут когда:\n\n• Нужны фичи, которые Core Data не выражает (window-функции, recursive CTE, FTS5).\n• Перформанс на очень больших или write-heavy нагрузках критичен; нужен полный контроль индексов, join-ов, batch-размеров.\n• Хочется простого record-API в стиле `[String: Value]` без overhead-а object graph.\n• Шарите схему с сервером / cross-platform-кодом (например, с KMP).\n\nCore Data меняет голую скорость на фичи object graph (faulting, undo, change-уведомления, валидация). Для большинства приложений эти фичи полезны; когда они шум — GRDB или даже голый `sqlite3` быстрее и проще.',
+  },
+
+  // ── iOS Performance (topic 35) ─────────────────────────────────────────────
+  3501: {
+    question: 'Как работает ARC (Automatic Reference Counting) в Swift?',
+    answer: 'ARC отслеживает счётчики ссылок для class-инстансов на этапе компиляции. Компилятор вставляет retain/release-вызовы, чтобы каждый инстанс освобождался ровно когда последняя strong-ссылка ушла.\n\nПравила:\n• Strong (по умолчанию) — увеличивает retain-count. Владеет объектом.\n• Weak — НЕ увеличивает retain-count. Авто-обнуляется когда target освобождён. Обязательно `var Optional`.\n• Unowned — non-incrementing, non-optional. Падает при доступе после освобождения. Только когда время жизни гарантировано.\n• Замыкания захватывают по strong по умолчанию — `[weak self]` / `[unowned self]` capture-листы избегают циклов.\n• Value-типы (struct/enum) копируются; ARC не применяется.\n\nARC детерминистичен — финализация запускается сразу когда refcount = 0 (без GC-пауз).',
+  },
+  3502: {
+    question: 'Что такое retain cycle? Как его обнаружить и избежать?',
+    answer: 'Retain cycle — два (или больше) reference-counted объекта держат strong-ссылки друг на друга, refcount никогда не падает в 0. Объекты текут.\n\nЧастые источники:\n• Замыкания, захваченные strong владельцем (делегаты, completion-handlers, Combine-sink, NotificationCenter-блоки).\n• Двунаправленные class-связи (parent ↔ child) без weak/unowned.\n• Повторяющиеся NSTimer / DispatchSourceTimer с `target = self`.\n\nКак найти:\n• Memory Graph Debugger в Xcode — пауза, иконка, ищите циклы (фиолетовые иконки = leak).\n• Instruments → Leaks.\n• Smoke-тест с `print` в deinit — срабатывает ли вообще?\n\nЛечение: `[weak self]` capture-листы, `weak`-свойства, invalidate таймеров в deinit.',
+  },
+  3503: {
+    question: 'Как профилировать iOS-приложение через Instruments?',
+    answer: 'Instruments — набор профайлеров от Apple, цепляется к запущенному приложению через Xcode (Product → Profile, ⌘I).\n\nЧастые шаблоны:\n• Time Profiler — sampling CPU-профиль. Найти тяжёлые методы; collapse по фреймам; смотреть тяжёлый stack.\n• Leaks — ищет утечки (объекты без пути к корню).\n• Allocations — отслеживает использование памяти. Ищет всплески и рост.\n• Network — тайминги запросов, размеры payload.\n• Energy Log — батарейный impact (важно для долгоживущих приложений).\n• Hangs — ловит главный поток > 250ms (отлично для лагов).\n• Animation Hitches — пропуски кадров в UIKit / SwiftUI.\n• MetricKit — собирает сигналы с реальных пользователей без Instruments (краши, hangs, батарея, диск).\n\nПрофилируйте на реальном устройстве с release-сборкой (Profile config). Симулятор врёт по таймингам.',
+  },
+  3504: {
+    question: 'Как сохранять main thread отзывчивым в iOS-приложениях?',
+    answer: 'Main thread отвечает за UIKit/SwiftUI-обновления И за каждое касание. Что > 16ms — пропуск кадра; > 250ms — hang. Стратегии:\n\n• Уведите работу с main: Task / async let, DispatchQueue.global, Operation queues.\n• Используйте async/await — автоматическая приостановка убирает случайную блокировку.\n• Compute-heavy в фоне: декодирование изображений, JSON-парсинг, большие списки. Результаты применяйте на main.\n• Откладывайте дорогую работу: на `viewDidAppear` (не viewDidLoad/willAppear) или после первого кадра.\n• Image-пайплайны: pre-decode thumbnails в фоне, отдавайте готовый UIImage на main.\n• Избегайте sync API на main: Core Data fetch, файловый I/O.\n• Используйте Instruments → Hangs / Time Profiler с фильтром Main Thread.',
+  },
+  3505: {
+    question: 'Как оптимизировать скролл UITableView / UICollectionView?',
+    answer: 'Плавный 60/120 fps требует уложиться в 16ms (8ms на ProMotion). Оптимизации:\n\n• Cell reuse — никогда не создавайте ячейки на каждую видимую строку.\n• Pre-decode изображений вне main (CGImageSourceCreateImageAtIndex с shouldCacheImmediately).\n• Layer-back сложным ячейкам (`layer.shouldRasterize` только для статичных дорогих слоёв).\n• Не вызывайте layoutIfNeeded в cellForRow — пусть layout-проход пройдёт один раз после конфигурации.\n• Diffable data sources вместо полного `reloadData`.\n• Estimated row heights — даёт быстрый estimate, чтобы UIKit не мерил всё сразу.\n• Cell registration с content configurations (UIListContentConfiguration) — дешевле кастомных ячеек с кучей subview.\n• Self-sizing ячейки: UICollectionViewCompositionalLayout `.estimated` + content configurations.\n• Избегайте offscreen-рендера: rounded corners на UIImageView через `cornerRadius` дешевле масок.\n• Профилируйте через Instruments → Animation Hitches / Time Profiler.',
+  },
+  3506: {
+    question: 'Как анализировать и улучшать app launch time?',
+    answer: 'Запуск — первое впечатление. Делится на две фазы:\n\n• Pre-main — dyld, runtime init, Objective-C +load, статические инициализаторы. Уменьшайте: избегайте +load, минимизируйте большой static init, режьте линкуемые фреймворки.\n• Post-main → first useful frame — `application(_:didFinishLaunchingWithOptions:)` + scene/UI setup до рендера первого экрана.\n\nЗамеряйте:\n• Xcode → Profile → Time Profiler с App Launch.\n• Instruments → App Launch.\n• MetricKit `MXAppLaunchMetric` (реальные пользователи).\n• `os_signpost` вокруг своих стартовых фаз.\n\nОптимизации:\n• Откладывайте тяжёлый init (analytics SDK, image cache) до после первого кадра.\n• Lazy-load сервисов через @Lazy или first-use injection.\n• Меньше dynamic-фреймворков (каждый — dyld-time).\n• Pre-warm критичные кэши в фоне, не sync на main.\n• Через Time Profiler ищите sync I/O / Core Data на main.',
+  },
+
+  // ── Kotlin Basics (topic 37) ───────────────────────────────────────────────
+  3701: {
+    question: 'В чём разница между val и var в Kotlin?',
+    answer: '• val — read-only ссылка (как Java final). Ссылку нельзя переприсвоить, но объект, на который она указывает, может быть мутабельным.\n• var — мутабельная ссылка. Можно переприсваивать.\n\nИдиоматический Kotlin предпочитает val — IDE-инспекции предлагают конвертировать var → val, если переменная не переписывалась. var должен быть осознанным выбором, иначе immutability — выигрыш по thread-safety и корректности.\n\nОбе статически типизированы. Type inference — норма; явные аннотации — для public API и неоднозначных инициализаторов.',
+  },
+  3702: {
+    question: 'Как работает null safety в Kotlin?',
+    answer: 'Система типов Kotlin различает nullable и non-nullable ссылки:\n\n• `String` — non-null. Не может быть null. Компилятор проверяет.\n• `String?` — nullable. Может быть null.\n\nОператоры:\n• `?.` — safe call. Возвращает null если receiver null.\n• `?:` — Elvis-оператор, дефолт для null.\n• `!!` — non-null assertion. Кидает NullPointerException если null.\n• `?.let { ... }` — выполнить блок только если не null.\n\nПри interop с Java типы приходят как platform-типы (`String!`) — Kotlin считает их nullable, но не форсит проверку на границе; аннотируйте Java-сорсы @Nullable / @NonNull, где можно.',
+  },
+  3703: {
+    question: 'Какие коллекции в Kotlin (List, Set, Map) и их мутабельные двойники?',
+    answer: 'Kotlin отделяет read-only и мутабельные коллекции на уровне типов:\n\n• `List<T>` (read-only) vs `MutableList<T>` (add/remove/set).\n• `Set<T>` vs `MutableSet<T>`.\n• `Map<K, V>` vs `MutableMap<K, V>`.\n\nФабрики:\n• `listOf`, `setOf`, `mapOf` — read-only.\n• `mutableListOf`, `mutableSetOf`, `mutableMapOf` — мутабельные.\n• `emptyList()`, `emptyMap()` — пустые read-only.\n\nПод капотом — JDK-коллекции. Read-only типы — это интерфейсы, не глубокая копия — передать MutableList туда, где ждут List, можно; consumer просто не сможет мутировать.\n\nФункциональные хелперы (map / filter / reduce / fold / groupBy / chunked / windowed / partition) делают работу с данными лаконичной.',
+  },
+  3704: {
+    question: 'Объясните функции, лямбды и higher-order-функции в Kotlin.',
+    answer: 'Функции — first-class. Их можно передавать аргументами, возвращать, хранить в переменных.\n\n• Объявление функции: `fun name(...): T = body` (single-expression) или `fun name(...) { ... }` (block-body).\n• Default + named-аргументы — меньше overload-ов.\n• Лямбда: `{ a, b -> a + b }`. Неявный `it` для лямбд с одним параметром.\n• Higher-order: функция, принимающая или возвращающая функцию (`(Int) -> String`, `() -> Unit`).\n• Trailing-lambda convention: `list.forEach { println(it) }`.\n• `inline`: тело функции копируется в call site, без аллокации.\n\nИдиома Kotlin тяжёлая на лямбды — коллекции, корутины, DSL все на них.',
+  },
+  3705: {
+    question: 'В чём разница между if/when как statement и expression в Kotlin?',
+    answer: 'В Kotlin контрольные конструкции — выражения — возвращают значение и могут быть правой частью присваивания или возврата из функции.\n\n• `if/else` — как expression нужны обе ветки. Тип результата — LUB (least upper bound) типов веток.\n• `when` — switch на стероидах. Матчит значения, типы (`is X`), диапазоны, списки, предикаты. Как expression должен быть exhaustive (либо `else`).\n• `try` тоже expression — `val x = try { parse() } catch (...) { fallback }`.\n\nИспользование как expression убирает лишний mutable state — ветки сразу дают финальное значение.',
+  },
+  3706: {
+    question: 'Что такое smart cast в Kotlin и когда они работают?',
+    answer: 'Smart cast — компилятор автоматически сужает тип после рантайм-проверки, без явного cast-а.\n\n• После `if (x is Type)` внутри блока `x` считается `Type`.\n• После `if (x != null)` внутри блока `x` считается non-nullable.\n• Работает в ветках `when`.\n\nSmart cast применяется только когда компилятор гарантирует, что значение не изменилось между проверкой и использованием:\n• `val`-свойства — всегда.\n• `var` класса — только если не open (нельзя override) и без custom-геттера.\n• Локальные переменные, параметры функций — обычно да.\n• Mutable shared state между потоками — нет.\n\nКогда smart cast не доказуем, используйте `as` (бросит при mismatch) или `as?` (вернёт null).',
+  },
+
+  // ── Kotlin OOP (topic 38) ──────────────────────────────────────────────────
+  3801: {
+    question: 'Что такое data class в Kotlin и что генерит компилятор?',
+    answer: '`data class` — класс, чья основная задача — хранить данные. Компилятор генерит:\n\n• `equals()` / `hashCode()` по свойствам primary-конструктора.\n• `toString()` вида `User(id=1, name=Alice)`.\n• `copy(...)` — новая инстанс с заменой полей.\n• `componentN()`-операторы для destructuring.\n\nТребования: минимум один параметр primary-конструктора; параметры должны быть `val` или `var`. Не может быть `abstract`, `open`, `sealed`, `inner`. Наследование (с 1.1) только от не-data классов.\n\nИдиоматично для DTO, value objects, UI state, command-сообщений.',
+  },
+  3802: {
+    question: 'Что такое sealed class / sealed interface в Kotlin?',
+    answer: 'Sealed class/interface ограничивает, кто может его наследовать: только классы из ТОГО ЖЕ модуля + того же пакета (sealed class) или того же модуля (sealed interface).\n\nЭто даёт:\n• Exhaustive `when` — `else` не нужен; добавили новый подтип — компилятор сразу падает на каждом существующем `when`.\n• Алгебраические типы — выражаем конечные альтернативы вроде `Result`, screen state, parser tokens.\n• Дизайн API библиотек — контролируем расширяемость, но используем наследование.\n\nSealed-типы — reference-типы; JVM видит обычные классы. Для value-семантики используйте `data class` или `data object` подкласса.',
+  },
+  3803: {
+    question: 'В чём разница между class, object и companion object в Kotlin?',
+    answer: 'Три объявления для class-shaped вещей:\n\n• `class` — обычный класс, инстанцируется `Foo()`.\n• `object` — singleton на топ-уровне. Компилятор создаёт один инстанс, доступен по имени (`MyService.action()`).\n• `companion object` — singleton, привязанный к классу. Для static-like членов (фабрики, константы). Доступен через имя класса (`User.fromJson(...)`).\n\nObject-ы могут реализовывать интерфейсы и наследовать (один class). Лениво инициализируются на первом доступе.\n\nДля настоящих compile-time констант — `const val` внутри `object` или `companion object` (или top-level).',
+  },
+  3804: {
+    question: 'Что такое extension-функции и свойства в Kotlin?',
+    answer: 'Extensions добавляют функции или свойства к существующему типу без модификации источника. Резолвятся СТАТИЧЕСКИ — компилятор выбирает extension по статическому типу receiver.\n\n• `fun String.titleCase(): String = ...` — extension-функция.\n• `val String.firstLetter: Char get() = first()` — extension-property (без backing field; только computed).\n• Member-функции выигрывают у extension с тем же signature на том же типе.\n• Extensions не override-ят виртуальные методы — диспатч статический.\n\nИдиоматично: утилиты (`Date.toIsoString()`), доменные DSL, view-binding-хелперы в Android, эргономика для сторонних типов.',
+  },
+  3805: {
+    question: 'Что такое scope-функции (let, run, with, apply, also)?',
+    answer: 'Scope-функции выполняют лямбду в контексте объекта. Различаются по двум осям: как ссылаться на объект (`it` vs `this`) и что возвращает лямбда (объект или результат лямбды).\n\n• `let` — `it`, возвращает результат лямбды. Часто для null-safe трансформаций.\n• `run` — `this`, возвращает результат лямбды. Для вычислений на объекте.\n• `with` — `this`, возвращает результат лямбды. Как run, но free-функция.\n• `apply` — `this`, возвращает объект. Для конфигурации после конструирования.\n• `also` — `it`, возвращает объект. Для side-эффектов (логирование, валидация) без разрыва цепочки.\n\nГайд: выбирайте пару (`it`/`this`, value/object), которая делает call site чище. Не вкладывайте scope-функции глубоко.',
+  },
+  3806: {
+    question: 'В чём разница между abstract class, interface и open class в Kotlin?',
+    answer: '• `class` — final по умолчанию. Не наследуется без `open`.\n• `open class` — наследуется, открытые члены override-ятся.\n• `abstract class` — нельзя инстанцировать. Может держать state (свойства из конструктора), abstract-члены, конкретные. Single inheritance.\n• `interface` — нельзя держать state (нет backing field). Может иметь abstract-члены, default-реализации, computed-properties. Multiple inheritance.\n\nUклон Kotlin к final-by-default намеренный — заставляет автора явно opt-in в расширяемость, снижая fragile-base-class.\n\nИнтерфейсы — для контрактов и capabilities; abstract — для общего state + поведения; data class — для value-типов.',
+  },
+
+  // ── Kotlin Advanced (topic 39) ─────────────────────────────────────────────
+  3901: {
+    question: 'Как работают дженерики, variance и `out`/`in` в Kotlin?',
+    answer: 'Generics дают типобезопасный код для разных типов. Kotlin использует declaration-site variance (Scala-style):\n\n• Invariant (по умолчанию) — `Box<T>` не связан с `Box<Subtype>` даже если T <: Subtype.\n• `out T` — covariant. `Producer<out T>` — только производит T. `Producer<Dog>` — это `Producer<Animal>`.\n• `in T` — contravariant. `Consumer<in T>` — только потребляет T. `Consumer<Animal>` — это `Consumer<Dog>`.\n\nUse-site variance с `Box<out T>` / `Box<in T>` тоже есть (аналог Java wildcards).\n\nReified generics (`inline fun <reified T>`) сохраняют T в рантайме — позволяют `T::class`-проверки без `Class<T>` параметра.',
+  },
+  3902: {
+    question: 'Что такое inline-функции и reified type-параметры в Kotlin?',
+    answer: '`inline fun` — компилятор копирует тело функции в call site. Параметры-лямбды тоже инлайнятся — без аллокации Function<...> и без лишнего invoke.\n\nЗачем:\n• Перформанс — нет аллокации лямбды в hot loops.\n• Non-local return — `return` внутри inline-лямбды возвращается из ОБЪЕМЛЮЩЕЙ функции.\n• Reified generics — когда type-параметр `reified`, компилятор знает T в call site и можно `T::class`, `is T`, `as T`.\n\nМинусы:\n• Code bloat при злоупотреблении — каждый call site копирует тело.\n• `noinline` — отключает inline для конкретного лямбда-параметра; `crossinline` — запрещает non-local return из конкретной лямбды.',
+  },
+  3903: {
+    question: 'Что такое property delegate? Объясните `by lazy`, `by Delegates.observable`, кастомные.',
+    answer: 'Property delegation позволяет get/set свойства реализовать другому объекту — `by` форвардит чтения/записи через `getValue` / `setValue` этого объекта.\n\nВстроенные:\n• `lazy { ... }` — значение вычисляется при первом чтении; thread-safe по умолчанию.\n• `Delegates.observable(initial) { prop, old, new -> ... }` — колбэк на каждый set.\n• `Delegates.vetoable(initial) { ... }` — то же, но лямбда может отвергнуть.\n• `notNull()` — runtime-substitute для `lateinit` для примитивов.\n• `by map` — backing-store — Map (хорошо для динамических схем, десериализации).\n\nКастомные делегаты тривиальны: реализуете `getValue` / `setValue` (или `ReadOnlyProperty` / `ReadWriteProperty`).',
+  },
+  3904: {
+    question: 'Как написать типобезопасный DSL в Kotlin?',
+    answer: 'Kotlin-DSL опирается на три фичи:\n\n• Лямбды с receiver: `block: A.() -> Unit` — внутри лямбды `this` — это `A`, члены A в области видимости.\n• Extension-функции — расширяют тип на время билдера.\n• Аннотация `@DslMarker` — ограничивает, какие receiver видны внутри вложенных билдеров, предотвращая случайные cross-scope вызовы.\n\nТипичный паттерн: top-level builder-функция берёт лямбду с receiver, инстанцирует builder, выполняет лямбду, возвращает результат.\n\nИзвестные DSL: Gradle Kotlin DSL, kotlinx.html, Compose, Ktor routing, Exposed SQL DSL.',
+  },
+  3905: {
+    question: 'Что такое typealias и когда его использовать?',
+    answer: '`typealias` вводит имя для существующего типа. Это НЕ новый тип — чисто compile-time alias, который компилятор резолвит в нижележащий.\n\nХорошие применения:\n• Сократить сложные generic-типы: `typealias Cache = Map<String, ByteArray>`.\n• Уточнить намерение: `typealias UserId = Long` читается лучше голого Long.\n• Function-type aliases: `typealias Validator<T> = (T) -> Result<Unit>`.\n• Deprecate старых имён в процессе перехода.\n\nОграничения:\n• Не обёртка — `UserId` и `Long` — ОДИН и тот же тип. Компилятор не запретит мешать.\n• Для настоящей типобезопасности — value class (inline class) или data class-обёртка.',
+  },
+  3906: {
+    question: 'Что такое value class (inline class) в Kotlin?',
+    answer: 'Value class — обёртка над одним значением, которую компилятор может ELIDE в рантайме — заменяя каждое использование обёртки нижележащим значением. На уровне языка получаете типобезопасность, на уровне JVM/binary — без аллокации (в большинстве случаев).\n\n• Объявляется `@JvmInline value class`.\n• Оборачивает ровно одно свойство.\n• Компилятор всё ещё аллоцирует, когда вы используете обёртку как generic / nullable / interface — учитывайте.\n\nИдиоматично: доменные примитивы (UserId, Email, Money), единицы (Px, Dp, Hz), bit-поля.\n\nЗаменяет старое ключевое слово `inline class` (всё ещё работает в некоторых версиях Kotlin).',
+  },
+
+  // ── Coroutines & Flow (topic 40) ───────────────────────────────────────────
+  4001: {
+    question: 'Что такое корутины и чем отличаются от потоков?',
+    answer: 'Корутины — лёгкие concurrency-примитивы, приостанавливающиеся без блокировки нижележащего потока. `suspend`-функция может приостановиться и продолжиться; пока ждёт, поток свободен для других корутин.\n\nПротив потоков:\n• Десятки тысяч корутин спокойно живут на маленьком пуле — потоки стоят мегабайты стека каждый.\n• Suspension кооперативный; корутина приостанавливается только в suspension-точках (`suspend fun`, `delay`, channel send/receive).\n• Cancellation кооперативный (CancellationException).\n• Structured concurrency — корутины запускаются в CoroutineScope, родитель ждёт детей, отмена каскадом.\n• Корутины бегут на CoroutineDispatcher (Default, IO, Main, Unconfined, custom).\n\nДумайте о корутинах как о Kotlin-овском async/await + structured concurrency.',
+  },
+  4002: {
+    question: 'Что такое CoroutineScope, Job и structured concurrency?',
+    answer: 'Structured concurrency обеспечивается тремя понятиями:\n\n• CoroutineScope — задаёт время жизни + контекст (Job + Dispatcher). Все корутины внутри — дети его Job.\n• Job — жизненный цикл корутины (Active, Cancelling, Cancelled, Completed). У Job-ов parent/child-связи.\n• Cancellation propagates — отмена родителя отменяет всех детей; падение ребёнка отменяет родителя (если не SupervisorJob).\n\nНа практике никогда не зовите `GlobalScope.launch` — нет родителя, утечки. Используйте `viewModelScope`, `lifecycleScope`, `coroutineScope { }` (suspending, ждёт детей), или собственный scope, привязанный к жизни класса.',
+  },
+  4003: {
+    question: 'Что такое Dispatcher (Default, IO, Main, Unconfined)?',
+    answer: 'CoroutineDispatcher решает, на каком потоке (или пуле) идёт корутина.\n\n• `Dispatchers.Default` — для CPU-bound (парсинг, сортировка). Пул размером с CPU-count.\n• `Dispatchers.IO` — для блокирующего I/O (диск, сеть когда не non-blocking). Эластичный пул (по умолчанию до 64).\n• `Dispatchers.Main` — Android / Swing main. Для UI-обновлений.\n• `Dispatchers.Main.immediate` — Main, но без redispatch если уже на Main; меньше латенси для UI.\n• `Dispatchers.Unconfined` — выполняется в caller-потоке до первой suspension; в основном для тестов / advanced.\n• Custom — `Executor.asCoroutineDispatcher()` для контроля.\n\nПереключайте через `withContext(Dispatchers.X) { ... }`.',
+  },
+  4004: {
+    question: 'Что такое Flow? Чем отличается от suspend-функций или Channel?',
+    answer: '`Flow<T>` — холодный асинхронный stream. Как `Sequence`, но suspending — значения производятся async и потребляются через `collect`.\n\n• Cold — ничего не происходит до `collect`; каждый collector триггерит свежее выполнение.\n• Учитывает backpressure — emit приостанавливается, пока collector не готов.\n• Cancellation — отмена collector останавливает producer.\n• Операторы — map, filter, debounce, combine, flatMapMerge/flatMapConcat/flatMapLatest, retry.\n\nVs альтернативы:\n• `suspend fun` возвращает ОДНО значение; `Flow` — много во времени.\n• `Channel` горячий — значения теряются без receiver. Channels — для пайплайнов/очередей; flows — для стримов.',
+  },
+  4005: {
+    question: 'Что такое StateFlow и SharedFlow? Когда что?',
+    answer: 'StateFlow и SharedFlow — ГОРЯЧИЕ Flow.\n\n• StateFlow<T> — как behavior subject в Rx. Хранит ОДНО текущее значение, реплеит его новым collector. `.value` — read/write. Conflated — важна только последняя; промежуточные могут потеряться, если collector медленный.\n• SharedFlow<T> — гибкий event/state-хаб. Конфигурируемый replay, buffer, overflow (DROP_OLDEST, SUSPEND, DROP_LATEST). Без initial value.\n\nИдиоматика:\n• StateFlow — UI-state (loading, list, current user), где новый collector должен видеть current snapshot. Заменяет LiveData в современном Android.\n• SharedFlow — one-shot UI-events (snackbar, навигация), доменные события. replay = 0 + buffer.',
+  },
+  4006: {
+    question: 'Как обрабатывать исключения и cancellation в корутинах?',
+    answer: 'Две ортогональные темы:\n\nCancellation:\n• Кооперативный — корутины должны регулярно проверять `isActive` или вызывать suspending-функции. Tight CPU loops без suspension не отменяются.\n• `CancellationException` пробрасывается, не обрабатывается — НЕ ловите generic-ом. `currentCoroutineContext().ensureActive()` поднимает её внутри логики.\n• `withContext(NonCancellable) { ... }` — блок для cleanup, который должен пройти даже при отмене родителя.\n\nExceptions:\n• Дефолтный Job — первое падение ребёнка отменяет родителя и сиблингов.\n• SupervisorJob / supervisorScope — падения изолированы.\n• `CoroutineExceptionHandler` — catch-all для uncaught в launches; вызывается только в root scope.\n• `async` возвращает Deferred — исключения всплывают на `await()`, не на launch.',
+  },
+
+  // ── Compose Fundamentals (topic 41) ────────────────────────────────────────
+  4101: {
+    question: 'Что такое Jetpack Compose? Чем отличается от View-системы?',
+    answer: 'Jetpack Compose — современный декларативный UI-тулкит Android (стабилен с 2021). Описываете, как экран должен выглядеть для данного state, через `@Composable`-функции; фреймворк их выполняет, строит UI-дерево и переисполняет при смене state (рекомпозиция).\n\nОтличия от View-системы:\n• Декларативный — UI как функция от state, а не императивное дерево мутабельных View.\n• Один язык — только Kotlin, никакого XML.\n• Composable-функции — маленькие, композируемые, без иерархий наследования.\n• Встроенные animation, theming, accessibility helpers.\n• Interop с View через `AndroidView` / `ComposeView`.\n• Material 3 + система `Modifier` заменяют styles + drawable.\n\nCompose работает поверх существующего Android-графики; min-SDK обычно 21+.',
+  },
+  4102: {
+    question: 'Что такое Modifier в Compose и как они работают?',
+    answer: '`Modifier` — цепочка декораций composable: padding, size, background, border, click, semantics. Modifier-ы иммутабельны; их собирают через `.` как builder.\n\nКлюч:\n• Порядок важен — `.padding(16.dp).background(Red)` красит красным ВОКРУГ padding-бокса; `.background(Red).padding(16.dp)` — красным под контентом, padding снаружи красного.\n• Modifier — значение — передавайте параметром, чтобы composable был гибким.\n• Всегда принимайте `modifier: Modifier = Modifier` первым optional-параметром. Применяйте его ПЕРВЫМ в своём composable, чтобы caller мог наслоить сверху.\n• Свои modifier — через `Modifier.composed { ... }` или `Modifier.then(...)`.',
+  },
+  4103: {
+    question: 'Какие основные layout-контейнеры в Compose?',
+    answer: 'Главные layout-примитивы:\n\n• `Column` — дети по вертикали.\n• `Row` — дети по горизонтали.\n• `Box` — дети по оси Z; `contentAlignment` для дефолтного выравнивания.\n• `LazyColumn` / `LazyRow` — как Column/Row, но композируют только видимых детей. Для длинных списков.\n• `LazyVerticalGrid` / `LazyHorizontalGrid` — grid-версия, `GridCells.Fixed(n)` или `Adaptive(min)`.\n• `ConstraintLayout` (отдельный артефакт) — реляционные constraint-ы когда нужно.\n\n`Modifier.weight` распределяет оставшееся место в Row/Column. `Spacer` вставляет gap.',
+  },
+  4104: {
+    question: 'Что такое recomposition? Когда и как часто срабатывает?',
+    answer: 'Recomposition — процесс повторного запуска composable-функций при смене их inputs для обновления UI. Runtime отслеживает, какие composable читают какие state; при смене state — рекомпозируются только те, кто читал.\n\nКлюч:\n• Composable могут запускаться сколько угодно раз — должны быть pure / fast.\n• Compose может пропускать рекомпозицию, если все параметры stable И не изменились (`@Stable`-типы, примитивы, иммутабельные типы).\n• Может пропускать части дерева («skipping») — поддерживайте параметры stable, чтобы это работало.\n• Side-эффекты НЕ должны быть в теле composable — используйте `LaunchedEffect`, `DisposableEffect`, `SideEffect`, привязав к жизненному циклу композиции.\n• Чтение state в leaf-composable означает, что только leaf рекомпозируется — держите чтения state ближе к leaf.',
+  },
+  4105: {
+    question: 'Как работают theming и Material 3 в Compose?',
+    answer: 'Material 3 (Material You) даёт композируемые theming-примитивы:\n\n• `MaterialTheme(colorScheme, typography, shapes) { content }` — корень темы. Компоненты внутри читают через `MaterialTheme.colorScheme`, `MaterialTheme.typography`, `MaterialTheme.shapes`.\n• `lightColorScheme(...)` / `darkColorScheme(...)` — собирают цветовую схему.\n• `dynamicLightColorScheme(context)` / `dynamicDarkColorScheme(context)` — выводят из системных обоев на Android 12+.\n• `Surface` даёт background + content color по теме.\n• Свои design tokens — расширяйте через `CompositionLocal` (например, `LocalSpacing`).\n\nDark mode — `isSystemInDarkTheme()` переключает схемы.',
+  },
+  4106: {
+    question: 'Как делать навигацию в Compose?',
+    answer: 'Два пути:\n\n• Navigation Compose (`androidx.navigation:navigation-compose`) — официальный, интегрирован с Navigation. NavHost + composable-routes; навигация по строке-маршруту или type-safe destinations (Navigation 2.8+).\n• Voyager / Decompose / Compose Destinations — сторонние с type-safe API и более чёткой сепарацией state/навигации.\n\nПонятия Navigation Compose:\n• `NavController` — владеет back-stack-ом.\n• `NavHost` — декларация графа и стартового destination.\n• `composable(route) { backStack -> ... }` — регистрирует destination.\n• Аргументы — через route или `arguments = listOf(navArgument(...))`.\n• `navController.navigate("profile/42")` для push, `popBackStack()` для возврата.\n\nВ multi-module-приложениях обычно экспонируют route-helpers per feature, чтобы caller-ы не хардкодили строки.',
+  },
+
+  // ── Compose State (topic 42) ───────────────────────────────────────────────
+  4201: {
+    question: 'Что такое `remember` и `rememberSaveable` в Compose?',
+    answer: 'Оба — хелперы для удержания значений между рекомпозициями:\n\n• `remember { ... }` — сохраняет значение в композиции. Переживает рекомпозицию родителя, НО не process death, configuration changes (если не обработаны), удаление/повторное добавление в дереве.\n• `rememberSaveable { ... }` — то же + сохраняет в saved-instance-state Bundle. Переживает configuration changes и process death (для любого `Saveable`-типа).\n• `key` инвалидирует кэш при изменении входов.\n• Для не-state значений (форматтер, дорогой объект) `remember` достаточен.',
+  },
+  4202: {
+    question: 'Что такое `mutableStateOf`, `mutableStateListOf`, `derivedStateOf`?',
+    answer: 'Compose-овские reactive state-примитивы:\n\n• `mutableStateOf(value)` — оборачивает значение как наблюдаемое state. Чтение `.value` (или через `by`) делает composable подписчиком; запись триггерит рекомпозицию.\n• `mutableStateListOf<T>()` / `mutableStateMapOf<K,V>()` — наблюдаемые коллекции. Мутации триггерят рекомпозицию. Обычный MutableList — не триггерит.\n• `derivedStateOf { ... }` — кэширует вычисление, зависящее от других state. Триггерит рекомпозицию downstream только когда ВЫЧИСЛЕННОЕ значение меняется (не когда меняются inputs). Полезно для дорогих derivation.\n\nДелегат `by` (Kotlin property delegation) скрывает `.value`.',
+  },
+  4203: {
+    question: 'Что такое state hoisting? Почему рекомендован?',
+    answer: 'State hoisting выносит state ИЗ composable в caller. Composable становится stateless: получает текущий state и колбэк для смены.\n\nПлюсы:\n• Переиспользуемость — тот же composable работает с разными владельцами state.\n• Тестируемость — рендер с любым input, проверить вызов колбэка.\n• Single source of truth — родитель (часто ViewModel) владеет state; дети рендерят.\n• Удобный preview — передаёшь plain values без поднятия state holder.\n\nПростейший hoisting: вместо `var x by remember { ... }` внутри composable — параметры `value: X` и `onValueChange: (X) -> Unit`.',
+  },
+  4204: {
+    question: 'Как связать ViewModel + StateFlow с Compose UI?',
+    answer: 'Современный паттерн Android:\n\n• ViewModel владеет state — экспонирует как `StateFlow<UiState>` (или LiveData в legacy).\n• Compose-экран собирает StateFlow через `collectAsStateWithLifecycle()` (lifecycle-aware) — даёт `State<UiState>`, рекомпозируется на каждый emit.\n• User-actions — методы на ViewModel (или через `MutableSharedFlow<Event>`).\n• ViewModel использует `viewModelScope`; scope отменяется при clear VM.\n\nLifecycle-helpers (`lifecycle-runtime-compose`) ставят flow на паузу, когда UI не виден.',
+  },
+  4205: {
+    question: 'Что такое LaunchedEffect, DisposableEffect, SideEffect и produceState?',
+    answer: 'Compose-овские effect-handlers безопасно запускают side-эффекты, привязанные к жизненному циклу composition:\n\n• `LaunchedEffect(key1, ...) { ... }` — запускает корутину при входе или смене ключей. Отменяется при уходе composable из композиции или смене ключей. Для: анимаций, debounced-search, запросов, привязанных к composable.\n• `DisposableEffect(key1, ...) { ...; onDispose { ... } }` — регистрирует колбэки; `onDispose` чистит при уходе или смене ключей. Для: подписок, сенсоров, BroadcastReceiver.\n• `SideEffect { ... }` — после каждой успешной рекомпозиции. Для: пуша state в не-Compose код (аналитика).\n• `produceState(initialValue, key) { value = ... }` — комбинирует LaunchedEffect + State. Чище, чем ручная связка.\n• `rememberCoroutineScope()` — CoroutineScope, привязанный к composition; запускайте корутины из обработчиков событий.\n\nНикогда не запускайте корутины и не делайте эффекты прямо в теле composable.',
+  },
+  4206: {
+    question: 'Что вызывает излишнюю рекомпозицию и как её минимизировать?',
+    answer: 'Симптомы: jank при скролле/печати, лишние перезапуски composable, видимые в Layout Inspector / Composition Tracing.\n\nПричины:\n• Нестабильные параметры — типы, которые Compose не может доказать как иммутабельные, ломают skipping. Аннотируйте `@Stable` / `@Immutable` data class-ы только со stable-полями, или используйте `kotlinx.collections.immutable`.\n• Аллокации лямбды — каждый вызов создаёт новую; используйте `remember(key) { { ... } }` или method reference.\n• Чтение state выше в дереве, чем нужно — readers выше триггерят рекомпозицию целых поддеревьев. Опускайте чтения state ближе к leaf.\n• `MutableList`/`MutableSet` параметры — заворачивайте в `ImmutableList` или используйте `mutableStateListOf`.\n\nДебаг:\n• Layout Inspector → Recomposition counts.\n• `androidx.compose.runtime.tracing` + `androidx.compose.runtime.snapshots.Snapshot.observe`.\n• Compose Compiler metrics (build flag) — отчёты о restartable / skippable.',
+  },
+
+  // ── Android Fundamentals (topic 43) ────────────────────────────────────────
+  4301: {
+    question: 'Объясните жизненный цикл Activity на Android.',
+    answer: 'Activity — entry-point экрана. Система ведёт его через колбэки:\n\n• onCreate(savedInstanceState) — создан. Inflate UI, восстановление state. Вызывается ОДИН раз на инстанс Activity.\n• onStart — становится видимым.\n• onResume — на переднем плане, получает input.\n• onPause — теряет фокус. Вызывается ДО onStop и ДО onResume следующей Activity.\n• onStop — больше не виден.\n• onRestart — возврат из stopped (после onStop, до onStart).\n• onDestroy — уничтожение. Configuration changes тоже пересоздают Activity.\n• onSaveInstanceState(out) — pre-onStop хук, сохраняет UI-state в Bundle (rotation / process death).\n\nFragments повторяют это своим набором: `onAttach → onCreate → onCreateView → onViewCreated → onStart → onResume → onPause → onStop → onDestroyView → onDestroy → onDetach`.',
+  },
+  4302: {
+    question: 'Что такое Fragment? Когда Fragment vs Activity?',
+    answer: 'Fragment — переиспользуемый, самодостаточный кусок UI, живущий внутри Activity (или другого Fragment). Свой жизненный цикл, view-дерево, поддержка back-stack.\n\nКогда нужны:\n• Multi-pane (master/detail на планшете vs single-pane на телефоне).\n• Несколько экранов за одной Activity — частый паттерн с Navigation.\n• Переиспользуемые UI-компоненты со своими lifecycle-хуками (например, permission flow).\n\nВ современных приложениях с Jetpack Navigation часто всё приложение — ОДНА Activity + много Fragment-ов (или, с Compose, одна Activity + composable-destinations и без Fragment вообще).\n\nГотча: у Fragment-а ДВА lifecycle-а (фрагмент + его view) — наблюдайте `viewLifecycleOwner` для view-bound state, `this` — для fragment-bound.',
+  },
+  4303: {
+    question: 'Что такое Intent? Explicit vs Implicit и применения.',
+    answer: 'Intent — сообщение, описывающее операцию. Используется чтобы:\n• Запустить Activity.\n• Запустить / связаться с Service.\n• Послать Broadcast.\n\nДва вида:\n• Explicit — указываете точный компонент. Внутри-приложенческая навигация.\n• Implicit — указываете action (например, `Intent.ACTION_VIEW` + URI). Android выбирает приложение. Для шаринга, набора номера, открытия ссылок.\n\nIntent несёт data через extras (Bundle). Современный путь — Activity Result API (`registerForActivityResult`) вместо deprecated `startActivityForResult` — он lifecycle-safe.',
+  },
+  4304: {
+    question: 'Как обрабатывать configuration changes (rotation) на Android?',
+    answer: 'По умолчанию configuration changes (поворот, локаль, dark-mode, multi-window) уничтожают и пересоздают Activity. Стратегии:\n\n• ViewModel — переживает configuration changes; привязан к ViewModelStoreOwner. Идиоматическое место для screen state.\n• `onSaveInstanceState(out: Bundle)` — небольшой Bundle для transient UI state. Используется и при process death.\n• `rememberSaveable` (Compose) — обёртка того же механизма для composable.\n• `android:configChanges="orientation|screenSize"` — отказ от пересоздания. Используйте редко: layout-обновления — на вас.\n• Saved State Module (`SavedStateHandle` в ViewModel) — переживает process death И rotation.',
+  },
+  4305: {
+    question: 'Что такое AndroidManifest и что в него идёт?',
+    answer: 'AndroidManifest.xml описывает приложение для системы. Обязателен, лежит в `app/src/main/AndroidManifest.xml`. Содержит:\n\n• Application package, версия, theme, иконка.\n• Компоненты — `<activity>`, `<service>`, `<receiver>`, `<provider>`.\n• Intent-фильтры — какие intents обрабатывает каждый компонент (deep links, share, launchers).\n• Permissions — `<uses-permission>` (и runtime-запрос для dangerous).\n• Hardware/software-требования (`<uses-feature>`).\n• Backup и data extraction rules.\n• Network security config (cleartext traffic, certificate pinning).\n\nGradle мерджит несколько манифестов (main, build variants, libraries) в финальный — см. `build/intermediates/merged_manifests/...`.',
+  },
+  4306: {
+    question: 'Как работают runtime-permissions на Android?',
+    answer: 'Android делит permissions на:\n• Normal — выдаются при установке (network, vibrate). Только декларация в Manifest.\n• Dangerous — privacy-sensitive (камера, геолокация, контакты). И декларация, и runtime-запрос с Android 6 (API 23).\n• Special — system-managed (overlay, accessibility). Требуют тогл в Settings.\n\nПоток:\n1) Объявить в манифесте.\n2) Проверить runtime через `ContextCompat.checkSelfPermission`.\n3) Если не выдано — запрос через Activity Result API (`ActivityResultContracts.RequestPermission` или `RequestMultiplePermissions`).\n4) Показать rationale (`shouldShowRequestPermissionRationale`) перед re-asking.\n5) Постоянный отказ — deep-link в App Settings.\n\nAndroid 13+ добавил POST_NOTIFICATIONS как dangerous. Android 14+ добавил partial photo selection.',
+  },
+
+  // ── Android Architecture (topic 44) ────────────────────────────────────────
+  4401: {
+    question: 'Как выглядит современная архитектура Android (по гайдам Google)?',
+    answer: 'Рекомендация Google (developer.android.com/architecture) — слоистая архитектура с unidirectional data flow:\n\n• UI-слой — Compose / View + ViewModel. Рендерит UI-state, пробрасывает события. Не владеет бизнес-логикой.\n• Domain-слой (опционально) — UseCase / Interactor для сложных flow или композиции нескольких repository.\n• Data-слой — Repository на каждую доменную сущность. Repository агрегирует источники (remote, cache, local DB) за чистым API. Источники: RemoteDataSource (Retrofit), LocalDataSource (Room, DataStore).\n\nUI наблюдает state, никогда не мутирует напрямую. State экспонируется как `StateFlow<UiState>`. События — через колбэки / SharedFlow. ViewModel без зависимостей от Android-фреймворка — легко юнит-тестируется.',
+  },
+  4402: {
+    question: 'Что такое Repository pattern и зачем он на Android?',
+    answer: 'Repository — единый класс, владеющий доступом к доменной сущности и скрывающий, ОТКУДА данные (сеть, БД, кэш, in-memory).\n\nЗачем:\n• Single source of truth — UI говорит с Repository, не с сетью напрямую.\n• Offline-first становится естественным — Repository может отдать из БД, пока обновляет из сети.\n• Тестируется — подменили fake Repository и проверили ViewModel.\n• Cross-cutting (стратегия кэша, retry, маппинг) живут в одном месте.\n\nЛучшая практика: Repository возвращает ДОМЕННЫЕ модели (чистый Kotlin), не DTO. Mapper-ы конвертируют wire/db rows ↔ domain на границе.',
+  },
+  4403: {
+    question: 'Что такое unidirectional data flow (UDF) в Android UI?',
+    answer: 'UDF — дисциплина:\n• State течёт ВНИЗ — от ViewModel → Composable / Fragment.\n• События текут ВВЕРХ — действия пользователя → колбэки на ViewModel.\n• UI не мутирует state напрямую; только запрашивает изменения через события.\n\nСтруктура:\n• `data class UiState(...)` — single source of truth для экрана.\n• `StateFlow<UiState>` от ViewModel.\n• `fun onAction(action: UiAction)` (или отдельные методы) принимают события.\n\nВыгоды: предсказуемо, тестируется, легко логировать, идиоматично для декларативной модели Compose.',
+  },
+  4404: {
+    question: 'Что такое Clean Architecture и как она ложится на Android?',
+    answer: 'Clean Architecture (Robert C. Martin) делит код на концентрические слои:\n• Domain (внутри) — чистые бизнес-правила. Чистый Kotlin/Java. Без Android, networking, БД.\n• Use Case / Interactor — оркестрация доменных правил.\n• Adapters / Data — мапит внешние данные (БД, API) в доменные модели.\n• Frameworks (снаружи) — Android, Retrofit, Room.\n\nDependency Rule: зависимости направлены ВНУТРЬ. Domain не знает об Android; data зависит от интерфейсов domain.\n\nНа Android оформляется Gradle-модулями: `:domain`, `:data`, `:app` (или feature-модули + `:core-domain`, `:core-data`). Pure-Kotlin domain-модули ускоряют тесты и не дают фреймворковым понятиям просочиться в бизнес-логику.\n\nКогда стоит: middle+ приложения, несколько команд, длинноживущий продукт. Для прототипов — overkill.',
+  },
+  4405: {
+    question: 'Как структурировать multi-module Android-проект?',
+    answer: 'Типовая таксономия модулей:\n\n• `:app` — тонкий entry-модуль (только NavGraph + DI-проводка).\n• `:feature:*` — feature-модули (один на экран/flow) — Compose UI + ViewModel + специфичный код.\n• `:core:domain` — pure Kotlin: бизнес-типы + use case-ы.\n• `:core:data` — реализации Repository, mapper-ы, network/db sources.\n• `:core:network` — Retrofit + interceptor-ы + serialization.\n• `:core:database` — Room database + DAO.\n• `:core:designsystem` — цвета, типографика, общие composable.\n• `:core:common` — мелкие утилиты.\n\nПлюсы: параллельная компиляция (быстрее сборки), границы модулей через internal/public, возможность подменять реализации в build variants, тесты per-module и быстрые.\n\nИспользуйте convention plugins (в `buildSrc/`), чтобы расшарить Gradle-конфиг.',
+  },
+  4406: {
+    question: 'Как писать тестируемый Android-код? Паттерны и ловушки.',
+    answer: 'Паттерны для тестируемости:\n\n• Инжектируйте зависимости — никогда synglet-ов / static `Context.getInstance()` в бизнес-коде. Передавайте collaborators через конструктор.\n• Оборачивайте framework-API за интерфейсами — `Clock`, `Logger`, `LocaleProvider` — чтобы тесты подменяли детерминированными версиями.\n• Чистые ViewModel — зависят только от Kotlin-типов + repository-интерфейсов. Без Android-зависимостей = JVM-fast тесты.\n• Используйте артефакты `kotlinx-coroutines-test` — `runTest`, `StandardTestDispatcher`, виртуальное время.\n• Подменяйте repository fake-ами вместо мок-ов (моки гниют).\n• Для Compose UI-тестов — `createComposeRule()` + `onNodeWithText(...)` / `onNodeWithTag(...)`.\n• Для instrumented тестов — `androidx.test.ext.junit` + Hilt test rules.\n\nЛовушки: тестирование деталей реализации, моки чужого кода, тестирование через Activity (тестируйте VM + UI отдельно).',
+  },
+
+  // ── Android Networking (topic 45) ──────────────────────────────────────────
+  4501: {
+    question: 'Что такое Retrofit и OkHttp? Как они связаны?',
+    answer: 'OkHttp — низкоуровневый HTTP-клиент для JVM/Android: connection pooling, redirect, gzip, HTTP/2, interceptors, кэш, certificate pinning.\n\nRetrofit лежит ПОВЕРХ OkHttp. Объявляете аннотированный интерфейс; Retrofit генерит request-builder + конвертеры. Возвращает обычные Kotlin-типы, suspend-функции или Flow.\n\nТипичная связка:\n• Прямой OkHttp — если нужен голый HTTP.\n• Retrofit — для типизированных REST API, в разы меньше boilerplate.\n• Конвертеры (`Moshi`, `kotlinx.serialization`, `Gson`) — для десериализации JSON.\n• Interceptors (`HttpLoggingInterceptor`, auth, retry) — на OkHttp-клиенте.',
+  },
+  4502: {
+    question: 'Что такое interceptor в OkHttp и что туда класть?',
+    answer: 'OkHttp `Interceptor` — функция, принимающая `Chain` и возвращающая `Response`, с возможностью модифицировать request и/или response. Два вида:\n\n• Application interceptor — один раз на call. Видит логический request/response. Может short-circuit. Прост для понимания.\n• Network interceptor — на каждом round-trip (включая retry / redirect). Видит сырой HTTP. Для низкоуровневой инструментации.\n\nЧто хорошо класть:\n• Auth-заголовки + refresh токена на 401.\n• Логирование (`HttpLoggingInterceptor`).\n• Подпись запроса (HMAC).\n• Кастомный retry / circuit-breaker.\n• Общие заголовки (User-Agent, Accept-Language).\n• Mock-ответы в dev.\n\nДержите interceptors single-purpose; цепляйте в понятном порядке.',
+  },
+  4503: {
+    question: 'Как обрабатывать ошибки и типизированные ответы в Retrofit?',
+    answer: 'По умолчанию Retrofit бросает на HTTP-ошибках, если suspend-функция возвращает body-тип. Стратегии:\n\n• Throw + try/catch у вызывающего — простейшее. Repository оборачивает и мапит в доменный Result/Error.\n• Возврат `Response<T>` — даёт доступ к статусу, заголовкам, body без exception. Сами решаете.\n• `NetworkResponse<S, E>` (сторонний `retrofit2-kotlin-network-response`) — sealed-тип Success/Error.\n• Свой `CallAdapter.Factory` — вернёт ваш Result-like sealed-тип сразу.\n\nТипично: API-интерфейс throwing; маппим исключения в типизированный sealed `AppError` в Repository. Различайте IOException (network), HttpException (server status), parsing-ошибки.',
+  },
+  4504: {
+    question: 'Как кэшировать HTTP-ответы на Android через OkHttp?',
+    answer: 'OkHttp поставляет встроенный HTTP-кэш, уважающий стандартные `Cache-Control`-заголовки. Конфиг через `Cache(directory, maxSize)` и передачу в `OkHttpClient.Builder`.\n\nПоведение по RFC 7234:\n• Серверный `Cache-Control: max-age` уважается.\n• `Cache-Control: no-store` отключает кэш.\n• Conditional revalidation через `ETag` / `Last-Modified` — автоматически.\n\nДля offline-поведения переопределяйте через interceptors:\n• Network interceptor, переписывающий Cache-Control для min-age.\n• Application interceptor, переключающий на `Cache-Control: only-if-cached`, когда офлайн.\n\nДля настоящего offline-first — БД (Room) как source of truth, сеть как источник refresh — голого HTTP-кэша почти всегда не хватает.',
+  },
+  4505: {
+    question: 'Как загружать файлы и multipart с Retrofit?',
+    answer: 'Retrofit поддерживает multipart комбинацией аннотаций:\n• `@Multipart` на функции.\n• `@Part` параметры — примитивы, `RequestBody` или `MultipartBody.Part` (с filename).\n• `@PartMap` — динамические части как `Map<String, RequestBody>`.\n\nДля больших upload-ов используйте `RequestBody.create` с файлом или потоком. Для прогресса оборачивайте `RequestBody` в свой, который репортит bytesWritten через колбэк. Для resumable / надёжных — комбо с WorkManager, чтобы upload пережил закрытие приложения.',
+  },
+  4506: {
+    question: 'Как реализовать WebSocket / SSE / long-poll на Android?',
+    answer: 'Реал-тайм опции:\n\n• OkHttp WebSocket — встроенный клиент. `OkHttpClient.newWebSocket(request, listener)`. Лёгкий, дружит с auth-interceptor-ами.\n• Server-Sent Events (SSE) — поверх HTTP/1.1; one-way server → client. OkHttp поддерживает через `OkHttp-EventSource` или ручное чтение `BufferedSource` построчно. Проще WebSocket; только server-to-client.\n• Long-poll — запрос, сервер держит до новых данных, ответ; сразу новый запрос. Прост на сервере, расточителен по батарее.\n• gRPC bidirectional streaming — типобезопасно, если backend поддерживает.\n• Firebase Realtime Database / Firestore — managed-альтернатива.\n\nЖизненный цикл: рвём сокет, когда приложение в фоне; реконнект с экспоненциальным backoff на ошибке; heartbeat если proxy/сеть тихо рвут idle-соединения.',
+  },
+
+  // ── Android Persistence (topic 46) ─────────────────────────────────────────
+  4601: {
+    question: 'Какие persistence-опции на Android и когда что выбирать?',
+    answer: 'Берите самое лёгкое под задачу:\n\n• `SharedPreferences` — legacy key-value. Просто, но API блокирующее на первом чтении; типобезопасности минимум. В основном вытеснено.\n• `DataStore` (Preferences или Proto) — современная замена. Async через Flow, типобезопасно (Proto), миграции схемы.\n• `Room` — Apple-Core-Data-аналог поверх SQLite. Compile-time валидация SQL, Flow / suspend, миграции, FTS.\n• `EncryptedSharedPreferences` / `EncryptedFile` (`androidx.security.crypto`) — для секретов. На Android Keystore.\n• Internal/external storage — `Context.filesDir`, `Context.cacheDir`, `getExternalFilesDir(...)` для файлов.\n• MediaStore — для user-visible media (фото, музыка) — обязательно при scoped storage на Android 10+.\n• KeyStore — крипто-ключи, hardware-backed где поддерживается.\n\nСекреты — не в plain SharedPreferences; крупные блобы — не в Preferences DataStore.',
+  },
+  4602: {
+    question: 'Что такое Room? Покажите Database, DAO и миграцию.',
+    answer: 'Room — compile-time SQL DSL над SQLite от Google. Объявляете:\n• Entities — `@Entity`-классы, маппят в таблицы.\n• DAO — `@Dao`-интерфейсы с `@Query`, `@Insert`, `@Update`, `@Delete`.\n• Database — `@Database`-класс, наследник `RoomDatabase`, со списком entities + version + DAO.\n\nRoom валидирует SQL во время компиляции, генерит реализации, интегрируется с корутинами + Flow.\n\nМиграции: bump версии + supply `Migration` с SQL-преобразованием, или destructive-recreation в dev. Для пагинированных запросов — `room-paging`.',
+  },
+  4603: {
+    question: 'Что такое TypeConverters в Room? Когда они нужны?',
+    answer: 'Room понимает только примитивы SQLite: Int / Long / Float / Double / String / ByteArray. Для всего остального (Date, UUID, enum, value class, JSON-encoded list) нужен `TypeConverter` — статический метод (или метод класса, зарегистрированного через `@TypeConverters`), мапящий ваш тип в/из примитива.\n\nПравила:\n• Для каждого направления — своя `@TypeConverter`-функция.\n• Регистрируйте на классе Database (`@TypeConverters(MyConverters::class)`) — глобально, или на @Entity — узко.\n• Для сложных графов лучше @Embedded поля или relations, а не сериализация в JSON.',
+  },
+  4604: {
+    question: 'Preferences DataStore vs Proto DataStore — в чём разница?',
+    answer: 'Оба — async, transactional key-value-сторы, заменители SharedPreferences.\n\n• Preferences DataStore — schemaless. Ключи типизированы (`stringPreferencesKey`, `booleanPreferencesKey`). Лёгкое внедрение; типизация рыхлая. Подходит для маленьких наборов несвязанных значений (тема, last-screen).\n• Proto DataStore — schemaful. Объявляете Protocol Buffers-сообщение; файл хранит сериализованный proto. Сильная типизация, default-значения, эволюция схемы по правилам proto. Для структурированных настроек (UserSettings, Filters).\n\nОба: один файл на DataStore. Чтения/записи через `Flow<...>` и `edit { }` / `updateData { }` suspending. Атомарны — без половинного state.\n\nНе кладите большие данные — каждый commit перезаписывает файл целиком.',
+  },
+  4605: {
+    question: 'Как делать offline-first sync между локальной БД и сервером?',
+    answer: 'Offline-first — UI читает из локальной БД, никогда не зависит от сети для рендера. Сеть — только источник refresh.\n\nПаттерн:\n1) UI читает из Room (Flow) — текущий state всегда виден.\n2) Repository периодически/по требованию зовёт API, пишет в Room. Изменения автоматом текут в UI.\n3) Записи кладутся в очередь — локальное изменение применяется сразу + строка `OutboxEntity` отмечает pending.\n4) Background-worker (WorkManager) дренирует outbox, синкает на сервер с retry/backoff.\n5) Conflict resolution — last-write-wins, server-authoritative timestamps, или merge-логика.\n\nWorkManager обрабатывает constraints (сеть, зарядка), retry и backoff. Уникальные имена работ, чтобы не плодить дубли.',
+  },
+  4606: {
+    question: 'Как безопасно хранить секреты (токены, ключи) на Android?',
+    answer: 'Стек по безопасности:\n\n• `EncryptedSharedPreferences` / `EncryptedFile` (`androidx.security.crypto`) — простое секурное key-value. На Android Keystore.\n• Android Keystore напрямую — храните крипто-ключи; sign / encrypt без выноса материала ключа в процесс приложения. Hardware-backed на supported-устройствах (StrongBox, TEE).\n• Не пеките секреты в бинарь — строки тривиально извлекаются. Server-issued, short-lived токены. Если нужно ship — Play Integrity API + remote config.\n\nЛучшие практики:\n• BiometricPrompt для гейта unlock на самые чувствительные операции.\n• Храните ТОЛЬКО токены; mint и refresh — на сервере.\n• Auth-aware certificate pinning — защита от MITM.\n• ProGuard / R8 + obfuscation НЕ безопасность, лишь трение.',
+  },
+
+  // ── Android DI (topic 47) ──────────────────────────────────────────────────
+  4701: {
+    question: 'Что такое dependency injection и зачем на Android?',
+    answer: 'Dependency injection (DI) — отдавать объекту его collaborators извне, а не позволять конструировать или искать их самому.\n\nЗачем на Android:\n• Тестируемость — подмена реальных сервисов fake-ами в тестах.\n• Явные зависимости — сигнатура класса показывает всё, что ему нужно.\n• Контроль времени жизни — singleton vs per-screen vs per-feature scope централизованно.\n• Избегаем service-locator анти-паттерна (`SomeService.getInstance()`) в бизнес-коде.\n\nПодходы:\n• Manual DI — чистая constructor injection. Норм для маленьких приложений.\n• Hilt — DI-фреймворк Google поверх Dagger 2. Аннотации + интеграция с Android lifecycle (@HiltViewModel, @AndroidEntryPoint).\n• Dagger 2 — полная мощь, больше boilerplate. В крупных enterprise.\n• Koin — service-locator-stylе, runtime DSL; без codegen, медленнее в рантайме, проще setup.\n• Kodein, Anvil — нишевые.',
+  },
+  4702: {
+    question: 'Что такое Hilt? Чем отличается от Dagger 2?',
+    answer: 'Hilt — официальная DI-библиотека Android. Это Dagger 2 с opinionated-дефолтами:\n\n• Аннотации: `@HiltAndroidApp` на Application, `@AndroidEntryPoint` на Activity/Fragment/Service, `@HiltViewModel` на ViewModel.\n• Предопределённые scope, замапленные на Android lifecycle: SingletonComponent, ActivityComponent, ViewModelComponent, FragmentComponent.\n• `@InstallIn(...)` объявляет, в каком компоненте живёт модуль.\n• Меньше boilerplate, чем у голого Dagger; не пишете `Component`/`Subcomponent`-интерфейсы.\n\nDagger 2 всё ещё под капотом; если нужен полный контроль (custom subcomponent, multibinding для плагинов), идёте в Dagger-фичи. Большинству не надо.\n\nМиграция: greenfield → Hilt. Большой Dagger-кодбаз — мигрируйте постепенно.',
+  },
+  4703: {
+    question: 'Что такое scope в Hilt и как они отображаются на компоненты?',
+    answer: 'Hilt-компоненты привязаны к Android lifecycle, scope привязывают binding ко времени жизни компонента:\n\n• `@Singleton` → SingletonComponent — один на Application.\n• `@ActivityRetainedScoped` → ActivityRetainedComponent — переживает configuration changes (rotation). То же время жизни, что и ViewModelStoreOwner.\n• `@ActivityScoped` → ActivityComponent — на инстанс Activity (re-create на rotation по умолчанию).\n• `@FragmentScoped` → FragmentComponent.\n• `@ViewModelScoped` → ViewModelComponent — binding шарится collaborators одного @HiltViewModel.\n• `@ServiceScoped` → ServiceComponent.\n\nUnscoped binding пересоздаются при каждой инжекции — для stateless-хелперов; дорогие в создании типы — scoped.\n\nГотча: scope полезен, только когда есть state, который надо сохранять. Не scope-ируйте то, что и так Singleton.',
+  },
+  4704: {
+    question: 'Что такое @Qualifier и multibinding в Dagger/Hilt?',
+    answer: 'Qualifier — различает несколько binding-ов одного типа. Аннотируете binding и точку инжекции одним qualifier; Dagger выбирает по нему.\n\nКейсы:\n• Несколько OkHttpClient (auth vs non-auth).\n• Разные Dispatchers (`@IoDispatcher`, `@MainDispatcher`, `@DefaultDispatcher`).\n• Несколько Retrofit-инстансов под разные base URL.\n\nMultibinding — биндим несколько значений в один Set или Map. Полезно для plugin-архитектуры.\n• `@IntoSet` — добавляет в `Set<T>`.\n• `@IntoMap` + `@StringKey("...")` / `@ClassKey(...)` — в Map.\n\nMultibinding раскрывают композицию feature-модулей: каждый feature вкладывает свои routes / settings; app собирает.',
+  },
+  4705: {
+    question: 'Как подменять зависимости в тестах с Hilt?',
+    answer: 'Hilt предлагает `@HiltAndroidTest` rule и `@TestInstallIn` / `@UninstallModules`, чтобы заменить реальные binding fake-ами в instrumented-тестах.\n\nДля unit-тестов лучше Hilt НЕ подключать — инстанцируйте ViewModel и Repository с fake-ами напрямую; быстрее и проще.\n\nДля instrumented (UI) тестов:\n• Аннотируете класс `@HiltAndroidTest`.\n• Используете `HiltAndroidRule`, чтобы инжектить members.\n• `@UninstallModules(NetworkModule::class)` убирает реальный модуль + предоставьте fake-модуль `@InstallIn(SingletonComponent::class)` в test-source-set.\n• Или `@TestInstallIn(components = [...], replaces = [...])` для чище.\n\nДля Compose UI-тестов комбинируйте Hilt rule с `createAndroidComposeRule<HiltComponentActivity>()`.',
+  },
+  4706: {
+    question: 'Hilt vs Koin — что когда выбрать?',
+    answer: 'Hilt:\n• Compile-time codegen (KSP/KAPT) — ошибки на сборке, без runtime-сюрпризов.\n• Лучшая build-производительность на больших графах.\n• Тесная интеграция с Jetpack (ViewModel, Compose, Navigation).\n• Кривая обучения круче, больше аннотаций.\n\nKoin:\n• Чистый Kotlin DSL, без codegen — проще setup.\n• Lazy / runtime-резолв — чуть медленнее на первом доступе; missing-binding падает в рантайме.\n• Меньше начальной нагрузки.\n• Менее эргономичен для сложных графов (subcomponent, qualifiers между модулями).\n\nГайд:\n• Greenfield Android-only, одна команда → любой; Hilt — официальный путь.\n• KMP-shared module → Koin (multiplatform; Hilt — Android-only).\n• Большая enterprise-кодбаза, много feature-модулей → Hilt — лучше гарантии.\n• Прототип, обучение → Koin — ниже барьер.',
+  },
+
+  // ── Android Performance (topic 48) ─────────────────────────────────────────
+  4801: {
+    question: 'Что такое ANR? Как его избегать?',
+    answer: 'ANR = Application Not Responding. Система показывает диалог если:\n• Главный поток не обработал input в ~5 сек.\n• BroadcastReceiver не вернулся за ~10s (foreground) / ~60s (background).\n• Foreground service не стартовал в timeout.\n\nИзбегайте, НИКОГДА не блокируя main:\n• I/O / БД / тяжёлый CPU — на корутины + Dispatchers.IO / Default.\n• Никакого Thread.sleep на main.\n• Осторожно с синхронным IPC (`Binder.transact`).\n• Профилируйте main-thread в Android Studio Profiler → CPU → System Trace.\n• `StrictMode` в debug-сборках — fail fast на диск/сеть на main.\n\nМониторинг real-user ANR — Play Console → Vitals или Firebase Crashlytics.',
+  },
+  4802: {
+    question: 'Как находить и чинить утечки памяти на Android?',
+    answer: 'Частые утечки на Android:\n• Long-lived ссылки, держащие Activity/Fragment после destroy (callbacks, static-поля).\n• Inner-классы / лямбды, захватывающие `this` (Activity, Fragment).\n• Listener-ы, регистрируемые в системных сервисах и не unregister-нутые.\n• Singleton, держащие Context (используйте `applicationContext`, не Activity).\n• Bitmap не recycle-нутые; крупные drawable в static.\n• Корутины, запущенные в GlobalScope без cancellation.\n\nДетект:\n• LeakCanary — drop-in библиотека, следит за Activity/Fragment lifecycle, ловит retained-инстансы, печатает leak-trace.\n• Android Studio Memory Profiler → Capture heap → искать retained Activity.\n• `dumpsys meminfo <package>` через adb.\n\nЛечение:\n• `viewLifecycleOwner` во Fragment для view-bound state.\n• `applicationContext` в долгоживущие хелперы.\n• Отмена корутин (`viewModelScope` сам).\n• Снимайте listener в onPause/onStop или используйте `DisposableEffect`.',
+  },
+  4803: {
+    question: 'Что такое jank? Как мерить и чинить пропуски кадров?',
+    answer: 'Jank — видимый stutter из-за пропуска frame-deadline (16.7ms на 60Hz, 8.3ms на 120Hz). Из-за main thread или GPU-работы, превысившей бюджет.\n\nЗамер:\n• Layout Inspector / GPU rendering profile (developer options).\n• Android Studio Profiler → CPU → System Trace → frame-маркеры > 16ms.\n• Macrobenchmark с библиотекой `JankStats` — гистограммы duration на real users.\n• `dumpsys gfxinfo <package> framestats` — frame timeline.\n\nЛечение:\n• Уменьшить overdraw — flatten view-иерархию, убрать лишние background.\n• Отложить работу — image-decoding, JSON-парсинг — off-main.\n• В Compose — Lazy* для длинных списков; не рендерьте всё сразу.\n• `RecyclerView` view-types + DiffUtil; pre-fetch items.\n• Baseline profiles (см. отдельный вопрос).\n• Кэшируйте layout-ы, которые не меняются.',
+  },
+  4804: {
+    question: 'Что такое R8 / ProGuard? Что они делают для приложения?',
+    answer: 'R8 — дефолтный shrinker / optimizer / obfuscator Android, работающий в release-сборках (заменил ProGuard с AGP 3.4).\n\nДелает:\n• Tree shaking — убирает неиспользуемые классы/методы/поля.\n• Оптимизация — inlining, dead-code elimination.\n• Obfuscation — переименовывает классы в `a.b.c`.\n• Resource shrinking — выбрасывает неиспользуемые drawable/strings (с `shrinkResources true`).\n\nИтоги: меньше APK, минимальное улучшение перформанса, частичная защита от тривиального reverse-engineering (серьёзный атакующий de-obfuscate).\n\nГотчи:\n• Reflection ломается, если R8 переименовал — keep-правила в `proguard-rules.pro`.\n• Многие библиотеки везут consumer-rules; обычно ничего добавлять не надо.\n• Если release-сборка крашится только после R8 — почти всегда дело в keep-правилах.\n• Всегда тестируйте release-вариант перед shipping; не верьте debug-only поведению.',
+  },
+  4805: {
+    question: 'Что такое baseline profiles и что они дают?',
+    answer: 'Baseline profiles — AOT-compilation hints, поставляемые с приложением. ART прекомпилирует перечисленные методы при первой установке / апдейте, и они работают быстро сразу — без ленивого JIT.\n\nДокументированные Google эффекты на реальных приложениях:\n• ~30% быстрее cold startup.\n• ~20% быстрее first scroll.\n• Плавнее ранние кадры на ключевых сценариях.\n\nWorkflow:\n• `androidx.benchmark:benchmark-macro-junit4` — пишете `BaselineProfileGenerator`-тест, проходящий критичные сценарии (запуск, скролл, тап в ключевую вкладку).\n• `./gradlew :app:generateBaselineProfile` — гоняет на test-устройстве; выходит `baseline-prof.txt`.\n• AGP кладёт профиль в APK / AAB; ART его подхватывает.\n• Macrobenchmark — для проверки выигрыша.\n\nJetpack Compose везёт opinionated baseline profile; кастомные профили добавляют app-specific code paths.',
+  },
+  4806: {
+    question: 'Как оптимизировать app startup на Android?',
+    answer: 'Startup делится на:\n• Cold — процесс свежесозданный, Application + первая Activity.\n• Warm — процесс есть, Activity пересоздана.\n• Hot — Activity уже в памяти; просто на передний план.\n\nЗамер:\n• Logcat `Displayed com.app/.MainActivity: +XXX ms` — визуальная готовность.\n• `adb shell am start -W` — система рапортует startup time.\n• Macrobenchmark с `StartupTimingMetric`.\n• Firebase Performance / Play Vitals — real-user.\n\nОптимизации:\n• Откладывайте инициализацию SDK (analytics, image cache, scheduling) после первого кадра — App Startup library или `Lazy<T>`.\n• Без тяжёлой работы в `Application.onCreate`. Держите < 200ms.\n• Splash через `androidx.core.splashscreen` — система обрабатывает консистентно.\n• Baseline profiles.\n• Уберите неиспользуемые content provider / broadcast receiver — manifest-сканирование не бесплатно.\n• Lazy-load Activity-view (плоская иерархия через ConstraintLayout).',
+  },
+
+  // ── KMP (topic 49) ─────────────────────────────────────────────────────────
+  4901: {
+    question: 'Что такое Kotlin Multiplatform (KMP) и что он шарит между iOS и Android?',
+    answer: 'KMP позволяет писать Kotlin один раз и таргетить несколько платформ — Android, iOS, JVM/server, JS, Wasm, native desktop. НЕ «UI один раз»; шарится не-UI код:\n\n• Networking (Ktor client).\n• Сериализация (kotlinx.serialization).\n• Persistence (SQLDelight, Realm KMP, Room KMP для Android+desktop).\n• Domain-слой / бизнес-правила.\n• ViewModel (с `lifecycle-viewmodel-kmp`).\n• Корутины + Flow.\n\nUI остаётся нативным (SwiftUI / UIKit на iOS, Compose / View на Android) — или можно шарить UI через Compose Multiplatform.\n\nВыгода: одно место для бизнес-логики, меньше расхождения между платформами, меньше багов из-за divergence. Цена: tooling-трение (Gradle, сборка), iOS interop-странности, экосистема библиотек меньше.',
+  },
+  4902: {
+    question: 'Что такое expect/actual в KMP?',
+    answer: '`expect`/`actual` — механизм платформо-специфичных реализаций общего API.\n\n• В `commonMain` пишете `expect class Foo` / `expect fun bar()` — объявление API без тела.\n• В каждом source-set платформы (`androidMain`, `iosMain`, `jvmMain`) — `actual class Foo` / `actual fun bar()` с реализацией.\n• Компилятор гарантирует, что у каждой expect-декларации есть actual.\n\nИспользуйте для того, что реально нуждается в нативных API: file IO, секурное хранилище, DateFormatter, Logger, UUID-генерация, BluetoothScanner. Не expect/actual-те то, у чего одна общая реализация.\n\nАльтернатива: интерфейс в commonMain + платформо-специфичные реализации через DI; часто чище, чем expect/actual.',
+  },
+  4903: {
+    question: 'Как звать KMP-код из Swift? В чём боль interop?',
+    answer: 'Kotlin/Native выдаёт Apple-фреймворк (`Shared.framework`), который импортируете в Swift. Обычно гладко, но с острыми углами:\n\n• Suspend-функции отображаются как async/throws (с Kotlin 1.4) — зовите из Swift async/await.\n• Flow экспонируется как `Kotlinx_coroutines_coreFlow` — мостите через хелперы (`KMP-NativeCoroutines`, `SKIE`) для AsyncSequence / Combine.\n• Generics: Swift видит Kotlin generics, но с ограниченной variance. Sealed-классы — как обычные классы; switch через `if let`/cast.\n• Naming: имена пакетов flatten-ятся; конфликты — через `@ObjCName`.\n• Memory: Kotlin/Native использовал ARC-подобный freezing старой памяти (deprecated); новая memory-модель (по умолчанию с 1.7) ближе к JVM и убирает freezing-боль.\n• Tools: SKIE (Touchlab) генерит Swift-friendly обёртки (sealed → enum, Flow → AsyncSequence) — настоятельно рекомендуется.\n\nБоли: Kotlin лямбда-типы как `(KotlinUnit) -> KotlinUnit`-замыкания; Date / Decimal неуклюжи; debug требует source maps в обоих мирах.',
+  },
+  4904: {
+    question: 'Какие KMP-библиотеки используются для networking, persistence, DI, logging?',
+    answer: 'Зрелые KMP-готовые библиотеки:\n\n• Networking — Ktor Client (engines per platform: OkHttp на Android, Darwin на iOS, JS). JSON через kotlinx.serialization.\n• Persistence — SQLDelight (типизированный SQL), Realm KMP, Room KMP (сейчас Android + JVM + iOS). Settings — `multiplatform-settings`.\n• DI — Koin (multiplatform-friendly DSL) — самый популярный. Kodein KMP — альтернатива.\n• Logging — Kermit (Touchlab) — multiplatform с платформо-специфичными выводами.\n• Date/time — `kotlinx-datetime`.\n• Coroutines/Flow — `kotlinx-coroutines-core`.\n• Crash/analytics — Sentry KMP, Firebase Crashlytics через KMP-обёртки, RevenueCat KMP для IAP.\n• Tools — Touchlab SKIE (Swift code generation), KMP-NativeCoroutines (Flow/await-мосты).\n\nКлюч: выбирайте библиотеки с активной KMP-поддержкой и одинаковой major-версией на всех платформах — старые Android-only не работают.',
+  },
+  4905: {
+    question: 'Как шарить ViewModel в KMP? А навигацию?',
+    answer: 'ViewModel:\n• `lifecycle-viewmodel-kmp` (с 2024) — даёт `ViewModel` в commonMain. State через `StateFlow`. Android — стандартный `viewModelScope`; iOS — ручной scope, который вы сносите при disappear (или через SKIE/MOKO MVVM-хелперы).\n• MOKO MVVM, Decompose, Multiplatform-AppDi — старые / альтернативные.\n• Свои — common-only ViewModel + биндим на каждой платформе.\n\nНавигация:\n• Decompose — full-multiplatform navigation, появилась раньше CMP. State-machine модель с компонентами, маршрутами, back-stack. Для сложных flow; для простых — многословна.\n• Compose Multiplatform Navigation (preview) — официальный путь; матчит AndroidX Nav API.\n• Или нативная per platform — SwiftUI NavigationStack на iOS, Jetpack Navigation на Android, с шаренными ViewModel.\n\nПаттерн: shared ViewModel экспонирует `StateFlow<UiState>` и `onAction(action: Action)`. Native UI биндится (Compose: `collectAsStateWithLifecycle`, SwiftUI: мост Flow → AsyncSequence/Combine).',
+  },
+  4906: {
+    question: 'Когда KMP — хороший выбор, а когда — нет?',
+    answer: 'Подходит:\n• Большое business-logic-heavy приложение на обеих платформах (банкинг, e-commerce, контент, ride-hailing).\n• Долгоживущий продукт, где divergence-риск дорог.\n• Команда комфортна с Gradle, Kotlin и хотя бы средним iOS-опытом.\n• Greenfield или прогрессивно adoptable (стартуете с одного shared-модуля).\n\nНе подходит:\n• Маленькие приложения (запуск на 6 месяцев). Setup-стоимость доминирует.\n• Heavy-UI приложения, где shared-логика < 20%.\n• Команды без iOS-экспертизы — KMP не убирает необходимость shipped полированный нативный iOS.\n• Конторы, стандартизированные на React Native / Flutter ради экономии — KMP не шарит UI по умолчанию.\n\nКомпромиссы:\n• Сложность сборки (multi-target Gradle, упаковка фреймворка).\n• Чуть медленнее iOS-сборка.\n• Tooling-лаг — часть библиотек Android-only.\n• Onboarding-стоимость для iOS-инженеров, учащих Kotlin.\n\nKMP сияет, когда shared-бизнес-логика + нативный UI — явная цель. Не тащите его просто чтобы написать меньше кода.',
+  },
+
+  // ── Compose Multiplatform (topic 50) ───────────────────────────────────────
+  5001: {
+    question: 'Что такое Compose Multiplatform и как он связан с Jetpack Compose?',
+    answer: 'Compose Multiplatform (CMP) — порт Jetpack Compose от JetBrains на не-Android-таргеты — iOS, desktop (JVM), web (Wasm/JS). Те же composable-API (Column, Row, Modifier, Material 3) работают одинаково.\n\nСвязь:\n• Jetpack Compose — официальный Android Compose runtime + UI от Google.\n• Compose Multiplatform — multiplatform-форк JetBrains, синкается с Compose каждый релиз.\n• На Android CMP делегирует Jetpack Compose под капотом.\n\nЗрелость:\n• Desktop и Android — production с 1.x.\n• iOS — стабильно с 1.6 (2024); рекомендуется для нетривиального использования.\n• Web (Wasm) — экспериментально, но быстро улучшается.\n\nКлюч: один и тот же UI-код на разных платформах. Caveat: native-look-and-feel всё ещё требует platform-specific подкрутки (системные шрифты, паттерны навигации, accessibility).',
+  },
+  5002: {
+    question: 'Как обрабатывать ресурсы (картинки, строки) в Compose Multiplatform?',
+    answer: 'CMP везёт Compose-aware ресурс-систему в `compose.components.resources`:\n• Кладёте файлы в `commonMain/composeResources/`:\n  - `drawable/` — изображения.\n  - `font/` — шрифты.\n  - `values/strings.xml` — строки (Android-style).\n  - `values-ru/strings.xml`, `values-de/...` — локали.\n• Сгенерированный `Res`-объект: `Res.drawable.logo`, `Res.string.hello`, `Res.font.sora_bold`.\n• В composable — через `painterResource(...)`, `stringResource(...)`, `Font(Res.font...)`.\n\nШрифты и картинки бандлятся в платформенный бинарь — копировать отдельно не надо. Для очень больших картинок — lazy / on-demand загрузка по сети, например, Coil 3 (multiplatform).',
+  },
+  5003: {
+    question: 'Как мостить platform-specific UI в Compose Multiplatform?',
+    answer: 'Иногда нужен реальный нативный виджет (camera preview, MapKit, AVPlayer, WebView). CMP даёт interop на каждой платформе:\n\n• Android — `AndroidView { factory }` — хостить View / `ComposeView` уже Compose, в основном работает.\n• iOS — `UIKitView { factory }` и `UIKitViewController { factory }` (с CMP 1.6) — хостить UIKit-views / SwiftUI через UIHostingController.\n• Desktop — `SwingPanel { factory }` для Swing/AWT.\n• Web — DOM interop ограниченнее; через `Element` factory.\n\nДержите embedded view как можно меньшим — стилизация, навигация и обработка back на вас.',
+  },
+  5004: {
+    question: 'Как делать навигацию в Compose Multiplatform?',
+    answer: 'Несколько опций по зрелости:\n\n• Compose Multiplatform Navigation (порт Jetpack Navigation Compose) — рекомендуемый путь; поддерживает `NavHost`, `composable(...)`, type-safe routes, deep links. `androidx.navigation:navigation-compose-multiplatform` (Beta в 2024).\n• Decompose — battle-tested KMP-навигация, появилась раньше CMP. State-machine с компонентами, routes, управлением back-stack. Для сложных flow; для простых — многословна.\n• Voyager — относительно лёгкая, type-safe screen API; популярна в CMP.\n• Native per platform — оборачиваете CMP-экраны в NavigationStack (iOS) / NavGraph (Android), shared ViewModel рулит state.\n\nВыбирайте по сложности. На 5 экранов — Voyager / Compose Nav. Для большого приложения или важных deep-link — Decompose.',
+  },
+  5005: {
+    question: 'Какова цена iOS look-and-feel? Когда CMP НЕ стоит?',
+    answer: 'CMP рендерит pixel-perfect на iOS через Skia, НЕ UIKit. Чувствуется Compose-нативно, не iOS-нативно. Что отходит от нативного iOS:\n\n• Системные шрифты и dynamic type — opt-in; Material 3-дефолты выглядят Material, не iOS.\n• Нативная NavigationStack chrome (large title, swipe back, sheets) — CMP-навигация улучшилась в 1.6+, но субтильно отличается.\n• Accessibility отличается; VoiceOver-хуки нужны тестам.\n• Системные жесты (pull-to-refresh, swipe-to-delete) — Compose-реализации, не UIKit.\n\nКогда НЕ стоит:\n• Приложения, где «чувствуется как iOS-нативное» — строгое product-требование (банкинг, премиум-бренд).\n• Приложения с глубокой интеграцией в iOS-only фичи (HealthKit complications, Live Activities).\n• Маленькие приложения с малой shared-логикой.\n\nКогда CMP сияет: design-system-driven приложения, где бренд ХОЧЕТ единого look across платформ; внутренние тулы, admin, контентные с кастомным UI.',
+  },
+  5006: {
+    question: 'Как с тестами, размером сборки, тулчейном у CMP?',
+    answer: 'Тесты:\n• Common composable-тесты через `androidx.compose.ui:ui-test-junit4` (Android) и Compose Multiplatform `runComposeUiTest` для desktop / iOS (`@OptIn(ExperimentalTestApi::class)`). Те же API (`onNodeWithText` и т.д.).\n• Юнит-тесты ViewModel — на JVM, без платформенного оверхеда.\n\nРазмер сборки:\n• iOS-фреймворк с Compose UI ~10–15 MB сжатый (Skia, шрифты). Больше hand-rolled Swift, меньше Flutter engine.\n• Android — уже Compose, минимальное расширение.\n• Desktop: 30+ MB JVM bundle (Skiko + JRE).\n\nТулчейн:\n• Android Studio + Kotlin Multiplatform plugin для Android edits и preview. iOS preview всё ещё через сборку Xcode.\n• Hot reload — улучшается, но медленнее instant-preview SwiftUI.\n• Debug: stack-traces проходят Kotlin → ObjC; `lldb` работает, Swift-символы шумные.\n• CI: каждому таргету свой runner (Linux для Android/Desktop, macOS для iOS).\n\nКомпромисс: CMP — шаг наверх над голым KMP — ближе к one-codebase идеалу — но всё ещё больше tooling-дисциплины, чем у зрелых single-platform стеков.',
+  },
+
+  // ── Mobile System Design (topic 51) ────────────────────────────────────────
+  5101: {
+    question: 'Как спроектировать offline-first ленту в мобильном приложении?',
+    answer: 'Принцип: UI читает из ЛОКАЛЬНОГО store и никогда не блокируется на сети. Сеть — источник refresh.\n\nАрхитектура:\n• Persistent store — SQLite (Room / SQLDelight / Core Data) по id-итема.\n• Repository — выдаёт `Flow<List<Item>>` (или AsyncSequence на iOS) поверх БД.\n• Sync engine — фоновая корутина / WorkManager, тянет свежие данные и пишет в БД.\n• Pagination — keyset (cursor) предпочтительнее offset для стабильного скролла.\n• Cache invalidation — TTL на rows + ETag/`If-None-Match` для conditional fetch.\n• Conflict resolution — last-writer-wins или per-field merge. Всегда server `updated_at`.\n\nUI:\n• Показывайте stale-данные с индикатором «синхронизировано N назад».\n• Pull-to-refresh — sync; UI не теряет позицию скролла.\n• Optimistic local-writes для действий (like, save, delete) + outbox для серверного retry.',
+  },
+  5102: {
+    question: 'Как проектировать пагинацию мобильного списка?',
+    answer: 'Две стратегии:\n\n• Offset-пагинация (`?page=3&limit=20`) — просто на сервере; ломается, когда items сдвигаются (вставки → дубликаты / пропуски).\n• Keyset / cursor (`?after_id=abc&limit=20` или `?after_score=12.3,id=abc`) — стабильно при вставках; рекомендуется для feeds с частыми обновлениями.\n\nКлиент:\n• Персистите страницы локально; UI читает из БД, фечит next page при приближении к низу.\n• `androidx.paging` (Android), Paging для KMP (Cash App), или вручную — `LazyColumn` + триггеры через `LaunchedEffect(lazyListState)`.\n• Для SwiftUI: `onAppear` на последней `List`-row + координатор, не пускающий конкурентные fetch.\n\nUX:\n• Skeleton / shimmer на загрузке next page.\n• De-dup items по id при merge.\n• Капать память: trim-айте старые страницы, когда пользователь далеко проскроллил; восстанавливайте на back-scroll.',
+  },
+  5103: {
+    question: 'Как спроектировать чат / messaging?',
+    answer: 'Чат — одна из самых сложных мобильных фич, потому что real-time + offline + attachments + ordering.\n\nТранспорт:\n• Long-lived WebSocket (или SSE) для real-time. Auth на connect; reconnect с экспоненциальным backoff.\n• REST/GraphQL fallback для history fetch и отправки в офлайне.\n• Server-assigned UUID для message-id; клиент использует временный `client_id` для optimistic-display до server-ack.\n\nClient-state:\n• Локальная БД хранит сообщения по `id` + `client_id` + `chat_id`. Сортируем по `(created_at, id)`.\n• Outbox: сообщения с `state in (sending, failed)` retry при восстановлении сети.\n• De-dup по `client_id` при возврате authoritative-копии сервера.\n\nOrdering & merging:\n• Server `created_at` для отображения; tie-break по id.\n• Сжимайте дубликаты записей (typing-индикатор не чаще 1/сек).\n• Out-of-order arrival — рендерим по created_at и дропаем сообщения уже закрытого чата.\n\nПрочее:\n• Push — payload с chat_id + preview; tap ведёт в чат.\n• Read-receipt — local mark при просмотре, debounced upload на сервер.\n• Attachments — отдельный upload-pipeline с прогрессом; message ссылается на media-url после завершения upload.',
+  },
+  5104: {
+    question: 'Как делать модуляризацию и feature-флаги в масштабе?',
+    answer: 'Модуляризация даёт parallel build + enforced API-границы. Feature-флаги добавляют возможность shipping тёмного кода и его постепенного раскручивания.\n\nСлои флагов:\n• Build-time (BuildConfig / `enum class BuildVariant`) — дёшево, нельзя менять после релиза.\n• Remote config (Firebase Remote Config, GrowthBook, ConfigCat, LaunchDarkly, custom) — флипается без релиза.\n• User-targeted (когорты, % rollout, A/B-варианты).\n\nДисциплина:\n• У каждого флага владелец + дата expiry; track в registry / CI lint.\n• Default OFF для новых фич, если иначе не объявлено.\n• Комбинируйте состояние флага с analytics-событиями для корреляции с метриками.\n• Type-safe API чтения (`Flags.checkoutV2Enabled`) — никаких string-ключей по коду.\n• Тестируйте ОБЕ ветки в CI; неиспользуемая — самая склонная к bit-rot.\n\nАрхитектура:\n• В multi-module можно через флаги выбирать, какой модуль подключить. Hilt / Koin подменяют реализацию по флагу.\n• Сочетайте флаги с kill-switches для критических фич — production-проблемы митигируются без релиза.',
+  },
+  5105: {
+    question: 'Как архитектурно организовать analytics и observability на мобилке?',
+    answer: 'Три столпа:\n\n• Analytics (продуктовая) — type-safe API, реестр событий, batched-загрузка, offline-буфер. События в Mixpanel, Amplitude, Segment, Firebase Analytics.\n• Crash reporting — Crashlytics, Sentry, Bugsnag, App Center. Интеграция с NDK/iOS-нативными crash-handler.\n• Performance / observability — Firebase Performance, Sentry Performance, DataDog mobile RUM, OpenTelemetry mobile SDK. Startup, frame rate, screen TTI, длительности network-вызовов.\n\nПравила:\n• Оборачивайте SDK единым внутренним интерфейсом — легко свапнуть, легко тестировать.\n• Buffer-ите офлайн-события; flush на восстановлении сети. Кап на размер буфера.\n• Сэмплируйте дорогие span (long-running) — экономия.\n• Privacy: никогда PII. Стабильные anonymous-id; уважайте ATT-prompt и privacy nutrition labels.\n• Описывайте имена + properties в схеме (JSON / YAML); генерируйте typed Kotlin/Swift-обёртки — нет опечаток и забытых полей.',
+  },
+  5106: {
+    question: 'Спроектируйте систему стриминга больших данных, дружественную к устройству.',
+    answer: 'Big-data сценарии (live-транскрипция, real-time графики, видео, телеметрия). Ограничения:\n\n• Memory: не держим весь dataset в RAM. Chunk + paginate; релизим старые chunks.\n• Battery: WebSocket / gRPC stream дешевле polling; hibernate когда приложение в фоне.\n• CPU: парсинг off-main; binary-форматы (Protobuf / FlatBuffers) на больших payload.\n• Network: gzip/brotli; client-side сжатие для upload.\n• Storage: пишите в БД с batched-транзакциями; append-only-структуры (WAL) для hot-write.\n• Backpressure: producer должен уважать темп consumer — coroutine `Flow` с `buffer(size, BufferOverflow)` или RxJava backpressure.\n\nUI:\n• Windowed views (`LazyColumn` / `RecyclerView`) — рендер только видимых chunk.\n• Throttle обновлений до ≤ 30/сек.\n• Производные статы (mean, last, sparkline) вместо каждого frame.\n\nResilience:\n• Reconnect с экспоненциальным backoff и jitter; resume по последнему server-offset / sequence.\n• Периодически персистите прогресс — crash-safe-resume.',
+  },
+
+  // ── Mobile Security (topic 52) ─────────────────────────────────────────────
+  5201: {
+    question: 'Что такое OWASP Mobile Top 10 и что важно каждому мобильному разработчику?',
+    answer: 'OWASP Mobile Top 10 (2024) — самые частые риски в мобилке:\n\n• M1 Improper Credential Usage — hardcoded API-keys, секреты в коде.\n• M2 Inadequate Supply Chain Security — уязвимые сторонние SDK.\n• M3 Insecure Authentication / Authorization — слабое хранение токенов, отсутствие биометрии.\n• M4 Insufficient Input/Output Validation — XSS в WebView, SQL/JSON injection.\n• M5 Insecure Communication — без TLS, слабые шифры, без certificate pinning.\n• M6 Inadequate Privacy Controls — over-collection PII, без consent.\n• M7 Insufficient Binary Protections — без обфускации/integrity-проверок там, где надо.\n• M8 Security Misconfiguration — debug-эндпоинты в prod, exposed `exported=true`-компоненты.\n• M9 Insecure Data Storage — секреты в plain SharedPreferences / UserDefaults.\n• M10 Insufficient Cryptography — broken algorithms, custom crypto, без IV.\n\nЧто делать: проносите через code review, запускайте static analysis (Mobile Security Framework, Detekt-rules, AppSweep), pen-тесты на критичных приложениях.',
+  },
+  5202: {
+    question: 'Как защищать API-трафик на мобилке?',
+    answer: 'Многоуровневая защита:\n\n• TLS — всегда. Cleartext через `android:usesCleartextTraffic=false` + iOS ATS. TLS 1.2+; старее — отказ.\n• Certificate / SPKI pinning — против MITM с rogue-CA. Пиньте один или несколько SPKI-хешей; ротируйте заранее.\n• HSTS / well-known TLS-конфиги — server-side тоже.\n• OAuth 2.0 / OIDC + PKCE — никогда не катите свой auth-flow.\n• Short-lived access-токены (~15 мин) + refresh. Refresh — в Keychain / Keystore.\n• Device attestation — Play Integrity API (Android), App Attest / DeviceCheck (iOS) — сервер валидирует, что запрос с реального немодифицированного приложения.\n• Replay-protection — server-side nonce + request signing для чувствительных эндпоинтов.\n\nНе полагайтесь только на обфускацию или certificate pinning — оба обходятся. Слой со server-side проверками.',
+  },
+  5203: {
+    question: 'Как детектить root / jailbreak и что с этим делать?',
+    answer: 'Сигналы:\n\nAndroid (root):\n• Наличие `/system/xbin/su`, `/system/bin/su`, busybox.\n• Test-keys в build fingerprint.\n• `getprop ro.debuggable = 1` в проде.\n• Magisk / Zygisk hide — сложнее; используйте Play Integrity device-verdict.\n\niOS (jailbreak):\n• Наличие `/Applications/Cydia.app`, `/private/var/lib/apt`.\n• Возможность писать вне sandbox (`/private/`).\n• Обработчики `cydia://` URL.\n• Тесты unsandboxed file-access.\n\nБиблиотеки: RootBeer (Android), DTTJailbreakDetection / IOSSecuritySuite (iOS).\n\nЧто делать:\n• Не блокируйте всех — у девов и power-юзеров часто root.\n• Ограничивайте чувствительные действия: запрет биометрии, отказ платежей, downgrade trust-level.\n• Комбинируйте с server-side device attestation (Play Integrity, App Attest) — их сложнее обойти.\n• Логируйте + мониторьте; никогда не доверяйте только клиенту.',
+  },
+  5204: {
+    question: 'Как хранить криптоключи и использовать platform secure-enclave?',
+    answer: 'Обе платформы дают hardware-backed key-storage:\n\n• Android — Android Keystore (`AndroidKeyStore`). Генерируете через `KeyPairGenerator` / `KeyGenerator` для `EC`, `RSA`, `AES`. Установите `setIsStrongBoxBacked(true)` для StrongBox-backed (где поддерживается). Не извлекайте key material; только sign / encrypt через систему.\n• iOS — Secure Enclave (`SecAccessControl` + `kSecAttrTokenIDSecureEnclaveTrue`). EC-ключи (P-256) для sign/verify. CryptoKit (`SecureEnclave.P256.Signing.PrivateKey`).\n\nОба позволяют требовать user-auth (PIN / биометрия) перед операциями.\n\nРотация: сервер должен принимать несколько public-key per user во время ротации; ротируйте на подозрительных событиях (re-install, смена биометрии, jailbreak).\n\nНе катите свою криптографию. AES-GCM (256) для симметрии, ECDSA / Ed25519 для подписей, ECDH для key-agreement. RSA — только при interop-требованиях.',
+  },
+  5205: {
+    question: 'Как обращаться с чувствительными данными на экране (скриншоты, screen recording, буфер обмена)?',
+    answer: 'Защита от on-device наблюдения:\n\nСкриншоты и screen recording:\n• Android — `WindowManager.LayoutParams.FLAG_SECURE` на Activity с секретами (банкинг, password-reveal). Запрещает скрин, прячет в screen-record, blur в recents.\n• iOS — слушайте `UIScreen.capturedDidChangeNotification` (recording идёт). Для скриншотов — `UIApplication.userDidTakeScreenshotNotification`. Чтобы blur preview в фоне, поставьте placeholder в `applicationWillResignActive`.\n\nClipboard:\n• Не auto-копируйте секреты. Если надо — clear через несколько секунд.\n• Android 12+ показывает toast при чтении clipboard другим приложением — считайте чтение наблюдаемым.\n• iOS — `expirationDate` на `UIPasteboard`; `UTType.passkit` / `kUIPasteboardTypeListEncryptedString` для чувствительных.\n\nКлавиатура:\n• Отключите autofill / personalised learning на чувствительных полях (`textNoSuggestions`, `textPassword` Android; `textContentType = .oneTimeCode` iOS).\n• Используйте platform-secure input (пароли, payment) — они скрыты от screen-record.',
+  },
+  5206: {
+    question: 'Как обращаться с приватностью: tracking, ATT, GDPR, Privacy Manifests?',
+    answer: 'Multi-jurisdictional приватность — продуктовый + инженерный вопрос.\n\nApple (iOS):\n• ATT — `ATTrackingManager.requestTrackingAuthorization` ДО запуска любого cross-app tracking-SDK. Status решает, можно ли IDFA.\n• Privacy Nutrition Labels — декларируете типы данных + linked to user identity в App Store Connect. Несовпадение — auto-rejection.\n• Privacy Manifests (`PrivacyInfo.xcprivacy` с iOS 17.4) — декларация причин использования API (NSPrivacyAccessedAPI*) для UserDefaults, system boot time. Обязательно для новых submission.\n\nGoogle (Android / Play):\n• Data Safety section в Play Console — что собираете, шарите, retain, шифруете.\n• Advertising ID (AAID) требует `com.google.android.gms.permission.AD_ID` с Android 13. Юзер может reset / delete.\n• Health Connect, location, photo picker — поощряются более узкие permission-scope.\n\nGDPR / global:\n• Lawful basis — consent / legitimate interest / contract.\n• User rights — access, deletion, portability. Постройте эндпоинты.\n• Cookie / tracker-consent до загрузки non-essential SDK.\n• Data residency — для EU/UK часто пин-сторадж в регионе.\n\nПрактики:\n• Инвентаризируйте каждый SDK + data-flow.\n• Откладывайте non-essential SDK init до consent.\n• Шифруйте PII at rest. Hash + salt идентификаторы где можно.\n• Аудит ежегодно + на каждый новый vendor.',
+  },
+
+  // ── Mobile CI/CD (topic 53) ────────────────────────────────────────────────
+  5301: {
+    question: 'Как выглядит типичный mobile CI-пайплайн?',
+    answer: 'Стандартные стадии:\n\n• Lint / static analysis — Detekt + ktlint (Android), SwiftLint + SwiftFormat (iOS), Dart analyze (Flutter).\n• Unit tests — быстрые, JVM/Swift simulator, на каждом PR.\n• UI / instrumented tests — медленнее, на эмуляторе (Android) или симуляторе (iOS); часто только nightly или main.\n• Build — debug + release. Sign release.\n• Artifact upload — TestFlight / Play Internal Testing для QA.\n• Beta / staged rollout — fastlane lanes или store API.\n• Symbol upload — Crashlytics / Sentry / Bugsnag для де-обфусцированных стеков.\n\nПровайдеры: GitHub Actions (самый частый), Bitrise (mobile-focused), CircleCI, Codemagic (Flutter), Xcode Cloud (iOS-only), Bitbucket Pipelines, Buildkite.\n\nКлюч: PR-сборка < 15 мин; кэш Gradle / SwiftPM / CocoaPods; никогда не комитьте signing-материалы — env-секреты.',
+  },
+  5302: {
+    question: 'Что такое Fastlane и что он автоматизирует?',
+    answer: 'Fastlane — Ruby-based automation для обеих платформ. Объявляете lanes в `Fastfile`. Частые автоматизации:\n\n• Build & sign — `gym` (iOS), `gradle` (Android).\n• Code signing — `match` (iOS) синкает сертификаты / профили через приватный git-репо, encrypted at rest.\n• Beta — `pilot` (TestFlight), `firebase_app_distribution`, `supply` (Play).\n• Production — `deliver` (App Store), `supply` (Play).\n• Screenshots — `snapshot` гоняет UI-тесты на нескольких локалях/устройствах и аплоадит.\n• Crash — upload dSYMs / mapping (`upload_symbols_to_crashlytics`).\n• Slack / git — `slack`, `git_tag`.\n\nЗаменяет hand-rolled bash оттестированным cross-platform DSL. Лежит рядом с проектом; та же lane локально и в CI — меньше «у меня работает».',
+  },
+  5303: {
+    question: 'Как подписывать и shipить iOS-приложение?',
+    answer: 'iOS code signing:\n• Apple Developer account, Team ID.\n• Сертификаты — Apple Development (debug) + Apple Distribution (release).\n• Provisioning profiles — App ID + сертификаты + устройства (для ad hoc).\n• Bundle ID — должен совпадать с App Store Connect.\n\nManual signing — хрупко («профиль истёк», «новое устройство»). Нормально:\n• `fastlane match` — сертификаты + profiles в приватном git-репо, encrypted-passphrase. CI клонирует, расшифровывает, ставит.\n• Или Xcode Cloud / Xcode automatic signing для маленьких команд.\n\nDistribution:\n• TestFlight (internal до 100, external до 10 000 с App Review).\n• Ad hoc / Enterprise — ограниченно, в основном legacy.\n• App Store — релиз после ревью (`fastlane deliver` или App Store Connect).\n\nГотчи: push-capability сбрасывается при перегенерации профиля; entitlements (push, IAP) должны совпадать; Xcode Cloud free tier ограничен.',
+  },
+  5304: {
+    question: 'Как подписывать и shipить Android-приложение?',
+    answer: 'Android-подпись проще, но со своими ловушками:\n\n• Upload key — подписываете AAB, который заливаете в Play Console.\n• App signing key — Play App Signing держит у себя (рекомендуется). Google пере-подписывает артефакт для distribution.\n• Build types: `debug` (debug.keystore), `release` (свой keystore).\n• AAB — предпочтительнее APK с 2021. Play генерит per-device APK (split по ABI, density, language).\n\nDistribution-tracks (Play Console):\n• Internal testing — до 100.\n• Closed / Open — больше, ручные ревью.\n• Production со staged rollout (5% → 20% → 50% → 100%).\n\nKeystore: НИКОГДА не комитьте; base64 в CI-секрет, decode на сборке. Потеряли upload key — ротируете через Play Console (только если используете Play App Signing).\n\nMandatory: target новейший API level (Play-policy ежегодно), data-safety + privacy-policy, 64-bit native libs.',
+  },
+  5305: {
+    question: 'Что такое build flavors / variants и когда они нужны?',
+    answer: 'Flavors дают несколько APK/AAB из одной кодбазы — отличаются package, бренд, эндпоинты, фичи.\n\nAndroid (Gradle):\n• `productFlavors { free { ... }; paid { ... } }`.\n• Комбо с `buildTypes { debug; release }` — варианты вроде `freeDebug`, `paidRelease`.\n• Каждый flavor может перекрыть resources, manifest, source-sets.\n\niOS (Xcode):\n• Несколько target — отдельные сборки, отдельный Info.plist.\n• Или schemes + xcconfig — один target, разные config-файлы для dev / staging / prod.\n• Asset catalogues + Info.plist substitution для бренда.\n\nFlutter:\n• `--flavor` + `--dart-define` для compile-time констант.\n\nДля чего:\n• Dev / staging / prod с разными эндпоинтами.\n• White-label (одна кодбаза, много брендов).\n• Free vs paid SKU.\n• Feature-subset по гео.\n\nHe плодите flavors — каждая множит CI build-matrix.',
+  },
+  5306: {
+    question: 'Как делать staged rollout и наблюдать за релизом?',
+    answer: 'Staged rollout = релиз небольшому % сначала, наблюдение метрик, ramp.\n\nAndroid (Play Console):\n• Production → Releases → процент rollout (1%, 5%, 20%, 50%, 100%).\n• Halt при падении vitals. Resume после фикса (затронутая версия остаётся на низком %).\n• Internal app sharing — быстрые QA-URL.\n\niOS (App Store):\n• Phased release для авто-апдейтов: 1%, 2%, 5%, 10%, 20%, 50%, 100% за 7 дней.\n• Manual users получают сразу.\n• Pause / resume на любой стадии.\n• Expedited review для критичных фиксов (используйте редко).\n\nObservability во время rollout:\n• Crash-free users — Crashlytics / Sentry.\n• ANR rate (Android) — Play Vitals.\n• Frame rate / startup — Firebase Performance / MetricKit.\n• Funnel + бизнес-метрики — Mixpanel / Amplitude.\n• Server-логи — error rate, latency.\n\nPlaybook: KPI и пороги ДО shipping. Алерты (PagerDuty / Slack). Rollback: feature-флаги первыми, app pull-from-store как last resort.',
+  },
+
+  // ── Combine (topic 36) ─────────────────────────────────────────────────────
+  3601: {
+    question: 'Что такое Combine? Как соотносятся Publisher, Subscriber и Operator?',
+    answer: 'Combine — реактивный streams-фреймворк Apple (iOS 13+). Моделирует async-работу как типизированный пайплайн:\n\n• Publisher — эмитит поток значений и опциональное завершение (finished или failure). У него Output и Failure ассоциированные типы.\n• Subscriber — получает значения, completion и demand-сигналы. Сам редко пишут; используют встроенные операторы.\n• Operator — метод на Publisher, возвращающий новый publisher (map, filter, flatMap, debounce). Ленивый — пока не подписался, ничего не течёт.\n• Subscription — связь между publisher и subscriber; отменяется через `AnyCancellable`.\n\nДумайте об этом как о async-пайплайне со строгими типами и встроенной отменой/backpressure.',
+  },
+  3602: {
+    question: 'Что такое Subjects в Combine? PassthroughSubject vs CurrentValueSubject.',
+    answer: 'Subjects — publisher, в который можно императивно слать значения. Удобны как мост между не-Combine кодом и Combine-пайплайнами.\n\n• PassthroughSubject<Output, Failure> — рассылает значения подписчикам по мере поступления. Не хранит current; новые подписчики не видят прошлых значений.\n• CurrentValueSubject<Output, Failure> — держит current value (передаётся в инициализатор). Новые подписчики получают его сразу, потом — последующие апдейты.\n\nPassthroughSubject — для событий (тапы, жесты). CurrentValueSubject — для состояний (loading-флаг, текущий пользователь). Для ObservableObject-подобного state в современном коде лучше @Published или @Observable.',
+  },
+  3603: {
+    question: 'Какие типичные Combine-операторы и что они делают?',
+    answer: 'Самые ценные:\n\n• map / tryMap — трансформации; tryMap может бросить.\n• filter / removeDuplicates — выбрасывают значения.\n• flatMap — chain в другой publisher; для зависимых запросов.\n• combineLatest / merge / zip — комбинируют несколько потоков.\n• debounce / throttle — ограничивают частоту (typeahead, скролл).\n• retry / catch — обработка ошибок.\n• receive(on:) / subscribe(on:) — расписание на очередь.\n• assign(to:on:) — связывают output со свойством без `sink`.\n• share / multicast — делят работу одного subscription между несколькими подписчиками.\n• eraseToAnyPublisher() — стирает тип на границах API.\n\nБудьте явны со scheduling: по умолчанию работа идёт там, где publisher решит. Для UI нужен `.receive(on: DispatchQueue.main)`.',
+  },
+  3604: {
+    question: 'Как использовать Combine со SwiftUI? @Published, ObservableObject.',
+    answer: 'SwiftUI говорит с Combine через два протокола:\n\n• ObservableObject — reference-протокол со встроенным Combine-publisher `objectWillChange`.\n• @Published — property wrapper, автоматом проксирующий мутации в `objectWillChange`. Все view, наблюдающие объект, перерисовываются.\n\nВладеете — @StateObject; кто-то другой владеет — @ObservedObject. Для своих Combine-пайплайнов, питающих UI, храните cancellables в `Set<AnyCancellable>`, чтобы они не умирали.\n\nВ iOS 17+ @Observable заменяет это на более гранулярный tracking — но Combine всё ещё хорош для typeahead, debounce/throttle, network-композиции.',
+  },
+  3605: {
+    question: 'Как Combine и Swift Concurrency (async/await) взаимодействуют?',
+    answer: 'Combine и async/await сосуществуют; можно конвертировать.\n\n• Publisher → async — `.values` даёт AsyncSequence; итерируйте `for await`.\n• Async → Publisher — оборачивайте `Future` или используйте `Just`/`AsyncThrowingStream`-адаптеры.\n• `assign(to: &$prop)` гладко работает с @Published.\n• `Task { ... }` мостит из Combine-sink в actor-isolated мутации.\n\nГайдлайн: новый код — на async/await. Combine — когда реально нужна композиция потоков (debounce, combineLatest typeahead) или вы уже на нём.',
+  },
+  3606: {
+    question: 'Какие частые Combine-ловушки и как их избегать?',
+    answer: 'Частые проблемы:\n\n• Забыли сохранить cancellable — пайплайн сразу разваливается, ни одного значения.\n• Strong-захват self в `sink` — leak; используйте `[weak self]`.\n• Не тот scheduler для UI — UI-работа на `DispatchQueue.main` (или `RunLoop.main`).\n• Multicast дорогой работы — без `.share()` или `.multicast()` каждый новый подписчик заново гоняет upstream.\n• Развал по первой ошибке — большинство операторов завершают на failure; используйте `.catch` / `.replaceError`, чтобы пайплайн жил.\n• `.assign(to:on:)` retain-ит target — лучше `.assign(to: &$prop)` (биндит к @Published) — не retain-ит.\n• Backpressure — у Combine demand-based flow; дефолт неограничен. На high-rate источниках — `.collect`, `.throttle` или свой subscriber.\n• Mix Combine + actor — в MainActor через `.receive(on: RunLoop.main)` или `Task { @MainActor in ... }` из sink.',
+  },
+
+  // ── Swift Concurrency (topic 27) ───────────────────────────────────────────
+  2701: {
+    question: 'Объясните async/await в Swift. Чем отличается от completion-handler-callback-ов?',
+    answer: 'Swift Concurrency (Swift 5.5+, iOS 13+ с backport-ами) даёт нативные async-функции:\n\n• `async` — функция, которая может приостановиться.\n• `await` — точка приостановки; управление возвращается рантайму, функция продолжается на (возможно другом) потоке после готовности awaitable.\n• Ошибки пробрасываются через `async throws` как у sync.\n\nПротив колбэков:\n• Линейный поток управления — без вложенных замыканий, без «pyramid of doom».\n• Ошибки через try/catch вместо ветвлений Result<T, E>.\n• Compile-time гарантии: невозможно забыть позвать continuation, невозможно позвать дважды.\n• Естественно дружит с отменой, structured concurrency и actor-ами.',
+  },
+  2702: {
+    question: 'Что такое structured concurrency? Как работает Task?',
+    answer: 'Structured concurrency означает, что у параллельной работы есть чёткий scope и время жизни — дети не могут пережить родителя. Отмена пробрасывается автоматически; родитель ждёт всех детей перед завершением.\n\n• `Task { ... }` — top-level неструктурный таск; вы решаете, когда он закончится. Возвращает handle для cancel/await.\n• `async let x = ...` — параллельный child. Привязан к scope-у функции. Должен быть await-нут до возврата из функции.\n• `withTaskGroup(of:)` — динамическое количество детей, ordered/unordered consumption.\n\nОтмена кооперативная: дети проверяют `Task.isCancelled` или `try Task.checkCancellation()` и могут выйти раньше.',
+  },
+  2703: {
+    question: 'Что такое actor в Swift?',
+    answer: 'Actor — reference-тип с изолированным мутабельным состоянием — внутри одновременно работает не более одной задачи, что устраняет data race-ы по построению. Компилятор обеспечивает это: внешние вызовы должны делать `await` методам актора, потому что вызов может приостановиться, если актор занят.\n\nВажно:\n• Методы актора по умолчанию изолированы; для stateless-членов помечают `nonisolated`.\n• Свойства — даже чтение снаружи асинхронно (`await counter.value`).\n• `MainActor` — глобальный актор, привязывающий работу к main-потоку — UI-типы должны быть `@MainActor`.\n• Reentrancy актора — пока актор `await`-ит, на нём может выполниться другая задача; не делайте предположений об инвариантах между `await`-ами.',
+  },
+  2704: {
+    question: 'Что такое AsyncSequence и AsyncStream?',
+    answer: 'AsyncSequence — async-версия Sequence — значения приходят со временем, потребляешь их через `for try await element in stream`.\n\nAsyncStream<T> / AsyncThrowingStream<T, Error> — конкретные реализации, которые мостят callback-/notification-API в AsyncSequence. Конструируешь с continuation, в который можно yield-ить откуда угодно (NotificationCenter-наблюдатели, таймеры, делегаты).\n\nЗачем: заменяет ad-hoc Combine-пайплайны для простых сценариев emit-over-time; работает внутри structured concurrency; чисто кооперируется с отменой.',
+  },
+  2705: {
+    question: 'Что такое Sendable, и как Swift гарантирует data-race safety?',
+    answer: '`Sendable` — marker-протокол, говорящий что значение можно безопасно передать через границы actor-ов / задач. Компилятор проверяет, что любое значение, пересекающее concurrency-домен, является Sendable.\n\nSendable по умолчанию:\n• Value-типы, у которых все stored properties Sendable (struct/enum)\n• Final-классы только с let-свойствами Sendable-типов\n• Actor-ы\n\nНе Sendable:\n• Мутабельные классы (без ручной синхронизации + @unchecked Sendable)\n• Замыкания по умолчанию — пометьте `@Sendable`, чтобы opt-in (замыкания, захваченные Task-ом, должны быть Sendable)\n\nВ Swift 6 / strict concurrency проверки — ошибки, не warning-и, что отсекает целые классы гонок.',
+  },
+  2706: {
+    question: 'Как отменять асинхронную работу в Swift?',
+    answer: 'Отмена в Swift Concurrency кооперативная — таск, который вы отменяете, попросили остановиться, и код внутри обязан это уважить.\n\nМеханизмы:\n• `task.cancel()` — выставляет `Task.isCancelled = true` для всего поддерева задач.\n• `try Task.checkCancellation()` — бросает CancellationError если отменён.\n• `if Task.isCancelled { return }` — тихий выход.\n• Встроенные awaitable (URLSession.data, sleep, TaskGroup) уважают отмену автоматически.\n• `withTaskCancellationHandler { … } onCancel: { … }` — регистрирует синхронный cleanup-хук.\n\nТипичный паттерн — хранить текущий Task в view model, потом `cancel()` его при новом запросе пользователя / уходе с экрана.',
+  },
+
   15007: {
     question: 'Как feature flag-и и staged rollout-ы вписываются в архитектуру Flutter-приложения?',
     answer: 'Feature flag-и развязывают deploy от release: выкатываете код тёмным, флипаете переключатель позже для части или всех пользователей. Сделанные правильно, они мультипликатор — рискованные изменения выкатываются безопасно, A/B тесты дешёвые, откаты мгновенные.\n\nСлои:\n\n1) Хранилище флагов — где живёт правда:\n• Remote config (Firebase Remote Config, GrowthBook, LaunchDarkly, ConfigCat) — server-side, можно таргетить по user/cohort/version\n• Bundled-дефолты — JSON, поставляемый с приложением, чтобы первый запуск (без сети) имел разумное поведение\n• Локальные override-ы — скрытый экран настроек для QA, чтобы флипать флаги без серверного доступа\n\n2) Flag-клиент — тонкая Dart-абстракция:\n• `FeatureFlags.checkoutV2Enabled` возвращает bool\n• Кэширует последние полученные значения в памяти + secure storage, чтобы временный сбой сети не переключал фичи\n• Обновляется на foreground приложения и после изменений auth\n\n3) Точки ветвления — где читаются флаги:\n• В composition root: выбрать, какой Notifier/Bloc инстанцировать\n• В feature-модулях: спрятать пункты меню, выбрать code path\n• Используйте экономно внутри hot path — flag-lookup-ы дешёвые, но if-суп плохо стареет\n\n4) Дисциплина уборки:\n• У каждого флага есть lifetime: experiment → ramp → remove\n• Тегируйте код (`// FLAG: checkout_v2 — remove after 2026-06-01`)\n• Запланируйте задачу уборки (skill `/schedule` этого приложения именно для этого — открыть removal PR после ramp-а)\n\nПодводные камни:\n• Не гейтьте критические security-проверки за флагом — риск bypass\n• Убедитесь, что состояние флага входит в analytics-события, чтобы можно было коррелировать метрики с вариантом\n• Тестируйте ОБЕ ветки в CI; иначе отключённая ветка тихо bit-rot-ится, пока не флипанёте и не обнаружите, что она сломана',

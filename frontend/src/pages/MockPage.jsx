@@ -6,11 +6,14 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useQuestions } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index.js';
+import PlatformFilter from '../components/PlatformFilter.jsx';
+import { usePrefs } from '../store/prefs.js';
+import { filterQuestionsByPlatform } from '../lib/platform.js';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
@@ -56,7 +59,16 @@ export default function MockPage() {
   const { lang } = useLang();
   const t = useT(lang);
   const { questionText, answerText } = useContent(lang);
-  const { data: questions = [], isLoading } = useQuestions();
+  const { data: allQuestions = [], isLoading } = useQuestions();
+  const { data: allTopics = [] } = useTopics();
+  const platform = usePrefs((s) => s.platform);
+  // Honor the persisted stack so a user prepping for iOS doesn't get Flutter
+  // questions in their mock interview. Direct deep-links via `?ids=` bypass
+  // this — those callers already curated their set.
+  const questions = useMemo(
+    () => filterQuestionsByPlatform(allQuestions, allTopics, platform),
+    [allQuestions, allTopics, platform],
+  );
   // Warm the AI-health probe as soon as the page mounts. Without this the
   // first /api/ai/grade call would race the /api/ai/health response and
   // the AnswerGrader would render `null` for a beat after Reveal.
@@ -88,11 +100,15 @@ export default function MockPage() {
   }, [phase]);
 
   const start = () => {
-    let pool = questions;
+    // Deep-link by id bypasses the platform filter — the caller already
+    // curated the set (e.g. "drill these 5 bookmarks"). Otherwise scope to
+    // the active platform.
+    let pool;
     if (config.ids?.length) {
       const idSet = new Set(config.ids);
-      pool = questions.filter((q) => idSet.has(q.id));
+      pool = allQuestions.filter((q) => idSet.has(q.id));
     } else {
+      pool = questions;
       if (config.topic) pool = pool.filter((q) => q.topic_slug === config.topic);
       if (config.level !== 'all') pool = pool.filter((q) => q.level === config.level);
     }
@@ -192,11 +208,12 @@ export default function MockPage() {
   if (isLoading) return <FullPageLoader />;
 
   if (phase === 'setup') {
-    let available = questions;
+    let available;
     if (config.ids?.length) {
       const idSet = new Set(config.ids);
-      available = questions.filter((q) => idSet.has(q.id));
+      available = allQuestions.filter((q) => idSet.has(q.id));
     } else {
+      available = questions;
       if (config.topic) available = available.filter((q) => q.topic_slug === config.topic);
       if (config.level !== 'all') available = available.filter((q) => q.level === config.level);
     }
@@ -208,6 +225,7 @@ export default function MockPage() {
         onCancel={() => navigate(-1)}
         availableCount={available.length}
         lang={lang}
+        showPlatformFilter={!config.ids?.length}
       />
     );
   }
@@ -406,7 +424,7 @@ export default function MockPage() {
   );
 }
 
-function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount, lang }) {
+function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount, lang, showPlatformFilter }) {
   const update = (patch) => onConfigChange({ ...config, ...patch });
   const insufficient = availableCount === 0;
   const realCount = Math.min(config.count, availableCount);
@@ -435,6 +453,12 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
         </p>
 
         <div className="relative mt-8 space-y-7">
+          {showPlatformFilter && (
+            <Field label={lang === 'ru' ? 'Стек' : 'Stack'}>
+              <PlatformFilter hideLabel />
+            </Field>
+          )}
+
           <Field label={lang === 'ru' ? 'Уровень' : 'Level'}>
             <div className="flex flex-wrap gap-2">
               {LEVELS.map((l) => (

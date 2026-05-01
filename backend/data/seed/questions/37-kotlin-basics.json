@@ -1,0 +1,62 @@
+[
+  {
+    "id": 3701,
+    "topic_id": 37,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is the difference between val and var in Kotlin?",
+    "answer": "• val — read-only reference (like Java's final). The reference cannot be reassigned, but the object it points to may itself be mutable.\n• var — mutable reference. Can be reassigned.\n\nIdiomatic Kotlin defaults to val — IDE inspections suggest converting var → val whenever a variable is never reassigned. Adding `var` should always be a deliberate decision, since immutability is a thread-safety and correctness win.\n\nBoth are statically typed. Type inference is the rule; explicit type annotations are reserved for public APIs and ambiguous initializers.",
+    "code_example": "val name = \"Alice\"          // type inferred String\n// name = \"Bob\"             // ❌ compile error\n\nvar counter = 0\ncounter += 1                // ✅\n\n// val on a mutable object — reference is fixed, contents are not\nval list: MutableList<Int> = mutableListOf(1, 2, 3)\nlist.add(4)                 // ✅ contents change\n// list = mutableListOf()   // ❌ reference change\n\n// Use immutable types when possible\nval immutable: List<Int> = listOf(1, 2, 3) // List has no add/remove\n\n// Top-level vs class member — same rules\nclass Order(val id: String, var status: String)\nval o = Order(\"1\", \"new\")\no.status = \"shipped\"        // mutate via var property\n// o.id = \"2\"               // ❌ val property\n\n// const val — compile-time constant (only on top-level / object members)\nobject Config {\n  const val BASE_URL = \"https://api.example.com\"\n}",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3702,
+    "topic_id": 37,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "How does null safety work in Kotlin?",
+    "answer": "Kotlin's type system distinguishes nullable from non-nullable references:\n\n• `String` — non-null. Cannot hold null. Compiler enforces.\n• `String?` — nullable. May hold null.\n\nSafe operators:\n• `?.` — safe call. Returns null if receiver is null.\n• `?:` — Elvis operator, supplies a default for null.\n• `!!` — non-null assertion. Throws NullPointerException if null.\n• `?.let { ... }` — execute block only if non-null.\n\nWhen interoperating with Java, types come back as platform types (`String!`) — Kotlin treats them as nullable but doesn't force the check at the boundary; annotate Java sources with @Nullable / @NonNull where possible.",
+    "code_example": "fun render(name: String?) {\n  // Safe call\n  println(name?.length)              // null if name is null\n\n  // Elvis — supply default\n  val display = name ?: \"Guest\"\n\n  // let — only run if non-null\n  name?.let { println(\"hello, $it\") }\n\n  // !! — only when truly impossible to be null\n  val length = name!!.length         // throws NPE if null\n}\n\n// Smart casts — compiler narrows the type after a null check\nfun describe(x: String?): String {\n  if (x == null) return \"empty\"\n  // x is now String here, no need for ?.\n  return \"len=\\${x.length}\"\n}\n\n// requireNotNull / checkNotNull — throw with a message\nval token = requireNotNull(authToken) { \"Login first\" }\n\n// Late init — for properties initialised later (DI, lifecycle)\nclass MyVM {\n  lateinit var repo: Repo\n  fun isReady() = ::repo.isInitialized\n}\n\n// Java interop — platform types\n// String! comes from Java; treat as nullable when in doubt",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3703,
+    "topic_id": 37,
+    "order_index": 3,
+    "difficulty": "easy",
+    "question": "What are common Kotlin collections (List, Set, Map) and their mutable counterparts?",
+    "answer": "Kotlin separates read-only and mutable collections at the type level:\n\n• `List<T>` (read-only) vs `MutableList<T>` (add/remove/set).\n• `Set<T>` vs `MutableSet<T>`.\n• `Map<K, V>` vs `MutableMap<K, V>`.\n\nFactory functions:\n• `listOf`, `setOf`, `mapOf` — read-only.\n• `mutableListOf`, `mutableSetOf`, `mutableMapOf` — mutable.\n• `emptyList()`, `emptyMap()` — empty read-only.\n\nUnder the hood they wrap JDK collections. The read-only types are interfaces, not deep copies — passing a MutableList where List is expected is allowed; the consumer just can't mutate it.\n\nFunctional helpers (map / filter / reduce / fold / groupBy / chunked / windowed / partition) make data wrangling concise.",
+    "code_example": "val numbers = listOf(1, 2, 3, 4, 5)\nval doubled = numbers.map { it * 2 }            // [2,4,6,8,10]\nval evens = numbers.filter { it % 2 == 0 }       // [2,4]\nval total = numbers.sum()                        // 15\nval grouped = numbers.groupBy { if (it % 2 == 0) \"even\" else \"odd\" }\n\nval mutable = mutableListOf(\"a\", \"b\")\nmutable += \"c\"            // operator → add\n\nval set = setOf(1, 2, 2, 3)                      // size 3\nval map = mapOf(\"id\" to 1, \"name\" to \"Alice\")\n\n// Destructuring & operators\nval (key, value) = \"name\" to \"Alice\"\nfor ((k, v) in map) println(\"$k=$v\")\n\n// Sequences for lazy evaluation on big chains\nval result = (1..1_000_000)\n  .asSequence()\n  .map { it * it }\n  .filter { it % 2 == 0 }\n  .take(10)\n  .toList()\n\n// Read-only ≠ immutable — backing list could still mutate.\n// For deep immutability use Kotlinx Immutable Collections (kotlinx.collections.immutable)",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3704,
+    "topic_id": 37,
+    "order_index": 4,
+    "difficulty": "easy",
+    "question": "Explain functions, lambdas, and higher-order functions in Kotlin.",
+    "answer": "Functions are first-class. You can pass them as arguments, return them, store them in variables.\n\n• Function declaration: `fun name(...): T = body` (single-expression) or `fun name(...) { ... }` (block body).\n• Default + named arguments — write fewer overloads.\n• Lambda: `{ a, b -> a + b }`. Implicit `it` for single-parameter lambdas.\n• Higher-order: a function that takes or returns a function (`(Int) -> String`, `() -> Unit`).\n• Trailing-lambda convention: `list.forEach { println(it) }`.\n• `inline` modifier: copy the body of a higher-order function into call sites at compile time, eliminating allocation overhead.\n\nKotlin idiom is heavy on lambdas — collections, coroutines, DSLs all rely on them.",
+    "code_example": "// Default + named args\nfun greet(name: String, greeting: String = \"Hello\") = \"$greeting, $name\"\ngreet(\"Alice\")                    // Hello, Alice\ngreet(\"Bob\", greeting = \"Hi\")     // Hi, Bob\n\n// Higher-order\nfun retry(times: Int, block: () -> Unit) {\n  repeat(times) { block() }\n}\nretry(3) { println(\"try\") }\n\n// Function reference (`::`) — pass a named function as a lambda\nfun isEven(n: Int) = n % 2 == 0\nlistOf(1, 2, 3).filter(::isEven)\n\n// Closure captures surrounding scope\nfun makeCounter(): () -> Int {\n  var count = 0\n  return { ++count }\n}\nval c = makeCounter()\nprintln(c())   // 1\nprintln(c())   // 2\n\n// Inline — avoid lambda allocation, allow non-local return\ninline fun forEachQuick(list: List<Int>, block: (Int) -> Unit) {\n  for (x in list) block(x)\n}\n\n// Lambda with multiple parameters & destructuring\nval pairs = listOf(1 to \"a\", 2 to \"b\")\npairs.forEach { (n, s) -> println(\"$n: $s\") }",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3705,
+    "topic_id": 37,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What is the difference between Kotlin's if/when as statement vs expression?",
+    "answer": "In Kotlin, control structures are expressions — they return a value — and can be used directly as the right-hand side of an assignment or returned from a function.\n\n• `if/else` — when used as an expression both branches must be present. Result type is the LUB (least upper bound) of branch types.\n• `when` — Kotlin's switch on steroids. Can match on values, types (`is X`), ranges, lists, predicates. As an expression must be exhaustive (or have an `else` branch).\n• `try` is an expression too — `val x = try { parse() } catch (...) { fallback }`.\n\nUsing them as expressions removes a lot of mutable state, since branches can directly produce the final value.",
+    "code_example": "// if as expression\nval status: String = if (score >= 90) \"A\" else if (score >= 70) \"B\" else \"F\"\n\n// when on a value\nfun gradeLabel(score: Int) = when {\n  score >= 90 -> \"A\"\n  score >= 70 -> \"B\"\n  else        -> \"F\"\n}\n\n// when matching value, type, range\nfun describe(x: Any) = when (x) {\n  0           -> \"zero\"\n  in 1..9     -> \"small\"\n  is String   -> \"string of length ${x.length}\"\n  null        -> \"null\"\n  else        -> \"unknown\"\n}\n\n// Sealed-class exhaustiveness — compiler forces all cases\nsealed interface NetworkResult<out T>\ndata class Success<T>(val value: T) : NetworkResult<T>\ndata class Failure(val error: Throwable) : NetworkResult<Nothing>\nobject Loading : NetworkResult<Nothing>\n\nfun <T> render(r: NetworkResult<T>): String = when (r) {\n  is Success -> \"ok\"\n  is Failure -> \"err: \\${r.error.message}\"\n  Loading    -> \"...\"\n  // No else needed — sealed type is exhaustive\n}\n\n// try as expression\nval n: Int = try { input.toInt() } catch (e: NumberFormatException) { 0 }",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3706,
+    "topic_id": 37,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What are smart casts in Kotlin and when do they work?",
+    "answer": "Smart casts let the compiler automatically narrow a value's type after a runtime check, eliminating the cast.\n\n• After `if (x is Type)` the compiler treats `x` as `Type` inside the block.\n• After `if (x != null)` the compiler treats `x` as non-nullable.\n• Works in `when` branches.\n\nSmart casts only apply when the compiler can guarantee the value didn't change between check and use:\n• `val` properties always.\n• `var` of a class only if not open (could be overridden), and not a custom-getter property.\n• Local variables, function parameters — generally yes.\n• Mutable shared state across threads — no (race could change it).\n\nWhen smart cast can't prove safety, use `as` (throws on mismatch) or `as?` (returns null).",
+    "code_example": "fun describe(x: Any) {\n  if (x is String) {\n    println(x.length)            // smart cast — x is String here\n  }\n  if (x !is Int) return\n  println(x + 1)                  // smart cast — x is Int here\n}\n\n// Null check → smart cast\nfun greet(name: String?) {\n  if (name == null) return\n  println(name.length)            // x is String, no ?.\n}\n\n// when + smart cast\nsealed class Event\nclass Click(val x: Int) : Event()\nclass Move(val dx: Int, val dy: Int) : Event()\n\nfun handle(e: Event) = when (e) {\n  is Click -> e.x                 // smart cast\n  is Move  -> e.dx + e.dy         // smart cast\n}\n\n// Smart cast doesn't work on mutable shared state\nclass Holder { var value: String? = null }\nfun bug(h: Holder) {\n  if (h.value != null) {\n    // ❌ compile error — could change between threads\n    // h.value.length\n  }\n  // Workaround — capture into a local\n  val v = h.value\n  if (v != null) println(v.length)\n}\n\n// `as?` — safe cast\nval s: String? = anyValue as? String",
+    "code_language": "kotlin"
+  }
+]

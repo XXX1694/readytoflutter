@@ -1,0 +1,72 @@
+[
+  {
+    "id": 2401,
+    "topic_id": 24,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is the difference between let and var in Swift?",
+    "answer": "• let — immutable binding. The reference (or value) cannot be reassigned after initialization.\n• var — mutable binding. The reference (or value) can be reassigned.\n\nSwift defaults to let in idiomatic code — the compiler will warn when a var is never mutated. For value types (structs, enums) let also makes the inner properties immutable. For reference types (classes) let only locks the reference; the object's mutable properties are still settable.",
+    "code_example": "let name = \"Alice\"\n// name = \"Bob\" // ❌ compile error\n\nvar counter = 0\ncounter += 1 // ✅\n\n// Value type — let freezes the whole value\nstruct Point { var x: Int; var y: Int }\nlet p = Point(x: 1, y: 2)\n// p.x = 5 // ❌ cannot mutate stored property\n\n// Reference type — let only freezes the reference\nclass Counter { var value = 0 }\nlet c = Counter()\nc.value = 10 // ✅ allowed\n// c = Counter() // ❌ cannot reassign",
+    "code_language": "swift"
+  },
+  {
+    "id": 2402,
+    "topic_id": 24,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "What are optionals in Swift and how do you safely unwrap them?",
+    "answer": "An Optional<T> is an enum with two cases: .some(T) or .none — Swift's encoding of \"value may be missing\". Written as T?.\n\nSafe unwrapping options:\n• if let / guard let — bind only if non-nil\n• ?? — nil-coalescing default\n• optional chaining ?. — propagates nil\n• map / flatMap — transform without unwrapping\n\nForce-unwrap with ! crashes on nil — use only when truly unreachable.",
+    "code_example": "var name: String? = \"Alice\"\n\n// if let\nif let unwrapped = name {\n  print(unwrapped.uppercased())\n}\n\n// guard let — early exit\nfunc greet(_ name: String?) {\n  guard let name else { return }\n  print(\"Hello, \\(name)\")\n}\n\n// nil-coalescing\nlet display = name ?? \"Guest\"\n\n// optional chaining\nlet length = name?.count // Int?\n\n// map / flatMap\nlet upper = name.map { $0.uppercased() }\n\n// Force unwrap — only when impossible to be nil\nlet url = URL(string: \"https://apple.com\")! // OK — literal\n\n// Implicitly unwrapped optional — used for IBOutlets, lifecycle vars\n@IBOutlet var label: UILabel!",
+    "code_language": "swift"
+  },
+  {
+    "id": 2403,
+    "topic_id": 24,
+    "order_index": 3,
+    "difficulty": "easy",
+    "question": "Explain value types vs reference types in Swift.",
+    "answer": "Swift has two kinds of types:\n\n• Value types — struct, enum, tuple. Copied on assignment / argument passing. Each variable owns its copy. Thread-safer by default.\n• Reference types — class, closure, actor. Shared by reference. Multiple variables can point at the same instance — mutation is visible to all.\n\nApple guidance: prefer struct unless you need reference semantics (identity, inheritance, deinit, NSObject bridging). Standard library collections (Array, Dictionary, Set, String) are all value types with copy-on-write under the hood.",
+    "code_example": "// Value type\nstruct Point { var x: Int; var y: Int }\nvar a = Point(x: 1, y: 2)\nvar b = a       // copy\nb.x = 99\nprint(a.x)      // 1 — unchanged\n\n// Reference type\nclass Counter { var value = 0 }\nlet c1 = Counter()\nlet c2 = c1     // same instance\nc2.value = 10\nprint(c1.value) // 10\n\n// Identity check (only for classes)\nprint(c1 === c2) // true — same reference\n\n// Copy-on-write — Array looks like value but is cheap to copy\nvar arr1 = [1,2,3]\nvar arr2 = arr1      // logical copy, shared buffer\narr2.append(4)       // triggers actual copy now\nprint(arr1)          // [1,2,3]",
+    "code_language": "swift"
+  },
+  {
+    "id": 2404,
+    "topic_id": 24,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What are closures in Swift and how do capture lists work?",
+    "answer": "Closures are self-contained blocks of functionality (named or anonymous) that can be passed around. They capture variables from their surrounding scope by reference (for reference types) or by copying (for value types).\n\nA capture list `[weak self]` / `[unowned self]` lets you opt into different memory semantics — required to avoid retain cycles when a closure outlives its owner (e.g. stored on a view, networking layer, or NotificationCenter).\n\nTrailing-closure syntax + shorthand parameters ($0, $1) make Swift closures concise.",
+    "code_example": "// Function-typed value\nlet add: (Int, Int) -> Int = { a, b in a + b }\n\n// Trailing closure + shorthand\nlet doubled = [1,2,3].map { $0 * 2 } // [2,4,6]\n\n// Strong capture (default) — risk of retain cycle\nclass ViewController {\n  var onDone: (() -> Void)?\n  func setup() {\n    onDone = { self.refresh() } // ⚠️ self captured strongly\n  }\n  func refresh() {}\n}\n\n// [weak self] — break the cycle\nclass Safe {\n  var onDone: (() -> Void)?\n  func setup() {\n    onDone = { [weak self] in\n      self?.refresh()\n    }\n  }\n  func refresh() {}\n}\n\n// [unowned self] — non-optional, crashes if self is gone\n// Use when the closure cannot outlive self (e.g. synchronous UIView animations)\nUIView.animate(withDuration: 0.3) { [unowned self] in\n  self.alpha = 1\n}\n\n// @escaping — closure stored / called later\nfunc fetch(completion: @escaping (Data) -> Void) { /* ... */ }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2405,
+    "topic_id": 24,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What is the difference between Array, Set, and Dictionary in Swift?",
+    "answer": "Three core collections from the standard library — all value types, generic, and copy-on-write:\n\n• Array<T> — ordered, indexed, allows duplicates. O(1) random access, O(1) amortized append.\n• Set<T> — unordered, unique elements (T must be Hashable). O(1) average insert/contains.\n• Dictionary<K, V> — unordered key/value pairs (K must be Hashable). Unique keys.\n\nAll three integrate with Sequence/Collection protocols, so map/filter/reduce/forEach/sort work uniformly.",
+    "code_example": "// Array\nvar fruits = [\"apple\", \"banana\", \"cherry\"]\nfruits.append(\"date\")\nlet uppercased = fruits.map { $0.uppercased() }\nlet long = fruits.filter { $0.count > 5 }\nlet joined = fruits.joined(separator: \", \")\n\n// Set\nvar tags: Set<String> = [\"swift\", \"ios\"]\ntags.insert(\"swift\")        // no duplicate\nlet a: Set = [1,2,3], b: Set = [3,4,5]\nprint(a.union(b))         // {1,2,3,4,5}\nprint(a.intersection(b))  // {3}\nprint(a.subtracting(b))   // {1,2}\n\n// Dictionary\nvar scores: [String: Int] = [\"Alice\": 95, \"Bob\": 87]\nscores[\"Carol\"] = 92\nfor (name, score) in scores {\n  print(\"\\(name): \\(score)\")\n}\n// Default lookup\nlet aliceScore = scores[\"Alice\", default: 0]\n\n// Group items into buckets\nlet words = [\"apple\", \"ant\", \"bee\", \"banana\"]\nlet byInitial = Dictionary(grouping: words, by: { $0.first! })",
+    "code_language": "swift"
+  },
+  {
+    "id": 2406,
+    "topic_id": 24,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "Explain Swift error handling: throws, try, do/catch, Result.",
+    "answer": "Swift uses checked exceptions: a function that may fail is marked `throws` and the caller must use `try`. Errors are values conforming to the Error protocol (typically enums).\n\nForms of try:\n• try — propagates the error up\n• try? — converts to Optional (nil on error)\n• try! — force, traps on error\n\ndo/catch handles errors locally. For async returning either success or failure as data, use Result<Success, Failure>.",
+    "code_example": "enum AuthError: Error {\n  case invalidCredentials\n  case networkDown\n  case throttled(retryAfter: TimeInterval)\n}\n\nfunc login(_ email: String, _ password: String) throws -> User {\n  guard !password.isEmpty else { throw AuthError.invalidCredentials }\n  // ...\n}\n\n// Caller — propagate\nfunc bootstrap() throws {\n  let user = try login(\"alice@x.com\", \"hunter2\")\n  print(user)\n}\n\n// Caller — handle\ndo {\n  let user = try login(email, password)\n  display(user)\n} catch AuthError.invalidCredentials {\n  showInlineError()\n} catch AuthError.throttled(let retry) {\n  scheduleRetry(after: retry)\n} catch {\n  showGenericError(error)\n}\n\n// try? for optional\nlet user = try? login(email, password) // User?\n\n// Result type — store outcome as a value\nlet outcome: Result<User, AuthError> = Result { try login(email, password) }\n  .mapError { _ in .networkDown }\nswitch outcome {\ncase .success(let u): display(u)\ncase .failure(let e): showError(e)\n}\n\n// Typed throws (Swift 6+)\nfunc fetch() throws(AuthError) -> User { /* compiler enforces only AuthError */ }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2407,
+    "topic_id": 24,
+    "order_index": 7,
+    "difficulty": "medium",
+    "question": "What are tuples, ranges, and the guard statement in Swift?",
+    "answer": "Three small but high-impact features:\n\n• Tuple — fixed-size group of typed values, optionally named. Useful for ad-hoc returns without declaring a struct.\n• Range / ClosedRange — half-open `0..<10` and closed `1...10`. Conform to Sequence so you can iterate, slice strings/arrays.\n• guard — early-exit statement that requires you to leave the current scope on failure. Keeps the happy path unindented and forces unwrapping into the rest of the function.",
+    "code_example": "// Tuples\nfunc minMax(_ xs: [Int]) -> (min: Int, max: Int)? {\n  guard let first = xs.first else { return nil }\n  var lo = first, hi = first\n  for x in xs { if x < lo { lo = x }; if x > hi { hi = x } }\n  return (lo, hi)\n}\nif let result = minMax([3,1,4,1,5,9]) {\n  print(result.min, result.max) // 1 9\n}\n\n// Ranges\nfor i in 0..<3 { print(i) }      // 0 1 2\nfor i in 1...3 { print(i) }       // 1 2 3\nlet substring = \"Hello\"[..<\"Hello\".index(\"Hello\".startIndex, offsetBy: 3)]\n\n// One-sided ranges\nlet arr = [10,20,30,40,50]\nprint(arr[2...])   // 30,40,50\nprint(arr[...2])   // 10,20,30\n\n// guard\nfunc save(_ user: User?) {\n  guard let user = user, user.isVerified else {\n    print(\"reject\")\n    return\n  }\n  // happy path, unindented, user non-optional\n  database.write(user)\n}",
+    "code_language": "swift"
+  }
+]

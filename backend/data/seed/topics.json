@@ -228,5 +228,305 @@
     "description": "Three trees, RenderObject, Element tree, BuildOwner, rendering pipeline",
     "icon": "",
     "order_index": 23
+  },
+  {
+    "id": 24,
+    "title": "Swift Basics",
+    "slug": "swift-basics",
+    "level": "junior",
+    "category": "Swift",
+    "description": "Variables, optionals, types, control flow, closures, value vs reference",
+    "icon": "",
+    "order_index": 24
+  },
+  {
+    "id": 25,
+    "title": "Swift OOP & Protocols",
+    "slug": "swift-oop-protocols",
+    "level": "junior",
+    "category": "Swift",
+    "description": "Classes, structs, enums, protocols, extensions, protocol-oriented programming",
+    "icon": "",
+    "order_index": 25
+  },
+  {
+    "id": 26,
+    "title": "Swift Generics & Advanced",
+    "slug": "swift-advanced",
+    "level": "mid",
+    "category": "Swift",
+    "description": "Generics, opaque types, property wrappers, result builders, key paths",
+    "icon": "",
+    "order_index": 26
+  },
+  {
+    "id": 27,
+    "title": "Swift Concurrency",
+    "slug": "swift-concurrency",
+    "level": "mid",
+    "category": "Swift",
+    "description": "async/await, Task, actors, structured concurrency, AsyncSequence",
+    "icon": "",
+    "order_index": 27
+  },
+  {
+    "id": 28,
+    "title": "SwiftUI Fundamentals",
+    "slug": "swiftui-fundamentals",
+    "level": "junior",
+    "category": "SwiftUI",
+    "description": "View protocol, modifiers, layout containers, navigation, lists",
+    "icon": "",
+    "order_index": 28
+  },
+  {
+    "id": 29,
+    "title": "SwiftUI State Management",
+    "slug": "swiftui-state",
+    "level": "mid",
+    "category": "SwiftUI",
+    "description": "@State, @Binding, @StateObject, @ObservedObject, @EnvironmentObject, Observation",
+    "icon": "",
+    "order_index": 29
+  },
+  {
+    "id": 30,
+    "title": "UIKit Fundamentals",
+    "slug": "uikit-fundamentals",
+    "level": "junior",
+    "category": "UIKit",
+    "description": "UIView, UIViewController lifecycle, view hierarchy, touch handling",
+    "icon": "",
+    "order_index": 30
+  },
+  {
+    "id": 31,
+    "title": "Auto Layout & UIKit Layout",
+    "slug": "uikit-layout",
+    "level": "junior",
+    "category": "UIKit",
+    "description": "Constraints, intrinsic content size, UIStackView, frames, safe area",
+    "icon": "",
+    "order_index": 31
+  },
+  {
+    "id": 32,
+    "title": "iOS Architecture",
+    "slug": "ios-architecture",
+    "level": "mid",
+    "category": "iOS",
+    "description": "MVC, MVVM, VIPER, Coordinators, TCA, Clean Swift",
+    "icon": "",
+    "order_index": 32
+  },
+  {
+    "id": 33,
+    "title": "iOS Networking",
+    "slug": "ios-networking",
+    "level": "mid",
+    "category": "iOS",
+    "description": "URLSession, Codable, async APIs, interceptors, error handling",
+    "icon": "",
+    "order_index": 33
+  },
+  {
+    "id": 34,
+    "title": "iOS Persistence",
+    "slug": "ios-persistence",
+    "level": "mid",
+    "category": "iOS",
+    "description": "UserDefaults, Keychain, Core Data, SwiftData, FileManager",
+    "icon": "",
+    "order_index": 34
+  },
+  {
+    "id": 35,
+    "title": "iOS Performance & Memory",
+    "slug": "ios-performance",
+    "level": "senior",
+    "category": "iOS",
+    "description": "ARC, retain cycles, Instruments, main thread, image and table optimization",
+    "icon": "",
+    "order_index": 35
+  },
+  {
+    "id": 36,
+    "title": "Combine",
+    "slug": "combine",
+    "level": "senior",
+    "category": "iOS",
+    "description": "Publishers, Subscribers, operators, Subjects, bridging with async/await",
+    "icon": "",
+    "order_index": 36
+  },
+  {
+    "id": 37,
+    "title": "Kotlin Basics",
+    "slug": "kotlin-basics",
+    "level": "junior",
+    "category": "Kotlin",
+    "description": "val/var, types, null safety, control flow, functions, lambdas",
+    "icon": "",
+    "order_index": 37
+  },
+  {
+    "id": 38,
+    "title": "Kotlin OOP & Functional",
+    "slug": "kotlin-oop",
+    "level": "junior",
+    "category": "Kotlin",
+    "description": "Classes, data classes, sealed classes, objects, extension functions, scope functions",
+    "icon": "",
+    "order_index": 38
+  },
+  {
+    "id": 39,
+    "title": "Kotlin Advanced",
+    "slug": "kotlin-advanced",
+    "level": "mid",
+    "category": "Kotlin",
+    "description": "Generics, inline/reified, delegates, DSL builders, type aliases",
+    "icon": "",
+    "order_index": 39
+  },
+  {
+    "id": 40,
+    "title": "Coroutines & Flow",
+    "slug": "kotlin-coroutines",
+    "level": "mid",
+    "category": "Kotlin",
+    "description": "Suspending functions, scopes, dispatchers, Flow, StateFlow, SharedFlow, exception handling",
+    "icon": "",
+    "order_index": 40
+  },
+  {
+    "id": 41,
+    "title": "Jetpack Compose Fundamentals",
+    "slug": "compose-fundamentals",
+    "level": "junior",
+    "category": "Compose",
+    "description": "Composable functions, modifiers, layout, recomposition, Material 3",
+    "icon": "",
+    "order_index": 41
+  },
+  {
+    "id": 42,
+    "title": "Compose State",
+    "slug": "compose-state",
+    "level": "mid",
+    "category": "Compose",
+    "description": "remember, mutableStateOf, derivedStateOf, state hoisting, ViewModel + StateFlow",
+    "icon": "",
+    "order_index": 42
+  },
+  {
+    "id": 43,
+    "title": "Android Fundamentals",
+    "slug": "android-fundamentals",
+    "level": "junior",
+    "category": "Android",
+    "description": "Activity, Fragment, lifecycle, Intent, Manifest, configuration changes",
+    "icon": "",
+    "order_index": 43
+  },
+  {
+    "id": 44,
+    "title": "Android Architecture",
+    "slug": "android-architecture",
+    "level": "mid",
+    "category": "Android",
+    "description": "MVVM, Clean Architecture, Repository, ViewModel, UseCase, UDF",
+    "icon": "",
+    "order_index": 44
+  },
+  {
+    "id": 45,
+    "title": "Android Networking",
+    "slug": "android-networking",
+    "level": "mid",
+    "category": "Android",
+    "description": "Retrofit, OkHttp, interceptors, kotlinx.serialization, error handling",
+    "icon": "",
+    "order_index": 45
+  },
+  {
+    "id": 46,
+    "title": "Android Persistence",
+    "slug": "android-persistence",
+    "level": "mid",
+    "category": "Android",
+    "description": "Room, DataStore, SharedPreferences, EncryptedSharedPreferences, file storage",
+    "icon": "",
+    "order_index": 46
+  },
+  {
+    "id": 47,
+    "title": "Android Dependency Injection",
+    "slug": "android-di",
+    "level": "mid",
+    "category": "Android",
+    "description": "Hilt, Dagger, Koin, scopes, modules, testability",
+    "icon": "",
+    "order_index": 47
+  },
+  {
+    "id": 48,
+    "title": "Android Performance & Memory",
+    "slug": "android-performance",
+    "level": "senior",
+    "category": "Android",
+    "description": "Profilers, leaks, ANRs, baseline profiles, R8, startup, recomposition perf",
+    "icon": "",
+    "order_index": 48
+  },
+  {
+    "id": 49,
+    "title": "Kotlin Multiplatform (KMP)",
+    "slug": "kmp",
+    "level": "senior",
+    "category": "Cross-Platform",
+    "description": "expect/actual, source sets, sharing logic, ktor, SQLDelight, iOS interop",
+    "icon": "",
+    "order_index": 49
+  },
+  {
+    "id": 50,
+    "title": "Compose Multiplatform",
+    "slug": "compose-multiplatform",
+    "level": "senior",
+    "category": "Cross-Platform",
+    "description": "Compose for iOS/desktop/web, resources, navigation, platform UI bridging",
+    "icon": "",
+    "order_index": 50
+  },
+  {
+    "id": 51,
+    "title": "Mobile System Design",
+    "slug": "mobile-system-design",
+    "level": "senior",
+    "category": "Mobile",
+    "description": "Offline-first, sync, pagination, caching, modularization, feature toggles",
+    "icon": "",
+    "order_index": 51
+  },
+  {
+    "id": 52,
+    "title": "Mobile Security (Cross-platform)",
+    "slug": "mobile-security",
+    "level": "senior",
+    "category": "Mobile",
+    "description": "Keychain/Keystore, secure storage, certificate pinning, jailbreak/root, App Transport Security",
+    "icon": "",
+    "order_index": 52
+  },
+  {
+    "id": 53,
+    "title": "Mobile CI/CD (Cross-platform)",
+    "slug": "mobile-cicd",
+    "level": "senior",
+    "category": "Mobile",
+    "description": "Fastlane, GitHub Actions, signing, TestFlight, Play Internal, build flavors",
+    "icon": "",
+    "order_index": 53
   }
 ]

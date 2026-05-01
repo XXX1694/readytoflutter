@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library, Rocket } from 'lucide-react';
 import { useTopics, useStats } from '../lib/queries.js';
@@ -8,6 +8,7 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { ProgressBar, IconButton, TopicGlyph } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import { filterTopicsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform.js';
 
 const NAV_LINK_CLASS = ({ isActive }) =>
   cn(
@@ -26,23 +27,36 @@ function MainNavLink({ to, end, onClose, icon: Icon, children }) {
   );
 }
 
-const LEVELS = [
-  { key: 'junior', dot: 'bg-brand' },
-  { key: 'mid',    dot: 'bg-plum' },
-  { key: 'senior', dot: 'bg-mint' },
-];
+// Sidebar groups topics by PLATFORM (Flutter / iOS / Android / Cross / Mobile,
+// plus anything the team adds later — see lib/platform.js) rather than by
+// interview grade. Grade is still surfaced inside the dashboard hero.
 
 export default function Sidebar() {
   const sidebarOpen = usePrefs((s) => s.sidebarOpen);
   const setSidebarOpen = usePrefs((s) => s.setSidebarOpen);
-  const [expanded, setExpanded] = useState({ junior: true, mid: false, senior: false });
 
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle } = useContent(lang);
 
-  const { data: topics = [] } = useTopics();
+  const { data: allTopics = [] } = useTopics();
   const { data: stats } = useStats();
+  const platform = usePrefs((s) => s.platform);
+  // Sidebar honors the dashboard's platform filter so the topic tree doesn't
+  // re-merge Flutter / iOS / Android once the user has chosen a stack.
+  const topics = useMemo(
+    () => filterTopicsByPlatform(allTopics, platform),
+    [allTopics, platform],
+  );
+
+  // Default-expand the platform that's currently selected; when 'all', open
+  // the first non-empty group so the user always sees something on first paint.
+  const [expanded, setExpanded] = useState({});
+  const expandedFor = (key) => {
+    if (key in expanded) return expanded[key];
+    if (platform !== 'all') return platform === key;
+    return key === PLATFORM_GROUPS.find((g) => topics.some((t) => topicPlatform(t) === g.key))?.key;
+  };
 
   const total = stats?.totalQuestions ?? 0;
   const completed = stats?.completed ?? 0;
@@ -145,26 +159,25 @@ export default function Sidebar() {
 
           <div className="my-3 mx-5 h-px bg-rule/10" />
 
-          {LEVELS.map((level, idx) => {
-            const levelT = t[level.key];
-            const items = topics.filter((tp) => tp.level === level.key);
+          {PLATFORM_GROUPS.map((group) => {
+            const items = topics.filter((tp) => topicPlatform(tp) === group.key);
             if (!items.length) return null;
-            const isOpen = expanded[level.key];
+            const isOpen = expandedFor(group.key);
             return (
-              <div key={level.key} className="mb-0.5">
+              <div key={group.key} className="mb-0.5">
                 <button
                   type="button"
                   onClick={(ev) => {
                     ev.stopPropagation();
-                    setExpanded((e) => ({ ...e, [level.key]: !e[level.key] }));
+                    setExpanded((e) => ({ ...e, [group.key]: !isOpen }));
                   }}
                   aria-expanded={isOpen}
                   className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-3 py-2 text-left transition-all duration-200 hover:bg-rule/8"
                 >
                   <span className="flex items-center gap-2">
-                    <span className={cn('h-1.5 w-1.5 rounded-full', level.dot)} />
+                    <span className={cn('h-1.5 w-1.5 rounded-full', group.dot)} />
                     <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-2">
-                      {levelT.short}
+                      {t[group.labelKey]}
                     </span>
                     <span className="font-mono text-[10px] tabular-nums text-muted-2">
                       {items.length}

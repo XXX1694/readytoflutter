@@ -1,0 +1,62 @@
+[
+  {
+    "id": 3101,
+    "topic_id": 31,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is Auto Layout? How is it different from frame-based layout?",
+    "answer": "Auto Layout is a constraint-based layout engine. You declare relationships between views (e.g. \"top of A is 16pt below bottom of B\") and the system solves them every layout pass to compute concrete frames.\n\nVs frame-based:\n• Adapts to size classes, dynamic type, rotation, multitasking, RTL.\n• Same code works across devices — no per-screen frame math.\n• Slower than raw frames at extreme scale (10k+ views), but plenty fast for normal apps.\n\nThree constraint APIs from Apple:\n1) NSLayoutConstraint(item:...) — verbose, original.\n2) NSLayoutAnchor — fluent, type-safe (modern recommended).\n3) UIStackView — composes flow layouts without explicit constraints.\n\nThird-party DSLs (SnapKit, PinLayout) add more sugar but anchors usually suffice.",
+    "code_example": "let a = UIView(), b = UIView()\n[a, b].forEach {\n  $0.translatesAutoresizingMaskIntoConstraints = false\n  view.addSubview($0)\n}\n\n// Anchors — modern API\nNSLayoutConstraint.activate([\n  a.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),\n  a.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),\n  a.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),\n  a.heightAnchor.constraint(equalToConstant: 80),\n\n  b.topAnchor.constraint(equalTo: a.bottomAnchor, constant: 12),\n  b.leadingAnchor.constraint(equalTo: a.leadingAnchor),\n  b.trailingAnchor.constraint(equalTo: a.trailingAnchor),\n  b.heightAnchor.constraint(equalTo: a.heightAnchor),\n])\n\n// Frame-based for comparison — does NOT adapt\nlet old = UIView(frame: CGRect(x: 16, y: 100, width: view.bounds.width - 32, height: 80))\n// ... and you'd have to redo this in viewDidLayoutSubviews on rotation, etc.\n\n// Common pitfalls\n// 1) Forgetting translatesAutoresizingMaskIntoConstraints = false — Auto Layout fights\n//    autoresizing mask constraints and you get \"unable to satisfy\".\n// 2) Animating layout changes — change constants, then call view.layoutIfNeeded inside\n//    UIView.animate to animate to the new positions.",
+    "code_language": "swift"
+  },
+  {
+    "id": 3102,
+    "topic_id": 31,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What is intrinsic content size? How does it relate to compression resistance and hugging?",
+    "answer": "A view's intrinsic content size is the size it WANTS to be based on its content (e.g. a label fits its text; a button fits its title + insets). Auto Layout uses it as a default constraint.\n\nWhen there's competition:\n• Content hugging priority — how strongly the view resists growing larger than its intrinsic size. Higher = wants to stay small.\n• Compression resistance priority — how strongly the view resists shrinking smaller than its intrinsic size. Higher = wants to stay large.\n\nUseful when two labels share a row: give the title low compression resistance and the badge high — title truncates, badge stays full size.",
+    "code_example": "let title = UILabel(); title.text = \"Long article title that wraps\"\nlet badge = UILabel(); badge.text = \"NEW\"\n\n// Title should yield space; badge should hold its size\ntitle.setContentHuggingPriority(.defaultLow, for: .horizontal)\ntitle.setContentCompressionResistancePriority(.defaultLow - 1, for: .horizontal)\n\nbadge.setContentHuggingPriority(.required, for: .horizontal)\nbadge.setContentCompressionResistancePriority(.required, for: .horizontal)\n\n// In a stack\nlet row = UIStackView(arrangedSubviews: [title, badge])\nrow.axis = .horizontal\nrow.spacing = 8\nrow.alignment = .center\n\n// Custom view with intrinsic size — override\nclass Pill: UIView {\n  let label = UILabel()\n  override var intrinsicContentSize: CGSize {\n    let s = label.intrinsicContentSize\n    return CGSize(width: s.width + 24, height: s.height + 8)\n  }\n  override init(frame: CGRect) {\n    super.init(frame: frame)\n    addSubview(label)\n  }\n  required init?(coder: NSCoder) { fatalError() }\n}\n\n// Force re-measurement when content changes\nfunc setText(_ s: String) {\n  label.text = s\n  invalidateIntrinsicContentSize()\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 3103,
+    "topic_id": 31,
+    "order_index": 3,
+    "difficulty": "easy",
+    "question": "How does UIStackView simplify layout?",
+    "answer": "UIStackView arranges its arrangedSubviews along an axis (horizontal/vertical) using configurable distribution and alignment — no explicit constraints between siblings needed.\n\nKey properties:\n• axis — .horizontal / .vertical\n• distribution — .fill, .fillEqually, .fillProportionally, .equalSpacing, .equalCentering\n• alignment — .leading, .center, .trailing, .fill (perpendicular axis)\n• spacing — fixed gap; or use customSpacing(after:) per child\n\nNesting stack views models complex layouts cleanly — like flexbox in CSS or Compose's Column/Row. Stack views also handle hidden children automatically (they collapse the slot).",
+    "code_example": "// Vertical stack of content\nlet content = UIStackView(arrangedSubviews: [\n  titleLabel,\n  subtitleLabel,\n  metadataRow,\n])\ncontent.axis = .vertical\ncontent.spacing = 8\ncontent.alignment = .leading\n\n// metadataRow itself is a horizontal stack\nlet metadataRow = UIStackView(arrangedSubviews: [authorLabel, dotLabel, dateLabel])\nmetadataRow.axis = .horizontal\nmetadataRow.spacing = 4\n\n// Add to view + constrain only the outer container\nview.addSubview(content)\ncontent.translatesAutoresizingMaskIntoConstraints = false\nNSLayoutConstraint.activate([\n  content.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),\n  content.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),\n  content.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),\n])\n\n// Hide a row — stack collapses the gap\nsubtitleLabel.isHidden = true\n\n// Custom spacing after a specific child (iOS 11+)\ncontent.setCustomSpacing(20, after: titleLabel)\n\n// .fillEqually distributes children evenly along the axis\nlet tabs = UIStackView(arrangedSubviews: [tab1, tab2, tab3])\ntabs.distribution = .fillEqually",
+    "code_language": "swift"
+  },
+  {
+    "id": 3104,
+    "topic_id": 31,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What is the safe area? How do you handle it in UIKit?",
+    "answer": "Safe area is the region of the screen NOT covered by system UI: status bar, navigation bar, tab bar, home indicator, and notches/cutouts on modern iPhones. Anchoring content to the safe area keeps it visible regardless of device.\n\n• `view.safeAreaLayoutGuide` — UILayoutGuide whose anchors describe the safe area for that view.\n• `view.safeAreaInsets` — the inset values (top/leading/bottom/trailing).\n• Override `safeAreaInsetsDidChange()` to react.\n• Use `additionalSafeAreaInsets` on a UIViewController to push your content past a custom overlay (e.g. a floating banner).",
+    "code_example": "// Pin a button to the bottom safe area (above the home indicator)\nview.addSubview(button)\nbutton.translatesAutoresizingMaskIntoConstraints = false\nNSLayoutConstraint.activate([\n  button.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),\n  button.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),\n  button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),\n  button.heightAnchor.constraint(equalToConstant: 50),\n])\n\n// Push content down past a custom banner the VC adds\nadditionalSafeAreaInsets = UIEdgeInsets(top: 56, left: 0, bottom: 0, right: 0)\n\n// React to insets change (rare — rotation / multitasking)\noverride func safeAreaInsetsDidChange() {\n  super.safeAreaInsetsDidChange()\n  // adjust custom layouts that read view.safeAreaInsets directly\n}\n\n// Edges for extension — old-style API\nedgesForExtendedLayout = []  // don't extend under nav/tab bars\nextendedLayoutIncludesOpaqueBars = false\n\n// In SwiftUI you reach for safe area via .ignoresSafeArea() and the SafeAreaRegions\n// argument to opt into / out of which insets to ignore.",
+    "code_language": "swift"
+  },
+  {
+    "id": 3105,
+    "topic_id": 31,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "How do you debug Auto Layout issues like 'unable to satisfy constraints'?",
+    "answer": "When Auto Layout can't find a valid solution it prints a long diagnostic and breaks one constraint. To investigate:\n\n• Read the diagnostic — it lists every involved constraint, with addresses; pause the running app and `po` each constraint to find the offender.\n• Identifier — set `constraint.identifier = \"contentBottom\"` so the log names them.\n• Symbolic breakpoint on `UIViewAlertForUnsatisfiableConstraints` — the debugger pauses at the very moment the conflict is detected.\n• View Debugger (Xcode → Debug → View Debugging → Capture View Hierarchy) — visualize the tree, inspect constraints, see ambiguous frames in red.\n• `view.hasAmbiguousLayout` and `view.exerciseAmbiguityInLayout()` — toggle ambiguous views to spot which one floats.\n• Set lower priority (e.g. 999) on optional constraints to mark which one is allowed to break.",
+    "code_example": "// Name constraints for readable logs\nlet c = button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8)\nc.identifier = \"buttonBottom\"\nc.isActive = true\n\n// Make an optional constraint break gracefully\nlet preferred = label.widthAnchor.constraint(equalToConstant: 200)\npreferred.priority = .defaultHigh    // 750 — broken before required (1000)\npreferred.isActive = true\n\n// Detect ambiguous layout in dev\n#if DEBUG\nDispatchQueue.main.async {\n  if view.hasAmbiguousLayout { view.exerciseAmbiguityInLayout() }\n}\n#endif\n\n// Symbolic breakpoint setup (Xcode):\n// 1. Breakpoints navigator → +Symbolic Breakpoint\n// 2. Symbol: UIViewAlertForUnsatisfiableConstraints\n// When triggered, you can `po [view recursiveDescription]` in the LLDB console.\n\n// Animating constraint changes — must call layoutIfNeeded inside the animation block\nleadingConstraint.constant = 100\nUIView.animate(withDuration: 0.3) {\n  self.view.layoutIfNeeded()\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 3106,
+    "topic_id": 31,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What is the difference between layoutIfNeeded, setNeedsLayout, and layoutSubviews?",
+    "answer": "These three methods coordinate the layout pass:\n\n• `setNeedsLayout()` — marks the view as dirty; the layout engine will lay it out on the next layout cycle (typically before next draw).\n• `layoutIfNeeded()` — force an immediate layout pass right now if dirty. Blocking.\n• `layoutSubviews()` — the method UIKit calls during the layout pass to position subviews. Override to do custom layout (rare with Auto Layout — usually used for rounded corners, mask paths that depend on size).\n\nA common animation pattern: change constraint constants, then call layoutIfNeeded inside UIView.animate so UIKit interpolates between old and new layouts.",
+    "code_example": "// Animate by changing constraint constants\nleadingConstraint.constant = 100\nview.setNeedsLayout()\nUIView.animate(withDuration: 0.3) {\n  view.layoutIfNeeded()           // forces the new layout to apply inside the animation\n}\n\n// Custom subview layout — override layoutSubviews\nclass GradientView: UIView {\n  let gradient = CAGradientLayer()\n  override init(frame: CGRect) {\n    super.init(frame: frame)\n    layer.addSublayer(gradient)\n  }\n  required init?(coder: NSCoder) { fatalError() }\n  override func layoutSubviews() {\n    super.layoutSubviews()\n    gradient.frame = bounds // keep gradient sized with the view\n  }\n}\n\n// setNeedsLayout vs layoutIfNeeded — pick by intent\nfunc onContentChanged() {\n  contentLabel.text = \"...\"\n  setNeedsLayout()         // schedule a relayout\n  // layoutIfNeeded() — only call if you need the new frames RIGHT NOW (e.g. in animation block)\n}\n\n// Don't call layoutSubviews directly — call setNeedsLayout / layoutIfNeeded.",
+    "code_language": "swift"
+  }
+]

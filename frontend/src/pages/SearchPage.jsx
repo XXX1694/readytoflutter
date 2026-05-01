@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MiniSearch from 'minisearch';
 import { ArrowLeft, Search as SearchIcon, X } from 'lucide-react';
-import { useQuestions } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries.js';
 import QuestionCard from '../components/QuestionCard.jsx';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
@@ -10,6 +10,9 @@ import { useContent } from '../i18n/content.js';
 import { Button, Skeleton } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import { useAdmin, applyDiff } from '../store/admin.js';
+import PlatformFilter from '../components/PlatformFilter.jsx';
+import { usePrefs } from '../store/prefs.js';
+import { filterQuestionsByPlatform } from '../lib/platform.js';
 
 const FACETS = {
   level: ['junior', 'mid', 'senior'],
@@ -33,16 +36,18 @@ export default function SearchPage() {
   const debounceTimer = useRef(null);
 
   const { data: rawQuestions = [], isLoading } = useQuestions();
+  const { data: allTopics = [] } = useTopics();
+  const platform = usePrefs((s) => s.platform);
 
   // Layer admin edits/adds/deletes onto the server data so newly-authored
   // questions appear in search without requiring a backend round-trip.
   const edits = useAdmin((s) => s.edits);
   const adds = useAdmin((s) => s.adds);
   const deletes = useAdmin((s) => s.deletes);
-  const questions = useMemo(
-    () => applyDiff(rawQuestions, { edits, adds, deletes }),
-    [rawQuestions, edits, adds, deletes],
-  );
+  const questions = useMemo(() => {
+    const merged = applyDiff(rawQuestions, { edits, adds, deletes });
+    return filterQuestionsByPlatform(merged, allTopics, platform);
+  }, [rawQuestions, edits, adds, deletes, allTopics, platform]);
 
   // Sync input → query (debounced) and URL
   useEffect(() => {
@@ -204,6 +209,12 @@ export default function SearchPage() {
             </kbd>
           </div>
         </header>
+
+        {/* Platform scope — narrows the indexed pool to one stack so search
+            stays sharp when the catalog spans multiple technologies. */}
+        <div className="mb-5">
+          <PlatformFilter />
+        </div>
 
         {/* Facets */}
         <div className="mb-6 space-y-3">

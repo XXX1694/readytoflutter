@@ -14,19 +14,19 @@ export const UI = {
     langSwitch: 'RU',
 
     // Sidebar
-    interviewPrep: 'Interview Prep',
+    interviewPrep: 'Mobile Interview Prep',
     goToHomepage: 'Go to homepage',
     closeSidebar: 'Close sidebar',
     overallProgress: 'Overall Progress',
     questions: 'questions',
     dashboard: 'Dashboard',
-    footerText: 'Flutter Developer Interview Prep',
+    footerText: 'Mobile Developer Interview Prep',
     collapse: 'Collapse',
     expand: 'Expand',
 
     // HomePage
-    heroTitle: 'Flutter Interview Prep',
-    heroDesc: '210 questions across Flutter & Dart — Junior to Senior. State management, architecture, async, DSA, native bridges. Track what you know, drill what you don\'t.',
+    heroTitle: 'Mobile Interview Prep',
+    heroDesc: 'Flutter, Swift / SwiftUI / UIKit, Kotlin / Jetpack Compose, KMP & cross-platform mobile — Junior to Senior. State, architecture, async, networking, security. Track what you know, drill what you don\'t.',
     totalQuestions: 'Total Questions',
     completed: 'Completed',
     inProgress: 'In Progress',
@@ -115,6 +115,16 @@ export const UI = {
     cmdReset: 'Reset all progress',
     cmdNoResults: 'No commands match',
 
+    // Platform filter (splits topic catalog by stack)
+    platformLabel: 'Stack',
+    platformAll: 'All',
+    platformFlutter: 'Flutter',
+    platformIos: 'iOS',
+    platformAndroid: 'Android',
+    platformCross: 'Cross-Platform',
+    platformMobile: 'Mobile',
+    platformEmpty: 'No topics for this stack yet.',
+
     // Misc
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
@@ -136,19 +146,19 @@ export const UI = {
     langSwitch: 'EN',
 
     // Sidebar
-    interviewPrep: 'Подготовка к собеседованию',
+    interviewPrep: 'Mobile — собеседование',
     goToHomepage: 'На главную',
     closeSidebar: 'Закрыть меню',
     overallProgress: 'Общий прогресс',
     questions: 'вопросов',
     dashboard: 'Главная',
-    footerText: 'Подготовка к собеседованию Flutter',
+    footerText: 'Mobile Developer — собеседование',
     collapse: 'Свернуть',
     expand: 'Развернуть',
 
     // HomePage
-    heroTitle: 'Flutter — Подготовка к собеседованию',
-    heroDesc: '210 вопросов по Flutter и Dart — от Junior до Senior. Состояние, архитектура, асинхронность, алгоритмы, нативная интеграция. Отмечай выученное, добивай слабое.',
+    heroTitle: 'Mobile — Собеседование',
+    heroDesc: 'Flutter, Swift / SwiftUI / UIKit, Kotlin / Jetpack Compose, KMP и кросс-платформенная мобилка — от Junior до Senior. Состояние, архитектура, асинхронность, сеть, безопасность. Отмечай выученное, добивай слабое.',
     totalQuestions: 'Всего вопросов',
     completed: 'Выполнено',
     inProgress: 'В процессе',
@@ -236,6 +246,16 @@ export const UI = {
     cmdSwitchLang: 'Сменить язык',
     cmdReset: 'Сбросить прогресс',
     cmdNoResults: 'Ничего не найдено',
+
+    // Platform filter
+    platformLabel: 'Стек',
+    platformAll: 'Все',
+    platformFlutter: 'Flutter',
+    platformIos: 'iOS',
+    platformAndroid: 'Android',
+    platformCross: 'Кросс-платформа',
+    platformMobile: 'Mobile',
+    platformEmpty: 'По этому стеку тем пока нет.',
 
     // Misc
     openMenu: 'Открыть меню',

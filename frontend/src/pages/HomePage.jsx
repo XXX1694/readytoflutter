@@ -13,6 +13,8 @@ import StatTile from '../components/StatTile.jsx';
 import TopicTile from '../components/TopicTile.jsx';
 import ActivityHeatmap from '../components/ActivityHeatmap.jsx';
 import TodayPlan from '../components/TodayPlan.jsx';
+import PlatformFilter from '../components/PlatformFilter.jsx';
+import { filterTopicsByPlatform } from '../lib/platform.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const modKey = isMac ? '⌘' : 'Ctrl';
@@ -24,6 +26,7 @@ export default function HomePage() {
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const platform = usePrefs((s) => s.platform);
   const navigate = useNavigate();
 
   const topicsQ = useTopics();
@@ -46,6 +49,13 @@ export default function HomePage() {
     }
     return map;
   }, [questionsQ.data]);
+
+  // Apply the persisted platform filter; computed before early returns so
+  // hooks order stays stable across render branches.
+  const topics = useMemo(
+    () => filterTopicsByPlatform(topicsQ.data ?? [], platform),
+    [topicsQ.data, platform],
+  );
 
   const handleReset = useCallback(async () => {
     if (!window.confirm(t.resetConfirm)) return;
@@ -72,7 +82,6 @@ export default function HomePage() {
     );
   }
 
-  const topics = topicsQ.data ?? [];
   const stats = statsQ.data;
   const total = stats?.totalQuestions ?? 0;
   const completed = stats?.completed ?? 0;
@@ -86,7 +95,7 @@ export default function HomePage() {
         <section className="mb-10 sm:mb-14">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
-            {lang === 'ru' ? 'Подготовка · Flutter & Dart' : 'Interview prep · Flutter & Dart'}
+            {lang === 'ru' ? 'Подготовка · Mobile' : 'Interview prep · Mobile'}
           </div>
           {/* Display-xl (6.5rem ≈ 104px) overflows on narrow phones — start
               smaller and ramp up only when there's real horizontal space. */}
@@ -174,8 +183,21 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* PLATFORM FILTER — splits the catalog by stack so Flutter / iOS /
+            Android don't compete for the same scroll. Selection persists. */}
+        <section className="mb-6 sm:mb-8">
+          <PlatformFilter />
+        </section>
+
         {/* LEVELS */}
         <section id="levels">
+          {topics.length === 0 && (
+            <div className="rounded-md border border-dashed border-rule/30 bg-paper-2/50 p-8 text-center">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
+                {t.platformEmpty}
+              </p>
+            </div>
+          )}
           {LEVELS.map((level, idx) => {
             const items = topics.filter((tp) => tp.level === level);
             if (!items.length) return null;

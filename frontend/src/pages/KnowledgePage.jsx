@@ -18,6 +18,9 @@ import {
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import { Button, Pill, FullPageLoader } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import PlatformFilter from '../components/PlatformFilter.jsx';
+import { usePrefs } from '../store/prefs.js';
+import { filterResourcesByPlatform } from '../lib/platform.js';
 
 const CATEGORY_ICONS = {
   docs: BookOpen,
@@ -119,8 +122,16 @@ export default function KnowledgePage() {
     if (!open) setPlaying(null);
   };
 
+  const platform = usePrefs((s) => s.platform);
   const categories = data?.categories ?? [];
-  const allResources = data?.resources ?? [];
+  const rawResources = data?.resources ?? [];
+  // Resources without an explicit `platform` field are treated as Flutter
+  // (legacy data — see resourcePlatform in lib/platform.js). Tag new entries
+  // with `"platform": "ios"` etc. to make them appear on the right stack.
+  const allResources = useMemo(
+    () => filterResourcesByPlatform(rawResources, platform),
+    [rawResources, platform],
+  );
   const counts = useMemo(() => countByCategory(allResources), [allResources]);
 
   const recent = useMemo(() => {
@@ -231,6 +242,12 @@ export default function KnowledgePage() {
             </div>
           </section>
         )}
+
+        {/* Stack scope — resources without an explicit `platform` field are
+            treated as Flutter (legacy). Tag new entries to surface here. */}
+        <div className="mb-5">
+          <PlatformFilter />
+        </div>
 
         {/* Search */}
         <div className="mb-5 flex items-center gap-2 rounded-md border border-rule/15 bg-paper-2 px-3 py-2 shadow-codex-sm focus-within:shadow-codex">

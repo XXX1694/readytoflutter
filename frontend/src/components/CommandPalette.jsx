@@ -27,9 +27,11 @@ import {
   UserPlus,
   Cloud,
   Settings as SettingsIcon,
+  Smartphone,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
+import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform.js';
 import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
@@ -47,6 +49,8 @@ export default function CommandPalette() {
   const setTheme = usePrefs((s) => s.setTheme);
   const recallMode = usePrefs((s) => s.recallMode);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
+  const platform = usePrefs((s) => s.platform);
+  const setPlatform = usePrefs((s) => s.setPlatform);
   const authToken = useAuth((s) => s.token);
   const authUser = useAuth((s) => s.user);
   const backendAvailable = useAuth((s) => s.backendAvailable);
@@ -148,10 +152,13 @@ export default function CommandPalette() {
     }
   });
 
+  // Topic shortcuts respect the active stack — when the user has narrowed to
+  // iOS the palette shouldn't dump 23 Flutter rows.
+  const scopedTopics = filterTopicsByPlatform(topics, platform);
   const groupedTopics = {
-    junior: topics.filter((tp) => tp.level === 'junior'),
-    mid: topics.filter((tp) => tp.level === 'mid'),
-    senior: topics.filter((tp) => tp.level === 'senior'),
+    junior: scopedTopics.filter((tp) => tp.level === 'junior'),
+    mid: scopedTopics.filter((tp) => tp.level === 'mid'),
+    senior: scopedTopics.filter((tp) => tp.level === 'senior'),
   };
 
   return (
@@ -326,6 +333,22 @@ export default function CommandPalette() {
                   )}
                 </Command.Group>
               )}
+
+              <Command.Group
+                heading={t.platformLabel}
+                className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
+              >
+                {PLATFORMS.map((p) => (
+                  <CmdItem
+                    key={p.key}
+                    icon={<Smartphone />}
+                    onSelect={run(() => setPlatform(p.key))}
+                    trailing={platform === p.key ? '●' : ''}
+                  >
+                    {t[p.labelKey]}
+                  </CmdItem>
+                ))}
+              </Command.Group>
 
               <Command.Group
                 heading={t.cmdAppearance}

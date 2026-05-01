@@ -1,0 +1,72 @@
+[
+  {
+    "id": 2501,
+    "topic_id": 25,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is the difference between struct and class in Swift?",
+    "answer": "• struct — value type. Copied on assignment. No inheritance. Free memberwise initializer. Mutating methods need `mutating` keyword. Stack-allocated when small.\n• class — reference type. Shared by reference. Supports inheritance and deinit. Identity (===) works. Heap-allocated, ARC-managed.\n\nUse struct by default. Reach for class when you need: identity (the same instance referenced by many owners), inheritance, AnyObject conformance for Objective-C interop, or deinit.",
+    "code_example": "// Struct — value semantics\nstruct Point {\n  var x: Int\n  var y: Int\n  // memberwise init synthesized for free\n  // mutating method — required because struct is value type\n  mutating func translate(dx: Int, dy: Int) { x += dx; y += dy }\n}\n\nvar p = Point(x: 0, y: 0)\np.translate(dx: 1, dy: 2)\n\n// Class — reference semantics + inheritance\nclass Animal {\n  var name: String\n  init(name: String) { self.name = name }\n  func speak() -> String { \"...\" }\n  deinit { print(\"\\(name) freed\") }\n}\n\nclass Dog: Animal {\n  override func speak() -> String { \"Woof\" }\n}\n\nlet a = Dog(name: \"Rex\")\nlet b = a // same instance\nprint(a === b) // true\n\n// Decision rule\n// Need shared mutable state? identity? inheritance? → class\n// Otherwise → struct",
+    "code_language": "swift"
+  },
+  {
+    "id": 2502,
+    "topic_id": 25,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "What are protocols in Swift and how are they different from interfaces?",
+    "answer": "A protocol declares a contract — methods, properties, associated types, initializers — that conforming types must implement.\n\nDifferences vs Java/C# interfaces:\n• Both classes AND value types (struct, enum) can conform.\n• Protocols can have associated types — generic-like type parameters (`associatedtype Item`).\n• Protocol extensions can provide default implementations and add methods to all conformers without modifying their source.\n• Existentials (`any Protocol`) are runtime-erased boxes; opaque types (`some Protocol`) are compile-time concrete.\n\nProtocol-oriented programming (POP) is Swift's idiomatic answer to inheritance.",
+    "code_example": "protocol Greetable {\n  var name: String { get }\n  func greet() -> String\n}\n\n// Default implementation via extension\nextension Greetable {\n  func greet() -> String { \"Hello, \\(name)\" }\n}\n\nstruct Person: Greetable { var name: String }\nclass Robot: Greetable {\n  let name: String\n  init(name: String) { self.name = name }\n  func greet() -> String { \"BEEP \\(name)\" } // override default\n}\n\nprint(Person(name: \"Alice\").greet()) // Hello, Alice\nprint(Robot(name: \"R2\").greet())     // BEEP R2\n\n// Protocol with associated type\nprotocol Container {\n  associatedtype Item\n  mutating func append(_ item: Item)\n  var count: Int { get }\n}\n\n// Existential vs opaque\nfunc makeAnyGreetable() -> any Greetable { Person(name: \"X\") }   // boxed\nfunc makeSomeGreetable() -> some Greetable { Person(name: \"Y\") } // concrete, opaque\n\n// Protocol composition\nfunc log(_ thing: Greetable & CustomStringConvertible) { /* ... */ }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2503,
+    "topic_id": 25,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "Explain enums with associated values and raw values in Swift.",
+    "answer": "Swift enums are first-class types with two powerful extras:\n\n• Raw values — every case has the same underlying primitive (Int, String, Float). Useful for serialization, network constants. Auto-conform to RawRepresentable.\n• Associated values — each case carries its own typed payload. Lets you model algebraic data types — perfect for representing screen state, Result, parser tokens, etc.\n\nEnums are value types and can have methods, computed properties, and protocol conformances. Combine with `switch` for exhaustive pattern matching.",
+    "code_example": "// Raw values\nenum HTTPStatus: Int {\n  case ok = 200\n  case notFound = 404\n  case serverError = 500\n}\nlet status = HTTPStatus(rawValue: 404) // .notFound\nprint(HTTPStatus.ok.rawValue)         // 200\n\n// Associated values — algebraic data types\nenum NetworkResult<T> {\n  case success(T)\n  case failure(error: Error, retryable: Bool)\n  case cached(T, age: TimeInterval)\n}\n\nfunc handle(_ r: NetworkResult<User>) {\n  switch r {\n  case .success(let user):\n    show(user)\n  case .failure(let err, retryable: true):\n    retry()\n  case .failure(let err, retryable: false):\n    surface(err)\n  case .cached(let user, age: let age) where age < 60:\n    show(user)\n  case .cached(let user, _):\n    show(user); refresh()\n  }\n}\n\n// Methods + computed properties on enums\nenum Direction { case north, south, east, west\n  var opposite: Direction {\n    switch self {\n    case .north: .south; case .south: .north\n    case .east: .west; case .west: .east\n    }\n  }\n}\n\n// Indirect for recursion\nindirect enum Tree<T> {\n  case leaf(T)\n  case node(Tree<T>, Tree<T>)\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2504,
+    "topic_id": 25,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What are extensions in Swift and what can/can't they do?",
+    "answer": "Extensions add functionality to an existing type — your own types, stdlib types, even imported framework types — without subclassing.\n\nCan add:\n• Computed properties (instance + static)\n• Methods (instance + static + mutating)\n• Initializers (convenience for classes)\n• Subscripts\n• Protocol conformance\n• Nested types\n\nCannot add:\n• Stored properties (no slot in the original type's memory layout)\n• Override existing methods (extensions add, not replace)\n• Non-final designated initializer for classes\n\nIdiomatic uses: split a type by feature area, add protocol conformance to types you don't own, add helpers to Array/String, add typed namespaces.",
+    "code_example": "// Add helpers to stdlib types\nextension String {\n  var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }\n  var isBlank: Bool { trimmed.isEmpty }\n}\n\nextension Array where Element: Numeric {\n  func sum() -> Element { reduce(0, +) }\n}\n\n// Add protocol conformance to a third-party type\nextension URL: Identifiable {\n  public var id: String { absoluteString }\n}\n\n// Split your own type by responsibility\nstruct User {\n  let id: UUID\n  var name: String\n  var email: String\n}\n\nextension User: Equatable, Hashable {}\n\nextension User {\n  // computed property — allowed\n  var initials: String {\n    name.split(separator: \" \").compactMap { $0.first }.map(String.init).joined()\n  }\n  // static factory — allowed\n  static func mock(_ name: String) -> User {\n    User(id: UUID(), name: name, email: \"\\(name)@x.com\")\n  }\n}\n\n// Conditional conformance\nextension Array: SomeProtocol where Element: SomeProtocol { /* ... */ }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2505,
+    "topic_id": 25,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What is protocol-oriented programming and how is it different from class inheritance?",
+    "answer": "Protocol-oriented programming (POP) — a Swift idiom championed at WWDC 2015 — composes behavior via small protocols and default implementations rather than deep class hierarchies.\n\nWhy POP over class inheritance:\n• Works with structs and enums, not just classes\n• Multiple conformance — a type can adopt many protocols, sidestepping single-inheritance\n• Composition over inheritance — features added in tiny chunks (Equatable, Hashable, Identifiable) and mixed at will\n• Better testability — protocols become natural mock boundaries\n• No fragile-base-class problem\n\nWhen to keep inheritance: deep frameworks (UIView/NSObject), Cocoa/UIKit interop, override-based template methods.",
+    "code_example": "// Tiny composable protocols\nprotocol Identifiable { var id: String { get } }\nprotocol Persistable { func save() throws }\nprotocol Loggable { func log() -> String }\n\nextension Loggable where Self: Identifiable {\n  func log() -> String { \"[\\(Self.self) \\(id)]\" }\n}\n\n// Compose behavior on a struct — no class needed\nstruct Order: Identifiable, Persistable, Loggable {\n  let id: String\n  func save() throws { /* ... */ }\n}\n\nlet o = Order(id: \"42\")\nprint(o.log()) // [Order 42] — from default impl\n\n// Old class-tree approach (avoid for app data models)\nclass BaseEntity {\n  func save() throws {}\n  func log() -> String { \"\" }\n}\nclass OrderClass: BaseEntity { /* override save and log */ }\n\n// POP boundary for testing\nprotocol AnalyticsClient { func track(_ event: String) }\nstruct ProdAnalytics: AnalyticsClient { func track(_ e: String) {} }\nstruct FakeAnalytics: AnalyticsClient { var events: [String] = []; mutating func track(_ e: String) { events.append(e) } }\n\nstruct ViewModel { let analytics: any AnalyticsClient }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2506,
+    "topic_id": 25,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "Explain access control levels in Swift.",
+    "answer": "Five access levels, from most to least visible:\n\n• open — accessible everywhere AND subclassable/overridable from any module. Class/method only.\n• public — accessible from any module, but subclasses/overrides only inside the defining module.\n• package (Swift 5.9+) — accessible from any module marked with the same package.\n• internal (default) — accessible inside the current module only.\n• fileprivate — accessible inside the same source file.\n• private — accessible inside the enclosing declaration (and same-file extensions of it).\n\nAccess of a member is bounded by access of its container — a public method on an internal type is effectively internal.",
+    "code_example": "// In a framework target\nopen class Widget { /* subclassable from apps */ }\npublic class Sealed { /* visible everywhere, NOT subclassable from outside */ }\n\npublic struct User {\n  public var name: String          // visible\n  internal var emailHash: String   // module-only\n  private var sessionToken: String // type-only\n}\n\n// Initializers default to internal — make public explicit\npublic struct APIClient {\n  public init() {}\n  internal init(testStub: Bool) {}\n}\n\n// fileprivate vs private\nstruct Counter {\n  private var value = 0\n  fileprivate var displayValue: Int { value }\n}\n\nextension Counter { // same file\n  mutating func increment() { value += 1 } // private accessible — same type, same file\n}\n\n// package — share between SwiftPM modules in the same package\npackage func internalHelper() {}\n\n// Tip: lock down by default. Start private/internal, widen only when needed.",
+    "code_language": "swift"
+  },
+  {
+    "id": 2507,
+    "topic_id": 25,
+    "order_index": 7,
+    "difficulty": "hard",
+    "question": "What are property observers and lazy properties?",
+    "answer": "• willSet / didSet — property observers fired before / after the value changes. Cannot be combined with computed properties; only on stored properties of classes/structs.\n• lazy — stored property whose initializer runs on first access. Must be `var` (because the value is mutated on first access). Not thread-safe by default.\n• Computed property — no storage; getter (and optional setter) runs every access.\n\nUse observers for side-effects on change (UI invalidation, analytics). Use lazy for expensive defaults you might not need. Use computed for derived values.",
+    "code_example": "// Observers\nclass Profile {\n  var name: String = \"\" {\n    willSet { print(\"Will change \\(name) → \\(newValue)\") }\n    didSet { if name != oldValue { rebuildHeader() } }\n  }\n  func rebuildHeader() {}\n}\n\n// Observers fire on every set, even if value didn't change\n// — guard with oldValue if you need change-only logic\n\n// Lazy\nclass Report {\n  let items: [Int]\n  init(items: [Int]) { self.items = items }\n  // Heavy computation deferred\n  lazy var summary: Summary = computeSummary(items)\n  // Lazy is NOT thread-safe — synchronize externally if needed\n}\n\n// Computed property\nstruct Rect { var w: Double; var h: Double\n  var area: Double { w * h }                  // get-only\n  var perimeter: Double {\n    get { 2 * (w + h) }\n    set { w = newValue / 4; h = newValue / 4 } // contrived setter\n  }\n}\n\n// Static / class-level\nclass Constants {\n  static let shared = Constants()    // thread-safe one-time init in Swift\n  static var counter = 0             // mutable global state — careful\n}",
+    "code_language": "swift"
+  }
+]

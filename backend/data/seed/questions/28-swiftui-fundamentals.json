@@ -1,0 +1,62 @@
+[
+  {
+    "id": 2801,
+    "topic_id": 28,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What is SwiftUI and how does it differ from UIKit?",
+    "answer": "SwiftUI is Apple's declarative UI framework, introduced in iOS 13 (2019). You describe what the UI should look like for a given state; the framework diffs and applies changes.\n\nKey differences vs UIKit:\n• Declarative — `var body: some View` returns a view tree; UIKit was imperative (build, then mutate UIViews).\n• Single source of truth — state drives rendering; SwiftUI invalidates and re-runs `body` when state changes.\n• Composition — small views combine into bigger ones; modifiers are values that transform a view.\n• Cross-platform — same code runs on iOS, iPadOS, macOS, watchOS, tvOS, visionOS.\n• View is a value type (struct), recreated cheaply on every body invocation. UIView was a reference type.",
+    "code_example": "import SwiftUI\n\nstruct GreetingView: View {\n  let name: String\n  var body: some View {\n    VStack(spacing: 12) {\n      Image(systemName: \"hand.wave.fill\")\n        .font(.system(size: 48))\n      Text(\"Hello, \\(name)\")\n        .font(.title)\n        .foregroundStyle(.primary)\n    }\n    .padding()\n    .background(.regularMaterial)\n    .clipShape(RoundedRectangle(cornerRadius: 16))\n  }\n}\n\n// View tree is a struct value — cheap to create; the framework caches identity.\n// `body` returns `some View` — opaque type hides the very specific generic type\n// SwiftUI synthesizes (VStack<TupleView<...>>).\n\n#Preview {\n  GreetingView(name: \"Alice\")\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2802,
+    "topic_id": 28,
+    "order_index": 2,
+    "difficulty": "easy",
+    "question": "Explain stack containers in SwiftUI: VStack, HStack, ZStack, LazyVStack/HStack.",
+    "answer": "SwiftUI's main layout containers:\n\n• VStack — children laid out vertically. Default spacing between children.\n• HStack — children laid out horizontally.\n• ZStack — children stacked along the Z-axis (back-to-front), like overlapping layers.\n• LazyVStack / LazyHStack — like VStack/HStack but only render children in (or near) the viewport. Use inside ScrollView for long lists.\n• Grid (iOS 16+) — true 2D table with row/column alignment.\n\nAlignment + spacing arguments control layout. Use Spacer() to push content to one edge.",
+    "code_example": "// Vertical stack\nVStack(alignment: .leading, spacing: 8) {\n  Text(\"Title\").font(.headline)\n  Text(\"Subtitle\").foregroundStyle(.secondary)\n}\n\n// Horizontal\nHStack {\n  Image(systemName: \"star.fill\")\n  Text(\"Featured\")\n  Spacer() // pushes content left\n  Text(\"4.8\")\n}\n\n// Layered\nZStack(alignment: .topTrailing) {\n  Image(\"hero\")\n  Text(\"NEW\")\n    .padding(6)\n    .background(.red, in: Capsule())\n    .foregroundStyle(.white)\n    .padding(8)\n}\n\n// Lazy — only renders rows in viewport\nScrollView {\n  LazyVStack(spacing: 12) {\n    ForEach(0..<10_000, id: \\.self) { i in\n      Text(\"Row \\(i)\").padding()\n    }\n  }\n}\n\n// Grid (iOS 16+)\nGrid(horizontalSpacing: 12, verticalSpacing: 8) {\n  GridRow { Text(\"A\"); Text(\"B\"); Text(\"C\") }\n  GridRow { Text(\"1\"); Text(\"2\"); Text(\"3\") }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2803,
+    "topic_id": 28,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "How do view modifiers work in SwiftUI?",
+    "answer": "A modifier is a method on View that returns a new view wrapping the original with extra behavior (padding, background, foreground, gesture). Modifiers compose left-to-right; order matters.\n\nKey points:\n• Each modifier returns `some View` — the result is a new struct, not a mutated view.\n• Order changes layout: `.padding().background(.red)` differs from `.background(.red).padding()` — the former adds red around content+padding, the latter pads then puts red behind only content.\n• Custom modifiers via `ViewModifier` protocol or extension on View.\n• Some modifiers are environment-aware (e.g. `.font` reads from environment).",
+    "code_example": "// Built-in modifiers\nText(\"Hello\")\n  .font(.title)\n  .foregroundStyle(.blue)\n  .padding()\n  .background(.yellow)\n  .clipShape(RoundedRectangle(cornerRadius: 8))\n\n// Modifier order matters\nText(\"A\").padding().background(.red)   // red surrounds padding too\nText(\"A\").background(.red).padding()   // red is tight around text, padding outside\n\n// Custom ViewModifier\nstruct CardStyle: ViewModifier {\n  func body(content: Content) -> some View {\n    content\n      .padding()\n      .background(.regularMaterial)\n      .clipShape(RoundedRectangle(cornerRadius: 16))\n      .shadow(radius: 4, y: 2)\n  }\n}\n\nextension View {\n  func cardStyle() -> some View { modifier(CardStyle()) }\n}\n\n// Usage\nVStack { Text(\"x\"); Text(\"y\") }\n  .cardStyle()\n\n// Conditional modifier — extension helper\nextension View {\n  @ViewBuilder\n  func `if`<T: View>(_ condition: Bool, transform: (Self) -> T) -> some View {\n    if condition { transform(self) } else { self }\n  }\n}\nText(\"x\").if(isHighlighted) { $0.foregroundStyle(.red) }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2804,
+    "topic_id": 28,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "How does navigation work in SwiftUI? NavigationStack and NavigationSplitView.",
+    "answer": "Modern (iOS 16+) navigation uses two containers:\n\n• NavigationStack — push-style navigation; stack of views. Programmatic navigation via a path Binding (typed array of route values).\n• NavigationSplitView — sidebar / content / detail layout for iPad/Mac/visionOS, automatically collapsing to a stack on iPhone.\n\nBoth use `.navigationDestination(for:)` to register typed routes. Older `NavigationView` + `NavigationLink(destination:)` is deprecated.\n\nDeep links are first-class: hand the path Binding a value to push, or push a sequence to restore deep state.",
+    "code_example": "// Typed route stack\nstruct Route: Hashable { let userId: String }\n\nstruct RootView: View {\n  @State private var path: [Route] = []\n  var body: some View {\n    NavigationStack(path: $path) {\n      List(users) { user in\n        NavigationLink(value: Route(userId: user.id)) {\n          Text(user.name)\n        }\n      }\n      .navigationTitle(\"Users\")\n      .navigationDestination(for: Route.self) { route in\n        UserDetailView(userId: route.userId)\n      }\n      .toolbar {\n        Button(\"Deep link\") {\n          path = [Route(userId: \"42\")]\n        }\n      }\n    }\n  }\n}\n\n// Sidebar / content / detail\nstruct LibraryView: View {\n  @State private var selectedFolder: Folder?\n  @State private var selectedDoc: Doc?\n  var body: some View {\n    NavigationSplitView {\n      List(folders, selection: $selectedFolder) { folder in\n        Text(folder.name).tag(folder)\n      }\n    } content: {\n      if let folder = selectedFolder {\n        List(folder.docs, selection: $selectedDoc) { doc in\n          Text(doc.title).tag(doc)\n        }\n      }\n    } detail: {\n      if let doc = selectedDoc { DocView(doc: doc) } else { Text(\"Select\") }\n    }\n  }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 2805,
+    "topic_id": 28,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "How do you build lists in SwiftUI? List, ForEach, sections, swipe actions.",
+    "answer": "• List — pre-styled scrollable container similar to UITableView. Supports automatic sectioning, separators, swipe actions.\n• ForEach — generates a series of views from a Collection. Used inside List, VStack, LazyVStack.\n• Section — groups rows with optional headers/footers.\n• Built-in swipe actions, search, refresh, selection, drag-and-drop.\n\nIdentity matters: use Identifiable models or `id:` to keep row identity stable across diffs (animations, scroll preservation).",
+    "code_example": "struct Todo: Identifiable { let id: UUID; var title: String; var done: Bool }\n\nstruct TodoListView: View {\n  @State var todos: [Todo] = []\n  @State var search = \"\"\n  var body: some View {\n    List {\n      Section(\"Pending\") {\n        ForEach($todos.filter { !$0.done.wrappedValue }) { $todo in\n          Toggle(isOn: $todo.done) { Text(todo.title) }\n            .swipeActions(edge: .trailing) {\n              Button(role: .destructive) { delete(todo) } label: { Label(\"Delete\", systemImage: \"trash\") }\n            }\n        }\n      }\n      Section(\"Done\") {\n        ForEach(todos.filter(\\.done)) { todo in\n          Text(todo.title).strikethrough()\n        }\n      }\n    }\n    .listStyle(.insetGrouped)\n    .searchable(text: $search)\n    .refreshable { await reload() }\n    .toolbar {\n      Button(\"Add\") { todos.append(Todo(id: UUID(), title: \"New\", done: false)) }\n    }\n  }\n  func delete(_ t: Todo) { todos.removeAll { $0.id == t.id } }\n  func reload() async { /* ... */ }\n}\n\n// ForEach with non-Identifiable — pass key path\nForEach(0..<10, id: \\.self) { i in Text(\"\\(i)\") }",
+    "code_language": "swift"
+  },
+  {
+    "id": 2806,
+    "topic_id": 28,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What are SwiftUI previews and how do you use them effectively?",
+    "answer": "Previews let you see and iterate on SwiftUI views inside Xcode without running the full app. Originally `PreviewProvider`, the modern API is the `#Preview` macro (iOS 17+ / Xcode 15).\n\nBest practices:\n• Provide a preview for every reusable view.\n• Wrap previews to exercise different states (loading, empty, error, dark mode, dynamic type, RTL, accessibility).\n• Use sample data factories (`User.preview`) instead of inlining real fixtures.\n• Inject mock environment objects / services so previews don't hit the network.\n• Pin the preview to specific devices when device-specific layout matters.",
+    "code_example": "struct ProfileCard: View {\n  let user: User\n  var body: some View {\n    VStack(alignment: .leading) {\n      Text(user.name).font(.title)\n      Text(user.bio).foregroundStyle(.secondary)\n    }\n    .padding()\n    .background(.regularMaterial)\n    .clipShape(RoundedRectangle(cornerRadius: 16))\n  }\n}\n\n#Preview(\"Default\") {\n  ProfileCard(user: .preview)\n    .padding()\n}\n\n#Preview(\"Dark mode\") {\n  ProfileCard(user: .preview)\n    .padding()\n    .preferredColorScheme(.dark)\n}\n\n#Preview(\"Long bio + AX1\") {\n  ProfileCard(user: User(\n    id: UUID(), name: \"Alice\", bio: String(repeating: \"long bio. \", count: 20)\n  ))\n  .padding()\n  .environment(\\.dynamicTypeSize, .accessibility1)\n}\n\n// Sample data lives next to the model\nextension User {\n  static let preview = User(id: UUID(), name: \"Alice\", bio: \"iOS dev\")\n}\n\n// Inject a fake service for views that depend on env\n#Preview {\n  ProductsView()\n    .environmentObject(MockProductsService())\n}",
+    "code_language": "swift"
+  }
+]

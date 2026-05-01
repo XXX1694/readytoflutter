@@ -5,9 +5,10 @@ import {
   X, RotateCcw, ArrowRight, Sparkles, Brain, Code2, ChevronDown, Edit3,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useQuestions } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries.js';
 import { pickDueQueue, rateCard, getCardState } from '../lib/srs.js';
 import { usePrefs } from '../store/prefs.js';
+import { filterQuestionsByPlatform } from '../lib/platform.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
@@ -38,23 +39,28 @@ export default function StudyPage() {
   const { questionText, answerText } = useContent(lang);
   const recallMode = usePrefs((s) => s.recallMode);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
+  const platform = usePrefs((s) => s.platform);
   // Pre-warm /ai/health so the grader appears instantly after card flip in
   // recall mode, instead of after a 200ms probe race.
   useAiHealth();
 
   const { data: allQuestions = [], isLoading } = useQuestions();
+  const { data: allTopics = [] } = useTopics();
 
   const pool = useMemo(() => {
+    // Explicit `?ids=` deep-links bypass the platform filter — the caller
+    // already curated the set.
     if (idsScope) {
       const idSet = new Set(idsScope.split(',').map(Number).filter(Boolean));
       return allQuestions.filter((q) => idSet.has(q.id));
     }
-    return allQuestions.filter((q) => {
+    const scoped = filterQuestionsByPlatform(allQuestions, allTopics, platform);
+    return scoped.filter((q) => {
       if (levelScope && q.level !== levelScope) return false;
       if (topicScope && q.topic_slug !== topicScope) return false;
       return true;
     });
-  }, [allQuestions, levelScope, topicScope, idsScope]);
+  }, [allQuestions, allTopics, platform, levelScope, topicScope, idsScope]);
 
   const hasScope = Boolean(levelScope || topicScope || idsScope);
   const scopeText = scopeLabel

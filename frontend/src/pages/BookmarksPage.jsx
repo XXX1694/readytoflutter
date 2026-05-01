@@ -1,25 +1,31 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookmarkX, Bookmark, Brain, Target, Star, ArrowRight } from 'lucide-react';
-import { useQuestions } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries.js';
 import { useBookmarkIds } from '../lib/useBookmark.js';
 import { clearAllBookmarks } from '../lib/bookmarks.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { Button, Skeleton } from '../ui/index.js';
 import QuestionCard from '../components/QuestionCard.jsx';
+import PlatformFilter from '../components/PlatformFilter.jsx';
+import { usePrefs } from '../store/prefs.js';
+import { filterQuestionsByPlatform } from '../lib/platform.js';
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
   const { data: questions = [], isLoading } = useQuestions();
+  const { data: topics = [] } = useTopics();
   const ids = useBookmarkIds();
+  const platform = usePrefs((s) => s.platform);
 
   const bookmarked = useMemo(() => {
     const set = new Set(ids);
-    return questions.filter((q) => set.has(q.id));
-  }, [questions, ids]);
+    const own = questions.filter((q) => set.has(q.id));
+    return filterQuestionsByPlatform(own, topics, platform);
+  }, [questions, topics, ids, platform]);
 
   if (isLoading) {
     return (
@@ -102,6 +108,11 @@ export default function BookmarksPage() {
             </div>
           )}
         </header>
+
+        {/* Stack scope — useful once you bookmark across multiple platforms. */}
+        <div className="mb-5">
+          <PlatformFilter />
+        </div>
 
         {bookmarked.length === 0 ? (
           <div className="relative mt-10 overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 px-6 py-16 text-center sm:py-24">

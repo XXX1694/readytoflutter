@@ -1,0 +1,62 @@
+[
+  {
+    "id": 3601,
+    "topic_id": 36,
+    "order_index": 1,
+    "difficulty": "medium",
+    "question": "What is Combine? How do Publishers, Subscribers, and Operators relate?",
+    "answer": "Combine is Apple's reactive streams framework (iOS 13+). It models async work as a typed pipeline:\n\n• Publisher — emits a stream of values and an optional completion (finished or failure). Has Output and Failure associated types.\n• Subscriber — receives values, completion, and demand signals. You rarely write one by hand; use built-in operators.\n• Operator — a method on Publisher that returns a new publisher (map, filter, flatMap, debounce). Lazy — nothing flows until subscription.\n• Subscription — the link between publisher and subscriber; can be cancelled via `AnyCancellable`.\n\nThink of it as an async pipeline with strong types and built-in cancellation/backpressure.",
+    "code_example": "import Combine\n\nlet publisher = [1,2,3,4,5].publisher\n  .map { $0 * 2 }\n  .filter { $0 > 4 }\n  .eraseToAnyPublisher()\n\nlet cancellable = publisher.sink(\n  receiveCompletion: { print(\"done: \\($0)\") },\n  receiveValue: { print($0) }\n)\n// 6\n// 8\n// 10\n// done: finished\n\n// Custom publisher from a callback API\nfunc fetchPublisher(url: URL) -> AnyPublisher<Data, URLError> {\n  URLSession.shared.dataTaskPublisher(for: url)\n    .map { $0.data }\n    .eraseToAnyPublisher()\n}\n\n// Compose typed pipeline\nfetchPublisher(url: url)\n  .decode(type: User.self, decoder: JSONDecoder())\n  .mapError { _ in AppError.decoding }\n  .receive(on: DispatchQueue.main)\n  .sink { _ in } receiveValue: { user in print(user.name) }\n  .store(in: &bag)",
+    "code_language": "swift"
+  },
+  {
+    "id": 3602,
+    "topic_id": 36,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What are Subjects in Combine? PassthroughSubject vs CurrentValueSubject.",
+    "answer": "Subjects are publishers you can imperatively send values to — useful as bridges between non-Combine code and Combine pipelines.\n\n• PassthroughSubject<Output, Failure> — broadcasts values to subscribers as they arrive. Has no current value; subscribers added later don't see past values.\n• CurrentValueSubject<Output, Failure> — holds a current value (initialized in constructor). New subscribers receive the current value immediately, then subsequent updates.\n\nUse PassthroughSubject for events (button taps, gestures). Use CurrentValueSubject for state (loading flag, current user). For ObservableObject-like state, prefer @Published or @Observable in modern code.",
+    "code_example": "import Combine\n\n// Event subject — fire-and-forget events\nlet tapSubject = PassthroughSubject<Void, Never>()\nlet bag = tapSubject.sink { print(\"tapped\") }\ntapSubject.send()\n\n// State subject — current + future\nlet isLoading = CurrentValueSubject<Bool, Never>(false)\nisLoading.send(true)\nprint(isLoading.value) // true\n\n// New subscriber gets current value immediately\nlet sub2 = isLoading.sink { print(\"loading: \\($0)\") }\n// prints \"loading: true\" right away\n\n// Bridging delegate API into Combine\nclass LocationBridge: NSObject, CLLocationManagerDelegate {\n  let subject = PassthroughSubject<CLLocation, Never>()\n  let manager = CLLocationManager()\n  override init() {\n    super.init(); manager.delegate = self\n  }\n  func locationManager(_ m: CLLocationManager, didUpdateLocations locs: [CLLocation]) {\n    locs.forEach { subject.send($0) }\n  }\n  var publisher: AnyPublisher<CLLocation, Never> { subject.eraseToAnyPublisher() }\n}\n\n// In a view model — combine subjects with operators\nclass SearchVM: ObservableObject {\n  @Published var query: String = \"\"\n  @Published private(set) var results: [String] = []\n  private var bag = Set<AnyCancellable>()\n  init() {\n    $query\n      .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)\n      .removeDuplicates()\n      .flatMap { q in api.searchPublisher(q).replaceError(with: []) }\n      .receive(on: DispatchQueue.main)\n      .assign(to: &$results)\n  }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 3603,
+    "topic_id": 36,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What are common Combine operators and what do they do?",
+    "answer": "A few high-impact operators:\n\n• map / tryMap — transform values; tryMap can throw.\n• filter / removeDuplicates — drop values.\n• flatMap — chain into another publisher; useful for dependent requests.\n• combineLatest / merge / zip — combine multiple streams.\n• debounce / throttle — control firing rate (typeahead, scroll).\n• retry / catch — error handling.\n• receive(on:) / subscribe(on:) — schedule on a queue.\n• assign(to:on:) — bind output to a property without `sink`.\n• share / multicast — share subscription work across multiple subscribers.\n• eraseToAnyPublisher() — type-erase for boundary APIs.\n\nBe deliberate about scheduling: by default, work runs on whichever queue the publisher chooses. UI updates need `.receive(on: DispatchQueue.main)`.",
+    "code_example": "import Combine\n\n// Typeahead pipeline\nclass SearchVM: ObservableObject {\n  @Published var query = \"\"\n  @Published var results: [Result] = []\n  private var bag = Set<AnyCancellable>()\n  init() {\n    $query\n      .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)\n      .removeDuplicates()\n      .flatMap { q -> AnyPublisher<[Result], Never> in\n        if q.isEmpty { return Just([]).eraseToAnyPublisher() }\n        return api.searchPublisher(q)\n          .replaceError(with: [])\n          .eraseToAnyPublisher()\n      }\n      .receive(on: DispatchQueue.main)\n      .assign(to: &$results)\n  }\n}\n\n// Combine multiple streams\nPublishers.CombineLatest(p1, p2)\n  .map { (a, b) in a + b }\n  .sink { print($0) }\n  .store(in: &bag)\n\n// Retry + map error\nfetchPublisher(url: url)\n  .retry(3)\n  .mapError { _ in AppError.network }\n  .sink(receiveCompletion: { _ in }, receiveValue: { _ in })\n  .store(in: &bag)\n\n// Share among multiple subscribers — avoid duplicate work\nlet shared = expensive.share()\nshared.sink { print(\"sub1 \\($0)\") }.store(in: &bag)\nshared.sink { print(\"sub2 \\($0)\") }.store(in: &bag)",
+    "code_language": "swift"
+  },
+  {
+    "id": 3604,
+    "topic_id": 36,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "How do you use Combine with SwiftUI? @Published, ObservableObject.",
+    "answer": "SwiftUI talks to Combine via two protocols:\n\n• ObservableObject — reference-type protocol with a built-in `objectWillChange` Combine publisher.\n• @Published — property wrapper that automatically routes mutations into `objectWillChange`. Each view observing the object re-renders.\n\nUse @StateObject (you own it) or @ObservedObject (someone else owns it). For custom Combine pipelines feeding the UI, store cancellables in a `Set<AnyCancellable>` to keep them alive.\n\nIn iOS 17+, @Observable replaces this pattern with finer-grained tracking — but Combine still shines for typeahead, debounce/throttle, network composition.",
+    "code_example": "import SwiftUI\nimport Combine\n\nfinal class CartVM: ObservableObject {\n  @Published private(set) var items: [Item] = []\n  @Published var coupon: String = \"\"\n  @Published private(set) var total: Decimal = 0\n  private var bag = Set<AnyCancellable>()\n\n  init() {\n    $items\n      .map { $0.reduce(Decimal.zero) { $0 + $1.price } }\n      .combineLatest($coupon.map(discount(for:)))\n      .map { subtotal, percent in subtotal * (1 - Decimal(percent) / 100) }\n      .receive(on: DispatchQueue.main)\n      .assign(to: &$total)\n  }\n  func add(_ item: Item) { items.append(item) }\n}\n\nstruct CartView: View {\n  @StateObject private var vm = CartVM()\n  var body: some View {\n    VStack {\n      TextField(\"Coupon\", text: $vm.coupon)\n      Text(\"Total: \\(vm.total)\")\n      Button(\"Add\") { vm.add(Item(price: 9.99)) }\n    }\n  }\n}\n\nfunc discount(for coupon: String) -> Int {\n  coupon == \"OFF10\" ? 10 : 0\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 3605,
+    "topic_id": 36,
+    "order_index": 5,
+    "difficulty": "hard",
+    "question": "How do Combine and Swift Concurrency (async/await) interoperate?",
+    "answer": "Combine and async/await coexist; you can convert between them.\n\n• Publisher → async — `.values` exposes an AsyncSequence; iterate with `for await`.\n• Async → Publisher — wrap with `Future` or use `Just`/`AsyncThrowingStream` adapters.\n• `assign(to: &$prop)` works seamlessly with @Published.\n• `Task { ... }` to bridge from a Combine sink into actor-isolated mutations.\n\nGuideline: prefer async/await for new code. Reach for Combine when you genuinely need stream composition (debounce, combineLatest typeahead) or already use it across a code base.",
+    "code_example": "import Combine\n\n// Publisher → async\nlet publisher = url.dataTaskPublisher.map(\\.data)\nfor try await data in publisher.values {\n  print(data.count)\n}\n\n// async → Publisher via Future\nfunc fetchUserPublisher(id: String) -> AnyPublisher<User, Error> {\n  Future { promise in\n    Task {\n      do { promise(.success(try await api.fetchUser(id: id))) }\n      catch { promise(.failure(error)) }\n    }\n  }\n  .eraseToAnyPublisher()\n}\n\n// AsyncStream → AnyPublisher (manual bridge)\nfunc publisher<T>(_ stream: AsyncStream<T>) -> AnyPublisher<T, Never> {\n  let subject = PassthroughSubject<T, Never>()\n  Task {\n    for await v in stream { subject.send(v) }\n    subject.send(completion: .finished)\n  }\n  return subject.eraseToAnyPublisher()\n}\n\n// View model mixing both\nclass HybridVM: ObservableObject {\n  @Published var query = \"\"\n  @Published var results: [String] = []\n  private var bag = Set<AnyCancellable>()\n  init() {\n    $query.debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)\n      .removeDuplicates()\n      .sink { [weak self] q in\n        Task { @MainActor in\n          self?.results = (try? await api.search(q)) ?? []\n        }\n      }\n      .store(in: &bag)\n  }\n}",
+    "code_language": "swift"
+  },
+  {
+    "id": 3606,
+    "topic_id": 36,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What are common Combine pitfalls and how do you avoid them?",
+    "answer": "Frequent issues:\n\n• Forgetting to store cancellables — pipeline is torn down immediately and never fires.\n• Strong captures of self in `sink` — leaks; use `[weak self]`.\n• Wrong scheduler for UI — UI work must be on `DispatchQueue.main` (or `RunLoop.main`).\n• Multicasting expensive work — without `.share()` or `.multicast()`, every new subscriber re-runs upstream.\n• Tearing down on first error — most operators complete on failure; use `.catch` / `.replaceError` to keep the pipeline alive.\n• `.assign(to:on:)` retains the target — prefer `.assign(to: &$prop)` (binds to a @Published) which doesn't.\n• Backpressure — Combine has demand-based flow; default is unbounded. With high-rate sources use `.collect`, `.throttle`, or custom subscribers.\n• Mixing Combine + actors — call into MainActor via `.receive(on: RunLoop.main)` or `Task { @MainActor in ... }` from a sink.",
+    "code_example": "// Forgot to store — pipeline silently dies\nfunc bad() {\n  somePublisher.sink { _ in print(\"never\") }       // ⚠️ AnyCancellable discarded\n}\n\n// Fix\nvar bag = Set<AnyCancellable>()\nfunc good() {\n  somePublisher.sink { _ in print(\"ok\") }.store(in: &bag)\n}\n\n// Strong self → leak\npublisher.sink { value in self.handle(value) }       // ⚠️\npublisher.sink { [weak self] value in self?.handle(value) } // ✅\n\n// Error tears down — use catch\npublisher\n  .map(decode)\n  .catch { _ in Just(.fallback) }\n  .sink { _ in }.store(in: &bag)\n\n// Share among multiple subscribers\nlet shared = expensive.share()\nshared.sink { print($0) }.store(in: &bag)\nshared.sink { print($0) }.store(in: &bag)\n// without .share() expensive runs twice\n\n// Strict main scheduling for UI\npublisher\n  .receive(on: DispatchQueue.main)\n  .assign(to: &$labelText)",
+    "code_language": "swift"
+  }
+]

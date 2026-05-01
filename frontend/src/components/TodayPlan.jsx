@@ -10,6 +10,8 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useContent } from '../i18n/content.js';
 import { Button, Eyebrow, Pill } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import { usePrefs } from '../store/prefs.js';
+import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const PLAN_LIMIT = 18;
@@ -130,8 +132,20 @@ export default function TodayPlan() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const { topicTitle } = useContent(lang);
-  const { data: questions = [] } = useQuestions();
-  const { data: topics = [] } = useTopics();
+  const { data: allQuestions = [] } = useQuestions();
+  const { data: allTopics = [] } = useTopics();
+  const platform = usePrefs((s) => s.platform);
+
+  // Scope today's plan to the currently-selected platform so an iOS-focused
+  // user doesn't get Flutter cards in their session, and vice versa.
+  const topics = useMemo(
+    () => filterTopicsByPlatform(allTopics, platform),
+    [allTopics, platform],
+  );
+  const questions = useMemo(
+    () => filterQuestionsByPlatform(allQuestions, allTopics, platform),
+    [allQuestions, allTopics, platform],
+  );
 
   const plan = useMemo(() => buildPlan(questions, topics), [questions, topics]);
   const streaks = useMemo(() => computeStreaks(), []);

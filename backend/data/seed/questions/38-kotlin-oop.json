@@ -1,0 +1,62 @@
+[
+  {
+    "id": 3801,
+    "topic_id": 38,
+    "order_index": 1,
+    "difficulty": "easy",
+    "question": "What are data classes in Kotlin and what does the compiler generate?",
+    "answer": "A `data class` is a class whose primary purpose is holding data. The compiler generates:\n\n• `equals()` / `hashCode()` based on primary-constructor properties.\n• `toString()` like `User(id=1, name=Alice)`.\n• `copy(...)` — return a new instance with selected fields changed.\n• `componentN()` operators enabling destructuring.\n\nRequirements: at least one primary constructor parameter; constructor params must be `val` or `var`. Cannot be `abstract`, `open`, `sealed`, `inner`. Inheritance is allowed (since 1.1) only when extending non-data classes.\n\nIdiomatic for DTOs, value objects, UI state, command messages.",
+    "code_example": "data class User(val id: Long, val name: String, val email: String)\n\nval u1 = User(1, \"Alice\", \"alice@x.com\")\nval u2 = u1.copy(email = \"a@x.com\")            // new instance, only email changed\nprintln(u1 == u2)                                // false — emails differ\nprintln(u1.hashCode() == User(1, \"Alice\", \"alice@x.com\").hashCode()) // true\n\n// Destructuring\nval (id, name, email) = u1\nprintln(\"$id $name $email\")\n\n// In Maps / Sets — Identity by content\nval seen = mutableSetOf(u1)\nprintln(seen.contains(User(1, \"Alice\", \"alice@x.com\"))) // true\n\n// Pitfall: equality is structural, not deep — beware mutable List members.\n// Pitfall: copy() does a SHALLOW copy of properties — nested mutable objects shared.\n\n// Common usage: UI state\nsealed interface FeedState {\n  data object Loading : FeedState\n  data class Success(val posts: List<Post>) : FeedState\n  data class Error(val message: String) : FeedState\n}\n\n// Pattern match via when\nfun render(state: FeedState) = when (state) {\n  is FeedState.Loading -> \"...\"\n  is FeedState.Success -> \"\\${state.posts.size} posts\"\n  is FeedState.Error   -> state.message\n}",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3802,
+    "topic_id": 38,
+    "order_index": 2,
+    "difficulty": "medium",
+    "question": "What are sealed classes / sealed interfaces in Kotlin?",
+    "answer": "A sealed class/interface restricts who can extend it: only classes declared in the SAME module + same package (sealed class) or same module (sealed interface) can subclass.\n\nThis enables:\n• Exhaustive `when` — no `else` branch needed; if you add a new subtype, the compiler errors at every existing `when`.\n• Algebraic-data-type modeling — express finite alternatives like `Result`, screen state, parser tokens.\n• Library API design — control extensibility while still using inheritance.\n\nSealed types are reference types; the JVM treats them as ordinary classes. Use `data class` or `data object` subclasses for value semantics.",
+    "code_example": "sealed interface ApiResult<out T> {\n  data class Success<T>(val value: T) : ApiResult<T>\n  data class Failure(val code: Int, val message: String) : ApiResult<Nothing>\n  data object Loading : ApiResult<Nothing>\n}\n\nfun <T> handle(r: ApiResult<T>) = when (r) {\n  is ApiResult.Success -> println(\"got \\${r.value}\")\n  is ApiResult.Failure -> println(\"err \\${r.code}\")\n  ApiResult.Loading    -> println(\"loading\")\n  // No else — exhaustive\n}\n\n// AST modelling\nsealed class Expr\nclass Num(val value: Double) : Expr()\nclass Add(val left: Expr, val right: Expr) : Expr()\nclass Mul(val left: Expr, val right: Expr) : Expr()\n\nfun eval(e: Expr): Double = when (e) {\n  is Num -> e.value\n  is Add -> eval(e.left) + eval(e.right)\n  is Mul -> eval(e.left) * eval(e.right)\n}\n\n// Adding an extension subclass after the fact — forces every `when` to update\nclass Sub(val left: Expr, val right: Expr) : Expr() // compiler errors at every when",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3803,
+    "topic_id": 38,
+    "order_index": 3,
+    "difficulty": "medium",
+    "question": "What is the difference between class, object, and companion object in Kotlin?",
+    "answer": "Three Kotlin declarations for class-shaped things:\n\n• `class` — ordinary class, instantiated with `Foo()`.\n• `object` — singleton declared at the top level. The compiler creates a single instance accessed by name (`MyService.action()`).\n• `companion object` — a singleton tied to a class. Used for static-like members (factories, constants). Accessed via the enclosing class name (`User.fromJson(...)`).\n\nObjects can implement interfaces and inherit (single class). They're lazily initialized on first access.\n\nFor true compile-time constants use `const val` inside an `object` or `companion object` (top level too).",
+    "code_example": "// object — singleton\nobject Logger {\n  fun log(msg: String) = println(\"[LOG] \\$msg\")\n}\nLogger.log(\"hello\")\n\n// Anonymous object — implement an interface inline\nval listener = object : ClickListener {\n  override fun onClick() = println(\"click\")\n}\n\n// companion object — static-like factory\nclass User private constructor(val id: Long, val name: String) {\n  companion object {\n    const val MIN_NAME_LEN = 2\n    fun create(name: String): User? =\n      if (name.length >= MIN_NAME_LEN) User(System.currentTimeMillis(), name) else null\n  }\n}\nval u = User.create(\"Alice\")\nUser.MIN_NAME_LEN          // accessed like static\n\n// Named companion object\nclass Cache { companion object Shared { fun get() = TODO() } }\nCache.get()                // shorthand\nCache.Shared.get()          // also works\n\n// Common pattern: sealed + companion factories\nsealed interface Currency {\n  data class USD(val amount: Long) : Currency\n  data class EUR(val amount: Long) : Currency\n  companion object {\n    fun parse(s: String): Currency? = when (s.takeLast(3)) {\n      \"USD\" -> USD(s.dropLast(3).trim().toLong())\n      \"EUR\" -> EUR(s.dropLast(3).trim().toLong())\n      else  -> null\n    }\n  }\n}",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3804,
+    "topic_id": 38,
+    "order_index": 4,
+    "difficulty": "medium",
+    "question": "What are extension functions and properties in Kotlin?",
+    "answer": "Extensions add functions or properties to existing types without modifying their source. Resolved STATICALLY — the compiler picks the extension based on the static type of the receiver.\n\n• `fun String.titleCase(): String = ...` — extension function.\n• `val String.firstLetter: Char get() = first()` — extension property (no backing field; computed only).\n• Member functions win over extensions with the same signature on the same type.\n• Extensions don't override virtual methods — they're static dispatch.\n\nIdiomatic uses: utility helpers (`Date.toIsoString()`), domain DSLs, view-binding helpers in Android, ergonomic API on third-party types.",
+    "code_example": "fun String.titleCase(): String =\n  split(\" \").joinToString(\" \") { it.replaceFirstChar(Char::uppercase) }\n\nprintln(\"hello world\".titleCase()) // Hello World\n\n// Extension property — no backing field, computed\nval <T> List<T>.middle: T?\n  get() = if (isEmpty()) null else this[size / 2]\n\nprintln(listOf(1, 2, 3, 4, 5).middle) // 3\n\n// Nullable receiver — handle null inside\nfun String?.orEmpty(): String = this ?: \"\"\nval s: String? = null\nprintln(s.orEmpty()) // \"\"\n\n// Static dispatch — important to know\nopen class A\nclass B : A()\nfun A.name() = \"A\"\nfun B.name() = \"B\"\n\nfun whoCalls(a: A) = a.name()  // always returns \"A\" — static type wins\n\n// Member wins over extension with same signature\nclass Animal { fun sound() = \"member\" }\nfun Animal.sound() = \"extension\"\nprintln(Animal().sound()) // \"member\"\n\n// Scope a helper to where it's used (top-level inside a feature module is fine)",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3805,
+    "topic_id": 38,
+    "order_index": 5,
+    "difficulty": "medium",
+    "question": "What are scope functions (let, run, with, apply, also)?",
+    "answer": "Scope functions execute a lambda in the context of an object. They differ in two axes: how the object is referenced (`it` vs `this`) and what the lambda returns (the object itself vs the lambda result).\n\n• `let` — refer as `it`, returns lambda result. Common for null-safe transforms.\n• `run` — refer as `this`, returns lambda result. For computing on an object.\n• `with` — refer as `this`, returns lambda result. Like run, but as standalone function.\n• `apply` — refer as `this`, returns the object. For configuring an object after construction.\n• `also` — refer as `it`, returns the object. For side effects (logging, validation) without breaking a chain.\n\nGuideline: pick the pair (`it`/`this`, value/object) that makes the call site cleanest. Don't nest scope functions deeply.",
+    "code_example": "// let — null-safe transform\nval len: Int? = name?.let { it.length }\n\n// also — side effect in a chain\nval token = login()\n  .also { logger.debug(\"login result: \\$it\") }\n  .takeIf { it.isNotEmpty() }\n\n// apply — fluent configuration\nval intent = Intent(this, DetailActivity::class.java).apply {\n  putExtra(\"id\", id)\n  flags = Intent.FLAG_ACTIVITY_NEW_TASK\n}\n\n// run — execute on receiver, return value\nval description = user.run {\n  \"\\$name (\\$email)\"\n}\n\n// with — same shape, free function\nval result = with(StringBuilder()) {\n  append(\"Hello, \")\n  append(name)\n  toString()\n}\n\n// Decision matrix\n// Need to refer to receiver as `it`?       → let / also\n// Need to refer to receiver as `this`?     → run / apply / with\n// Want lambda's result?                     → let / run / with\n// Want the receiver back?                   → apply / also\n\n// Anti-pattern: deeply nested scope functions hide control flow\n// Refactor to a named function when the chain gets > 2 deep.",
+    "code_language": "kotlin"
+  },
+  {
+    "id": 3806,
+    "topic_id": 38,
+    "order_index": 6,
+    "difficulty": "medium",
+    "question": "What is the difference between abstract class, interface, and open class in Kotlin?",
+    "answer": "• `class` — final by default. Cannot be subclassed unless declared `open`.\n• `open class` — can be subclassed and its open members overridden.\n• `abstract class` — cannot be instantiated. Can hold state (constructor properties), abstract members, concrete members. Single inheritance.\n• `interface` — cannot hold state (no backing fields). Can have abstract members, default implementations, properties (computed). Multiple inheritance allowed.\n\nKotlin's bias toward final-by-default is intentional — it forces the author to opt into extensibility, reducing fragile-base-class problems.\n\nUse interfaces for contracts and capabilities; abstract classes for shared state + behavior; data classes for value types.",
+    "code_example": "// open — opt in to inheritance\nopen class Repository(open val baseUrl: String) {\n  open fun fetch(): String = \"data\"\n  fun health() = \"ok\"            // final by default — not overridable\n}\n\nclass UserRepository(baseUrl: String) : Repository(baseUrl) {\n  override fun fetch() = \"users\"\n}\n\n// abstract — can't instantiate, can hold state\nabstract class Animal(val name: String) {\n  abstract fun sound(): String\n  fun greet() = \"Hi, I'm \\$name\"\n}\nclass Dog(name: String) : Animal(name) {\n  override fun sound() = \"Woof\"\n}\n\n// interface — multiple inheritance, default impl\ninterface Logger {\n  fun log(msg: String)\n  fun debug(msg: String) = log(\"[DEBUG] \\$msg\")  // default impl\n}\ninterface Cacheable {\n  fun cacheKey(): String\n}\nclass Service : Logger, Cacheable {\n  override fun log(msg: String) = println(msg)\n  override fun cacheKey() = \"svc:1\"\n}\n\n// Diamond — when two interfaces have same default, override required\ninterface A { fun greet() = \"A\" }\ninterface B { fun greet() = \"B\" }\nclass C : A, B {\n  override fun greet() = super<A>.greet() + super<B>.greet()\n}",
+    "code_language": "kotlin"
+  }
+]

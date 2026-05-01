@@ -51,6 +51,12 @@ export const usePrefs = create(
       topicFilter: 'all', // 'all' | 'not_started' | 'in_progress' | 'completed'
       setTopicFilter: (topicFilter) => set({ topicFilter }),
 
+      // Dashboard / sidebar platform scope — splits the 50+ topic catalog into
+      // Flutter / iOS / Android / Cross-Platform / Mobile so users can focus
+      // on the stack they're interviewing for. 'all' shows every topic.
+      platform: 'all', // 'all' | 'flutter' | 'ios' | 'android' | 'cross' | 'mobile'
+      setPlatform: (platform) => set({ platform }),
+
       // Search facets
       searchFacets: { level: null, difficulty: null, status: null },
       setSearchFacet: (key, value) =>
@@ -80,6 +86,7 @@ export const usePrefs = create(
         topicFilter: s.topicFilter,
         searchFacets: s.searchFacets,
         recallMode: s.recallMode,
+        platform: s.platform,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);
