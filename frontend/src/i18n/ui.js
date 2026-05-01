@@ -125,6 +125,12 @@ export const UI = {
     platformMobile: 'Mobile',
     platformEmpty: 'No topics for this stack yet.',
 
+    // Hero feature highlight — drawn under the headline so first-time visitors
+    // discover the AI grader without digging.
+    heroAiGrader: 'AI answer grader',
+    heroAiGraderModel: 'Claude Haiku 4.5',
+    heroAiGraderHint: 'Type your answer in Mock or Study — Claude scores you against the reference and points out gaps.',
+
     // Misc
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
@@ -256,6 +262,11 @@ export const UI = {
     platformCross: 'Кросс-платформа',
     platformMobile: 'Mobile',
     platformEmpty: 'По этому стеку тем пока нет.',
+
+    // Hero feature highlight
+    heroAiGrader: 'ИИ-оценка ответа',
+    heroAiGraderModel: 'Claude Haiku 4.5',
+    heroAiGraderHint: 'Пиши ответ в Mock или Study — Claude сверит с эталоном и подсветит, чего не хватает.',
 
     // Misc
     openMenu: 'Открыть меню',

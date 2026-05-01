@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Command, Sparkles, Target, Brain, Library } from 'lucide-react';
+import { Command, Sparkles, Target, Brain, Library, Wand2 } from 'lucide-react';
 import { useTopics, useStats, useResetProgress, useQuestions } from '../lib/queries.js';
 import { getCardState } from '../lib/srs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -117,6 +117,28 @@ export default function HomePage() {
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-2 sm:text-lg">
             {t.heroDesc}
           </p>
+
+          {/* AI-grader highlight — first-time visitors don't otherwise see this
+              feature until they reveal an answer in Mock/Study. Brand-tinted
+              pill with a one-line hint. */}
+          <div className="mt-5 inline-flex max-w-2xl items-start gap-3 rounded-2xl border border-brand/20 bg-brand/5 px-4 py-3 backdrop-blur">
+            <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-sky text-white shadow-[0_4px_12px_-2px_rgb(var(--brand)/0.40)]">
+              <Wand2 className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
+                  {t.heroAiGrader}
+                </span>
+                <span className="rounded-full border border-brand/30 bg-paper-2/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-2">
+                  {t.heroAiGraderModel}
+                </span>
+              </div>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
+                {t.heroAiGraderHint}
+              </p>
+            </div>
+          </div>
 
           {/* CTA row — primary is the session you'll actually run today.
               On mobile the primary takes the full width so it dominates;
