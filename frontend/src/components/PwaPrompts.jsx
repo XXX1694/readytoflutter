@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Download, X, Share2, RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useLang } from '../i18n/LangContext.jsx';
-import { Button } from '../ui/index.js';
 
 /**
  * PWA install + update prompts.
@@ -64,7 +63,7 @@ export default function PwaPrompts() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(swUrl, r) {
+    onRegisteredSW(_swUrl, r) {
       // Periodic background check — a tab left open for hours catches
       // updates without the user reloading manually.
       if (!r) return;
@@ -73,7 +72,6 @@ export default function PwaPrompts() {
       }, 60 * 60 * 1000);
     },
     onRegisterError(err) {
-      // eslint-disable-next-line no-console
       console.warn('[PWA] SW registration failed', err);
     },
   });
@@ -113,33 +111,9 @@ export default function PwaPrompts() {
   };
 
   // ── Android / Chrome install prompt ────────────────────────────────────
-  useEffect(() => {
-    if (isStandalone()) return;
-    if (dismissedRecently(STORAGE.installDismissed)) return;
-
-    const onPrompt = (e) => {
-      e.preventDefault();
-      installEvent.current = e;
-      // Hold the prompt back until the user has shown some intent —
-      // bombarding first-time visitors hurts conversion.
-      if (!visitsEnough()) return;
-      surfaceInstallToast();
-    };
-    const onInstalled = () => {
-      installEvent.current = null;
-      persistDismiss(STORAGE.installDismissed);
-    };
-
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt);
-      window.removeEventListener('appinstalled', onInstalled);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRu]);
-
-  const surfaceInstallToast = () => {
+  // Declared *before* the registration effect so the closure inside
+  // `onPrompt` can call it without tripping the use-before-declare lint.
+  const surfaceInstallToast = useCallback(() => {
     if (!installEvent.current) return;
     toast.info(isRu ? 'Установить приложение' : 'Install the app', {
       description: isRu
@@ -166,7 +140,32 @@ export default function PwaPrompts() {
       },
       onDismiss: () => persistDismiss(STORAGE.installDismissed),
     });
-  };
+  }, [isRu]);
+
+  useEffect(() => {
+    if (isStandalone()) return;
+    if (dismissedRecently(STORAGE.installDismissed)) return;
+
+    const onPrompt = (e) => {
+      e.preventDefault();
+      installEvent.current = e;
+      // Hold the prompt back until the user has shown some intent —
+      // bombarding first-time visitors hurts conversion.
+      if (!visitsEnough()) return;
+      surfaceInstallToast();
+    };
+    const onInstalled = () => {
+      installEvent.current = null;
+      persistDismiss(STORAGE.installDismissed);
+    };
+
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, [surfaceInstallToast]);
 
   // ── iOS Safari install hint ────────────────────────────────────────────
   useEffect(() => {
