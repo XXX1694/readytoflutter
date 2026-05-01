@@ -30,7 +30,7 @@ const SHORTCUTS = [
     { keys: ['G', 'A'], en: 'Settings', ru: 'Настройки' },
   ]},
   { group: { en: 'Toggles', ru: 'Переключатели' }, items: [
-    { keys: ['T'], en: 'Cycle theme · light → sepia → dark', ru: 'Тема · светлая → сепия → тёмная' },
+    { keys: ['T'], en: 'Toggle theme · light ↔ dark', ru: 'Тема · светлая ↔ тёмная' },
     { keys: ['R'], en: 'Recall mode on / off', ru: 'Режим recall вкл / выкл' },
   ]},
   { group: { en: 'Topic page', ru: 'Страница темы' }, items: [

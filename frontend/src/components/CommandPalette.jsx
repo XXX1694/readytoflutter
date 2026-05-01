@@ -8,7 +8,6 @@ import {
   Search,
   Sun,
   Moon,
-  Coffee,
   Languages,
   RotateCcw,
   Layers,
@@ -294,13 +293,6 @@ export default function CommandPalette() {
                   trailing={theme === 'light' ? '●' : ''}
                 >
                   {lang === 'ru' ? 'Тема — светлая' : 'Theme — light'}
-                </CmdItem>
-                <CmdItem
-                  icon={<Coffee />}
-                  onSelect={run(() => setTheme('sepia'))}
-                  trailing={theme === 'sepia' ? '●' : ''}
-                >
-                  {lang === 'ru' ? 'Тема — сепия' : 'Theme — sepia'}
                 </CmdItem>
                 <CmdItem
                   icon={<Moon />}

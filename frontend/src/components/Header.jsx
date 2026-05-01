@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sun, Moon, Coffee, ExternalLink, WifiOff } from 'lucide-react';
+import { Search, Sun, Moon, ExternalLink, WifiOff } from 'lucide-react';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
@@ -137,23 +137,19 @@ export default function Header() {
           })}
         </div>
 
-        {/* Theme — cycles light → sepia → dark → light. The icon shows the
-            *current* mode; the title hints what comes next. */}
+        {/* Theme — toggles light ↔ dark. The icon shows the *current* mode;
+            the title hints what comes next. */}
         <IconButton
           size="md"
           variant="outline"
           label={
             theme === 'dark'
               ? (lang === 'ru' ? 'Тема: тёмная — переключить на светлую' : 'Theme: dark — switch to light')
-              : theme === 'sepia'
-                ? (lang === 'ru' ? 'Тема: сепия — переключить на тёмную' : 'Theme: sepia — switch to dark')
-                : (lang === 'ru' ? 'Тема: светлая — переключить на сепию' : 'Theme: light — switch to sepia')
+              : (lang === 'ru' ? 'Тема: светлая — переключить на тёмную' : 'Theme: light — switch to dark')
           }
           onClick={toggleTheme}
         >
-          {theme === 'dark' ? <Moon className="h-4 w-4" />
-            : theme === 'sepia' ? <Coffee className="h-4 w-4" />
-              : <Sun className="h-4 w-4" />}
+          {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </IconButton>
 
         {/* Docs link — retargets to the canonical reference for the active

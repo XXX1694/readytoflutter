@@ -49,31 +49,6 @@
     color-scheme: light;
   }
 
-  .sepia {
-    /* Sepia — warm reading-lamp tones for evening sessions. */
-    --paper:        250 245 235;   /* warm cream */
-    --paper-2:      255 252 246;   /* clean cream */
-    --ink:           41  31  20;   /* warm dark sepia */
-    --ink-2:         87  68  48;
-    --ink-3:        117  92  66;   /* slightly darker — was 130/102/74, low on cream */
-    --rule:          87  68  48;
-    --rule-strong:   87  68  48;
-    --muted:        117  95  68;   /* tightened — was 130/108/82 → ~5:1 */
-    --muted-2:      150 124  92;   /* darker tertiary — was 168/142/110 (only 3.4:1) */
-
-    --brand:        180  83  9;    /* burnt amber */
-    --brand-ink:    146  64  14;
-    --brand-sky:    202 138  4;    /* warm gold */
-    --mint:         101 130  20;   /* deeper olive — readable on cream */
-    --amber:        217 119  6;
-    --coral:        180  60  45;   /* warmed brick — less alarming on cream */
-    --plum:         126  58 162;   /* dusky plum — toned for warm bg */
-
-    --shadow:        78  56  32;
-
-    color-scheme: light;
-  }
-
   .dark {
     /* Dark — true zinc-950 base with bright text. Vercel/Linear vibe. */
     --paper:          9   9  11;   /* #09090B zinc-950 */
@@ -216,11 +191,6 @@
       radial-gradient(ellipse 50% 30% at 50% 50%,
         rgb(var(--mint) / 0.06), transparent 60%);
   }
-  .sepia .bg-page::before {
-    background:
-      radial-gradient(ellipse 80% 50% at 15% 0%,
-        rgb(var(--brand) / 0.08), transparent 60%);
-  }
   /* Make sure children sit above the aurora layer */
   .bg-page > * { position: relative; z-index: 1; }
 
@@ -236,13 +206,6 @@
     background: rgb(var(--paper-2) / 0.55);
     border: 1px solid rgb(var(--rule) / 0.08);
   }
-  .sepia .glass {
-    /* Sepia paper-2 is a warm cream — keep it slightly more opaque so glass
-       reads as physical paper, not a tinted overlay. */
-    background: rgb(var(--paper-2) / 0.78);
-    border: 1px solid rgb(var(--rule) / 0.12);
-  }
-
   /* ── Numbered section eyebrow — kept for back-compat. */
   .eyebrow {
     @apply font-mono text-[11px] uppercase tracking-[0.18em] text-muted;
@@ -402,7 +365,7 @@
         4px 0 24px -4px rgb(var(--shadow) / 0.20);
     }
     /* Add a subtle ink wash so the drawer reads "darker than the page"
-       in light/sepia themes where paper and paper-2 are nearly identical. */
+       in light theme where paper and paper-2 are nearly identical. */
     [data-drawer-mobile]::before {
       content: '';
       position: absolute;
@@ -515,7 +478,7 @@ h1, h2, h3 { text-wrap: balance; }
   }
   @page :first { margin-top: 18mm; }
 
-  :root, .dark, .sepia {
+  :root, .dark {
     --paper:        255 255 255;
     --paper-2:      250 250 248;
     --ink:           20  24  32;

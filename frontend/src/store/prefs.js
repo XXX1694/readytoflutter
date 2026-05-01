@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-// Three reading themes: cool paper / warm ink / sepia (eye-friendly evenings).
-// Cycle in this order when toggling so users discover sepia naturally.
-export const THEMES = ['light', 'sepia', 'dark'];
+// Two reading themes: light and dark. Sepia was removed (low usage, tripled
+// the surface area for every CSS-touching change). Persisted 'sepia' is
+// migrated to 'light' on hydrate — see THEMES guard in initialTheme.
+export const THEMES = ['light', 'dark'];
 
 const initialTheme = () => {
   if (typeof window === 'undefined') return 'light';
@@ -14,7 +15,6 @@ const initialTheme = () => {
 
 const THEME_COLORS = {
   light: '#FAFAFB',
-  sepia: '#FAF5EB',
   dark:  '#09090B',
 };
 
@@ -22,9 +22,10 @@ const applyTheme = (theme) => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   // Toggle one class per theme so CSS can target each variant; light is the
-  // default (no class).
+  // default (no class). The .sepia class is also stripped here in case a
+  // returning user still has it on <html> from before the removal.
   root.classList.toggle('dark', theme === 'dark');
-  root.classList.toggle('sepia', theme === 'sepia');
+  root.classList.remove('sepia');
 
   // Sync the iOS status-bar / Android chrome theme-color so the app shell
   // visually merges with the chosen surface. We override every existing
@@ -114,10 +115,20 @@ export const usePrefs = create(
   ),
 );
 
-// Hydrate theme synchronously on module load so the dark/sepia class is applied
+// Hydrate theme synchronously on module load so the dark class is applied
 // before React mounts (avoids the FOUC of light → dark on first paint).
+//
+// Migration: a previously-persisted 'sepia' value won't pass THEMES.includes
+// in initialTheme, so it falls back to the system pref → effectively
+// migrating those users to light/dark. We also write the migrated value
+// back to localStorage so the legacy string never resurfaces.
 if (typeof window !== 'undefined') {
   const t = initialTheme();
   applyTheme(t);
   usePrefs.setState({ theme: t });
+  try {
+    if (localStorage.getItem('theme') === 'sepia') {
+      localStorage.setItem('theme', t);
+    }
+  } catch { /* private mode / quota — fine */ }
 }

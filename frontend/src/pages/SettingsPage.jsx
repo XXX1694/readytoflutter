@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   ArrowLeft, User, Lock, AtSign, Trash2, Save, Eye, EyeOff, Shield,
-  Mail, AlertTriangle, Sliders, Sun, Moon, Coffee, Languages, Edit3,
+  Mail, AlertTriangle, Sliders, Sun, Moon, Languages, Edit3,
 } from 'lucide-react';
 import { useAuth } from '../store/auth.js';
 import {
@@ -141,14 +141,6 @@ function PreferencesSection({ T, isRu }) {
       swatch: 'bg-[#fafaf9]',
       stripeA: 'bg-[#171717]',
       stripeB: 'bg-[#06b6d4]',
-    },
-    {
-      key: 'sepia',
-      label: isRu ? 'Сепия' : 'Sepia',
-      Icon: Coffee,
-      swatch: 'bg-[#f5efe1]',
-      stripeA: 'bg-[#3f2d1d]',
-      stripeB: 'bg-[#a16207]',
     },
     {
       key: 'dark',
