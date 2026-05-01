@@ -10,6 +10,7 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, Skeleton, Eyebrow, TopicGlyph, levelTone } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
+import { PLATFORMS, topicPlatform } from '../lib/platform.js';
 
 const FILTERS = ['all', 'not_started', 'in_progress', 'completed'];
 
@@ -105,6 +106,10 @@ export default function TopicPage() {
   const completedCount = questions.filter((q) => q.status === 'completed').length;
   const pct = questions.length > 0 ? Math.round((completedCount / questions.length) * 100) : 0;
   const levelT = t[topic.level];
+  // Resolve platform metadata (label + dot) so the breadcrumb above the title
+  // tells the user "iOS · Swift · Swift Basics" without making them guess.
+  const platformKey = topicPlatform(topic);
+  const platformMeta = PLATFORMS.find((p) => p.key === platformKey);
 
   return (
     <div className="bg-page">
@@ -125,7 +130,29 @@ export default function TopicPage() {
           <div className="flex items-start gap-4">
             <TopicGlyph topic={topic} size="lg" />
             <div className="min-w-0 flex-1">
-              <Eyebrow accent="brand">{levelT.short}</Eyebrow>
+              {/* Platform breadcrumb — clickable, jumps to dashboard scoped
+                  to the topic's stack. Always shows the category as a soft
+                  hint between platform and title. */}
+              <div className="mb-2 flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                {platformMeta && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/?stack=${platformMeta.key}`)}
+                    className="inline-flex items-center gap-1.5 text-ink-2 hover:text-ink"
+                  >
+                    <span className={cn('h-1.5 w-1.5 rounded-full', platformMeta.dot)} aria-hidden />
+                    {t[platformMeta.labelKey]}
+                  </button>
+                )}
+                {topic.category && (
+                  <>
+                    <span aria-hidden className="text-muted-2">·</span>
+                    <span className="text-muted-2">{topic.category}</span>
+                  </>
+                )}
+                <span aria-hidden className="text-muted-2">·</span>
+                <span className="text-brand">{levelT.short}</span>
+              </div>
               <h1 className="mt-2 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-4xl lg:text-display-xs">
                 {topicTitle(topic)}
               </h1>
