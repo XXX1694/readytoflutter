@@ -188,13 +188,15 @@ export default function CommandPalette() {
                     {lang === 'ru' ? 'Настройки' : 'Settings'}
                   </CmdItem>
                 )}
-                <CmdItem
-                  icon={<Pencil />}
-                  onSelect={run(() => navigate('/admin'))}
-                  trailing="⌘+E"
-                >
-                  {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
-                </CmdItem>
+                {import.meta.env.DEV && (
+                  <CmdItem
+                    icon={<Pencil />}
+                    onSelect={run(() => navigate('/admin'))}
+                    trailing="⌘+E"
+                  >
+                    {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
+                  </CmdItem>
+                )}
                 <CmdItem
                   icon={<HelpCircle />}
                   onSelect={run(() => {

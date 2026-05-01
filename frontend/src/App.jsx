@@ -18,7 +18,14 @@ const SearchPage = lazy(() => import('./pages/SearchPage.jsx'));
 const StudyPage = lazy(() => import('./pages/StudyPage.jsx'));
 const MockPage = lazy(() => import('./pages/MockPage.jsx'));
 const BookmarksPage = lazy(() => import('./pages/BookmarksPage.jsx'));
-const AdminPage = lazy(() => import('./pages/AdminPage.jsx'));
+// Admin is a local-only authoring tool (in-browser question editor with
+// JSON export). Gated to dev builds so a production visitor can't navigate
+// to /admin via deep link or accidentally land on it from search results.
+// The store/admin diff plumbing (applyDiff in SearchPage / exportData) is
+// still in the prod bundle — those modules are no-ops without the editor.
+const AdminPage = import.meta.env.DEV
+  ? lazy(() => import('./pages/AdminPage.jsx'))
+  : null;
 const StatsPage = lazy(() => import('./pages/StatsPage.jsx'));
 const PrintTopicPage = lazy(() => import('./pages/PrintTopicPage.jsx'));
 const CheatsheetPage = lazy(() => import('./pages/CheatsheetPage.jsx'));
@@ -114,14 +121,16 @@ export default function App() {
                     </Suspense>
                   }
                 />
-                <Route
-                  path="admin"
-                  element={
-                    <Suspense fallback={<FullPageLoader />}>
-                      <AdminPage />
-                    </Suspense>
-                  }
-                />
+                {AdminPage && (
+                  <Route
+                    path="admin"
+                    element={
+                      <Suspense fallback={<FullPageLoader />}>
+                        <AdminPage />
+                      </Suspense>
+                    }
+                  />
+                )}
                 <Route
                   path="stats"
                   element={

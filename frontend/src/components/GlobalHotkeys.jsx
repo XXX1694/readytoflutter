@@ -22,7 +22,14 @@ export default function GlobalHotkeys() {
   useHotkeys('mod+s', (e) => { e.preventDefault(); navigate('/study'); }, { enableOnFormTags: true });
   useHotkeys('mod+m', (e) => { e.preventDefault(); navigate('/mock'); }, { enableOnFormTags: true });
   useHotkeys('mod+b', (e) => { e.preventDefault(); navigate('/bookmarks'); }, { enableOnFormTags: true });
-  useHotkeys('mod+e', (e) => { e.preventDefault(); navigate('/admin'); }, { enableOnFormTags: true });
+  // ⌘E → /admin is dev-only (the editor itself is gated in App.jsx).
+  // Registered unconditionally so the hook order stays stable across builds;
+  // the handler is the no-op gate.
+  useHotkeys('mod+e', (e) => {
+    if (!import.meta.env.DEV) return;
+    e.preventDefault();
+    navigate('/admin');
+  }, { enableOnFormTags: true });
   useHotkeys('mod+,', (e) => { e.preventDefault(); navigate('/settings'); }, { enableOnFormTags: true });
 
   // Vim-style "go" prefix: press `g` then a letter within ~1.2s for navigation.
