@@ -1,5 +1,30 @@
 import { useRef } from 'react';
 
+interface SwipeOptions {
+  onSwipeLeft?: (e: React.PointerEvent) => void;
+  onSwipeRight?: (e: React.PointerEvent) => void;
+  onSwipeUp?: (e: React.PointerEvent) => void;
+  onSwipeDown?: (e: React.PointerEvent) => void;
+  minDistance?: number;
+  maxOffAxis?: number;
+  edge?: 'left' | 'right' | null;
+  edgeWidth?: number;
+}
+
+interface SwipeStart {
+  x: number;
+  y: number;
+  t: number;
+  pointerId: number;
+}
+
+interface SwipeBindings {
+  onPointerDown: (e: React.PointerEvent) => void;
+  onPointerUp: (e: React.PointerEvent) => void;
+  onPointerCancel: () => void;
+  onPointerLeave: () => void;
+}
+
 /**
  * Pointer-based swipe detector. No external dep — uses native PointerEvents
  * which unify mouse / touch / pen.
@@ -18,12 +43,12 @@ export function useSwipe({
   onSwipeDown,
   minDistance = 48,
   maxOffAxis = 64,
-  edge = null, // 'left' | 'right' — only register if the gesture started near that edge
+  edge = null,
   edgeWidth = 24,
-} = {}) {
-  const startRef = useRef(null);
+}: SwipeOptions = {}): SwipeBindings {
+  const startRef = useRef<SwipeStart | null>(null);
 
-  const onPointerDown = (e) => {
+  const onPointerDown = (e: React.PointerEvent) => {
     // Only primary buttons / first touches. Ignore right-click drags.
     if (e.button !== undefined && e.button !== 0) return;
     if (edge === 'left' && e.clientX > edgeWidth) return;
@@ -39,7 +64,7 @@ export function useSwipe({
     };
   };
 
-  const onPointerUp = (e) => {
+  const onPointerUp = (e: React.PointerEvent) => {
     const start = startRef.current;
     if (!start || start.pointerId !== e.pointerId) return;
     startRef.current = null;
@@ -50,7 +75,7 @@ export function useSwipe({
     const ay = Math.abs(dy);
     // Velocity in px/ms — anything > 0.5 is a flick even on short distance.
     const flick = Math.max(ax, ay) / dt > 0.5;
-    const passed = (axis) => axis >= minDistance || flick;
+    const passed = (axis: number) => axis >= minDistance || flick;
 
     if (ax > ay && ay <= maxOffAxis && passed(ax)) {
       if (dx < 0) onSwipeLeft?.(e);
@@ -73,6 +98,28 @@ export function useSwipe({
   };
 }
 
+interface DragGestureOptions {
+  axis?: 'x' | 'y';
+  commitAt?: number;
+  onCommit?: (direction: 1 | -1, deltas: { dx: number; dy: number }) => void;
+  onCancel?: (deltas: { dx: number; dy: number }) => void;
+  onMove?: (offset: number, deltas: { dx: number; dy: number }) => void;
+}
+
+interface DragState {
+  active: boolean;
+  startX: number;
+  startY: number;
+  pointerId: number | null;
+}
+
+interface DragBindings {
+  onPointerDown: (e: React.PointerEvent) => void;
+  onPointerMove: (e: React.PointerEvent) => void;
+  onPointerUp: (e: React.PointerEvent) => void;
+  onPointerCancel: (e: React.PointerEvent) => void;
+}
+
 /**
  * Variant that returns active-drag state (`{ x, dragging }`) so the consumer
  * can render a follow-finger transform during the gesture (drawer drag).
@@ -86,10 +133,10 @@ export function useDragGesture({
   onCommit,
   onCancel,
   onMove,
-} = {}) {
-  const stateRef = useRef({ active: false, startX: 0, startY: 0, pointerId: null });
+}: DragGestureOptions = {}): DragBindings {
+  const stateRef = useRef<DragState>({ active: false, startX: 0, startY: 0, pointerId: null });
 
-  const handlePointerDown = (e) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (e.button !== undefined && e.button !== 0) return;
     stateRef.current = {
       active: true,
@@ -100,7 +147,7 @@ export function useDragGesture({
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
-  const handlePointerMove = (e) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     const s = stateRef.current;
     if (!s.active || s.pointerId !== e.pointerId) return;
     const dx = e.clientX - s.startX;
@@ -108,7 +155,7 @@ export function useDragGesture({
     onMove?.(axis === 'x' ? dx : dy, { dx, dy });
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     const s = stateRef.current;
     if (!s.active || s.pointerId !== e.pointerId) return;
     stateRef.current = { active: false, startX: 0, startY: 0, pointerId: null };

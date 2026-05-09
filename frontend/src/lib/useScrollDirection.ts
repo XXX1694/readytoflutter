@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react';
 
+export type ScrollDirection = 'up' | 'down' | null;
+
+interface UseScrollDirectionOptions {
+  threshold?: number;
+  topGuard?: number;
+}
+
+interface UseScrollDirectionResult {
+  direction: ScrollDirection;
+  atTop: boolean;
+}
+
 /**
  * Watches scroll direction on a target element and returns 'up' | 'down' | null.
  * Used by the mobile header to auto-hide on scroll-down and re-appear on
@@ -14,9 +26,12 @@ import { useEffect, useState } from 'react';
  * `topGuard` keeps the bar visible whenever the user is near the top — feels
  * jarring otherwise.
  */
-export function useScrollDirection(getTarget, { threshold = 8, topGuard = 32 } = {}) {
-  const [direction, setDirection] = useState(null);
-  const [atTop, setAtTop] = useState(true);
+export function useScrollDirection(
+  getTarget: HTMLElement | null | (() => HTMLElement | null),
+  { threshold = 8, topGuard = 32 }: UseScrollDirectionOptions = {},
+): UseScrollDirectionResult {
+  const [direction, setDirection] = useState<ScrollDirection>(null);
+  const [atTop, setAtTop] = useState<boolean>(true);
 
   useEffect(() => {
     const target = typeof getTarget === 'function' ? getTarget() : getTarget;

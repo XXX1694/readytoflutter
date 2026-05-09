@@ -6,8 +6,8 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { useTopics } from '../lib/queries';
-import { useScrollDirection } from '../lib/useScrollDirection.js';
-import { tapLight } from '../lib/haptics.js';
+import { useScrollDirection } from '../lib/useScrollDirection';
+import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
 
 /**

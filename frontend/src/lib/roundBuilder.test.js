@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildRound, chainConcepts } from './roundBuilder.js';
+import { buildRound, chainConcepts } from './roundBuilder';
 
 const Q = (id, difficulty, tags) => ({ id, difficulty, tags });
 

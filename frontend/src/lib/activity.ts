@@ -6,21 +6,43 @@
  * Only entries with a real `updated_at` count toward activity.
  */
 
+import type { ProgressStatus } from '../types/domain';
+
+interface ProgressRecord {
+  status?: ProgressStatus;
+  notes?: string | null;
+  updated_at?: string;
+}
+
+type ProgressMap = Record<string, ProgressRecord>;
+
+export interface HeatmapCell {
+  date: Date;
+  key: string;
+  count: number;
+}
+
+export interface StreakStats {
+  current: number;
+  longest: number;
+  totalDays: number;
+}
+
 const PROGRESS_KEY = 'readytoflutter_progress_v1';
 
-const ymd = (d) => {
+const ymd = (d: Date): string => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
 
-const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const startOfDay = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-export function readProgress() {
+export function readProgress(): ProgressMap {
   try {
     const raw = localStorage.getItem(PROGRESS_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? (JSON.parse(raw) as ProgressMap) : {};
   } catch {
     return {};
   }
@@ -30,8 +52,8 @@ export function readProgress() {
  * Build a map { 'YYYY-MM-DD': count } of progress events. Counts every status
  * change, not just completions, so even partial study sessions show up.
  */
-export function buildDayMap(progress = readProgress()) {
-  const map = new Map();
+export function buildDayMap(progress: ProgressMap = readProgress()): Map<string, number> {
+  const map = new Map<string, number>();
   Object.values(progress).forEach((p) => {
     if (!p?.updated_at) return;
     const d = new Date(p.updated_at);
@@ -46,16 +68,19 @@ export function buildDayMap(progress = readProgress()) {
  * Returns `weeks` columns × 7 rows (0=Sun..6=Sat) of `{ date, key, count }`,
  * ending today. Suitable for direct rendering as an SVG/CSS grid.
  */
-export function buildHeatmap(weeks = 14, dayMap = buildDayMap()) {
+export function buildHeatmap(
+  weeks = 14,
+  dayMap: Map<string, number> = buildDayMap(),
+): Array<Array<HeatmapCell | null>> {
   const today = startOfDay(new Date());
   const totalDays = weeks * 7;
   // Align so the last column ends on today (Sat in last column? we just end on today)
   const start = new Date(today);
   start.setDate(today.getDate() - (totalDays - 1));
 
-  const cols = [];
+  const cols: Array<Array<HeatmapCell | null>> = [];
   for (let w = 0; w < weeks; w += 1) {
-    const col = [];
+    const col: Array<HeatmapCell | null> = [];
     for (let d = 0; d < 7; d += 1) {
       const date = new Date(start);
       date.setDate(start.getDate() + w * 7 + d);
@@ -71,7 +96,7 @@ export function buildHeatmap(weeks = 14, dayMap = buildDayMap()) {
   return cols;
 }
 
-export function computeStreaks(dayMap = buildDayMap()) {
+export function computeStreaks(dayMap: Map<string, number> = buildDayMap()): StreakStats {
   if (dayMap.size === 0) return { current: 0, longest: 0, totalDays: 0 };
 
   // Convert to sorted set of YMD keys
@@ -87,7 +112,7 @@ export function computeStreaks(dayMap = buildDayMap()) {
     if (set.has(ymd(prev))) continue;
 
     let len = 0;
-    let cursor = new Date(k);
+    const cursor = new Date(k);
     while (set.has(ymd(cursor))) {
       len += 1;
       cursor.setDate(cursor.getDate() + 1);
@@ -117,7 +142,7 @@ export function computeStreaks(dayMap = buildDayMap()) {
 /**
  * Convert a count to a 0..4 intensity bucket for heatmap coloring.
  */
-export function intensity(count) {
+export function intensity(count: number | null | undefined): 0 | 1 | 2 | 3 | 4 {
   if (!count) return 0;
   if (count >= 10) return 4;
   if (count >= 6) return 3;

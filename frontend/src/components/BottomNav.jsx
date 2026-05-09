@@ -6,7 +6,7 @@ import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useQuestions } from '../lib/queries';
 import { getCardState } from '../lib/srs';
-import { tapLight } from '../lib/haptics.js';
+import { tapLight } from '../lib/haptics';
 import { prefetch } from '../lib/prefetch.js';
 import { cn } from '../lib/cn';
 

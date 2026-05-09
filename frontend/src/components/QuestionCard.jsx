@@ -14,7 +14,7 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Pill, difficultyTone } from '../ui/index.js';
 import { cn } from '../lib/cn';
-import { useBookmark } from '../lib/useBookmark.js';
+import { useBookmark } from '../lib/useBookmark';
 import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts.js';
 import { extractHint } from '../lib/hint';
 

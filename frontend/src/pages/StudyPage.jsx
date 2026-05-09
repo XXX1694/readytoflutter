@@ -19,8 +19,8 @@ import AnswerText from '../components/AnswerText.jsx';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn';
-import { tapMedium, tapLight } from '../lib/haptics.js';
-import { useSwipe } from '../lib/useSwipe.js';
+import { tapMedium, tapLight } from '../lib/haptics';
+import { useSwipe } from '../lib/useSwipe';
 import { track } from '../lib/analytics';
 
 const RATINGS = [

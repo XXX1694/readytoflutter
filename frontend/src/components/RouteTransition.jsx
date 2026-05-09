@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useIsMobile } from '../lib/useMediaQuery.js';
+import { useIsMobile } from '../lib/useMediaQuery';
 
 /**
  * Smooth route transitions + scroll restoration.

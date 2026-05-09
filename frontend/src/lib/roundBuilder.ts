@@ -15,18 +15,20 @@
  * If the topic has fewer questions than `count`, returns all of them sorted.
  */
 
-const DIFF_ORDER = { easy: 0, medium: 1, hard: 2 };
+import type { Question, Difficulty } from '../types/domain';
 
-const byDifficulty = (a, b) =>
+const DIFF_ORDER: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2 };
+
+const byDifficulty = (a: Question, b: Question): number =>
   (DIFF_ORDER[a.difficulty] ?? 1) - (DIFF_ORDER[b.difficulty] ?? 1);
 
-const tagsOf = (q) =>
+const tagsOf = (q: Question): string[] =>
   String(q.tags || '')
     .split(',')
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
 
-export function buildRound(questions, count = 5) {
+export function buildRound(questions: Question[], count = 5): Question[] {
   if (!questions?.length) return [];
   if (questions.length <= count) return [...questions].sort(byDifficulty);
 
@@ -47,7 +49,7 @@ export function buildRound(questions, count = 5) {
     }
   }
 
-  const chosenIdx = [seedIdx];
+  const chosenIdx: number[] = [seedIdx];
   const chosenTags = new Set(tagSets[seedIdx]);
 
   while (chosenIdx.length < count) {
@@ -81,8 +83,8 @@ export function buildRound(questions, count = 5) {
  * Common-tags summary across the chosen chain — used in the round's end
  * screen to surface "you covered these concepts".
  */
-export function chainConcepts(chain, max = 6) {
-  const counts = new Map();
+export function chainConcepts(chain: Question[], max = 6): string[] {
+  const counts = new Map<string, number>();
   for (const q of chain) {
     for (const t of tagsOf(q)) counts.set(t, (counts.get(t) || 0) + 1);
   }

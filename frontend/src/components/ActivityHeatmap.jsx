@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { buildHeatmap, computeStreaks, buildDayMap, intensity } from '../lib/activity.js';
+import { buildHeatmap, computeStreaks, buildDayMap, intensity } from '../lib/activity';
 import { useLang } from '../i18n/LangContext.jsx';
 import { cn } from '../lib/cn';
 

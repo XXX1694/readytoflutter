@@ -6,18 +6,24 @@
  * Shape: { [questionId]: { addedAt: number } }
  */
 
+interface BookmarkEntry {
+  addedAt: number;
+}
+
+type BookmarkMap = Record<string, BookmarkEntry>;
+
 const KEY = 'rtf:bookmarks:v1';
 
-function read() {
+function read(): BookmarkMap {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? (JSON.parse(raw) as BookmarkMap) : {};
   } catch {
     return {};
   }
 }
 
-function write(map) {
+function write(map: BookmarkMap): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(map));
   } catch {
@@ -27,38 +33,41 @@ function write(map) {
   window.dispatchEvent(new Event('rtf:bookmarks-change'));
 }
 
-export function isBookmarked(id) {
-  return Boolean(read()[id]);
+export function isBookmarked(id: number | string): boolean {
+  return Boolean(read()[String(id)]);
 }
 
-export function getBookmarks() {
+export function getBookmarks(): BookmarkMap {
   return read();
 }
 
-export function getBookmarkIds() {
+export function getBookmarkIds(): number[] {
   return Object.keys(read()).map(Number);
 }
 
-export function toggleBookmark(id) {
+export function toggleBookmark(id: number | string): boolean {
+  const key = String(id);
   const map = read();
-  if (map[id]) delete map[id];
-  else map[id] = { addedAt: Date.now() };
+  if (map[key]) delete map[key];
+  else map[key] = { addedAt: Date.now() };
   write(map);
-  return Boolean(map[id]);
+  return Boolean(map[key]);
 }
 
-export function clearAllBookmarks() {
+export function clearAllBookmarks(): void {
   write({});
 }
 
 /**
  * Subscribe to bookmark changes. Returns an unsubscribe fn.
  */
-export function subscribeBookmarks(cb) {
+export function subscribeBookmarks(cb: () => void): () => void {
   const handler = () => cb();
+  const storageHandler = (e: StorageEvent) => { if (e.key === KEY) cb(); };
   window.addEventListener('rtf:bookmarks-change', handler);
-  window.addEventListener('storage', (e) => { if (e.key === KEY) cb(); });
+  window.addEventListener('storage', storageHandler);
   return () => {
     window.removeEventListener('rtf:bookmarks-change', handler);
+    window.removeEventListener('storage', storageHandler);
   };
 }

@@ -34,6 +34,9 @@ export interface Question {
   answer: string;
   code_example: string | null;
   code_language: string;
+  // Comma-separated tag list authored in the seed JSON. roundBuilder splits
+  // it into a list to score connectedness between questions.
+  tags?: string;
   // Joined from topics on /api/questions and /api/topics/:slug
   topic_title?: string;
   topic_slug?: string;

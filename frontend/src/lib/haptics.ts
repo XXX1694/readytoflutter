@@ -9,18 +9,19 @@
  *
  * Patterns are kept short — over ~30ms feels like a buzz, not a tap.
  */
-const supported = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+const supported: boolean =
+  typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 
-const safe = (ms) => {
+const safe = (pattern: number | number[]): void => {
   if (!supported) return;
-  try { navigator.vibrate(ms); } catch { /* no-op */ }
+  try { navigator.vibrate(pattern); } catch { /* no-op */ }
 };
 
 // Selection-style — used for nav switches, toggle taps, segmented controls.
-export const tapLight = () => safe(8);
+export const tapLight = (): void => safe(8);
 // Confirmation — used for committed actions like rating a card.
-export const tapMedium = () => safe(14);
+export const tapMedium = (): void => safe(14);
 // Negative — used for error states / undo.
-export const tapError = () => safe([12, 40, 12]);
+export const tapError = (): void => safe([12, 40, 12]);
 // Success — used for goal completions / streak ticks.
-export const tapSuccess = () => safe([10, 30, 18]);
+export const tapSuccess = (): void => safe([10, 30, 18]);

@@ -9,8 +9,8 @@ import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { ProgressBar, IconButton, TopicGlyph } from '../ui/index.js';
 import { cn } from '../lib/cn';
-import { tapLight } from '../lib/haptics.js';
-import { useIsCompact } from '../lib/useMediaQuery.js';
+import { tapLight } from '../lib/haptics';
+import { useIsCompact } from '../lib/useMediaQuery';
 import { filterTopicsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform';
 
 const NAV_LINK_CLASS = ({ isActive }) =>
