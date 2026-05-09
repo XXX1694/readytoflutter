@@ -82,11 +82,18 @@ function buildRouteList(staticData) {
 
 // Wait until `vite preview` is ready to serve.
 //
-// We watch BOTH stdout and stderr for the "Local: http://localhost:..." line
-// (which channel it lands on varies by Vite version + npx wrapper), AND
-// poll the port directly with HEAD requests as a backup. CI runners on cold
-// `npx` cache routinely take 20-40s to boot the preview, so the timeout is
-// 90s — generous but bounded.
+// Two independent ready signals, OR'd together. CI run #43 showed why both
+// matter:
+//   - The previous regex match on each chunk in isolation FAILED there even
+//     though Vite did print "Local: http://...", because the line arrived
+//     across multiple `data` events ("...Local:" then "   http://..."). We
+//     now buffer all output and re-test the buffer on every chunk.
+//   - The HTTP probe is the belt-and-braces backup, hitting 127.0.0.1 *and*
+//     ::1 (Node's getaddrinfo can resolve localhost to either, and Vite may
+//     bind to only one) at both `/` and the BASE path Vite is serving.
+//
+// CI cold-starts can take 60s+ because npx has to download Vite. Bumping
+// the bounded timeout to 180s gives runners with a cold cache headroom.
 function startPreviewServer() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
@@ -95,6 +102,7 @@ function startPreviewServer() {
       { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] },
     );
     let resolved = false;
+    let buf = '';
     const ready = () => {
       if (resolved) return;
       resolved = true;
@@ -106,7 +114,18 @@ function startPreviewServer() {
     const onChunk = (chunk) => {
       const text = chunk.toString();
       process.stderr.write(`[preview] ${text}`);
-      if (!resolved && /Local:\s+http/i.test(text)) ready();
+      if (resolved) return;
+      // Keep last 4KB; "Local: http://..." line is well within that and the
+      // bound prevents unbounded growth from Vite's progress chatter.
+      buf = (buf + text).slice(-4096);
+      const m = buf.match(/Local:\s+(http:\/\/[^\s/]+(?:\/[^\s]*)?)/i);
+      if (m) {
+        // Capture the actual base path Vite serves so the HTTP probe targets
+        // the right URL. Falls back to "/" if no match.
+        const url = new URL(m[1]);
+        servedPath = url.pathname || '/';
+        ready();
+      }
     };
     proc.stdout.on('data', onChunk);
     proc.stderr.on('data', onChunk);
@@ -114,25 +133,35 @@ function startPreviewServer() {
       if (!resolved) reject(new Error(`vite preview exited (code ${code}) before starting`));
     });
 
-    // HTTP probe — same effect as watching the log line, but resilient to
-    // log-format changes and stdout buffering on CI. Fires every 500ms.
-    const pollTimer = setInterval(() => {
-      if (resolved) return;
+    // HTTP probe — fires every 500ms. Tries multiple host/path combos so a
+    // single binding mismatch (IPv6-only resolution, base-path 404) doesn't
+    // sink the readiness signal.
+    let servedPath = '/';
+    const probeOnce = (host, path) => {
       const req = require('http').request(
-        { host: '127.0.0.1', port: PORT, path: '/', method: 'HEAD', timeout: 1000 },
+        { host, port: PORT, path, method: 'GET', timeout: 1500 },
         (res) => { res.resume(); ready(); },
       );
       req.on('error', () => {});
       req.on('timeout', () => req.destroy());
       req.end();
+    };
+    const pollTimer = setInterval(() => {
+      if (resolved) return;
+      // Default Vite base on Pages is `/<repo>/`; probing both `/` and the
+      // detected base catches either binding.
+      for (const host of ['127.0.0.1', '::1', 'localhost']) {
+        probeOnce(host, servedPath);
+        if (servedPath !== '/') probeOnce(host, '/');
+      }
     }, 500);
 
     const timeout = setTimeout(() => {
       if (!resolved) {
         clearInterval(pollTimer);
-        reject(new Error('vite preview did not start within 90s'));
+        reject(new Error('vite preview did not start within 180s'));
       }
-    }, 90_000);
+    }, 180_000);
   });
 }
 
