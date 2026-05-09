@@ -12,6 +12,7 @@ import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, Skeleton, Eyebrow, TopicGlyph, levelTone } from '../ui/index.js';
 import { cn } from '../lib/cn.js';
 import { PLATFORMS, topicPlatform } from '../lib/platform.js';
+import { useDocumentMeta } from '../lib/useDocumentMeta.js';
 
 const FILTERS = ['all', 'not_started', 'in_progress', 'completed'];
 
@@ -26,6 +27,23 @@ export default function TopicPage() {
   const setFilter = usePrefs((s) => s.setTopicFilter);
 
   const { data: topic, isLoading, error } = useTopic(slug);
+
+  // Per-topic head meta — title becomes "<Topic> Interview Questions —
+  // prepiroshi" so SERPs show topic-specific results instead of the same
+  // home title 53 times. Description quotes the topic's own one-liner.
+  const metaTitleEn = topic ? `${topic.title} Interview Questions — prepiroshi` : null;
+  const metaTitleRu = topic ? `${topicTitle(topic)} — вопросы для собеса · prepiroshi` : null;
+  const metaDescEn = topic
+    ? `${topic.description || `Practice ${topic.title} interview questions`}. ${topic.question_count || ''} questions, SRS scheduling, AI-graded answers.`
+    : null;
+  const metaDescRu = topic
+    ? `${topicDesc(topic) || `Вопросы по теме ${topicTitle(topic)}`}. ${topic.question_count || ''} вопросов, SRS, AI-проверка.`
+    : null;
+  useDocumentMeta({
+    title: lang === 'ru' ? metaTitleRu : metaTitleEn,
+    description: lang === 'ru' ? metaDescRu : metaDescEn,
+    canonical: topic ? `/topic/${topic.slug}` : null,
+  });
 
   // Keyboard navigation: which question is "focused" + open
   const [cursor, setCursor] = useState(0);

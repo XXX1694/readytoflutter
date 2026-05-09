@@ -91,8 +91,15 @@ function resolveSiteUrl() {
 
 function buildSitemap(topics, siteUrl) {
   const today = new Date().toISOString().slice(0, 10);
+  // Per-platform landing pages share content with /, but each gets its own
+  // hero copy + canonical, so they're indexable as independent SEO entry
+  // points. Keep them at priority 0.9 (just under root) and weekly cadence.
+  const PLATFORM_LANDINGS = ['/flutter', '/ios', '/android', '/kmp'];
   const urls = [
     { loc: '/', priority: '1.0', changefreq: 'weekly' },
+    ...PLATFORM_LANDINGS.map((p) => ({ loc: p, priority: '0.9', changefreq: 'weekly' })),
+    { loc: '/pricing', priority: '0.6', changefreq: 'monthly' },
+    { loc: '/contact', priority: '0.4', changefreq: 'monthly' },
     ...topics.map((t) => ({
       loc: `/topic/${t.slug}`,
       priority: '0.8',
@@ -139,7 +146,8 @@ function main() {
 
   if (sitemap) {
     fs.writeFileSync(SITEMAP_FILE, sitemap);
-    console.log(`✓ wrote ${path.relative(ROOT, SITEMAP_FILE)} — ${payload.topics.length * 2 + 1} URLs (host: ${siteUrl})`);
+    const urlCount = (sitemap.match(/<url>/g) || []).length;
+    console.log(`✓ wrote ${path.relative(ROOT, SITEMAP_FILE)} — ${urlCount} URLs (host: ${siteUrl})`);
   } else {
     console.log('· sitemap.xml skipped — set SITE_URL or run inside GitHub Actions');
   }

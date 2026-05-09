@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Command, Brain } from 'lucide-react';
@@ -15,19 +15,38 @@ import ActivityHeatmap from '../components/ActivityHeatmap.jsx';
 import TodayPlan from '../components/TodayPlan.jsx';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import { filterTopicsByPlatform } from '../lib/platform.js';
+import { useDocumentMeta } from '../lib/useDocumentMeta.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const modKey = isMac ? '⌘' : 'Ctrl';
 
 const LEVELS = ['junior', 'mid', 'senior'];
 
-export default function HomePage() {
+export default function HomePage({ landing = null }) {
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
   const platform = usePrefs((s) => s.platform);
+  const setPlatform = usePrefs((s) => s.setPlatform);
   const navigate = useNavigate();
+
+  // Landing-page mode: when this HomePage is rendered as /flutter, /ios, etc.
+  // we (a) snap the persisted platform filter to match the landing on first
+  // visit, and (b) override the hero copy + document head. The mount-only
+  // guard is intentional so a user who manually picks a different platform
+  // after landing can keep exploring without us snapping it back.
+  const landingCopy = landing ? landing[lang === 'ru' ? 'ru' : 'en'] : null;
+  useEffect(() => {
+    if (landing?.platform) setPlatform(landing.platform);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [landing?.platform]);
+  useDocumentMeta({
+    title: landingCopy?.docTitle,
+    description: landingCopy?.metaDesc,
+    canonical: landing?.canonical,
+    ogImage: landing?.ogImage,
+  });
 
   const topicsQ = useTopics();
   const statsQ = useStats();
@@ -99,10 +118,16 @@ export default function HomePage() {
         <section className="mb-7 sm:mb-14">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur sm:mb-5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
-            {lang === 'ru' ? 'Подготовка · Mobile' : 'Interview prep · Mobile'}
+            {landingCopy?.eyebrow ?? (lang === 'ru' ? 'Подготовка · Mobile' : 'Interview prep · Mobile')}
           </div>
           <h1 className="font-display text-display-xs font-semibold leading-[1.04] tracking-tightest sm:text-display-md sm:leading-[1.02] lg:text-display-lg xl:text-display-xl">
-            {lang === 'ru' ? (
+            {landingCopy ? (
+              <>
+                <span className="text-ink">{landingCopy.title[0]}</span>
+                <br />
+                <span className="text-gradient-brand">{landingCopy.title[1]}</span>
+              </>
+            ) : lang === 'ru' ? (
               <>
                 <span className="text-ink">Готов к</span>
                 <br />
@@ -117,7 +142,7 @@ export default function HomePage() {
             )}
           </h1>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-2 sm:mt-6 sm:text-lg">
-            {t.heroDesc}
+            {landingCopy?.desc ?? t.heroDesc}
           </p>
 
           {/* Factual metric strip — concrete content scope replaces the

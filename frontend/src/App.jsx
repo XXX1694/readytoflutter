@@ -10,6 +10,7 @@ import { useAuth } from './store/auth.js';
 import { apiBaseUrl } from './api/api.js';
 import { prefetchIdle } from './lib/prefetch.js';
 import { initAnalytics, pageview, identify } from './lib/analytics.js';
+import { LANDINGS } from './i18n/landings.js';
 import './store/prefs.js'; // side-effect: hydrate theme before paint
 
 // Pageview tracker — sits inside the Router so useLocation works. Fires once
@@ -106,6 +107,21 @@ export default function App() {
                     </Suspense>
                   }
                 />
+                {/* Per-platform landings — same HomePage shell, different
+                    hero copy + auto-applied platform filter + canonical / OG
+                    meta. Adds 4 SEO entry points (/flutter, /ios, /android,
+                    /kmp) without forking the dashboard. */}
+                {Object.entries(LANDINGS).map(([slug, config]) => (
+                  <Route
+                    key={slug}
+                    path={slug}
+                    element={
+                      <Suspense fallback={<FullPageLoader />}>
+                        <HomePage landing={config} />
+                      </Suspense>
+                    }
+                  />
+                ))}
                 <Route
                   path="topic/:slug"
                   element={
