@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, Send, Check } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Eyebrow } from '../ui/index.js';
-import { submitContact } from '../api/api.js';
+import { submitContact } from '../api/api';
 import { track } from '../lib/analytics';
 import { cn } from '../lib/cn';
 

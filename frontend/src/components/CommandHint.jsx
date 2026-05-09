@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Command, X } from 'lucide-react';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext.jsx';
 import { cn } from '../lib/cn';
 

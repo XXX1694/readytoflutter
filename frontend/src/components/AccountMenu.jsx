@@ -4,11 +4,11 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useQueryClient } from '@tanstack/react-query';
 import { LogIn, LogOut, Cloud, Trash2, Shield, ChevronDown, Settings, Sparkles, Crown, Star, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import {
   authLogout, authDeleteAccount, bulkSyncProgress,
   readLocalProgress, clearLocalProgress, apiBaseUrl,
-} from '../api/api.js';
+} from '../api/api';
 import { track, resetIdentity } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext.jsx';
 import { cn } from '../lib/cn';

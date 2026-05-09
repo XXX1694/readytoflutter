@@ -7,12 +7,12 @@ import {
   ArrowLeft, User, Lock, AtSign, Trash2, Save, Eye, EyeOff, Shield,
   Mail, AlertTriangle, Sliders, Sun, Moon, Languages, Edit3,
 } from 'lucide-react';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import {
   authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
-} from '../api/api.js';
+} from '../api/api';
 import { useLang } from '../i18n/LangContext.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { Button, Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn';
 

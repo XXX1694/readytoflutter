@@ -6,13 +6,13 @@ import {
   Loader2, Search, Check, RotateCcw, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Eyebrow, Pill } from '../ui/index.js';
 import {
   adminGetStats, adminListUsers, adminPatchUser,
   adminListContact, adminPatchContact,
-} from '../api/api.js';
+} from '../api/api';
 import { cn } from '../lib/cn';
 
 const COPY = {

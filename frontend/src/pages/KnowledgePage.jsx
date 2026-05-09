@@ -20,7 +20,7 @@ import { Button, Pill, FullPageLoader } from '../ui/index.js';
 import { cn } from '../lib/cn';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { filterResourcesByPlatform } from '../lib/platform';
 
 const CATEGORY_ICONS = {

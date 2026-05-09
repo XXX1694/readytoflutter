@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 
 /**
  * Lazy-loaded global overlays. Each one used to live in `Layout` as an

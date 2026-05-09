@@ -7,8 +7,8 @@ import {
 import { toast } from 'sonner';
 import CodeBlock from './CodeBlock.jsx';
 import AnswerText from './AnswerText.jsx';
-import { useUpdateProgress } from '../lib/queries.js';
-import { usePrefs } from '../store/prefs.js';
+import { useUpdateProgress } from '../lib/queries';
+import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';

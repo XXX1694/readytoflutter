@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+import type { Question } from '../types/domain.ts';
+
 /**
  * Admin store — local diff over the read-only base data.
  *
@@ -14,11 +16,28 @@ import { persist, createJSONStorage } from 'zustand/middleware';
  * the base array directly.
  */
 
-const empty = () => ({ edits: {}, adds: [], deletes: {} });
+export type QuestionDiffStatus = 'clean' | 'added' | 'modified' | 'deleted';
 
-export const useAdmin = create(
+export interface AdminDiff {
+  edits: Record<number, Partial<Question>>;
+  adds: Question[];
+  deletes: Record<number, true>;
+}
+
+export interface AdminState extends AdminDiff {
+  patch: (id: number, partial: Partial<Question>) => void;
+  add: (question: Question) => void;
+  remove: (id: number) => void;
+  restore: (id: number) => void;
+  revertEdit: (id: number) => void;
+  reset: () => void;
+}
+
+const empty = (): AdminDiff => ({ edits: {}, adds: [], deletes: {} });
+
+export const useAdmin = create<AdminState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...empty(),
 
       // ── Question ops ────────────────────────────────────
@@ -28,7 +47,7 @@ export const useAdmin = create(
           const addIdx = s.adds.findIndex((q) => q.id === id);
           if (addIdx !== -1) {
             const adds = [...s.adds];
-            adds[addIdx] = { ...adds[addIdx], ...partial };
+            adds[addIdx] = { ...adds[addIdx], ...partial } as Question;
             return { adds };
           }
           return { edits: { ...s.edits, [id]: { ...(s.edits[id] || {}), ...partial } } };
@@ -51,7 +70,7 @@ export const useAdmin = create(
           // Otherwise mark as deleted from the base
           return {
             deletes: { ...s.deletes, [id]: true },
-            edits: Object.fromEntries(Object.entries(s.edits).filter(([k]) => +k !== id)),
+            edits: Object.fromEntries(Object.entries(s.edits).filter(([k]) => Number(k) !== id)),
           };
         });
       },
@@ -88,20 +107,20 @@ export const useAdmin = create(
  * Sort is preserved: existing items stay in their original order; additions
  * append at the end of their topic group sorted by order_index.
  */
-export function applyDiff(base, diff) {
+export function applyDiff(base: Question[], diff: AdminDiff): Question[] {
   const deletes = diff.deletes || {};
   const edits = diff.edits || {};
   const adds = diff.adds || [];
   const merged = base
     .filter((q) => !deletes[q.id])
-    .map((q) => (edits[q.id] ? { ...q, ...edits[q.id] } : q));
+    .map((q) => (edits[q.id] ? ({ ...q, ...edits[q.id] } as Question) : q));
   return [...merged, ...adds];
 }
 
 /**
  * Marks the lifecycle status of a question relative to the diff.
  */
-export function statusOf(id, diff) {
+export function statusOf(id: number, diff: AdminDiff): QuestionDiffStatus {
   if (diff.deletes?.[id]) return 'deleted';
   if (diff.adds?.some((q) => q.id === id)) return 'added';
   if (diff.edits?.[id]) return 'modified';

@@ -4,14 +4,14 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { LogIn, Eye, EyeOff, ArrowLeft, Lock, AtSign } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import {
   authLogin,
   bulkSyncProgress,
   readLocalProgress,
   clearLocalProgress,
   serializeLocalProgress,
-} from '../api/api.js';
+} from '../api/api';
 import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useLoginCopy } from '../i18n/loginPage.js';

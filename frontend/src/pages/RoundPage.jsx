@@ -6,7 +6,7 @@ import {
   CornerDownRight,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useTopic } from '../lib/queries.js';
+import { useTopic } from '../lib/queries';
 import { buildRound, chainConcepts } from '../lib/roundBuilder.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';

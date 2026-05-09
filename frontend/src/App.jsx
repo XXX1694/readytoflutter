@@ -4,14 +4,14 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Layout from './components/Layout.jsx';
 import { LangProvider } from './i18n/LangContext.jsx';
-import { queryClient } from './lib/queryClient.js';
+import { queryClient } from './lib/queryClient';
 import { FullPageLoader } from './ui/index.js';
-import { useAuth } from './store/auth.js';
-import { apiBaseUrl } from './api/api.js';
+import { useAuth } from './store/auth';
+import { apiBaseUrl } from './api/api';
 import { prefetchIdle } from './lib/prefetch.js';
 import { initAnalytics, pageview, identify } from './lib/analytics';
 import { LANDINGS } from './i18n/landings';
-import './store/prefs.js'; // side-effect: hydrate theme before paint
+import './store/prefs'; // side-effect: hydrate theme before paint
 
 // Pageview tracker — sits inside the Router so useLocation works. Fires once
 // per pathname change. No-op when no analytics provider is configured.

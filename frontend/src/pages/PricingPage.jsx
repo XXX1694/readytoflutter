@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Sparkles, Zap, Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Eyebrow, Pill } from '../ui/index.js';
-import { billingHealth, billingCheckout, billingPortal } from '../api/api.js';
+import { billingHealth, billingCheckout, billingPortal } from '../api/api';
 import { track } from '../lib/analytics';
 import { cn } from '../lib/cn';
 

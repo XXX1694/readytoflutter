@@ -2,17 +2,17 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MiniSearch from 'minisearch';
 import { ArrowLeft, Search as SearchIcon, X } from 'lucide-react';
-import { useQuestions, useTopics } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries';
 import QuestionCard from '../components/QuestionCard.jsx';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Skeleton } from '../ui/index.js';
 import { cn } from '../lib/cn';
-import { useAdmin, applyDiff } from '../store/admin.js';
+import { useAdmin, applyDiff } from '../store/admin';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 
 const FACETS = {

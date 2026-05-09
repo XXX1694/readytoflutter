@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Brain, Target } from 'lucide-react';
-import { useTopics, useQuestions, useStats } from '../lib/queries.js';
+import { useTopics, useQuestions, useStats } from '../lib/queries';
 import { getCardState, getSrsSummary } from '../lib/srs';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
@@ -9,7 +9,7 @@ import { useContent } from '../i18n/content.js';
 import { Button, Eyebrow, ProgressBar, Pill, Skeleton, TopicGlyph, levelTone } from '../ui/index.js';
 import { cn } from '../lib/cn';
 import PlatformFilter from '../components/PlatformFilter.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { filterTopicsByPlatform, filterQuestionsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform';
 
 const LEVELS = ['junior', 'mid', 'senior'];

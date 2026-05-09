@@ -1,7 +1,21 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { toast } from 'sonner';
-import { queryClient } from '../lib/queryClient.js';
-import { useAuth } from '../store/auth.js';
+import { queryClient } from '../lib/queryClient';
+import { useAuth } from '../store/auth';
+
+import type {
+  Topic,
+  Question,
+  Stats,
+  User,
+  ProgressStatus,
+  Level,
+  Difficulty,
+  AdminStats,
+  ContactMessage,
+  AiGrade,
+  ProTier,
+} from '../types/domain.ts';
 
 // Production fallback for GitHub Pages: when we're served from *.github.io
 // and the build wasn't given an explicit VITE_API_BASE_URL, fall back to
@@ -12,11 +26,11 @@ import { useAuth } from '../store/auth.js';
 // which meant a backend rename or domain change would silently break Pages
 // auth without any code visibility. Keeping it in env makes the wiring
 // inspectable from the workflow / .env.example.
-const PROD_API_FALLBACK = import.meta.env.VITE_PROD_API_FALLBACK_URL || '';
-const onGithubPages = typeof window !== 'undefined'
+const PROD_API_FALLBACK: string = import.meta.env.VITE_PROD_API_FALLBACK_URL || '';
+const onGithubPages: boolean = typeof window !== 'undefined'
   && window.location.hostname.endsWith('.github.io');
 
-const apiBaseUrl =
+const apiBaseUrl: string =
   import.meta.env.VITE_API_BASE_URL
   || (onGithubPages && PROD_API_FALLBACK ? PROD_API_FALLBACK : '/api');
 
@@ -29,7 +43,7 @@ if (typeof window !== 'undefined' && onGithubPages && !import.meta.env.VITE_API_
     + 'Auth/sync will be unavailable; the app stays functional in anonymous mode.',
   );
 }
-const api = axios.create({ baseURL: apiBaseUrl });
+const api: AxiosInstance = axios.create({ baseURL: apiBaseUrl });
 
 // Attach the auth token (if any) to every outgoing request. Reading from the
 // store on each request keeps things in sync after login/logout without
@@ -63,6 +77,21 @@ api.interceptors.response.use(
 
 export { api, apiBaseUrl };
 
+// ── Static-data fallback (anonymous / GitHub Pages) ─────────────────────────
+
+interface StaticDataPayload {
+  topics: Topic[];
+  questions: Question[];
+}
+
+interface LocalProgressEntry {
+  status: ProgressStatus;
+  notes?: string | null;
+  updated_at: string;
+}
+
+type LocalProgressMap = Record<string, LocalProgressEntry>;
+
 const STATIC_DATA_URL = `${import.meta.env.BASE_URL}seed/static-data.json`;
 const PROGRESS_STORAGE_KEY = 'readytoflutter_progress_v1';
 // Re-fetch the static bundle once an hour. Without this, a user with an
@@ -70,17 +99,17 @@ const PROGRESS_STORAGE_KEY = 'readytoflutter_progress_v1';
 // changes deployed mid-session never appear until the next hard reload.
 const STATIC_DATA_TTL_MS = 60 * 60 * 1000;
 
-let staticDataPromise = null;
+let staticDataPromise: Promise<StaticDataPayload> | null = null;
 let staticDataLoadedAt = 0;
 
-const loadStaticData = () => {
+const loadStaticData = (): Promise<StaticDataPayload> => {
   const fresh = staticDataPromise && (Date.now() - staticDataLoadedAt) < STATIC_DATA_TTL_MS;
-  if (fresh) return staticDataPromise;
+  if (fresh && staticDataPromise) return staticDataPromise;
 
   staticDataPromise = fetch(STATIC_DATA_URL)
     .then(async (res) => {
       if (!res.ok) throw new Error(`Failed to load static data: ${res.status}`);
-      const data = await res.json();
+      const data = (await res.json()) as StaticDataPayload;
       staticDataLoadedAt = Date.now();
       return data;
     })
@@ -96,36 +125,35 @@ const loadStaticData = () => {
 
 // Force a reload of the static bundle on next read — used after admin edits
 // or after the user signs in (server data may now differ from baked seed).
-export const invalidateStaticData = () => {
+export const invalidateStaticData = (): void => {
   staticDataPromise = null;
   staticDataLoadedAt = 0;
 };
 
-const readProgress = () => {
+const readProgress = (): LocalProgressMap => {
   try {
     const data = localStorage.getItem(PROGRESS_STORAGE_KEY);
-    return data ? JSON.parse(data) : {};
+    return data ? (JSON.parse(data) as LocalProgressMap) : {};
   } catch (error) {
     console.error('Failed to read progress from localStorage:', error);
     return {};
   }
 };
 
-const writeProgress = (progress) => {
+const writeProgress = (progress: LocalProgressMap): void => {
   try {
     const data = JSON.stringify(progress);
     localStorage.setItem(PROGRESS_STORAGE_KEY, data);
   } catch (error) {
     console.error('Failed to write progress to localStorage:', error);
-    // Check if quota exceeded
-    if (error.name === 'QuotaExceededError') {
+    if ((error as DOMException).name === 'QuotaExceededError') {
       alert('Storage quota exceeded. Please clear some browser data.');
     }
     throw error;
   }
 };
 
-const withProgress = (question, progress) => {
+const withProgress = (question: Question, progress: LocalProgressMap): Question => {
   const p = progress[String(question.id)] || null;
   return {
     ...question,
@@ -134,9 +162,13 @@ const withProgress = (question, progress) => {
   };
 };
 
-const buildTopicStats = (topics, questions, progress) => {
-  const countByTopic = new Map();
-  const completedByTopic = new Map();
+const buildTopicStats = (
+  topics: Topic[],
+  questions: Question[],
+  progress: LocalProgressMap,
+): Topic[] => {
+  const countByTopic = new Map<number, number>();
+  const completedByTopic = new Map<number, number>();
 
   questions.forEach((q) => {
     countByTopic.set(q.topic_id, (countByTopic.get(q.topic_id) || 0) + 1);
@@ -153,22 +185,25 @@ const buildTopicStats = (topics, questions, progress) => {
   }));
 };
 
-const fallbackGetTopics = async (level) => {
+const fallbackGetTopics = async (level?: Level): Promise<Topic[]> => {
   const { topics, questions } = await loadStaticData();
   const progress = readProgress();
-  const enriched = buildTopicStats(topics, questions, progress)
+  return buildTopicStats(topics, questions, progress)
     .filter((t) => (level ? t.level === level : true))
     .sort((a, b) => a.order_index - b.order_index);
-  return enriched;
 };
 
-const fallbackGetTopic = async (slug) => {
+interface FallbackTopicWithQuestions extends Topic {
+  questions: Question[];
+}
+
+const fallbackGetTopic = async (slug: string): Promise<FallbackTopicWithQuestions> => {
   const { topics, questions } = await loadStaticData();
   const progress = readProgress();
 
   const topic = topics.find((t) => t.slug === slug);
   if (!topic) {
-    const err = new Error('Topic not found');
+    const err = new Error('Topic not found') as Error & { status?: number };
     err.status = 404;
     throw err;
   }
@@ -188,7 +223,13 @@ const fallbackGetTopic = async (slug) => {
   };
 };
 
-const fallbackGetQuestions = async (params = {}) => {
+export interface QuestionFilterParams {
+  level?: Level;
+  difficulty?: Difficulty;
+  search?: string;
+}
+
+const fallbackGetQuestions = async (params: QuestionFilterParams = {}): Promise<Question[]> => {
   const { topics, questions } = await loadStaticData();
   const progress = readProgress();
   const topicById = new Map(topics.map((t) => [t.id, t]));
@@ -203,7 +244,7 @@ const fallbackGetQuestions = async (params = {}) => {
         topic_title: topic?.title,
         level: topic?.level,
         topic_slug: topic?.slug,
-      };
+      } as Question;
     })
     .filter((q) => (params.level ? q.level === params.level : true))
     .filter((q) => (params.difficulty ? q.difficulty === params.difficulty : true))
@@ -222,7 +263,7 @@ const fallbackGetQuestions = async (params = {}) => {
     });
 };
 
-const fallbackGetStats = async () => {
+const fallbackGetStats = async (): Promise<Stats> => {
   const { topics, questions } = await loadStaticData();
   const progress = readProgress();
 
@@ -231,7 +272,7 @@ const fallbackGetStats = async () => {
   const completed = values.filter((p) => p.status === 'completed').length;
   const inProgress = values.filter((p) => p.status === 'in_progress').length;
 
-  const byLevelMap = new Map();
+  const byLevelMap = new Map<Level, number>();
   const topicById = new Map(topics.map((t) => [t.id, t]));
 
   questions.forEach((q) => {
@@ -240,15 +281,26 @@ const fallbackGetStats = async () => {
     byLevelMap.set(level, (byLevelMap.get(level) || 0) + 1);
   });
 
-  const levelOrder = ['junior', 'mid', 'senior'];
+  const levelOrder: Level[] = ['junior', 'mid', 'senior'];
   const byLevel = levelOrder
     .filter((level) => byLevelMap.has(level))
-    .map((level) => ({ level, count: byLevelMap.get(level) }));
+    .map((level) => ({ level, count: byLevelMap.get(level)! }));
 
   return { totalQuestions, completed, inProgress, byLevel };
 };
 
-const fallbackUpdateProgress = async (questionId, status, notes) => {
+interface ProgressUpdateResult {
+  success: boolean;
+  status: ProgressStatus;
+  notes: string | null;
+  updated_at: string;
+}
+
+const fallbackUpdateProgress = async (
+  questionId: number,
+  status: ProgressStatus,
+  notes?: string | null,
+): Promise<ProgressUpdateResult> => {
   const progress = readProgress();
   const now = new Date().toISOString();
   progress[String(questionId)] = {
@@ -260,15 +312,23 @@ const fallbackUpdateProgress = async (questionId, status, notes) => {
   return { success: true, status, notes: notes || null, updated_at: now };
 };
 
-const fallbackResetProgress = async () => {
+const fallbackResetProgress = async (): Promise<{ success: boolean }> => {
   writeProgress({});
   return { success: true };
 };
 
+interface TryRemoteOptions {
+  notifyOnWrite?: boolean;
+}
+
 // Throttle the "saved locally" toast so a burst of writes (e.g. rating 10
 // cards in a row while offline) doesn't fire 10 toasts.
 let lastOfflineToastAt = 0;
-const tryRemote = async (fn, fallbackFn, opts = {}) => {
+const tryRemote = async <T>(
+  fn: () => Promise<T>,
+  fallbackFn: () => Promise<T>,
+  opts: TryRemoteOptions = {},
+): Promise<T> => {
   try {
     return await fn();
   } catch {
@@ -287,40 +347,44 @@ const tryRemote = async (fn, fallbackFn, opts = {}) => {
   }
 };
 
-export const getTopics = (level) =>
+export const getTopics = (level?: Level): Promise<Topic[]> =>
   tryRemote(
-    () => api.get('/topics', { params: level ? { level } : {} }).then((r) => r.data),
+    () => api.get<Topic[]>('/topics', { params: level ? { level } : {} }).then((r) => r.data),
     () => fallbackGetTopics(level),
   );
 
-export const getTopic = (slug) =>
+export const getTopic = (slug: string): Promise<FallbackTopicWithQuestions> =>
   tryRemote(
-    () => api.get(`/topics/${slug}`).then((r) => r.data),
+    () => api.get<FallbackTopicWithQuestions>(`/topics/${slug}`).then((r) => r.data),
     () => fallbackGetTopic(slug),
   );
 
-export const getQuestions = (params) =>
+export const getQuestions = (params?: QuestionFilterParams): Promise<Question[]> =>
   tryRemote(
-    () => api.get('/questions', { params }).then((r) => r.data),
+    () => api.get<Question[]>('/questions', { params }).then((r) => r.data),
     () => fallbackGetQuestions(params),
   );
 
-export const getStats = () =>
+export const getStats = (): Promise<Stats> =>
   tryRemote(
-    () => api.get('/stats').then((r) => r.data),
+    () => api.get<Stats>('/stats').then((r) => r.data),
     fallbackGetStats,
   );
 
-export const updateProgress = (questionId, status, notes) =>
+export const updateProgress = (
+  questionId: number,
+  status: ProgressStatus,
+  notes?: string | null,
+): Promise<ProgressUpdateResult> =>
   tryRemote(
-    () => api.post(`/progress/${questionId}`, { status, notes }).then((r) => r.data),
+    () => api.post<ProgressUpdateResult>(`/progress/${questionId}`, { status, notes }).then((r) => r.data),
     () => fallbackUpdateProgress(questionId, status, notes),
     { notifyOnWrite: true },
   );
 
-export const resetProgress = () =>
+export const resetProgress = (): Promise<{ success: boolean }> =>
   tryRemote(
-    () => api.delete('/progress/reset').then((r) => r.data),
+    () => api.delete<{ success: boolean }>('/progress/reset').then((r) => r.data),
     fallbackResetProgress,
     { notifyOnWrite: true },
   );
@@ -329,57 +393,75 @@ export const resetProgress = () =>
 // These don't have static fallbacks — auth is only meaningful with a real
 // backend. Callers handle the rejection (LoginPage etc).
 
-export const authRegister = (email, password, name) =>
-  api.post('/auth/register', { email, password, name }).then((r) => r.data);
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
 
-export const authLogin = (email, password) =>
-  api.post('/auth/login', { email, password }).then((r) => r.data);
+export const authRegister = (email: string, password: string, name: string | null): Promise<AuthResponse> =>
+  api.post<AuthResponse>('/auth/register', { email, password, name }).then((r) => r.data);
 
-export const authLogout = () =>
-  api.post('/auth/logout').then((r) => r.data).catch(() => ({ ok: true }));
+export const authLogin = (email: string, password: string): Promise<AuthResponse> =>
+  api.post<AuthResponse>('/auth/login', { email, password }).then((r) => r.data);
 
-export const authMe = () =>
-  api.get('/auth/me').then((r) => r.data);
+export const authLogout = (): Promise<{ ok: boolean }> =>
+  api.post<{ ok: boolean }>('/auth/logout').then((r) => r.data).catch(() => ({ ok: true }));
 
-export const authUpdateName = (name) =>
-  api.put('/auth/me', { name }).then((r) => r.data);
+export const authMe = (): Promise<{ user: User }> =>
+  api.get<{ user: User }>('/auth/me').then((r) => r.data);
 
-export const authChangePassword = (currentPassword, newPassword) =>
-  api.put('/auth/password', { currentPassword, newPassword }).then((r) => r.data);
+export const authUpdateName = (name: string | null): Promise<{ user: User }> =>
+  api.put<{ user: User }>('/auth/me', { name }).then((r) => r.data);
 
-export const authChangeEmail = (currentPassword, newEmail) =>
-  api.put('/auth/email', { currentPassword, newEmail }).then((r) => r.data);
+export const authChangePassword = (
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ ok: boolean }> =>
+  api.put<{ ok: boolean }>('/auth/password', { currentPassword, newPassword }).then((r) => r.data);
 
-export const authDeleteAccount = () =>
-  api.delete('/auth/me').then((r) => r.data);
+export const authChangeEmail = (
+  currentPassword: string,
+  newEmail: string,
+): Promise<AuthResponse> =>
+  api.put<AuthResponse>('/auth/email', { currentPassword, newEmail }).then((r) => r.data);
+
+export const authDeleteAccount = (): Promise<{ ok: boolean }> =>
+  api.delete<{ ok: boolean }>('/auth/me').then((r) => r.data);
+
+export interface BulkProgressItem {
+  questionId: number;
+  status: ProgressStatus;
+  notes?: string | null;
+  updated_at?: string;
+}
 
 // Bulk import — used at first login to migrate localStorage progress to the
 // server. Items use the same shape as the in-browser store.
-export const bulkSyncProgress = (items) =>
-  api.post('/progress/bulk', { items }).then((r) => r.data);
+export const bulkSyncProgress = (items: BulkProgressItem[]): Promise<{ imported: number; skipped: number }> =>
+  api.post<{ imported: number; skipped: number }>('/progress/bulk', { items }).then((r) => r.data);
 
 // Read raw localStorage progress so the sync helper can transform it for the
 // bulk endpoint without touching the rest of the dual-mode plumbing.
-export const readLocalProgress = () => {
+export const readLocalProgress = (): LocalProgressMap => {
   try {
     const raw = localStorage.getItem(PROGRESS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? (JSON.parse(raw) as LocalProgressMap) : {};
   } catch {
     return {};
   }
 };
 
-export const clearLocalProgress = () => {
+export const clearLocalProgress = (): void => {
   try { localStorage.removeItem(PROGRESS_STORAGE_KEY); } catch { /* ignore */ }
 };
 
 // Translate localStorage progress shape into the /api/progress/bulk payload.
 // Used by signup (first-time import) and login (merge any anonymous activity).
-export const serializeLocalProgress = (progress) =>
+export const serializeLocalProgress = (progress: LocalProgressMap | null | undefined): BulkProgressItem[] =>
   Object.entries(progress || {})
     .map(([key, value]) => ({
       questionId: Number(key),
-      status: value?.status,
+      status: value?.status as ProgressStatus,
       notes: value?.notes || null,
       updated_at: value?.updated_at || new Date().toISOString(),
     }))
@@ -390,43 +472,120 @@ export const serializeLocalProgress = (progress) =>
 // frontend just probes /health and posts the user's answer. Both calls
 // fail closed — if the backend isn't reachable, aiHealth() resolves to
 // { enabled: false } so the UI hides the button silently.
-export const aiHealth = () =>
-  api.get('/ai/health').then((r) => r.data).catch(() => ({ enabled: false }));
 
-export const aiGradeAnswer = ({ questionId, userAnswer, lang }) =>
-  api.post('/ai/grade', { questionId, userAnswer, lang }).then((r) => r.data);
+export interface AiHealthResponse {
+  enabled: boolean;
+  reason?: string | null;
+  model?: string;
+  minChars?: number;
+  tier?: ProTier | 'anon';
+  cap?: number;
+  remaining?: number;
+}
 
-export const aiDraftQuestion = ({ prompt, topicTitle, topicLevel, lang }) =>
-  api.post('/ai/draft-question', { prompt, topicTitle, topicLevel, lang }).then((r) => r.data);
+export const aiHealth = (): Promise<AiHealthResponse> =>
+  api.get<AiHealthResponse>('/ai/health').then((r) => r.data).catch(() => ({ enabled: false }));
+
+export interface AiGradeArgs {
+  questionId: number;
+  userAnswer: string;
+  lang: 'en' | 'ru';
+}
+
+export interface AiGradeResponse {
+  grade: AiGrade;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens: number;
+  };
+}
+
+export const aiGradeAnswer = ({ questionId, userAnswer, lang }: AiGradeArgs): Promise<AiGradeResponse> =>
+  api.post<AiGradeResponse>('/ai/grade', { questionId, userAnswer, lang }).then((r) => r.data);
+
+export interface AiDraftArgs {
+  prompt: string;
+  topicTitle?: string;
+  topicLevel?: Level;
+  lang: 'en' | 'ru';
+}
+
+export const aiDraftQuestion = (args: AiDraftArgs): Promise<{ draft: unknown; usage?: unknown }> =>
+  api.post<{ draft: unknown; usage?: unknown }>('/ai/draft-question', args).then((r) => r.data);
 
 // ── Contact form ────────────────────────────────────────────────────────────
-export const submitContact = ({ name, email, message, website }) =>
-  api.post('/contact', { name, email, message, website }).then((r) => r.data);
+export interface ContactArgs {
+  name?: string | null;
+  email: string;
+  message: string;
+  website?: string;
+}
+
+export const submitContact = (args: ContactArgs): Promise<{ ok: boolean; id?: number }> =>
+  api.post<{ ok: boolean; id?: number }>('/contact', args).then((r) => r.data);
 
 // ── Billing (Stripe) ────────────────────────────────────────────────────────
 // Health probe so the UI can hide /pricing CTAs cleanly when billing isn't
 // configured. Failures resolve to disabled rather than throwing.
-export const billingHealth = () =>
-  api.get('/billing/health').then((r) => r.data).catch(() => ({ enabled: false }));
+export interface BillingHealthResponse {
+  enabled: boolean;
+  reason?: string | null;
+}
 
-export const billingCheckout = () =>
-  api.post('/billing/checkout').then((r) => r.data);
+export const billingHealth = (): Promise<BillingHealthResponse> =>
+  api.get<BillingHealthResponse>('/billing/health').then((r) => r.data).catch(() => ({ enabled: false }));
 
-export const billingPortal = () =>
-  api.post('/billing/portal').then((r) => r.data);
+export const billingCheckout = (): Promise<{ url: string }> =>
+  api.post<{ url: string }>('/billing/checkout').then((r) => r.data);
+
+export const billingPortal = (): Promise<{ url: string }> =>
+  api.post<{ url: string }>('/billing/portal').then((r) => r.data);
 
 // ── Admin ───────────────────────────────────────────────────────────────────
-export const adminGetStats = () =>
-  api.get('/admin/stats').then((r) => r.data);
 
-export const adminListUsers = ({ q = '', limit = 50, offset = 0 } = {}) =>
-  api.get('/admin/users', { params: { q, limit, offset } }).then((r) => r.data);
+export const adminGetStats = (): Promise<AdminStats> =>
+  api.get<AdminStats>('/admin/stats').then((r) => r.data);
 
-export const adminPatchUser = (id, body) =>
-  api.patch(`/admin/users/${id}`, body).then((r) => r.data);
+export interface ListUsersArgs {
+  q?: string;
+  limit?: number;
+  offset?: number;
+}
 
-export const adminListContact = ({ status = null, limit = 50, offset = 0 } = {}) =>
-  api.get('/admin/contact', { params: { status, limit, offset } }).then((r) => r.data);
+export interface AdminUsersResponse {
+  rows: User[];
+  total: number;
+}
 
-export const adminPatchContact = (id, body) =>
-  api.patch(`/admin/contact/${id}`, body).then((r) => r.data);
+export const adminListUsers = ({ q = '', limit = 50, offset = 0 }: ListUsersArgs = {}): Promise<AdminUsersResponse> =>
+  api.get<AdminUsersResponse>('/admin/users', { params: { q, limit, offset } }).then((r) => r.data);
+
+export interface AdminUserPatch {
+  isAdmin?: boolean;
+  proTier?: ProTier;
+  proExpiresAt?: string | null;
+}
+
+export const adminPatchUser = (id: number, body: AdminUserPatch): Promise<{ user: User }> =>
+  api.patch<{ user: User }>(`/admin/users/${id}`, body).then((r) => r.data);
+
+export interface ListContactArgs {
+  status?: 'open' | 'resolved' | null;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminContactResponse {
+  rows: ContactMessage[];
+  total: number;
+}
+
+export const adminListContact = ({ status = null, limit = 50, offset = 0 }: ListContactArgs = {}): Promise<AdminContactResponse> =>
+  api.get<AdminContactResponse>('/admin/contact', { params: { status, limit, offset } }).then((r) => r.data);
+
+export const adminPatchContact = (
+  id: number,
+  body: { status: 'open' | 'resolved' },
+): Promise<{ message: ContactMessage }> =>
+  api.patch<{ message: ContactMessage }>(`/admin/contact/${id}`, body).then((r) => r.data);

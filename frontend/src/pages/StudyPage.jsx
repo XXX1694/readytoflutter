@@ -6,9 +6,9 @@ import {
   X, RotateCcw, ArrowRight, Sparkles, Brain, Code2, ChevronDown, Edit3,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useQuestions, useTopics } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries';
 import { pickDueQueue, rateCard, getCardState } from '../lib/srs';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';

@@ -5,7 +5,7 @@
  *  - per-topic JSONs: matches backend/data/seed/questions/*.json layout
  */
 
-import { applyDiff } from '../store/admin.js';
+import { applyDiff } from '../store/admin';
 
 const QUESTION_FIELDS = [
   'id', 'topic_id', 'order_index', 'difficulty',

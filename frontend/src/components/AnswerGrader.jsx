@@ -4,7 +4,7 @@ import {
   Sparkles, Loader2, AlertCircle, Check, X, ChevronRight, MessagesSquare, Zap,
 } from 'lucide-react';
 import { Button, Pill } from '../ui/index.js';
-import { aiHealth, aiGradeAnswer } from '../api/api.js';
+import { aiHealth, aiGradeAnswer } from '../api/api';
 import { track } from '../lib/analytics';
 
 // Module-level cache for the /ai/health probe. We only need to ask the

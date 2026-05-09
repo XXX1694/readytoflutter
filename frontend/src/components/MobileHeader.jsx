@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, ArrowLeft, Search, X } from 'lucide-react';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
-import { useTopics } from '../lib/queries.js';
+import { useTopics } from '../lib/queries';
 import { useScrollDirection } from '../lib/useScrollDirection.js';
 import { tapLight } from '../lib/haptics.js';
 import { cn } from '../lib/cn';

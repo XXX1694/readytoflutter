@@ -6,13 +6,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useQuestions, useTopics } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index.js';
 import PlatformFilter from '../components/PlatformFilter.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerText from '../components/AnswerText.jsx';

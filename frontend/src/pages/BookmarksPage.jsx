@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookmarkX, Bookmark, Brain, Target, Star, ArrowRight } from 'lucide-react';
-import { useQuestions, useTopics } from '../lib/queries.js';
+import { useQuestions, useTopics } from '../lib/queries';
 import { useBookmarkIds } from '../lib/useBookmark.js';
 import { clearAllBookmarks } from '../lib/bookmarks.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -9,7 +9,7 @@ import { useT } from '../i18n/ui.js';
 import { Button, Skeleton } from '../ui/index.js';
 import QuestionCard from '../components/QuestionCard.jsx';
 import PlatformFilter from '../components/PlatformFilter.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 
 export default function BookmarksPage() {

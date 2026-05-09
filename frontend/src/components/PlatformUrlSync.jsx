@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { PLATFORM_KEYS } from '../lib/platform';
 
 // Bidirectional sync: ?stack=ios <-> prefs.platform.

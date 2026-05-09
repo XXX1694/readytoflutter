@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 
 /**
  * Global keyboard shortcuts that need to fire even before the heavy

@@ -1,6 +1,6 @@
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 import { PLATFORMS } from '../lib/platform';
 import { Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn';

@@ -10,7 +10,7 @@ import PwaPrompts from './PwaPrompts.jsx';
 import PlatformUrlSync from './PlatformUrlSync.jsx';
 import BottomNav from './BottomNav.jsx';
 import RouteTransition from './RouteTransition.jsx';
-import { usePrefs } from '../store/prefs.js';
+import { usePrefs } from '../store/prefs';
 
 export default function Layout() {
   const theme = usePrefs((s) => s.theme);

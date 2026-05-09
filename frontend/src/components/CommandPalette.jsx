@@ -27,17 +27,17 @@ import {
   Settings as SettingsIcon,
   Smartphone,
 } from 'lucide-react';
-import { useTopics } from '../lib/queries.js';
-import { usePrefs } from '../store/prefs.js';
+import { useTopics } from '../lib/queries';
+import { usePrefs } from '../store/prefs';
 import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
-import { useAuth } from '../store/auth.js';
+import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import {
   resetProgress, authLogout, bulkSyncProgress,
   readLocalProgress, clearLocalProgress,
-} from '../api/api.js';
+} from '../api/api';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function CommandPalette() {

@@ -1,24 +1,62 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+import type { PlatformKey, ProgressStatus, Level, Difficulty } from '../types/domain.ts';
+
 // Two reading themes: light and dark. Sepia was removed (low usage, tripled
 // the surface area for every CSS-touching change). Persisted 'sepia' is
 // migrated to 'light' on hydrate — see THEMES guard in initialTheme.
-export const THEMES = ['light', 'dark'];
+export type Theme = 'light' | 'dark';
+export const THEMES: Theme[] = ['light', 'dark'];
 
-const initialTheme = () => {
+export type TopicFilter = 'all' | ProgressStatus;
+export interface SearchFacets {
+  level: Level | null;
+  difficulty: Difficulty | null;
+  status: ProgressStatus | null;
+}
+
+export interface PrefsState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+
+  sidebarOpen: boolean;
+  setSidebarOpen: (sidebarOpen: boolean) => void;
+  toggleSidebar: () => void;
+
+  topicFilter: TopicFilter;
+  setTopicFilter: (topicFilter: TopicFilter) => void;
+
+  platform: PlatformKey;
+  setPlatform: (platform: PlatformKey) => void;
+
+  searchFacets: SearchFacets;
+  setSearchFacet: <K extends keyof SearchFacets>(key: K, value: SearchFacets[K]) => void;
+  resetSearchFacets: () => void;
+
+  commandOpen: boolean;
+  setCommandOpen: (commandOpen: boolean) => void;
+  toggleCommand: () => void;
+
+  recallMode: boolean;
+  setRecallMode: (recallMode: boolean) => void;
+  toggleRecallMode: () => void;
+}
+
+const initialTheme = (): Theme => {
   if (typeof window === 'undefined') return 'light';
   const saved = localStorage.getItem('theme');
-  if (THEMES.includes(saved)) return saved;
+  if (saved === 'light' || saved === 'dark') return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
-const THEME_COLORS = {
+const THEME_COLORS: Record<Theme, string> = {
   light: '#FAFAFB',
   dark:  '#09090B',
 };
 
-const applyTheme = (theme) => {
+const applyTheme = (theme: Theme): void => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   // Toggle one class per theme so CSS can target each variant; light is the
@@ -32,7 +70,7 @@ const applyTheme = (theme) => {
   // theme-color tag (including the prefers-color-scheme keyed pair in the
   // HTML head) since user choice trumps system pref.
   const color = THEME_COLORS[theme] || THEME_COLORS.light;
-  let meta = document.querySelector('meta[name="theme-color"]:not([media])');
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]:not([media])');
   if (!meta) {
     meta = document.createElement('meta');
     meta.setAttribute('name', 'theme-color');
@@ -41,12 +79,20 @@ const applyTheme = (theme) => {
   meta.setAttribute('content', color);
 };
 
-const nextTheme = (current) => {
+const nextTheme = (current: Theme): Theme => {
   const i = THEMES.indexOf(current);
   return THEMES[(i + 1) % THEMES.length];
 };
 
-export const usePrefs = create(
+interface PersistedPrefs {
+  theme: Theme;
+  topicFilter: TopicFilter;
+  searchFacets: SearchFacets;
+  recallMode: boolean;
+  platform: PlatformKey;
+}
+
+export const usePrefs = create<PrefsState>()(
   persist(
     (set, get) => ({
       // Theme
@@ -68,13 +114,13 @@ export const usePrefs = create(
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
       // Topic page filter
-      topicFilter: 'all', // 'all' | 'not_started' | 'in_progress' | 'completed'
+      topicFilter: 'all',
       setTopicFilter: (topicFilter) => set({ topicFilter }),
 
       // Dashboard / sidebar platform scope — splits the 50+ topic catalog into
       // Flutter / iOS / Android / Cross-Platform / Mobile so users can focus
       // on the stack they're interviewing for. 'all' shows every topic.
-      platform: 'all', // 'all' | 'flutter' | 'ios' | 'android' | 'cross' | 'mobile'
+      platform: 'all',
       setPlatform: (platform) => set({ platform }),
 
       // Search facets
@@ -101,7 +147,7 @@ export const usePrefs = create(
       name: 'rtf:prefs:v1',
       storage: createJSONStorage(() => localStorage),
       // Only persist user-controllable bits, not transient UI state.
-      partialize: (s) => ({
+      partialize: (s): PersistedPrefs => ({
         theme: s.theme,
         topicFilter: s.topicFilter,
         searchFacets: s.searchFacets,
@@ -118,7 +164,7 @@ export const usePrefs = create(
 // Hydrate theme synchronously on module load so the dark class is applied
 // before React mounts (avoids the FOUC of light → dark on first paint).
 //
-// Migration: a previously-persisted 'sepia' value won't pass THEMES.includes
+// Migration: a previously-persisted 'sepia' value won't pass the union check
 // in initialTheme, so it falls back to the system pref → effectively
 // migrating those users to light/dark. We also write the migrated value
 // back to localStorage so the legacy string never resurfaces.
