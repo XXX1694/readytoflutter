@@ -320,8 +320,30 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="border-t border-rule/8 px-5 py-3 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-2">
-          {t.footerText}
+        <div className="border-t border-rule/8 px-5 py-3">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-wider text-muted-2">
+            <NavLink
+              to="/pricing"
+              onClick={close}
+              className={({ isActive }) =>
+                cn('transition-colors hover:text-ink', isActive && 'text-ink')
+              }
+            >
+              {lang === 'ru' ? 'Цены' : 'Pricing'}
+            </NavLink>
+            <NavLink
+              to="/contact"
+              onClick={close}
+              className={({ isActive }) =>
+                cn('transition-colors hover:text-ink', isActive && 'text-ink')
+              }
+            >
+              {lang === 'ru' ? 'Контакты' : 'Contact'}
+            </NavLink>
+          </div>
+          <div className="mt-2 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-2">
+            {t.footerText}
+          </div>
         </div>
       </motion.aside>
     </>

@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogIn, LogOut, Cloud, Trash2, Shield, ChevronDown, Settings } from 'lucide-react';
+import { LogIn, LogOut, Cloud, Trash2, Shield, ChevronDown, Settings, Sparkles, Crown, Star, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth.js';
 import {
   authLogout, authDeleteAccount, bulkSyncProgress,
   readLocalProgress, clearLocalProgress, apiBaseUrl,
 } from '../api/api.js';
+import { track, resetIdentity } from '../lib/analytics.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { cn } from '../lib/cn.js';
 
@@ -64,6 +65,8 @@ export default function AccountMenu() {
 
   const handleLogout = async () => {
     try { await authLogout(); } catch { /* ignore */ }
+    track('logout');
+    resetIdentity();
     clearSession();
     qc.invalidateQueries();
     toast.success(isRu ? 'Вышел из аккаунта' : 'Signed out');
@@ -101,6 +104,8 @@ export default function AccountMenu() {
     if (!confirm) return;
     try {
       await authDeleteAccount();
+      track('account_deleted');
+      resetIdentity();
       clearSession();
       qc.invalidateQueries();
       toast.success(isRu ? 'Аккаунт удалён' : 'Account deleted');
@@ -141,14 +146,30 @@ export default function AccountMenu() {
           )}
         >
           <div className="border-b border-rule/15 px-3 py-3">
-            <div className="font-display text-sm font-medium text-ink truncate">
-              {user?.name || user?.email}
-            </div>
-            {user?.name && (
-              <div className="font-mono text-[10px] text-muted-2 truncate">
-                {user.email}
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm font-medium text-ink truncate">
+                  {user?.name || user?.email}
+                </div>
+                {user?.name && (
+                  <div className="font-mono text-[10px] text-muted-2 truncate">
+                    {user.email}
+                  </div>
+                )}
               </div>
-            )}
+              {/* Tier marker — Pro / Lifetime get a brand pill, free users
+                  see nothing here (the Upgrade row below is the CTA). */}
+              {user?.pro_tier === 'lifetime' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--plum))]/12 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[rgb(var(--plum))]">
+                  <Crown className="h-2.5 w-2.5" /> lifetime
+                </span>
+              )}
+              {user?.pro_tier === 'pro' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand/12 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-brand">
+                  <Star className="h-2.5 w-2.5" /> pro
+                </span>
+              )}
+            </div>
             {lastSyncLabel && (
               <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-2">
                 {isRu ? 'Синх:' : 'Sync:'} {lastSyncLabel}
@@ -156,11 +177,31 @@ export default function AccountMenu() {
             )}
           </div>
 
+          {/* Upgrade row — only shown to free-plan users so paying users
+              never see a "buy" prompt again. Brand-tinted to stand out. */}
+          {(!user?.pro_tier || user.pro_tier === 'free') && (
+            <Item
+              icon={<Sparkles className="h-3.5 w-3.5 text-brand" />}
+              onSelect={() => navigate('/pricing')}
+              accent
+            >
+              {isRu ? 'Перейти на Pro' : 'Upgrade to Pro'}
+            </Item>
+          )}
+
           <Item icon={<Settings className="h-3.5 w-3.5" />} onSelect={() => navigate('/settings')}>
             {isRu ? 'Настройки' : 'Settings'}
           </Item>
+          {user?.is_admin ? (
+            <Item icon={<Shield className="h-3.5 w-3.5" />} onSelect={() => navigate('/admin')}>
+              {isRu ? 'Админка' : 'Admin'}
+            </Item>
+          ) : null}
           <Item icon={<Cloud className="h-3.5 w-3.5" />} onSelect={handleSync}>
             {isRu ? 'Синхронизировать локальный прогресс' : 'Sync local progress'}
+          </Item>
+          <Item icon={<Mail className="h-3.5 w-3.5" />} onSelect={() => navigate('/contact')}>
+            {isRu ? 'Связаться с нами' : 'Contact us'}
           </Item>
           <Item icon={<LogOut className="h-3.5 w-3.5" />} onSelect={handleLogout}>
             {isRu ? 'Выйти' : 'Sign out'}
@@ -188,7 +229,7 @@ export default function AccountMenu() {
   );
 }
 
-function Item({ icon, children, onSelect, danger }) {
+function Item({ icon, children, onSelect, danger, accent }) {
   return (
     <DropdownMenu.Item
       onSelect={onSelect}
@@ -197,10 +238,12 @@ function Item({ icon, children, onSelect, danger }) {
         'data-[highlighted]:bg-brand/10 data-[highlighted]:text-ink dark:data-[highlighted]:bg-brand/15',
         danger
           ? 'text-[rgb(var(--coral))] data-[highlighted]:!bg-coral/15'
+          : accent
+          ? 'font-medium text-ink'
           : 'text-ink-2',
       )}
     >
-      <span className="text-muted">{icon}</span>
+      <span className={cn(accent ? 'text-brand' : 'text-muted')}>{icon}</span>
       <span>{children}</span>
     </DropdownMenu.Item>
   );

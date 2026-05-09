@@ -2,8 +2,8 @@
 
 # prepiroshi · Codex
 
-**Серьёзная подготовка к собеседованию по Flutter и Dart.**
-210 вопросов, 23 темы, SRS, mock-собеседование, активное припоминание, шпаргалки и интервью-раунды.
+**Серьёзная подготовка к мобильному собесу: Flutter, iOS, Android, KMP.**
+392 вопроса, 53 темы, SRS, mock-собеседование, активное припоминание, шпаргалки и интервью-раунды.
 
 [![CI](https://img.shields.io/badge/CI-passing-7CC474?style=flat-square)](.github/workflows/ci.yml)
 [![Frontend](https://img.shields.io/badge/frontend-React_18_·_Vite-127CC4?style=flat-square)](frontend/)
@@ -23,17 +23,20 @@
 | Слой | Что делает |
 |---|---|
 | **Dashboard** | Today's plan = SRS due + слабая тема + новые. Activity heatmap, streak, mastery snapshot. |
-| **Topics** | 23 темы Junior → Senior. Hint-ladder reveal, заметки, закладки, TTS. |
+| **Topics** | 53 темы Junior → Senior, по четырём стекам: Flutter/Dart, iOS (Swift/SwiftUI/UIKit), Android (Kotlin/Compose), KMP. Hint-ladder reveal, заметки, закладки, TTS. |
 | **Study (SRS)** | SuperMemo SM-2, активное припоминание (gist textarea), 4-балльная оценка. |
 | **Mock interview** | Случайная подборка с таймером и self-grade в стиле «как на собеседовании». |
 | **Round** | 5 связанных вопросов из одной темы (кластеризация по тегам, ramp easy → hard). |
 | **Cheatsheet** | Сжатая 2-колоночная шпаргалка темы — print-ready, экспорт в Markdown. |
 | **Stats** | Mastery map: completion % × SRS ease, weak topics, per-level breakdown. |
 | **Auth** | Email + bcrypt + JWT, синхронизация прогресса между устройствами. Опционально. |
+| **Admin** | `/admin` — dashboard для admin-юзеров: stats, users, contact inbox. Гейтится `users.is_admin`. |
+| **Billing** | `/pricing` + Stripe Checkout. Pro = безлимит AI-проверок. Free = 10/день. Webhooks обновляют `users.pro_tier` автоматически. |
+| **Контакты** | Публичная форма `/contact` → `contact_messages`, инбокс в админке. |
 | **Mobile** | Bottom-nav на узких экранах, drawer-сайдбар, brutalist + safe-area. |
 | **PWA** | Установка, offline-first для статики, Workbox precaching. |
 
-Поддержка `EN` и `RU`, светлой и тёмной темы, кастомного дизайн-кита **Codex** (Fraunces + Inter + JetBrains Mono).
+Поддержка `EN` и `RU`, светлой и тёмной темы, кастомного дизайн-кита **Codex** (Inter + JetBrains Mono).
 
 ---
 
@@ -123,6 +126,14 @@ readytoflutter/
 | `JWT_SECRET` | **prod** | 64+ случайных байт. В dev авто-генерится в `data/.jwt-secret` |
 | `JWT_EXPIRES_IN` | — | По умолчанию `7d` |
 | `FRONTEND_ORIGIN` | prod | Заблокировать CORS на конкретный origin |
+| `ANTHROPIC_API_KEY` | — | Если задан, включает AI-grader на `/api/ai/grade` |
+| `ADMIN_BOOTSTRAP_EMAIL` | — | Этот email на boot становится `is_admin = 1` (если зарегистрирован) |
+| `FREE_AI_GRADES_PER_DAY` | — | Лимит AI-проверок для free-юзеров. По умолчанию `10` |
+| `ANON_AI_GRADES_PER_DAY` | — | Лимит для анонимов. По умолчанию `3` |
+| `STRIPE_SECRET_KEY` | для биллинга | Test/live ключ Stripe. Без него `/api/billing/*` отвечает 503 |
+| `STRIPE_PRICE_ID` | для биллинга | ID Subscription Price (price_...) |
+| `STRIPE_WEBHOOK_SECRET` | для биллинга | Подпись webhook-а (whsec_...) |
+| `BILLING_SUCCESS_URL` / `BILLING_CANCEL_URL` | для биллинга | Куда возвращать после Stripe Checkout |
 
 Сгенерировать секрет:
 ```bash
@@ -135,6 +146,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 |---|---|
 | `VITE_API_BASE_URL` | URL бэкенда. Пустая → `/api` через Vite-proxy на :3001. В prod — полный URL Render-сервиса. |
 | `VITE_BASE_PATH` | Базовый путь, если деплой не в root. Авто-выводится из `GITHUB_REPOSITORY` в CI. |
+| `VITE_POSTHOG_KEY` | Опциональный ключ PostHog. Без ключа `lib/analytics.js` no-op'ит — события логятся только в dev-консоль. |
+| `VITE_PLAUSIBLE_DOMAIN` | Альтернатива PostHog. Домен сайта, зарегистрированный в Plausible. |
 
 ---
 
@@ -232,7 +245,7 @@ api.js → tryRemote(remote, fallback)
 - **Round** — кластеризация по тегам + ramp easy→hard, follow-up чипы для углубления.
 - **Cheatsheet** — 2-col grid, print-ready, копия в Markdown.
 - **Codex design system** — кастомные токены (`paper`, `ink`, `brand`, `mint`, `amber`, `coral`, `plum`), brutalist hard shadows, монограммы вместо эмодзи.
-- **Dark mode** — реально полированный, тени видны, heatmap читается.
+- **Light + Dark** — реально полированный, тени видны, heatmap читается.
 - **Mobile** — bottom-nav, safe-area inset, тач-таргеты ≥40px.
 - **Скелетоны и empty states** — никаких спиннеров на content-pages.
 - **Cmd+K палитра** — навигация, темы, action-команды, recall-toggle, account.
@@ -261,6 +274,9 @@ api.js → tryRemote(remote, fallback)
 # Запустить всё
 ./start.sh
 
+# Frontend unit-тесты (vitest, jsdom)
+cd frontend && npm test
+
 # Backend smoke-test (используется в CI)
 cd backend
 node -e "const db=require('./database');db.init();console.log('topics=',db.getTopics().length);"
@@ -270,7 +286,7 @@ cd frontend
 npm run build && npm run preview
 ```
 
-Тестов автоматизированных нет — приоритеты были на UX и feature velocity. Если будешь форкать, рекомендую добавить vitest.
+Покрытие точечное — критическая логика (SRS-планировщик, round-builder) под vitest, остальное держится на ручном тестировании и ESLint. Контрибьюшены с тестами на новую логику приветствуются.
 
 ---
 

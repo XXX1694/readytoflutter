@@ -398,3 +398,35 @@ export const aiGradeAnswer = ({ questionId, userAnswer, lang }) =>
 
 export const aiDraftQuestion = ({ prompt, topicTitle, topicLevel, lang }) =>
   api.post('/ai/draft-question', { prompt, topicTitle, topicLevel, lang }).then((r) => r.data);
+
+// ── Contact form ────────────────────────────────────────────────────────────
+export const submitContact = ({ name, email, message, website }) =>
+  api.post('/contact', { name, email, message, website }).then((r) => r.data);
+
+// ── Billing (Stripe) ────────────────────────────────────────────────────────
+// Health probe so the UI can hide /pricing CTAs cleanly when billing isn't
+// configured. Failures resolve to disabled rather than throwing.
+export const billingHealth = () =>
+  api.get('/billing/health').then((r) => r.data).catch(() => ({ enabled: false }));
+
+export const billingCheckout = () =>
+  api.post('/billing/checkout').then((r) => r.data);
+
+export const billingPortal = () =>
+  api.post('/billing/portal').then((r) => r.data);
+
+// ── Admin ───────────────────────────────────────────────────────────────────
+export const adminGetStats = () =>
+  api.get('/admin/stats').then((r) => r.data);
+
+export const adminListUsers = ({ q = '', limit = 50, offset = 0 } = {}) =>
+  api.get('/admin/users', { params: { q, limit, offset } }).then((r) => r.data);
+
+export const adminPatchUser = (id, body) =>
+  api.patch(`/admin/users/${id}`, body).then((r) => r.data);
+
+export const adminListContact = ({ status = null, limit = 50, offset = 0 } = {}) =>
+  api.get('/admin/contact', { params: { status, limit, offset } }).then((r) => r.data);
+
+export const adminPatchContact = (id, body) =>
+  api.patch(`/admin/contact/${id}`, body).then((r) => r.data);

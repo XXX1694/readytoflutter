@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Sparkles, Loader2, AlertCircle, Check, X, ChevronRight, MessagesSquare,
+  Sparkles, Loader2, AlertCircle, Check, X, ChevronRight, MessagesSquare, Zap,
 } from 'lucide-react';
 import { Button, Pill } from '../ui/index.js';
 import { aiHealth, aiGradeAnswer } from '../api/api.js';
+import { track } from '../lib/analytics.js';
 
 // Module-level cache for the /ai/health probe. We only need to ask the
 // backend once per page load — the result doesn't change without a server
@@ -66,8 +68,9 @@ function errorMessage(code, lang) {
 }
 
 export default function AnswerGrader({ questionId, userAnswer, lang }) {
-  const { enabled } = useAiHealth();
-  const [state, setState] = useState({ loading: false, result: null, error: null });
+  const health = useAiHealth();
+  const { enabled } = health;
+  const [state, setState] = useState({ loading: false, result: null, error: null, paywall: null });
   const reqIdRef = useRef(0);
 
   // Stale grade for the prior question is avoided by giving this component a
@@ -88,20 +91,36 @@ export default function AnswerGrader({ questionId, userAnswer, lang }) {
   const run = async () => {
     if (tooShort || state.loading) return;
     const reqId = ++reqIdRef.current;
-    setState({ loading: true, result: null, error: null });
+    setState({ loading: true, result: null, error: null, paywall: null });
+    track('ai_grade_used', { questionId, length: trimmed.length, lang });
     try {
       const data = await aiGradeAnswer({ questionId, userAnswer: trimmed, lang });
       if (reqId !== reqIdRef.current) return; // user moved on
-      setState({ loading: false, result: data?.grade || null, error: null });
+      setState({ loading: false, result: data?.grade || null, error: null, paywall: null });
     } catch (err) {
       if (reqId !== reqIdRef.current) return;
-      const code = err?.response?.data?.code;
-      setState({ loading: false, result: null, error: errorMessage(code, lang) });
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      if (status === 402 && data?.code === 'paywall_required') {
+        // Server says daily quota is up. Stash details so the panel can render
+        // a tailored upgrade CTA instead of a generic error.
+        track('paywall_hit', { reason: data.reason, tier: data.tier });
+        setState({
+          loading: false, result: null, error: null,
+          paywall: { reason: data.reason, used: data.used, cap: data.cap, tier: data.tier },
+        });
+        return;
+      }
+      setState({ loading: false, result: null, error: errorMessage(data?.code, lang), paywall: null });
     }
   };
 
   if (state.result) {
     return <ResultPanel result={state.result} lang={lang} onRetry={run} />;
+  }
+
+  if (state.paywall) {
+    return <PaywallPanel info={state.paywall} lang={lang} />;
   }
 
   // Idle / loading / error — one bold brand-tinted CTA. Brand gradient + a
@@ -180,6 +199,55 @@ export default function AnswerGrader({ questionId, userAnswer, lang }) {
             )}
           </Button>
         )}
+      </div>
+    </section>
+  );
+}
+
+// Paywall panel — shown when /api/ai/grade returns 402 paywall_required.
+// Two flavours:
+//  - anon:  "sign in to keep grading"
+//  - free:  "daily limit hit, upgrade to Pro for unlimited"
+// Both link to /pricing as the primary action.
+function PaywallPanel({ info, lang }) {
+  const ru = lang === 'ru';
+  const isAnon = info.tier === 'anon' || info.reason === 'anon_quota_exceeded';
+  const title = isAnon
+    ? (ru ? 'Лимит для гостей исчерпан' : 'Anonymous daily limit reached')
+    : (ru ? 'Дневной лимит Free исчерпан' : 'Free plan daily limit reached');
+  const sub = isAnon
+    ? (ru
+        ? `Зарегистрируйся — получишь больше проверок в день, или оформи Pro и проверяй без ограничений.`
+        : `Sign up for a higher daily allowance — or upgrade to Pro for unlimited grading.`)
+    : (ru
+        ? `Использовано ${info.used} из ${info.cap}. Pro — безлимит и follow-up вопросы.`
+        : `${info.used} of ${info.cap} used. Pro is unlimited grading + follow-up questions.`);
+  return (
+    <section className="relative mb-5 overflow-hidden rounded-md border border-amber/30 bg-gradient-to-br from-amber/8 via-paper-2 to-brand/5 p-4 shadow-codex-sm sm:p-5">
+      <span aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-amber/15 blur-3xl" />
+      <div className="relative flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-amber/30 bg-paper-2 shadow-codex-sm">
+            <Zap className="h-4 w-4 text-[rgb(var(--amber))]" />
+          </div>
+          <div>
+            <div className="font-display text-base font-medium leading-tight text-ink sm:text-lg">{title}</div>
+            <div className="mt-1 text-xs leading-relaxed text-ink-2">{sub}</div>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isAnon && (
+            <Link to="/signup">
+              <Button variant="codex" size="sm">{ru ? 'Зарегистрироваться' : 'Sign up'}</Button>
+            </Link>
+          )}
+          <Link to="/pricing">
+            <Button variant="brand" size="sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              {ru ? 'К Pro' : 'See Pro'}
+            </Button>
+          </Link>
+        </div>
       </div>
     </section>
   );
