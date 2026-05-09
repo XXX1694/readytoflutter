@@ -80,6 +80,13 @@ function buildRouteList(staticData) {
   ];
 }
 
+// Wait until `vite preview` is ready to serve.
+//
+// We watch BOTH stdout and stderr for the "Local: http://localhost:..." line
+// (which channel it lands on varies by Vite version + npx wrapper), AND
+// poll the port directly with HEAD requests as a backup. CI runners on cold
+// `npx` cache routinely take 20-40s to boot the preview, so the timeout is
+// 90s — generous but bounded.
 function startPreviewServer() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
@@ -88,21 +95,44 @@ function startPreviewServer() {
       { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] },
     );
     let resolved = false;
-    proc.stdout.on('data', (chunk) => {
+    const ready = () => {
+      if (resolved) return;
+      resolved = true;
+      clearInterval(pollTimer);
+      clearTimeout(timeout);
+      resolve(proc);
+    };
+
+    const onChunk = (chunk) => {
       const text = chunk.toString();
-      // Vite prints "Local: http://localhost:4173/" once ready.
-      if (!resolved && /Local:\s+http/i.test(text)) {
-        resolved = true;
-        resolve(proc);
-      }
-    });
-    proc.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
+      process.stderr.write(`[preview] ${text}`);
+      if (!resolved && /Local:\s+http/i.test(text)) ready();
+    };
+    proc.stdout.on('data', onChunk);
+    proc.stderr.on('data', onChunk);
     proc.on('exit', (code) => {
       if (!resolved) reject(new Error(`vite preview exited (code ${code}) before starting`));
     });
-    setTimeout(() => {
-      if (!resolved) reject(new Error('vite preview did not start within 30s'));
-    }, 30_000);
+
+    // HTTP probe — same effect as watching the log line, but resilient to
+    // log-format changes and stdout buffering on CI. Fires every 500ms.
+    const pollTimer = setInterval(() => {
+      if (resolved) return;
+      const req = require('http').request(
+        { host: '127.0.0.1', port: PORT, path: '/', method: 'HEAD', timeout: 1000 },
+        (res) => { res.resume(); ready(); },
+      );
+      req.on('error', () => {});
+      req.on('timeout', () => req.destroy());
+      req.end();
+    }, 500);
+
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        clearInterval(pollTimer);
+        reject(new Error('vite preview did not start within 90s'));
+      }
+    }, 90_000);
   });
 }
 
