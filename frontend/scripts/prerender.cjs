@@ -255,11 +255,23 @@ async function main() {
     console.log(`▼ prerender done in ${Math.round((Date.now() - startedAt) / 1000)}s (concurrency=${CONCURRENCY})`);
   } finally {
     try { await browser?.close(); } catch { /* ignore */ }
-    preview.kill('SIGTERM');
+    // Why we don't just `preview.kill('SIGTERM')` and return:
+    // The npx wrapper that boots Vite can ignore SIGTERM (depending on
+    // shim version), keeping the child alive. Node won't exit while a
+    // child handle is still attached, so the CI job hangs at 100% even
+    // though prerender is done. Run #45 sat 13+ minutes after the
+    // "▼ prerender done" line for exactly this reason.
+    //
+    // Tell the kernel to escalate: SIGTERM, wait a beat, SIGKILL.
+    try { preview.kill('SIGTERM'); } catch { /* already dead */ }
+    await new Promise((r) => setTimeout(r, 500));
+    try { preview.kill('SIGKILL'); } catch { /* already dead */ }
   }
 }
 
-main().catch((err) => {
-  console.error('✗ prerender failed:', err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error('✗ prerender failed:', err);
+    process.exit(1);
+  });
