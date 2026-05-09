@@ -57,7 +57,22 @@ jobs:
           VITE_PROD_API_FALLBACK_URL: ${{ vars.VITE_PROD_API_FALLBACK_URL }}
         run: npm run build
 
+      # SSG: prerender the public surface (home, /flutter, /ios, /android,
+      # /kmp, /pricing, /contact, all 53 /topic/<slug> + cheatsheets) into
+      # static HTML so SERPs and link unfurls see real content + meta tags.
+      # Puppeteer launches Chromium under the hood; vars.SITE_URL canonicals
+      # the output, with GITHUB_REPOSITORY as a fallback.
+      - name: Prerender public routes
+        working-directory: frontend
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: npm run prerender
+
       - name: SPA fallback for Pages
+        # 404.html is what Pages serves for unknown deeper paths (e.g.
+        # /search, /study). Snapshot the original SPA shell BEFORE the
+        # prerender step's homepage replacement would otherwise overwrite
+        # it with a content-heavy variant.
         run: cp frontend/dist/index.html frontend/dist/404.html
 
       - name: Upload Pages artifact

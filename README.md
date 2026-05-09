@@ -156,10 +156,14 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ### Frontend → GitHub Pages
 
 1. Settings → Pages → Source: **GitHub Actions**
-2. Settings → Secrets and variables → Actions → **Variables** → создать `VITE_API_BASE_URL` со значением вида `https://<service>.onrender.com/api` (или оставить пустым, тогда сборка работает в анонимном static-fallback режиме).
-3. Push в `main` — workflow [`deploy-frontend-pages.yml`](.github/workflows/deploy-frontend-pages.yml) собирает и публикует.
+2. Settings → Secrets and variables → Actions → **Variables** → создать `VITE_API_BASE_URL` со значением вида `https://<service>.onrender.com/api` (или оставить пустым, тогда сборка работает в анонимном static-fallback режиме). Опционально `SITE_URL` — для канонизации prerendered URL и sitemap.xml на свой кастомный домен (без этого — авто из `GITHUB_REPOSITORY`).
+3. Push в `main` — workflow [`deploy-frontend-pages.yml`](.github/workflows/deploy-frontend-pages.yml) собирает, prerender'ит публичные страницы (113 URL: `/`, 4 landing, `/pricing`, `/contact`, 53 topics, 53 cheatsheets) и публикует.
 
 Pages-сборка автоматически делает `404.html` копией `index.html`, чтобы SPA-роутинг работал на любой глубине.
+
+#### SSG / prerender
+
+`npm run build:ssg` запускает `vite build` + `node scripts/prerender.cjs`. Скрипт поднимает `vite preview`, ходит Puppeteer'ом по списку публичных маршрутов и сохраняет post-hydration HTML в `dist/<route>/index.html`. Это даёт корректные `<title>` / meta description / canonical URL крауллерам и сетям (Slack, LinkedIn, Twitter), которые не выполняют JS. React всё равно гидратируется поверх — пользовательский опыт SPA сохраняется.
 
 ### Backend → Render
 
