@@ -214,21 +214,45 @@ async function main() {
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
-    const page = await browser.newPage();
-    page.setDefaultNavigationTimeout(20_000);
+    // Run a small pool of parallel pages within the same browser context.
+    // Sequential prerender (113 routes × ~3s/page) blew past the 10-minute
+    // CI job timeout on commit d0ffa3a. With concurrency = 6 the whole
+    // batch finishes in ~2 minutes, comfortably inside the budget.
+    const CONCURRENCY = Number(process.env.PRERENDER_CONCURRENCY) || 6;
+    const queue = routes.slice();
+    let done = 0;
+    const total = queue.length;
+    const startedAt = Date.now();
 
-    for (const route of routes) {
-      const url = `${HOST}${route}`;
+    const worker = async (workerId) => {
+      const page = await browser.newPage();
+      page.setDefaultNavigationTimeout(30_000);
       try {
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
-        await waitForReady(page);
-        const html = await page.content();
-        writeHtml(route, html);
-        console.log(`✓ ${route}`);
-      } catch (err) {
-        console.warn(`✗ ${route}: ${err.message}`);
+        while (queue.length > 0) {
+          const route = queue.shift();
+          if (!route) break;
+          const url = `${HOST}${route}`;
+          try {
+            await page.goto(url, { waitUntil: 'domcontentloaded' });
+            await waitForReady(page);
+            const html = await page.content();
+            writeHtml(route, html);
+            done += 1;
+            console.log(`✓ ${route}  (${done}/${total})`);
+          } catch (err) {
+            done += 1;
+            console.warn(`✗ ${route}: ${err.message}  (${done}/${total})`);
+          }
+        }
+      } finally {
+        try { await page.close(); } catch { /* ignore */ }
       }
-    }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, total) }, (_, i) => worker(i)),
+    );
+    console.log(`▼ prerender done in ${Math.round((Date.now() - startedAt) / 1000)}s (concurrency=${CONCURRENCY})`);
   } finally {
     try { await browser?.close(); } catch { /* ignore */ }
     preview.kill('SIGTERM');
