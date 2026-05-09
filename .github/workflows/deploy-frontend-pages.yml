@@ -39,7 +39,11 @@ jobs:
 
       - name: Regenerate static-data.json from backend seeds
         # Keeps the Pages build in sync with the canonical backend seed JSON
-        # so the no-backend fallback never serves stale questions.
+        # so the no-backend fallback never serves stale questions. Also emits
+        # sitemap.xml — SITE_URL wins over the GITHUB_REPOSITORY fallback so
+        # custom-domain deploys point sitemap entries at the right host.
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
         run: node backend/scripts/generate-static-data.js
 
       - name: Build

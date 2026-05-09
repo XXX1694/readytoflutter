@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# /admin is dev-only and not exposed in production builds, but disallow
+# defensively in case a build slips through with the route enabled.
+Disallow: /admin
+
+Sitemap: /sitemap.xml

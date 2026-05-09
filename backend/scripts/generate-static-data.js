@@ -23,6 +23,7 @@ const SEED_DIR = path.join(__dirname, '..', 'data', 'seed');
 const TOPICS_FILE = path.join(SEED_DIR, 'topics.json');
 const QUESTIONS_DIR = path.join(SEED_DIR, 'questions');
 const OUT_FILE = path.join(ROOT, 'frontend', 'public', 'seed', 'static-data.json');
+const SITEMAP_FILE = path.join(ROOT, 'frontend', 'public', 'sitemap.xml');
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -72,9 +73,52 @@ function format(payload) {
   return JSON.stringify(payload, null, 2) + '\n';
 }
 
+// Resolve the canonical site URL the sitemap will advertise. SITE_URL wins;
+// otherwise derive the GitHub Pages URL from CI env (owner.github.io/repo).
+// Returns null if we cannot guess — in that case we skip sitemap generation
+// rather than ship a sitemap pointing at the wrong host.
+function resolveSiteUrl() {
+  if (process.env.SITE_URL) {
+    return process.env.SITE_URL.replace(/\/+$/, '');
+  }
+  const repo = process.env.GITHUB_REPOSITORY;
+  if (repo && repo.includes('/')) {
+    const [owner, name] = repo.split('/');
+    return `https://${owner.toLowerCase()}.github.io/${name}`;
+  }
+  return null;
+}
+
+function buildSitemap(topics, siteUrl) {
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = [
+    { loc: '/', priority: '1.0', changefreq: 'weekly' },
+    ...topics.map((t) => ({
+      loc: `/topic/${t.slug}`,
+      priority: '0.8',
+      changefreq: 'monthly',
+    })),
+    ...topics.map((t) => ({
+      loc: `/topic/${t.slug}/cheatsheet`,
+      priority: '0.5',
+      changefreq: 'monthly',
+    })),
+  ];
+  const body = urls
+    .map(
+      (u) =>
+        `  <url>\n    <loc>${siteUrl}${u.loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`,
+    )
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+}
+
 function main() {
   const checkMode = process.argv.includes('--check');
-  const next = format(build());
+  const payload = build();
+  const next = format(payload);
+  const siteUrl = resolveSiteUrl();
+  const sitemap = siteUrl ? buildSitemap(payload.topics, siteUrl) : null;
 
   if (checkMode) {
     const current = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : '';
@@ -91,8 +135,14 @@ function main() {
 
   fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
   fs.writeFileSync(OUT_FILE, next);
-  const payload = JSON.parse(next);
   console.log(`✓ wrote ${path.relative(ROOT, OUT_FILE)} — ${payload.topics.length} topics, ${payload.questions.length} questions`);
+
+  if (sitemap) {
+    fs.writeFileSync(SITEMAP_FILE, sitemap);
+    console.log(`✓ wrote ${path.relative(ROOT, SITEMAP_FILE)} — ${payload.topics.length * 2 + 1} URLs (host: ${siteUrl})`);
+  } else {
+    console.log('· sitemap.xml skipped — set SITE_URL or run inside GitHub Actions');
+  }
 }
 
 main();

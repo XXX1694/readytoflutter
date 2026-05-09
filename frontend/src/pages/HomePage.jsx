@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Command, Target, Brain, Library } from 'lucide-react';
+import { Command, Brain } from 'lucide-react';
 import { useTopics, useStats, useResetProgress, useQuestions } from '../lib/queries.js';
 import { getCardState } from '../lib/srs.js';
 import { useLang } from '../i18n/LangContext.jsx';
@@ -87,6 +87,7 @@ export default function HomePage() {
   const completed = stats?.completed ?? 0;
   const inProgress = stats?.inProgress ?? 0;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const totalTopics = topicsQ.data?.length ?? 0;
 
   return (
     <div className="bg-page">
@@ -119,11 +120,32 @@ export default function HomePage() {
             {t.heroDesc}
           </p>
 
-          {/* CTA row — primary is the session you'll actually run today.
-              On mobile the primary CTA dominates with full-width 48px touch
-              target; secondaries split 50/50 underneath so both stay reachable
-              with the thumb. */}
-          <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          {/* Factual metric strip — concrete content scope replaces the
+              fake-social-proof "trusted by N devs" line. Numbers come from
+              the live topics/questions data so they never drift from the
+              seed. */}
+          <dl className="mt-5 flex flex-wrap items-baseline gap-x-5 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-muted sm:mt-7 sm:gap-x-7">
+            <div className="flex items-baseline gap-1.5">
+              <dt className="sr-only">{lang === 'ru' ? 'Темы' : 'Topics'}</dt>
+              <dd className="text-base font-semibold tabular-nums text-ink sm:text-lg">{totalTopics || 53}</dd>
+              <span>{lang === 'ru' ? 'тем' : 'topics'}</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <dt className="sr-only">{lang === 'ru' ? 'Вопросы' : 'Questions'}</dt>
+              <dd className="text-base font-semibold tabular-nums text-ink sm:text-lg">{total || 392}</dd>
+              <span>{lang === 'ru' ? 'вопросов' : 'questions'}</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <dd className="text-base font-semibold tabular-nums text-ink sm:text-lg">4</dd>
+              <span>{lang === 'ru' ? 'стека · Flutter · iOS · Android · KMP' : 'stacks · Flutter · iOS · Android · KMP'}</span>
+            </div>
+          </dl>
+
+          {/* Single primary CTA — Mock and Knowledge live in the sidebar /
+              bottom-nav, so the hero stays focused on the one action that
+              actually moves SRS forward. Cmd+K hint surfaces the palette
+              for power users without competing for the eye on mobile. */}
+          <div className="mt-5 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <Button
               variant="brand"
               size="lg"
@@ -134,21 +156,10 @@ export default function HomePage() {
               {lang === 'ru' ? 'Начать сессию' : 'Start a session'}
               <kbd className="ml-1 hidden rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px] sm:inline">{modKey}S</kbd>
             </Button>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-              <Button variant="codex" className="w-full sm:w-auto" onClick={() => navigate('/mock')}>
-                <Target className="h-4 w-4" />
-                {lang === 'ru' ? 'Mock' : 'Mock'}
-                <kbd className="ml-1 hidden rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px] sm:inline">{modKey}M</kbd>
-              </Button>
-              <Button variant="ghost" className="w-full sm:w-auto" onClick={() => navigate('/knowledge')}>
-                <Library className="h-4 w-4" />
-                {lang === 'ru' ? 'База' : 'Knowledge'}
-              </Button>
-            </div>
             <button
               type="button"
               onClick={() => setCommandOpen(true)}
-              className="ml-auto hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink sm:inline-flex"
+              className="hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink sm:inline-flex"
             >
               <Command className="h-3.5 w-3.5" aria-hidden />
               <span>{t.searchOpenHint}</span>

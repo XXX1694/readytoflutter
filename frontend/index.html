@@ -92,16 +92,21 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="prepiroshi — Mobile Interview Prep" />
     <meta property="og:description" content="A calm, focused workspace for mobile developer interview prep — Flutter, iOS (Swift/SwiftUI/UIKit), Android (Kotlin/Compose), KMP." />
-    <meta property="og:image" content="/og.svg" />
+    <!-- og:image must be a raster format — Facebook/LinkedIn/Slack don't
+         render SVGs in link previews. The PNG is rendered from og.svg via
+         rsvg-convert at 1200x630 (the canonical OG aspect ratio). -->
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="prepiroshi — Mobile Interview Prep" />
     <meta name="twitter:description" content="Mobile developer interview prep — Flutter, iOS, Android, KMP." />
-    <meta name="twitter:image" content="/og.svg" />
+    <meta name="twitter:image" content="/og.png" />
 
     <!--
       Theme is hydrated synchronously by src/store/prefs.js before React mounts,
-      so the .dark / .sepia class lands on <html> in time to avoid FOUC. Fonts
-      are self-hosted via @fontsource-variable (loaded from src/index.css).
+      so the .dark class lands on <html> in time to avoid FOUC. Fonts are
+      self-hosted via @fontsource-variable (loaded from src/index.css).
     -->
   </head>
   <body>

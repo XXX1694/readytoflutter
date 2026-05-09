@@ -34,10 +34,12 @@ function TopicTile({ topic, level, t, topicTitle, topicDesc, dueCount = 0 }) {
         hasDue ? 'border-[rgb(var(--amber))]/30 hover:border-[rgb(var(--amber))]/50' : 'border-rule/8 hover:border-rule/20',
       )}
     >
-      {/* Aurora wash that fades in on hover — gives the card "ambient lighting" */}
+      {/* Aurora wash that fades in on hover — gives the card "ambient lighting".
+          Desktop-only: tap on iOS Safari sticks :hover, so the wash would
+          stay painted over the card on mobile. Hide the layer outright there. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br from-brand/0 via-transparent to-brand-sky/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:from-brand/[0.06] group-hover:to-brand-sky/[0.04]"
+        className="pointer-events-none absolute inset-0 -z-0 hidden bg-gradient-to-br from-brand/0 via-transparent to-brand-sky/0 opacity-0 transition-opacity duration-500 sm:block group-hover:opacity-100 group-hover:from-brand/[0.06] group-hover:to-brand-sky/[0.04]"
       />
 
       {/* Pending-review accent stripe — only when SRS has due cards here. */}

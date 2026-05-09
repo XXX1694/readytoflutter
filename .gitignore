@@ -31,3 +31,7 @@ backend/data/.jwt-secret
 
 # Ad-hoc audit screenshots from /visual sessions
 audit-*.png
+
+# sitemap.xml is regenerated at deploy time with the right SITE_URL
+# (GITHUB_REPOSITORY in CI). Don't commit a stale dev-time copy.
+frontend/public/sitemap.xml
