@@ -12,6 +12,7 @@ import {
   clearLocalProgress,
   serializeLocalProgress,
 } from '../api/api.js';
+import { track, identify } from '../lib/analytics.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useLoginCopy } from '../i18n/loginPage.js';
 import { Button, Eyebrow } from '../ui/index.js';
@@ -69,6 +70,8 @@ export default function LoginPage() {
     try {
       const { user, token } = await authLogin(parsed.data.email, parsed.data.password);
       setSession(token, user);
+      identify(String(user.id), { email: user.email });
+      track('login', { method: 'email' });
 
       // Push any progress accumulated in localStorage (during offline /
       // anonymous use) up to the server. The server upserts last-write-wins

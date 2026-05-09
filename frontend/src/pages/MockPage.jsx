@@ -19,6 +19,7 @@ import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn.js';
+import { track } from '../lib/analytics.js';
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
 const TIMER_OPTIONS = [
@@ -99,6 +100,27 @@ export default function MockPage() {
     return () => clearInterval(id);
   }, [phase]);
 
+  // Mock completion analytics — fires once per session when phase flips to
+  // 'done'. Aggregates ratings so we can see drop-offs and average time
+  // without exporting every per-question event.
+  const completedMockRef = useRef(false);
+  useEffect(() => {
+    if (phase === 'done' && !completedMockRef.current) {
+      completedMockRef.current = true;
+      const total = queue.length;
+      const elapsedSec = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
+      const breakdown = Object.values(answers).reduce(
+        (acc, a) => {
+          if (a?.rating) acc[a.rating] = (acc[a.rating] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
+      track('mock_complete', { total, elapsed_sec: elapsedSec, ...breakdown });
+    }
+    if (phase !== 'done') completedMockRef.current = false;
+  }, [phase, queue.length, sessionStart, answers]);
+
   const start = () => {
     // Deep-link by id bypasses the platform filter — the caller already
     // curated the set (e.g. "drill these 5 bookmarks"). Otherwise scope to
@@ -121,6 +143,12 @@ export default function MockPage() {
     setPerQuestionStart(Date.now());
     setSessionStart(Date.now());
     setPhase('running');
+    track('mock_session_start', {
+      count: picked.length,
+      level: config.level,
+      timer: config.timer,
+      topic: config.topic || null,
+    });
   };
 
   const current = queue[cursor];

@@ -21,6 +21,7 @@ import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
 import { cn } from '../lib/cn.js';
 import { tapMedium, tapLight } from '../lib/haptics.js';
 import { useSwipe } from '../lib/useSwipe.js';
+import { track } from '../lib/analytics.js';
 
 const RATINGS = [
   { key: 'again', tone: 'coral',  hotkey: '1', labelEn: 'Again', labelRu: 'Снова', description: '< 1d' },
@@ -95,6 +96,26 @@ export default function StudyPage() {
   const current = queue[cursor];
   const total = queue.length;
   const finished = total > 0 && cursor >= total;
+
+  // Track session lifecycle: a fresh queue is a new session (study_session_start);
+  // crossing the cursor past total flips us into the completion screen.
+  // Refs keep the analytics calls idempotent across re-renders.
+  const startedSessionRef = useRef(false);
+  const completedSessionRef = useRef(false);
+  useEffect(() => {
+    if (total > 0 && !startedSessionRef.current) {
+      startedSessionRef.current = true;
+      completedSessionRef.current = false;
+      track('study_session_start', { count: total, scope: hasScope ? scopeText : 'today', recall: recallMode });
+    }
+  }, [total, hasScope, scopeText, recallMode]);
+  useEffect(() => {
+    if (finished && !completedSessionRef.current) {
+      completedSessionRef.current = true;
+      startedSessionRef.current = false;
+      track('study_session_complete', { total, ...stats });
+    }
+  }, [finished, total, stats]);
 
   // Auto-focus gist input when entering a new card in recall mode
   useEffect(() => {

@@ -12,6 +12,7 @@ import {
   clearLocalProgress,
   serializeLocalProgress,
 } from '../api/api.js';
+import { track, identify } from '../lib/analytics.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useSignupCopy } from '../i18n/signupPage.js';
 import { Button, Eyebrow } from '../ui/index.js';
@@ -62,6 +63,8 @@ export default function SignupPage() {
     try {
       const { user, token } = await authRegister(parsed.data.email, parsed.data.password, parsed.data.name || null);
       setSession(token, user);
+      identify(String(user.id), { email: user.email });
+      track('signup', { method: 'email' });
       qc.invalidateQueries();
       // Inspect localStorage progress for the optional import step
       const localItems = serializeLocalProgress(readLocalProgress());
