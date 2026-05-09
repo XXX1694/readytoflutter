@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { cva } from 'class-variance-authority';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 /**
  * Atlas Card — soft border + layered shadow + bigger radius. Variant names

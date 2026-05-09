@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Button, Pill } from '../ui/index.js';
 import { aiHealth, aiGradeAnswer } from '../api/api.js';
-import { track } from '../lib/analytics.js';
+import { track } from '../lib/analytics';
 
 // Module-level cache for the /ai/health probe. We only need to ask the
 // backend once per page load — the result doesn't change without a server

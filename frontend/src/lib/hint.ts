@@ -6,7 +6,7 @@
  * The threshold of 12 chars on the sentence regex avoids picking up tiny
  * fragments like "Yes." or "It depends." as the whole hint.
  */
-export function extractHint(answer) {
+export function extractHint(answer: string | null | undefined): string {
   if (!answer) return '';
   const trimmed = String(answer).trim();
   const m = trimmed.match(/^([^.!?\n]{12,}?[.!?])(?=\s|$)/);
@@ -21,7 +21,7 @@ export function extractHint(answer) {
  * the cheatsheet so a 40-line code block doesn't blow up the layout. Tries
  * to keep complete logical lines and stops at `maxLines`.
  */
-export function shortenCode(code, maxLines = 6) {
+export function shortenCode(code: string | null | undefined, maxLines = 6): string {
   if (!code) return '';
   const lines = String(code).split('\n');
   if (lines.length <= maxLines) return code.trim();

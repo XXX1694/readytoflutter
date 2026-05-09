@@ -9,9 +9,9 @@ import {
   authLogout, authDeleteAccount, bulkSyncProgress,
   readLocalProgress, clearLocalProgress, apiBaseUrl,
 } from '../api/api.js';
-import { track, resetIdentity } from '../lib/analytics.js';
+import { track, resetIdentity } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const initialsOf = (user) => {
   const source = user?.name?.trim() || user?.email || '?';

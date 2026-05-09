@@ -4,14 +4,14 @@ import {
   Brain, Sparkles, Flame, Target, Zap, Clock, ChevronRight,
 } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries.js';
-import { getCardState } from '../lib/srs.js';
+import { getCardState } from '../lib/srs';
 import { computeStreaks } from '../lib/activity.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useContent } from '../i18n/content.js';
 import { Button, Eyebrow, Pill } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import { usePrefs } from '../store/prefs.js';
-import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform.js';
+import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform';
 
 const DAY = 24 * 60 * 60 * 1000;
 const PLAN_LIMIT = 18;

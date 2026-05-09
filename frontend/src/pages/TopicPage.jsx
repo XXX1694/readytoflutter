@@ -10,9 +10,9 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, Skeleton, Eyebrow, TopicGlyph, levelTone } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
-import { PLATFORMS, topicPlatform } from '../lib/platform.js';
-import { useDocumentMeta } from '../lib/useDocumentMeta.js';
+import { cn } from '../lib/cn';
+import { PLATFORMS, topicPlatform } from '../lib/platform';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 const FILTERS = ['all', 'not_started', 'in_progress', 'completed'];
 

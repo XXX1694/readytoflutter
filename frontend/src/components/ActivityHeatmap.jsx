@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { buildHeatmap, computeStreaks, buildDayMap, intensity } from '../lib/activity.js';
 import { useLang } from '../i18n/LangContext.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 // Atlas: aurora-ramp from rule-faint to brand-glow, with brand-sky on the
 // max bucket so the hottest days feel like little aurora pixels.

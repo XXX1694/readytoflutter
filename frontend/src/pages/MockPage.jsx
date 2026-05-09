@@ -13,13 +13,13 @@ import { useContent } from '../i18n/content.js';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index.js';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import { usePrefs } from '../store/prefs.js';
-import { filterQuestionsByPlatform } from '../lib/platform.js';
+import { filterQuestionsByPlatform } from '../lib/platform';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
-import { cn } from '../lib/cn.js';
-import { track } from '../lib/analytics.js';
+import { cn } from '../lib/cn';
+import { track } from '../lib/analytics';
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
 const TIMER_OPTIONS = [

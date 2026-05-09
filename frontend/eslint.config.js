@@ -3,14 +3,21 @@ import globals from 'globals';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
 
 // Pragmatic flat config — catch real bugs (hook deps, hook order, missing
 // keys), don't enforce stylistic taste (Prettier handles that).
 export default [
   { ignores: ['dist', 'node_modules', 'public', 'dev-dist'] },
   js.configs.recommended,
+  // TS files get the typescript-eslint parser so the lint rules below
+  // understand TS syntax (generics, type params, satisfies, etc.).
+  ...tseslint.configs.recommended.map((cfg) => ({
+    ...cfg,
+    files: ['src/**/*.{ts,tsx}'],
+  })),
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -49,9 +56,34 @@ export default [
     },
   },
   {
+    // For TS files: tsc + TS-eslint cover unused-vars better than the JS
+    // rule (which misfires on type-only function-signature parameters
+    // inside interfaces). Disable the JS one and lower the TS noise to
+    // warn-only so they don't block CI.
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  {
     files: ['*.config.js', 'vite.config.js', 'tailwind.config.js', 'postcss.config.js'],
     languageOptions: {
       globals: { ...globals.node },
+    },
+  },
+  {
+    // Build / SSG scripts run in Node and CJS, but some (prerender.cjs)
+    // ship browser-context callbacks to Puppeteer's page.evaluate where
+    // `document` lives in the browser. Mix the globals so both sides type.
+    files: ['scripts/**/*.{js,cjs}'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+      sourceType: 'commonjs',
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
     },
   },
 ];

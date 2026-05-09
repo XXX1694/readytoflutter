@@ -9,8 +9,8 @@ import { FullPageLoader } from './ui/index.js';
 import { useAuth } from './store/auth.js';
 import { apiBaseUrl } from './api/api.js';
 import { prefetchIdle } from './lib/prefetch.js';
-import { initAnalytics, pageview, identify } from './lib/analytics.js';
-import { LANDINGS } from './i18n/landings.js';
+import { initAnalytics, pageview, identify } from './lib/analytics';
+import { LANDINGS } from './i18n/landings';
 import './store/prefs.js'; // side-effect: hydrate theme before paint
 
 // Pageview tracker — sits inside the Router so useLocation works. Fires once

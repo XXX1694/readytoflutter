@@ -8,7 +8,7 @@ import { useContent } from '../i18n/content.js';
 import { useTopics } from '../lib/queries.js';
 import { useScrollDirection } from '../lib/useScrollDirection.js';
 import { tapLight } from '../lib/haptics.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 /**
  * Native-style mobile header. Visible under the `lg` breakpoint, fixed to

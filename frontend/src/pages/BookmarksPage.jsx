@@ -10,7 +10,7 @@ import { Button, Skeleton } from '../ui/index.js';
 import QuestionCard from '../components/QuestionCard.jsx';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import { usePrefs } from '../store/prefs.js';
-import { filterQuestionsByPlatform } from '../lib/platform.js';
+import { filterQuestionsByPlatform } from '../lib/platform';
 
 export default function BookmarksPage() {
   const navigate = useNavigate();

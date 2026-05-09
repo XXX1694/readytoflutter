@@ -2,7 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, ExternalLink } from 'lucide-react';
 import { resolvePlayable, buildEmbedUrl } from '../lib/youtube.js';
 import { Pill } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 /**
  * In-app YouTube player. Opens a modal with a privacy-enhanced iframe so the

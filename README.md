@@ -42,7 +42,7 @@
 
 ## Стек
 
-**Frontend** &middot; React 18 &middot; Vite 5 &middot; Tailwind CSS &middot; Zustand &middot; TanStack Query &middot; React Router 6 &middot; Framer Motion &middot; Radix UI &middot; cmdk &middot; MiniSearch &middot; Shiki &middot; Sonner &middot; vite-plugin-pwa.
+**Frontend** &middot; React 18 &middot; Vite 5 &middot; **TypeScript (incremental, allowJs)** &middot; Tailwind CSS &middot; Zustand &middot; TanStack Query &middot; React Router 6 &middot; Framer Motion &middot; Radix UI &middot; cmdk &middot; MiniSearch &middot; Shiki &middot; Sonner &middot; vite-plugin-pwa.
 
 **Backend** &middot; Node 18+ &middot; Express 4 &middot; better-sqlite3 (WAL) &middot; bcryptjs &middot; jsonwebtoken &middot; helmet &middot; express-rate-limit &middot; zod.
 
@@ -281,6 +281,9 @@ api.js → tryRemote(remote, fallback)
 # Frontend unit-тесты (vitest, jsdom)
 cd frontend && npm test
 
+# Frontend typecheck (tsc --noEmit, allowJs включён — мигрируем инкрементально)
+cd frontend && npm run typecheck
+
 # Backend smoke-test (используется в CI)
 cd backend
 node -e "const db=require('./database');db.init();console.log('topics=',db.getTopics().length);"
@@ -289,6 +292,8 @@ node -e "const db=require('./database');db.init();console.log('topics=',db.getTo
 cd frontend
 npm run build && npm run preview
 ```
+
+> **TypeScript-миграция в процессе.** `tsconfig.json` — strict + allowJs. Уже на TS: `lib/cn`, `lib/srs`, `lib/platform`, `lib/analytics`, `lib/useDocumentMeta`, `lib/hint`, `i18n/landings`, `types/domain`. Остальное живёт в `.js`/`.jsx` без типов; `npm run typecheck` проходит зелёным. Новые модули писать сразу в `.ts`/`.tsx`.
 
 Покрытие точечное — критическая логика (SRS-планировщик, round-builder) под vitest, остальное держится на ручном тестировании и ESLint. Контрибьюшены с тестами на новую логику приветствуются.
 

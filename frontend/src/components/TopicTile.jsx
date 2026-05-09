@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Flame } from 'lucide-react';
 import { ProgressBar, TopicGlyph } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const LEVEL_DOT = {
   junior: 'bg-brand',

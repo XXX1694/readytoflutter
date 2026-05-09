@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Command, X } from 'lucide-react';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const STORAGE_KEY = 'rtf:cmdk:hint:dismissed:v1';
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);

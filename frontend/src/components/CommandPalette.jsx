@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
-import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform.js';
+import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
 import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';

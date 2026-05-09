@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { cva } from 'class-variance-authority';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 /**
  * Atlas Pill — soft tinted background, no border by default. Replaces the

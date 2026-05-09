@@ -13,7 +13,7 @@ import {
   adminGetStats, adminListUsers, adminPatchUser,
   adminListContact, adminPatchContact,
 } from '../api/api.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const COPY = {
   en: {

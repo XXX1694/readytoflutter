@@ -9,9 +9,11 @@ import { useEffect } from 'react';
 // a 30-line custom hook is cheaper than another dependency, and prerender
 // (Puppeteer) sees the post-effect DOM either way.
 
-function setMetaContent(selector, content) {
+type Restorer = (() => void) | null;
+
+function setMetaContent(selector: string, content: string | null | undefined): Restorer {
   if (!content) return null;
-  const el = document.head.querySelector(selector);
+  const el = document.head.querySelector<HTMLMetaElement>(selector);
   if (!el) return null;
   const prev = el.getAttribute('content');
   el.setAttribute('content', content);
@@ -21,9 +23,9 @@ function setMetaContent(selector, content) {
   };
 }
 
-function setLinkHref(rel, href) {
+function setLinkHref(rel: string, href: string | null | undefined): Restorer {
   if (!href) return null;
-  let el = document.head.querySelector(`link[rel="${rel}"]`);
+  let el = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
   let created = false;
   if (!el) {
     el = document.createElement('link');
@@ -34,15 +36,22 @@ function setLinkHref(rel, href) {
   const prev = el.getAttribute('href');
   el.setAttribute('href', href);
   return () => {
-    if (created) el.remove();
-    else if (prev === null) el.removeAttribute('href');
-    else el.setAttribute('href', prev);
+    if (created) el!.remove();
+    else if (prev === null) el!.removeAttribute('href');
+    else el!.setAttribute('href', prev);
   };
 }
 
-export function useDocumentMeta({ title, description, canonical, ogImage }) {
+export interface DocumentMetaInput {
+  title?: string | null;
+  description?: string | null;
+  canonical?: string | null;
+  ogImage?: string | null;
+}
+
+export function useDocumentMeta({ title, description, canonical, ogImage }: DocumentMetaInput): void {
   useEffect(() => {
-    const restorers = [];
+    const restorers: Restorer[] = [];
     const prevTitle = document.title;
     if (title) document.title = title;
 

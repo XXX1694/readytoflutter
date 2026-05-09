@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Keyboard, X } from 'lucide-react';
 import { useLang } from '../i18n/LangContext.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const M = isMac ? '⌘' : 'Ctrl';

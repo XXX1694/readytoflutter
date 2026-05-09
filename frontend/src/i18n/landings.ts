@@ -8,7 +8,25 @@
 //
 // The 'mobile' (root /) version stays generic — that's the catch-all entry.
 
-export const LANDINGS = {
+import type { PlatformKey } from '../types/domain.ts';
+
+export interface LandingCopy {
+  eyebrow: string;
+  title: [string, string]; // [first line plain, second line gradient]
+  desc: string;
+  docTitle: string;
+  metaDesc: string;
+}
+
+export interface LandingConfig {
+  platform: PlatformKey;
+  canonical: string;
+  ogImage: string;
+  en: LandingCopy;
+  ru: LandingCopy;
+}
+
+export const LANDINGS: Record<string, LandingConfig> = {
   flutter: {
     platform: 'flutter',
     canonical: '/flutter',
@@ -88,4 +106,4 @@ export const LANDINGS = {
   },
 };
 
-export const LANDING_KEYS = Object.keys(LANDINGS);
+export const LANDING_KEYS: string[] = Object.keys(LANDINGS);

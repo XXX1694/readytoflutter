@@ -12,11 +12,11 @@ import {
   clearLocalProgress,
   serializeLocalProgress,
 } from '../api/api.js';
-import { track, identify } from '../lib/analytics.js';
+import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useLoginCopy } from '../i18n/loginPage.js';
 import { Button, Eyebrow } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const schema = z.object({
   email: z.string().trim().email({ message: 'invalid_email' }),

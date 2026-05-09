@@ -1,9 +1,9 @@
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { usePrefs } from '../store/prefs.js';
-import { PLATFORMS } from '../lib/platform.js';
+import { PLATFORMS } from '../lib/platform';
 import { Eyebrow } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export default function PlatformFilter({ className, hideLabel = false }) {
   const { lang } = useLang();

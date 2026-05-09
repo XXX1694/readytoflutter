@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import CodeBlock from './CodeBlock.jsx';
 
 const FENCE_RE = /```([a-zA-Z0-9_+-]*)\r?\n?([\s\S]*?)```/g;

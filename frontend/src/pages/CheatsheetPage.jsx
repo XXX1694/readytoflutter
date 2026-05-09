@@ -7,7 +7,7 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { FullPageLoader } from '../ui/index.js';
-import { extractHint, shortenCode } from '../lib/hint.js';
+import { extractHint, shortenCode } from '../lib/hint';
 
 /**
  * Cheatsheet — a compressed, glanceable reference for a topic. Shows every

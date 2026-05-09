@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const SIZES = {
   sm: 'h-7 w-7 text-[11px] rounded-lg',

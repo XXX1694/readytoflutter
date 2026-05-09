@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 /**
  * Skeleton primitive — a soft pulsing block. Used to shape-prefill content

@@ -17,11 +17,11 @@ import {
 } from '../lib/youtube.js';
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import { Button, Pill, FullPageLoader } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';
 import { usePrefs } from '../store/prefs.js';
-import { filterResourcesByPlatform } from '../lib/platform.js';
+import { filterResourcesByPlatform } from '../lib/platform';
 
 const CATEGORY_ICONS = {
   docs: BookOpen,
@@ -128,7 +128,7 @@ export default function KnowledgePage() {
   const categories = data?.categories ?? [];
   const rawResources = data?.resources ?? [];
   // Resources without an explicit `platform` field are treated as Flutter
-  // (legacy data — see resourcePlatform in lib/platform.js). Tag new entries
+  // (legacy data — see resourcePlatform in lib/platform). Tag new entries
   // with `"platform": "ios"` etc. to make them appear on the right stack.
   const allResources = useMemo(
     () => filterResourcesByPlatform(rawResources, platform),

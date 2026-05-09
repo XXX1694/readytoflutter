@@ -6,7 +6,7 @@ import {
   resetAll,
   pickDueQueue,
   getSrsSummary,
-} from './srs.js';
+} from './srs';
 
 describe('srs.getCardState', () => {
   it('returns a fresh card state when nothing is stored', () => {

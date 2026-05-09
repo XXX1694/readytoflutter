@@ -8,12 +8,12 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { Button, Skeleton } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import { useAdmin, applyDiff } from '../store/admin.js';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';
 import { usePrefs } from '../store/prefs.js';
-import { filterQuestionsByPlatform } from '../lib/platform.js';
+import { filterQuestionsByPlatform } from '../lib/platform';
 
 const FACETS = {
   level: ['junior', 'mid', 'senior'],

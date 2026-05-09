@@ -14,7 +14,7 @@ import {
   nextQuestionId,
 } from '../lib/exportData.js';
 import { Button, Pill, FullPageLoader, Eyebrow } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import { aiDraftQuestion } from '../api/api.js';
 import { useAiHealth } from '../components/AnswerGrader.jsx';
 import { Loader2 } from 'lucide-react';

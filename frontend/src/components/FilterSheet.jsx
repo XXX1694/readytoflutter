@@ -1,6 +1,6 @@
 import { Drawer } from 'vaul';
 import { X, SlidersHorizontal } from 'lucide-react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import { tapLight } from '../lib/haptics.js';
 
 /**

@@ -10,7 +10,18 @@
 // PlatformFilter, Sidebar, MockPage, SearchPage, StudyPage and KnowledgePage
 // all consume this list — so the new tech appears everywhere automatically.
 
-export const PLATFORMS = [
+import type { PlatformKey, Topic, Question } from '../types/domain.ts';
+
+export interface Platform {
+  key: PlatformKey;
+  dot: string;
+  labelKey: string;
+  descKey: string;
+  docsUrl: string;
+  docsLabel: string;
+}
+
+export const PLATFORMS: Platform[] = [
   {
     key: 'all',
     dot: 'bg-ink',
@@ -64,13 +75,13 @@ export const PLATFORMS = [
   },
 ];
 
-export const PLATFORM_KEYS = PLATFORMS.map((p) => p.key);
+export const PLATFORM_KEYS: PlatformKey[] = PLATFORMS.map((p) => p.key);
 
 // Concrete platform groups (everything except 'all') — used by Sidebar to
 // build the topic tree.
-export const PLATFORM_GROUPS = PLATFORMS.filter((p) => p.key !== 'all');
+export const PLATFORM_GROUPS: Platform[] = PLATFORMS.filter((p) => p.key !== 'all');
 
-const CATEGORY_TO_PLATFORM = {
+const CATEGORY_TO_PLATFORM: Record<string, PlatformKey> = {
   // Flutter (original 23 topics — Dart language + Flutter framework + cross-cutting Flutter concerns)
   Dart: 'flutter',
   Flutter: 'flutter',
@@ -99,18 +110,25 @@ const CATEGORY_TO_PLATFORM = {
   Mobile: 'mobile',
 };
 
-export function topicPlatform(topic) {
+export function topicPlatform(topic: Pick<Topic, 'category'> | null | undefined): PlatformKey {
   if (!topic) return 'all';
   return CATEGORY_TO_PLATFORM[topic.category] || 'all';
 }
 
-export function filterTopicsByPlatform(topics, platform) {
+export function filterTopicsByPlatform<T extends Pick<Topic, 'category'>>(
+  topics: T[],
+  platform: PlatformKey | undefined,
+): T[] {
   if (!platform || platform === 'all') return topics;
   return topics.filter((t) => topicPlatform(t) === platform);
 }
 
 // Questions carry topic_id; topics are needed to derive their platform.
-export function filterQuestionsByPlatform(questions, topics, platform) {
+export function filterQuestionsByPlatform<Q extends Pick<Question, 'topic_id'>>(
+  questions: Q[],
+  topics: Topic[],
+  platform: PlatformKey | undefined,
+): Q[] {
   if (!platform || platform === 'all') return questions;
   const allowedTopicIds = new Set(
     filterTopicsByPlatform(topics, platform).map((t) => t.id),
@@ -121,11 +139,14 @@ export function filterQuestionsByPlatform(questions, topics, platform) {
 // Knowledge-base resources may carry an explicit `platform` field. Legacy
 // rows authored before this taxonomy existed are treated as Flutter, since
 // that's all the catalogue contained.
-export function resourcePlatform(resource) {
+export function resourcePlatform(resource: { platform?: PlatformKey } | null | undefined): PlatformKey {
   return resource?.platform || 'flutter';
 }
 
-export function filterResourcesByPlatform(resources, platform) {
+export function filterResourcesByPlatform<R extends { platform?: PlatformKey }>(
+  resources: R[],
+  platform: PlatformKey | undefined,
+): R[] {
   if (!platform || platform === 'all') return resources;
   return resources.filter((r) => resourcePlatform(r) === platform);
 }

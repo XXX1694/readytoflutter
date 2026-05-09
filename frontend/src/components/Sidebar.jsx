@@ -8,10 +8,10 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
 import { ProgressBar, IconButton, TopicGlyph } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import { tapLight } from '../lib/haptics.js';
 import { useIsCompact } from '../lib/useMediaQuery.js';
-import { filterTopicsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform.js';
+import { filterTopicsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform';
 
 const NAV_LINK_CLASS = ({ isActive }) =>
   cn(
@@ -31,7 +31,7 @@ function MainNavLink({ to, end, onClose, icon: Icon, children }) {
 }
 
 // Sidebar groups topics by PLATFORM (Flutter / iOS / Android / Cross / Mobile,
-// plus anything the team adds later — see lib/platform.js) rather than by
+// plus anything the team adds later — see lib/platform) rather than by
 // interview grade. Grade is still surfaced inside the dashboard hero.
 
 export default function Sidebar() {

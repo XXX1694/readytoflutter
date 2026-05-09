@@ -15,7 +15,7 @@ import { Button, Pill, ProgressBar, Eyebrow, FullPageLoader, difficultyTone } fr
 import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 /* Static follow-up prompts shown under each question — same set every time
    because the value is *prompting deeper thought*, not generating tailored

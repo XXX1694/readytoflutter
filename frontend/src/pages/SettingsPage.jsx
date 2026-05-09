@@ -14,7 +14,7 @@ import {
 import { useLang } from '../i18n/LangContext.jsx';
 import { usePrefs } from '../store/prefs.js';
 import { Button, Eyebrow } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export default function SettingsPage() {
   const navigate = useNavigate();

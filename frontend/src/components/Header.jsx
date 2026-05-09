@@ -5,9 +5,9 @@ import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { IconButton } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import AccountMenu from './AccountMenu.jsx';
-import { PLATFORMS } from '../lib/platform.js';
+import { PLATFORMS } from '../lib/platform';
 
 // Subscribes to navigator.onLine so the header can show a small offline
 // badge when writes are going to localStorage instead of the server.
@@ -155,7 +155,7 @@ export default function Header() {
         {/* Docs link — retargets to the canonical reference for the active
             stack (Apple Docs on iOS, developer.android.com on Android, KMP
             guide on Cross-Platform). Falls back to flutter.dev for the
-            All-stack default. Defined alongside PLATFORMS in lib/platform.js. */}
+            All-stack default. Defined alongside PLATFORMS in lib/platform. */}
         <a
           href={platformMeta.docsUrl}
           target="_blank"

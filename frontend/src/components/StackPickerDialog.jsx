@@ -5,9 +5,9 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useTopics } from '../lib/queries.js';
 import { usePrefs } from '../store/prefs.js';
-import { PLATFORMS, topicPlatform } from '../lib/platform.js';
+import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { Button, Eyebrow } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 // One-time onboarding gate. Independent from the welcome tour gate so that
 // existing users (who already saw the tour) still see this picker once.

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { highlightCode } from '../lib/highlighter.js';
 import { usePrefs } from '../store/prefs.js';
 import { useLang } from '../i18n/LangContext.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export default function CodeBlock({ code, language = 'dart', className }) {
   const theme = usePrefs((s) => s.theme);

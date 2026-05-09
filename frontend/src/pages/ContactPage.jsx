@@ -7,8 +7,8 @@ import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Eyebrow } from '../ui/index.js';
 import { submitContact } from '../api/api.js';
-import { track } from '../lib/analytics.js';
-import { cn } from '../lib/cn.js';
+import { track } from '../lib/analytics';
+import { cn } from '../lib/cn';
 
 const schema = z.object({
   name: z.string().trim().max(120).optional().or(z.literal('').transform(() => undefined)),

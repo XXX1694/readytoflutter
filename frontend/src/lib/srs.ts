@@ -14,26 +14,36 @@
  *                           overdue first, then fresh cards (never seen)
  */
 
+import type { CardState, Rating, Question } from '../types/domain.ts';
+
 const KEY = 'rtf:srs:v1';
 const DAY = 24 * 60 * 60 * 1000;
 
-const RATINGS = {
+interface RatingMeta {
+  quality: number;
+  easeDelta: number;
+  forceReset: boolean;
+}
+
+const RATINGS: Record<Rating, RatingMeta> = {
   again: { quality: 0, easeDelta: -0.2,  forceReset: true  },
   hard:  { quality: 2, easeDelta: -0.15, forceReset: false },
   good:  { quality: 3, easeDelta:  0,    forceReset: false },
   easy:  { quality: 4, easeDelta:  0.15, forceReset: false },
 };
 
-function read() {
+type CardMap = Record<string, CardState>;
+
+function read(): CardMap {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? (JSON.parse(raw) as CardMap) : {};
   } catch {
     return {};
   }
 }
 
-function write(map) {
+function write(map: CardMap): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(map));
   } catch {
@@ -41,14 +51,22 @@ function write(map) {
   }
 }
 
-export function getCardState(id) {
-  const map = read();
-  return map[id] || { ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 };
+function freshCard(): CardState {
+  return { ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 };
 }
 
-export function rateCard(id, rating, now = Date.now()) {
+export function getCardState(id: number | string): CardState {
   const map = read();
-  const prev = map[id] || { ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 };
+  return map[String(id)] || freshCard();
+}
+
+export function rateCard(
+  id: number | string,
+  rating: Rating,
+  now: number = Date.now(),
+): CardState {
+  const map = read();
+  const prev = map[String(id)] || freshCard();
   const r = RATINGS[rating];
   if (!r) return prev;
 
@@ -67,7 +85,7 @@ export function rateCard(id, rating, now = Date.now()) {
     reps += 1;
   }
 
-  const next = {
+  const next: CardState = {
     ease,
     interval,
     reps,
@@ -75,19 +93,25 @@ export function rateCard(id, rating, now = Date.now()) {
     lastAt: now,
   };
 
-  map[id] = next;
+  map[String(id)] = next;
   write(map);
   return next;
 }
 
-export function resetCard(id) {
+export function resetCard(id: number | string): void {
   const map = read();
-  delete map[id];
+  delete map[String(id)];
   write(map);
 }
 
-export function resetAll() {
+export function resetAll(): void {
   write({});
+}
+
+interface PickDueOptions {
+  limit?: number;
+  freshCap?: number;
+  now?: number;
 }
 
 /**
@@ -100,14 +124,17 @@ export function resetAll() {
  * session feels finite — the user finishes it, gets a sense of completion,
  * and comes back tomorrow.
  */
-export function pickDueQueue(items, { limit = 20, freshCap = 10, now = Date.now() } = {}) {
+export function pickDueQueue<T extends Pick<Question, 'id'>>(
+  items: T[],
+  { limit = 20, freshCap = 10, now = Date.now() }: PickDueOptions = {},
+): T[] {
   const map = read();
-  const overdue = [];
-  const due = [];
-  const fresh = [];
+  const overdue: Array<{ q: T; lateness: number }> = [];
+  const due: Array<{ q: T; lateness: number }> = [];
+  const fresh: T[] = [];
 
   for (const q of items) {
-    const s = map[q.id];
+    const s = map[String(q.id)];
     if (!s) {
       fresh.push(q);
       continue;
@@ -122,7 +149,7 @@ export function pickDueQueue(items, { limit = 20, freshCap = 10, now = Date.now(
   overdue.sort((a, b) => b.lateness - a.lateness);
   due.sort((a, b) => b.lateness - a.lateness);
 
-  const queue = [
+  const queue: T[] = [
     ...overdue.map((x) => x.q),
     ...due.map((x) => x.q),
     ...fresh.slice(0, freshCap),
@@ -130,17 +157,28 @@ export function pickDueQueue(items, { limit = 20, freshCap = 10, now = Date.now(
   return queue.slice(0, limit);
 }
 
+export interface SrsSummary {
+  due: number;
+  overdue: number;
+  learned: number;
+  fresh: number;
+  total: number;
+}
+
 /**
  * Summary counts for dashboards.
  */
-export function getSrsSummary(items, now = Date.now()) {
+export function getSrsSummary<T extends Pick<Question, 'id'>>(
+  items: T[],
+  now: number = Date.now(),
+): SrsSummary {
   const map = read();
   let due = 0;
   let overdue = 0;
   let learned = 0;
   let fresh = 0;
   for (const q of items) {
-    const s = map[q.id];
+    const s = map[String(q.id)];
     if (!s) { fresh += 1; continue; }
     if (s.reps > 0) learned += 1;
     if (s.dueAt <= now) {

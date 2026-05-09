@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const ACCENTS = {
   brand: { num: 'text-brand',                  dot: 'bg-brand',                  glow: 'from-brand/[0.06] to-transparent' },

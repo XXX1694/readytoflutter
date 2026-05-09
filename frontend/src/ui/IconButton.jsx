@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const SIZES = {
   sm: 'h-7 w-7',

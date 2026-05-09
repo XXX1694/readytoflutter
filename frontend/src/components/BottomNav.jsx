@@ -5,10 +5,10 @@ import { Home as HomeIcon, Brain, Library, Bookmark, User } from 'lucide-react';
 import { useAuth } from '../store/auth.js';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useQuestions } from '../lib/queries.js';
-import { getCardState } from '../lib/srs.js';
+import { getCardState } from '../lib/srs';
 import { tapLight } from '../lib/haptics.js';
 import { prefetch } from '../lib/prefetch.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 // Reactive narrow-screen check — `window.innerWidth` once at render time
 // would freeze when the user rotates from landscape to portrait. matchMedia

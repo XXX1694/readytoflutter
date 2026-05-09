@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Command, Brain, Target, ArrowRight, X, Bookmark, TrendingUp } from 'lucide-react';
 import { useLang } from '../i18n/LangContext.jsx';
 import { Button, Pill } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const STORAGE_KEY = 'rtf:welcome:v1';
 const STACK_PICKER_KEY = 'rtf:stackpicker:v1';

@@ -7,9 +7,9 @@ import {
 } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useQuestions, useTopics } from '../lib/queries.js';
-import { pickDueQueue, rateCard, getCardState } from '../lib/srs.js';
+import { pickDueQueue, rateCard, getCardState } from '../lib/srs';
 import { usePrefs } from '../store/prefs.js';
-import { filterQuestionsByPlatform } from '../lib/platform.js';
+import { filterQuestionsByPlatform } from '../lib/platform';
 import { useLang } from '../i18n/LangContext.jsx';
 import { useT } from '../i18n/ui.js';
 import { useContent } from '../i18n/content.js';
@@ -18,10 +18,10 @@ import CodeBlock from '../components/CodeBlock.jsx';
 import AnswerText from '../components/AnswerText.jsx';
 import VoiceInputButton from '../components/VoiceInputButton.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import { tapMedium, tapLight } from '../lib/haptics.js';
 import { useSwipe } from '../lib/useSwipe.js';
-import { track } from '../lib/analytics.js';
+import { track } from '../lib/analytics';
 
 const RATINGS = [
   { key: 'again', tone: 'coral',  hotkey: '1', labelEn: 'Again', labelRu: 'Снова', description: '< 1d' },

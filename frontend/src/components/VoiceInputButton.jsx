@@ -1,7 +1,7 @@
 import { Mic, MicOff } from 'lucide-react';
 import { useSpeechRecognition } from '../lib/speech.js';
 import { Button } from '../ui/index.js';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 const labels = {
   ru: { idle: 'Голос', listening: 'Слушаю…', start: 'Голосовой ввод', stop: 'Остановить запись', unsupported: 'Голос недоступен' },
