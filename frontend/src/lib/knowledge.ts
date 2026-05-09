@@ -11,15 +11,24 @@ import type { Resource, Level } from '../types/domain';
 const SAVED_KEY = 'rtf:kb:saved:v1';
 const VISITED_KEY = 'rtf:kb:visited:v1';
 
-let cachePromise: Promise<Resource[]> | null = null;
+export interface ResourceCatalog {
+  // Categories carry localized title/label/subtitle pairs that the
+  // KnowledgePage renders directly from JSON; widening to `any` keeps the
+  // door open for future fields without rewriting every site that reads
+  // a category.
+  categories: Array<Record<string, any>>;
+  resources: Resource[];
+}
 
-export async function loadResources(): Promise<Resource[]> {
+let cachePromise: Promise<ResourceCatalog> | null = null;
+
+export async function loadResources(): Promise<ResourceCatalog> {
   if (cachePromise) return cachePromise;
   const url = `${import.meta.env.BASE_URL || '/'}seed/resources.json`;
   cachePromise = fetch(url)
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json() as Promise<Resource[]>;
+      return r.json() as Promise<ResourceCatalog>;
     })
     .catch((err) => {
       cachePromise = null;

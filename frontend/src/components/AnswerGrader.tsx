@@ -1,0 +1,342 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Sparkles, Loader2, AlertCircle, Check, X, ChevronRight, MessagesSquare, Zap,
+} from 'lucide-react';
+import { Button, Pill } from '../ui/index';
+import { aiHealth, aiGradeAnswer } from '../api/api';
+import { track } from '../lib/analytics';
+
+// Module-level cache for the /ai/health probe. We only need to ask the
+// backend once per page load — the result doesn't change without a server
+// restart, and we don't want to ping it every time MockPage mounts.
+let healthCache = null;
+let healthPromise = null;
+
+function probeHealth() {
+  if (healthCache) return Promise.resolve(healthCache);
+  if (!healthPromise) {
+    healthPromise = aiHealth().then((data) => {
+      healthCache = data || { enabled: false };
+      return healthCache;
+    });
+  }
+  return healthPromise;
+}
+
+export function useAiHealth() {
+  const [state, setState] = useState(healthCache);
+  useEffect(() => {
+    if (healthCache) return;
+    let alive = true;
+    probeHealth().then((data) => { if (alive) setState(data); });
+    return () => { alive = false; };
+  }, []);
+  return state || { enabled: false };
+}
+
+const VERDICT_TONE = {
+  great: 'mint',
+  good: 'brand',
+  rough: 'amber',
+  off: 'coral',
+};
+
+const VERDICT_LABEL = {
+  great: { ru: 'Отлично', en: 'Great' },
+  good:  { ru: 'Уверенно', en: 'Solid' },
+  rough: { ru: 'С трудом', en: 'Rough' },
+  off:   { ru: 'Мимо', en: 'Off' },
+};
+
+const MIN_LEN = 15;
+
+function errorMessage(code, lang) {
+  const ru = lang === 'ru';
+  switch (code) {
+    case 'rate_limited':
+      return ru ? 'Лимит проверок исчерпан — попробуй позже.' : 'Rate limit reached — try later.';
+    case 'too_short':
+      return ru ? 'Ответ слишком короткий для проверки.' : 'Answer too short to grade.';
+    case 'ai_disabled':
+      return ru ? 'AI-проверка не настроена на сервере.' : 'AI grading is not configured.';
+    case 'not_found':
+      return ru ? 'Вопрос не найден в базе.' : 'Question not found.';
+    default:
+      return ru ? 'Не удалось проверить ответ. Попробуй ещё раз.' : 'Could not grade the answer. Try again.';
+  }
+}
+
+export default function AnswerGrader({ questionId, userAnswer, lang }: any) {
+  const health = useAiHealth();
+  const { enabled } = health;
+  const [state, setState] = useState({ loading: false, result: null, error: null, paywall: null });
+  const reqIdRef = useRef(0);
+
+  // Stale grade for the prior question is avoided by giving this component a
+  // `key={questionId}` from the parent — React remounts on key change, which
+  // resets the local state cleanly without a setState-in-effect.
+
+  // The grader sits at the top of the revealed section, so the result
+  // lands right where the user's eye already is — no auto-scroll needed.
+
+  if (!enabled) return null;
+
+  const trimmed = (userAnswer || '').trim();
+  const tooShort = trimmed.length < MIN_LEN;
+
+  // Cost-saving guard: empty / nearly-empty answers never reach the API.
+  // The button is disabled (so this is mostly defensive), but we also bail
+  // out here in case something else trips the click path.
+  const run = async () => {
+    if (tooShort || state.loading) return;
+    const reqId = ++reqIdRef.current;
+    setState({ loading: true, result: null, error: null, paywall: null });
+    track('ai_grade_used', { questionId, length: trimmed.length, lang });
+    try {
+      const data = await aiGradeAnswer({ questionId, userAnswer: trimmed, lang });
+      if (reqId !== reqIdRef.current) return; // user moved on
+      setState({ loading: false, result: data?.grade || null, error: null, paywall: null });
+    } catch (err: any) {
+      if (reqId !== reqIdRef.current) return;
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      if (status === 402 && data?.code === 'paywall_required') {
+        // Server says daily quota is up. Stash details so the panel can render
+        // a tailored upgrade CTA instead of a generic error.
+        track('paywall_hit', { reason: data.reason, tier: data.tier });
+        setState({
+          loading: false, result: null, error: null,
+          paywall: { reason: data.reason, used: data.used, cap: data.cap, tier: data.tier },
+        });
+        return;
+      }
+      setState({ loading: false, result: null, error: errorMessage(data?.code, lang), paywall: null });
+    }
+  };
+
+  if (state.result) {
+    return <ResultPanel result={state.result} lang={lang} onRetry={run} />;
+  }
+
+  if (state.paywall) {
+    return <PaywallPanel info={state.paywall} lang={lang} />;
+  }
+
+  // Idle / loading / error — one bold brand-tinted CTA. Brand gradient + a
+  // soft glow at the corner so the eye catches it. Compact on tooShort
+  // (no CTA — there's nothing to grade yet, so a button would just look
+  // broken).
+  const isError = !!state.error;
+  return (
+    <section
+      className="relative mb-5 overflow-hidden rounded-md border border-brand/30 bg-gradient-to-br from-brand/8 via-paper-2 to-mint/5 p-4 shadow-codex-sm sm:p-5"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-brand/15 blur-3xl"
+      />
+      <div className="relative flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-brand/30 bg-paper-2 shadow-codex-sm">
+            {state.loading
+              ? <Loader2 className="h-4 w-4 animate-spin text-brand" aria-hidden />
+              : isError
+              ? <AlertCircle className="h-4 w-4 text-coral" aria-hidden />
+              : <Sparkles className="h-4 w-4 text-brand" aria-hidden />}
+          </div>
+          <div>
+            <div className="font-display text-base font-medium leading-tight text-ink sm:text-lg">
+              {state.loading
+                ? (lang === 'ru' ? 'Claude думает над ответом…' : 'Claude is grading your answer…')
+                : isError
+                ? (lang === 'ru' ? 'Не получилось проверить' : 'Could not grade')
+                : tooShort
+                ? (lang === 'ru' ? 'AI-проверка ждёт твой ответ' : 'AI check is waiting for your answer')
+                : (lang === 'ru' ? 'Проверить ответ через AI' : 'Grade your answer with AI')}
+            </div>
+            <div className="mt-1 text-xs leading-relaxed text-ink-2">
+              {isError ? (
+                <span className="text-coral">{state.error}</span>
+              ) : tooShort ? (
+                lang === 'ru'
+                  ? 'Напиши хотя бы пару предложений в поле выше — кнопка появится автоматически.'
+                  : 'Write at least a sentence or two above — the button shows up automatically.'
+              ) : state.loading ? (
+                lang === 'ru'
+                  ? 'Сравниваем с эталоном, ищем сильные стороны и пробелы…'
+                  : 'Comparing with the reference, looking for strengths and gaps…'
+              ) : (
+                lang === 'ru'
+                  ? 'Получишь оценку, сильные стороны, пробелы и совет — за пару секунд.'
+                  : 'Get a verdict, strengths, gaps and a next step — in a couple of seconds.'
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Hide the button entirely when there's nothing to grade —
+            a disabled grey button reads as "broken" instead of "not yet". */}
+        {!tooShort && (
+          <Button
+            variant="brand"
+            size="sm"
+            disabled={state.loading}
+            onClick={run}
+            className="shrink-0"
+          >
+            {state.loading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {lang === 'ru' ? 'Думаю…' : 'Thinking…'}
+              </>
+            ) : isError ? (
+              <>{lang === 'ru' ? 'Повторить' : 'Retry'}</>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5" />
+                {lang === 'ru' ? 'Проверить' : 'Check with AI'}
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// Paywall panel — shown when /api/ai/grade returns 402 paywall_required.
+// Two flavours:
+//  - anon:  "sign in to keep grading"
+//  - free:  "daily limit hit, upgrade to Pro for unlimited"
+// Both link to /pricing as the primary action.
+function PaywallPanel({ info, lang }: any) {
+  const ru = lang === 'ru';
+  const isAnon = info.tier === 'anon' || info.reason === 'anon_quota_exceeded';
+  const title = isAnon
+    ? (ru ? 'Лимит для гостей исчерпан' : 'Anonymous daily limit reached')
+    : (ru ? 'Дневной лимит Free исчерпан' : 'Free plan daily limit reached');
+  const sub = isAnon
+    ? (ru
+        ? `Зарегистрируйся — получишь больше проверок в день, или оформи Pro и проверяй без ограничений.`
+        : `Sign up for a higher daily allowance — or upgrade to Pro for unlimited grading.`)
+    : (ru
+        ? `Использовано ${info.used} из ${info.cap}. Pro — безлимит и follow-up вопросы.`
+        : `${info.used} of ${info.cap} used. Pro is unlimited grading + follow-up questions.`);
+  return (
+    <section className="relative mb-5 overflow-hidden rounded-md border border-amber/30 bg-gradient-to-br from-amber/8 via-paper-2 to-brand/5 p-4 shadow-codex-sm sm:p-5">
+      <span aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-amber/15 blur-3xl" />
+      <div className="relative flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-amber/30 bg-paper-2 shadow-codex-sm">
+            <Zap className="h-4 w-4 text-[rgb(var(--amber))]" />
+          </div>
+          <div>
+            <div className="font-display text-base font-medium leading-tight text-ink sm:text-lg">{title}</div>
+            <div className="mt-1 text-xs leading-relaxed text-ink-2">{sub}</div>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isAnon && (
+            <Link to="/signup">
+              <Button variant="codex" size="sm">{ru ? 'Зарегистрироваться' : 'Sign up'}</Button>
+            </Link>
+          )}
+          <Link to="/pricing">
+            <Button variant="brand" size="sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              {ru ? 'К Pro' : 'See Pro'}
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResultPanel({ result, lang, onRetry }: any) {
+  const tone = VERDICT_TONE[result.verdict] || 'brand';
+  const label = VERDICT_LABEL[result.verdict]?.[lang] || result.verdict;
+  const strengths = Array.isArray(result.strengths) ? result.strengths : [];
+  const gaps = Array.isArray(result.gaps) ? result.gaps : [];
+
+  return (
+    <section className="mb-5 rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm sm:p-5">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+          <Sparkles className="h-3 w-3 text-brand" />
+          {lang === 'ru' ? 'AI-оценка' : 'AI grade'}
+        </div>
+        <div className="flex items-center gap-2">
+          <Pill tone={tone} size="xs">{label}</Pill>
+          <span className="font-mono text-sm tabular-nums text-ink">
+            {result.score}
+            <span className="text-muted">/100</span>
+          </span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="font-mono text-[10px] uppercase tracking-wider text-muted hover:text-ink"
+          >
+            {lang === 'ru' ? 'Заново' : 'Re-check'}
+          </button>
+        </div>
+      </header>
+
+      {result.summary && (
+        <p className="mb-3 text-sm leading-relaxed text-ink-2">{result.summary}</p>
+      )}
+
+      {(strengths.length > 0 || gaps.length > 0) && (
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {strengths.length > 0 && (
+            <div>
+              <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-mint">
+                {lang === 'ru' ? 'Сильно' : 'Strengths'}
+              </div>
+              <ul className="space-y-1.5">
+                {strengths.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-ink-2">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint" />
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {gaps.length > 0 && (
+            <div>
+              <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-coral">
+                {lang === 'ru' ? 'Пробелы' : 'Gaps'}
+              </div>
+              <ul className="space-y-1.5">
+                {gaps.map((g, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-ink-2">
+                    <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-coral" />
+                    <span>{g}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {result.suggestion && (
+        <p className="flex items-start gap-2 border-t border-rule/15 pt-3 text-xs text-ink-2">
+          <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
+          <span>{result.suggestion}</span>
+        </p>
+      )}
+
+      {result.followUp && (
+        <div className="mt-3 rounded-md border border-brand/25 bg-brand/5 p-3">
+          <div className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
+            <MessagesSquare className="h-3 w-3" />
+            {lang === 'ru' ? 'А интервьюер бы спросил' : 'An interviewer might ask'}
+          </div>
+          <p className="text-sm leading-relaxed text-ink">{result.followUp}</p>
+        </div>
+      )}
+    </section>
+  );
+}

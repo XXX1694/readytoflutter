@@ -130,6 +130,7 @@ export interface Resource {
   free?: boolean;
   topics?: string[];
   platform?: PlatformKey;
+  media_type?: string;
   // YouTube helpers
   video_id?: string;
   playlist_id?: string;

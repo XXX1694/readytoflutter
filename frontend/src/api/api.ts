@@ -51,8 +51,7 @@ const api: AxiosInstance = axios.create({ baseURL: apiBaseUrl });
 api.interceptors.request.use((config) => {
   const token = useAuth.getState().token;
   if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+    if (config.headers) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });

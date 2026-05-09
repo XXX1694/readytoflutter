@@ -9,16 +9,16 @@
  * the main thread has a moment to spare.
  */
 const REGISTRY: Record<string, () => Promise<unknown>> = {
-  '/':           () => import('../pages/HomePage.jsx'),
-  '/study':      () => import('../pages/StudyPage.jsx'),
-  '/mock':       () => import('../pages/MockPage.jsx'),
-  '/bookmarks':  () => import('../pages/BookmarksPage.jsx'),
-  '/knowledge':  () => import('../pages/KnowledgePage.jsx'),
-  '/search':     () => import('../pages/SearchPage.jsx'),
-  '/stats':      () => import('../pages/StatsPage.jsx'),
-  '/settings':   () => import('../pages/SettingsPage.jsx'),
-  '/login':      () => import('../pages/LoginPage.jsx'),
-  '/signup':     () => import('../pages/SignupPage.jsx'),
+  '/':           () => import('../pages/HomePage'),
+  '/study':      () => import('../pages/StudyPage'),
+  '/mock':       () => import('../pages/MockPage'),
+  '/bookmarks':  () => import('../pages/BookmarksPage'),
+  '/knowledge':  () => import('../pages/KnowledgePage'),
+  '/search':     () => import('../pages/SearchPage'),
+  '/stats':      () => import('../pages/StatsPage'),
+  '/settings':   () => import('../pages/SettingsPage'),
+  '/login':      () => import('../pages/LoginPage'),
+  '/signup':     () => import('../pages/SignupPage'),
 };
 
 const fired = new Set<string>();
