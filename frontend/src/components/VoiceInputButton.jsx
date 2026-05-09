@@ -1,5 +1,5 @@
 import { Mic, MicOff } from 'lucide-react';
-import { useSpeechRecognition } from '../lib/speech.js';
+import { useSpeechRecognition } from '../lib/speech';
 import { Button } from '../ui/index.js';
 import { cn } from '../lib/cn';
 

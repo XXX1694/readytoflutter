@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, ExternalLink } from 'lucide-react';
-import { resolvePlayable, buildEmbedUrl } from '../lib/youtube.js';
+import { resolvePlayable, buildEmbedUrl } from '../lib/youtube';
 import { Pill } from '../ui/index.js';
 import { cn } from '../lib/cn';
 

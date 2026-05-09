@@ -7,7 +7,7 @@ import { useLang } from '../i18n/LangContext.jsx';
 import { useQuestions } from '../lib/queries';
 import { getCardState } from '../lib/srs';
 import { tapLight } from '../lib/haptics';
-import { prefetch } from '../lib/prefetch.js';
+import { prefetch } from '../lib/prefetch';
 import { cn } from '../lib/cn';
 
 // Reactive narrow-screen check — `window.innerWidth` once at render time

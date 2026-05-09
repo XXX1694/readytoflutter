@@ -1,33 +1,85 @@
 /**
- * Thin wrapper around the Web Speech API recognition side. Mirrors `tts.js`:
+ * Thin wrapper around the Web Speech API recognition side. Mirrors `tts`:
  * a tiny singleton-style module so only one mic session is active at a time.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-function getSpeechRecognitionCtor() {
+// SpeechRecognition isn't in the standard DOM lib for non-WebKit browsers.
+// We'll use a structural any here — the API surface we touch is small
+// (start/stop/abort/onresult/onerror/onend) and stable.
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: ((this: SpeechRecognitionLike) => void) | null;
+  onerror: ((this: SpeechRecognitionLike, e: { error?: string }) => void) | null;
+  onend: ((this: SpeechRecognitionLike) => void) | null;
+  onresult: ((this: SpeechRecognitionLike, e: SpeechRecognitionEventLike) => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: ArrayLike<{
+    isFinal: boolean;
+    [k: number]: { transcript?: string };
+  }>;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  }
+}
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === 'undefined') return null;
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-export function isSpeechRecognitionSupported() {
+export function isSpeechRecognitionSupported(): boolean {
   return Boolean(getSpeechRecognitionCtor());
 }
 
-function langTag(lang) {
+function langTag(lang: 'en' | 'ru'): string {
   return lang === 'ru' ? 'ru-RU' : 'en-US';
+}
+
+export interface UseSpeechRecognitionOptions {
+  lang?: 'en' | 'ru';
+  onFinal?: (text: string) => void;
+}
+
+export interface UseSpeechRecognitionResult {
+  supported: boolean;
+  listening: boolean;
+  interim: string;
+  error: string | null;
+  start: () => void;
+  stop: () => void;
+  toggle: () => void;
 }
 
 /**
  * useSpeechRecognition — append-style mic. `onFinal(text)` fires for each
  * finalized chunk; `interim` is the live partial transcript for UI feedback.
  */
-export function useSpeechRecognition({ lang = 'en', onFinal } = {}) {
-  const [supported] = useState(isSpeechRecognitionSupported);
-  const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState('');
-  const [error, setError] = useState(null);
-  const recognizerRef = useRef(null);
+export function useSpeechRecognition({
+  lang = 'en',
+  onFinal,
+}: UseSpeechRecognitionOptions = {}): UseSpeechRecognitionResult {
+  const [supported] = useState<boolean>(isSpeechRecognitionSupported);
+  const [listening, setListening] = useState<boolean>(false);
+  const [interim, setInterim] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const recognizerRef = useRef<SpeechRecognitionLike | null>(null);
   const onFinalRef = useRef(onFinal);
 
   useEffect(() => { onFinalRef.current = onFinal; }, [onFinal]);
@@ -82,7 +134,7 @@ export function useSpeechRecognition({ lang = 'en', onFinal } = {}) {
     recognizerRef.current = r;
     try { r.start(); }
     catch (err) {
-      setError(err?.message || 'start_failed');
+      setError((err as Error)?.message || 'start_failed');
       recognizerRef.current = null;
     }
   }, [lang]);

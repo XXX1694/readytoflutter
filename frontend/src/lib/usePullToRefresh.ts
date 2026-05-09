@@ -1,5 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 
+export type PullToRefreshState = 'idle' | 'pulling' | 'ready' | 'refreshing';
+
+interface PullToRefreshOptions {
+  threshold?: number;
+  max?: number;
+  onRefresh?: () => Promise<unknown> | void;
+  enabled?: boolean;
+}
+
+interface PullToRefreshResult {
+  pull: number;
+  state: PullToRefreshState;
+}
+
+interface PullStart {
+  y: number;
+  captured: boolean;
+}
+
 /**
  * Pull-to-refresh on a scroll container. Returns:
  *  - `pull`   — current pull distance in px (use this to drive the spinner)
@@ -11,10 +30,13 @@ import { useEffect, useRef, useState } from 'react';
  *
  * Skipped on desktop (no touch). Use the `enabled` flag to disable per-route.
  */
-export function usePullToRefresh(getTarget, { threshold = 64, max = 96, onRefresh, enabled = true } = {}) {
-  const [pull, setPull] = useState(0);
-  const [state, setState] = useState('idle');
-  const startRef = useRef(null);
+export function usePullToRefresh(
+  getTarget: HTMLElement | null | (() => HTMLElement | null),
+  { threshold = 64, max = 96, onRefresh, enabled = true }: PullToRefreshOptions = {},
+): PullToRefreshResult {
+  const [pull, setPull] = useState<number>(0);
+  const [state, setState] = useState<PullToRefreshState>('idle');
+  const startRef = useRef<PullStart | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -26,13 +48,13 @@ export function usePullToRefresh(getTarget, { threshold = 64, max = 96, onRefres
     const coarse = window.matchMedia?.('(pointer: coarse)').matches;
     if (!coarse) return;
 
-    const onTouchStart = (e) => {
+    const onTouchStart = (e: TouchEvent) => {
       if (target.scrollTop > 0) return;
       const t = e.touches[0];
       startRef.current = { y: t.clientY, captured: false };
     };
 
-    const onTouchMove = (e) => {
+    const onTouchMove = (e: TouchEvent) => {
       const s = startRef.current;
       if (!s) return;
       if (target.scrollTop > 0) {

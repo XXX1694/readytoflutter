@@ -10,11 +10,11 @@ import { useLang } from '../i18n/LangContext.jsx';
 import {
   loadResources, filterResources, countByCategory,
   toggleSaved, markVisited, getSavedIds, getVisitedIds,
-} from '../lib/knowledge.js';
+} from '../lib/knowledge';
 import {
   resolvePlayable, resolveCoverVideoId, thumbnailUrl,
   getRecentlyWatched, clearRecentlyWatched, pushRecentlyWatched,
-} from '../lib/youtube.js';
+} from '../lib/youtube';
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import { Button, Pill, FullPageLoader } from '../ui/index.js';
 import { cn } from '../lib/cn';

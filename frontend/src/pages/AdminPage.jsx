@@ -12,7 +12,7 @@ import {
   exportStaticDataJson,
   exportTopicJson,
   nextQuestionId,
-} from '../lib/exportData.js';
+} from '../lib/exportData';
 import { Button, Pill, FullPageLoader, Eyebrow } from '../ui/index.js';
 import { cn } from '../lib/cn';
 import { aiDraftQuestion } from '../api/api';

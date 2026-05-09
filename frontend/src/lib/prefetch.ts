@@ -8,7 +8,7 @@
  * touch devices). `prefetchIdle()` warms the rest of the tab roots once
  * the main thread has a moment to spare.
  */
-const REGISTRY = {
+const REGISTRY: Record<string, () => Promise<unknown>> = {
   '/':           () => import('../pages/HomePage.jsx'),
   '/study':      () => import('../pages/StudyPage.jsx'),
   '/mock':       () => import('../pages/MockPage.jsx'),
@@ -21,9 +21,14 @@ const REGISTRY = {
   '/signup':     () => import('../pages/SignupPage.jsx'),
 };
 
-const fired = new Set();
+const fired = new Set<string>();
 
-export function prefetch(path) {
+interface NetworkInformation {
+  saveData?: boolean;
+  effectiveType?: string;
+}
+
+export function prefetch(path: string): void {
   const thunk = REGISTRY[path];
   if (!thunk || fired.has(path)) return;
   fired.add(path);
@@ -36,17 +41,18 @@ export function prefetch(path) {
  * Warm every registered route during browser idle time. Skipped on slow
  * connections (Save-Data / 2G) to avoid burning the user's data plan.
  */
-export function prefetchIdle() {
+export function prefetchIdle(): void {
   if (typeof window === 'undefined') return;
-  const conn = navigator.connection;
+  const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection;
   if (conn?.saveData) return;
   if (conn?.effectiveType && /^(slow-2g|2g)$/.test(conn.effectiveType)) return;
 
   const run = () => {
     Object.keys(REGISTRY).forEach(prefetch);
   };
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(run, { timeout: 4000 });
+  const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void };
+  if (w.requestIdleCallback) {
+    w.requestIdleCallback(run, { timeout: 4000 });
   } else {
     setTimeout(run, 1500);
   }

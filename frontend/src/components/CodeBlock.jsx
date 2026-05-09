@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Check, Play } from 'lucide-react';
 import { toast } from 'sonner';
-import { highlightCode } from '../lib/highlighter.js';
+import { highlightCode } from '../lib/highlighter';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext.jsx';
 import { cn } from '../lib/cn';

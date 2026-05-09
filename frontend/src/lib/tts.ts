@@ -5,14 +5,14 @@
  */
 
 let currentToken = 0;
-let currentUtterance = null;
-const listeners = new Set();
+let currentUtterance: SpeechSynthesisUtterance | null = null;
+const listeners = new Set<() => void>();
 
-function emit() {
+function emit(): void {
   for (const cb of listeners) cb();
 }
 
-function pickVoice(lang) {
+function pickVoice(lang: 'en' | 'ru'): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
@@ -22,11 +22,17 @@ function pickVoice(lang) {
   return preferred || voices.find((v) => v.lang.startsWith(want)) || voices[0];
 }
 
-export function isTtsSupported() {
+export function isTtsSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
-export function speak(text, { lang = 'en', rate = 1, onEnd } = {}) {
+export interface SpeakOptions {
+  lang?: 'en' | 'ru';
+  rate?: number;
+  onEnd?: () => void;
+}
+
+export function speak(text: string, { lang = 'en', rate = 1, onEnd }: SpeakOptions = {}): number | null {
   if (!isTtsSupported() || !text) return null;
   const synth = window.speechSynthesis;
   // Cancel any ongoing speech
@@ -60,7 +66,7 @@ export function speak(text, { lang = 'en', rate = 1, onEnd } = {}) {
   return token;
 }
 
-export function stop() {
+export function stop(): void {
   if (!isTtsSupported()) return;
   window.speechSynthesis.cancel();
   currentUtterance = null;
@@ -68,13 +74,13 @@ export function stop() {
   emit();
 }
 
-export function isSpeaking() {
+export function isSpeaking(): boolean {
   return Boolean(currentUtterance);
 }
 
-export function subscribe(cb) {
+export function subscribe(cb: () => void): () => void {
   listeners.add(cb);
-  return () => listeners.delete(cb);
+  return () => { listeners.delete(cb); };
 }
 
 // Voices on Chrome/Safari load asynchronously — preload by triggering getVoices

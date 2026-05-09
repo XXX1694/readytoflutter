@@ -115,6 +115,27 @@ export interface CardState {
 
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
 
+// Knowledge-base resource (frontend/public/seed/resources.json).
+export interface Resource {
+  id: number | string;
+  url: string;
+  title_en: string;
+  title_ru?: string;
+  description_en?: string;
+  description_ru?: string;
+  source?: string;
+  category?: string;
+  level?: Level;
+  lang?: string;
+  free?: boolean;
+  topics?: string[];
+  platform?: PlatformKey;
+  // YouTube helpers
+  video_id?: string;
+  playlist_id?: string;
+  cover_video_id?: string;
+}
+
 // AI grader result schema — mirrors the submit_grade tool in backend/ai.js.
 export interface AiGrade {
   verdict: 'great' | 'good' | 'rough' | 'off';

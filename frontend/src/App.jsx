@@ -8,7 +8,7 @@ import { queryClient } from './lib/queryClient';
 import { FullPageLoader } from './ui/index.js';
 import { useAuth } from './store/auth';
 import { apiBaseUrl } from './api/api';
-import { prefetchIdle } from './lib/prefetch.js';
+import { prefetchIdle } from './lib/prefetch';
 import { initAnalytics, pageview, identify } from './lib/analytics';
 import { LANDINGS } from './i18n/landings';
 import './store/prefs'; // side-effect: hydrate theme before paint
