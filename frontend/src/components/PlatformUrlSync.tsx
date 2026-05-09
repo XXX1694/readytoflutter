@@ -11,7 +11,7 @@ import { PLATFORM_KEYS } from '../lib/platform';
 // 'all' stays out of the URL so bare links remain clean.
 
 export default function PlatformUrlSync() {
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
   const [searchParams, setSearchParams] = useSearchParams();
   const urlStack = searchParams.get('stack');
   const hydrated = useRef(false);

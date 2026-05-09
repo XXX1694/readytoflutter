@@ -26,8 +26,8 @@ import { cn } from '../lib/cn';
  */
 const FOCUS_ROUTES = [/^\/study(\/|$)/, /^\/mock(\/|$)/, /^\/round(\/|$)/, /^\/login(\/|$)/, /^\/signup(\/|$)/];
 
-const slugToLabel = (slug) =>
-  slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
+const slugToLabel = (slug: any) =>
+  slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, (c: any) => c.toUpperCase()) : '';
 
 function usePageTitle() {
   const location = useLocation();
@@ -38,7 +38,7 @@ function usePageTitle() {
   const path = location.pathname;
   const topicMatch = path.match(/^\/(?:topic|round)\/([^/]+)/);
   if (topicMatch) {
-    const topic = topics.find((tp) => tp.slug === topicMatch[1]);
+    const topic = topics.find((tp: any) => tp.slug === topicMatch[1]);
     if (topic) return topicTitle(topic);
     return slugToLabel(topicMatch[1]);
   }
@@ -61,12 +61,12 @@ export default function MobileHeader() {
   const location = useLocation();
   const { lang } = useLang();
   const t = useT(lang);
-  const toggleSidebar = usePrefs((s) => s.toggleSidebar);
-  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const toggleSidebar = usePrefs((s: any) => s.toggleSidebar);
+  const setCommandOpen = usePrefs((s: any) => s.setCommandOpen);
 
   const title = usePageTitle();
   const isHome = location.pathname === '/';
-  const isFocus = FOCUS_ROUTES.some((re) => re.test(location.pathname));
+  const isFocus = FOCUS_ROUTES.some((re: any) => re.test(location.pathname));
 
   // Track scroll direction on the main scroller so we can auto-hide the
   // bar like Twitter/Instagram. `mainEl` resolves after Layout mounts —

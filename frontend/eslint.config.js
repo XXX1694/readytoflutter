@@ -58,13 +58,18 @@ export default [
   {
     // For TS files: tsc + TS-eslint cover unused-vars better than the JS
     // rule (which misfires on type-only function-signature parameters
-    // inside interfaces). Disable the JS one and lower the TS noise to
-    // warn-only so they don't block CI.
+    // inside interfaces). Disable the JS one.
+    //
+    // `no-explicit-any` is OFF for the migration phase: the bulk JSX → TSX
+    // rename intentionally annotated helper props with `: any` to keep the
+    // build green without authoring a Props interface for every component.
+    // Re-enable this rule once we've replaced the `: any` scaffolds with
+    // proper interfaces (see TS migration notes in tsconfig.json).
     files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   {

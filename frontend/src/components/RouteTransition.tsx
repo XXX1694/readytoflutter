@@ -26,7 +26,7 @@ import { useIsMobile } from '../lib/useMediaQuery';
 // these counts as a tab swap, not a push/pop.
 const TAB_ROOTS = ['/', '/study', '/bookmarks', '/knowledge', '/settings', '/login', '/signup', '/stats', '/search', '/mock'];
 
-const isTabRoot = (path) => TAB_ROOTS.includes(path);
+const isTabRoot = (path: any) => TAB_ROOTS.includes(path);
 
 export default function RouteTransition({ children }: any) {
   const location = useLocation();

@@ -81,9 +81,9 @@ export default function PricingPage() {
   const { lang } = useLang();
   const T = COPY[lang === 'ru' ? 'ru' : 'en'];
   const navigate = useNavigate();
-  const user = useAuth((s) => s.user);
-  const token = useAuth((s) => s.token);
-  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const user = useAuth((s: any) => s.user);
+  const token = useAuth((s: any) => s.token);
+  const backendAvailable = useAuth((s: any) => s.backendAvailable);
   const isPro = user && user.pro_tier && user.pro_tier !== 'free';
 
   const [billing, setBilling] = useState<{ enabled: boolean; reason?: string | null }>({ enabled: false, reason: 'loading' });
@@ -194,7 +194,7 @@ export default function PricingPage() {
               </div>
             </header>
             <ul className="mb-6 space-y-2.5 text-sm text-ink-2">
-              {T.freeFeatures.map((f) => (
+              {T.freeFeatures.map((f: any) => (
                 <li key={f} className="flex gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-mint" />
                   <span>{f}</span>
@@ -236,7 +236,7 @@ export default function PricingPage() {
               <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-2">{T.billed}</div>
             </header>
             <ul className="mb-6 space-y-2.5 text-sm text-ink-2">
-              {T.proFeatures.map((f, i) => (
+              {T.proFeatures.map((f: any, i: any) => (
                 <li key={f} className="flex gap-2">
                   <Check className={cn('mt-0.5 h-4 w-4 shrink-0', i === 0 ? 'text-muted' : 'text-brand')} />
                   <span className={i === 0 ? 'font-medium text-ink' : ''}>{f}</span>

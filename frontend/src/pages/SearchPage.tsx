@@ -39,13 +39,13 @@ export default function SearchPage() {
 
   const { data: rawQuestions = [], isLoading } = useQuestions();
   const { data: allTopics = [] } = useTopics();
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
 
   // Layer admin edits/adds/deletes onto the server data so newly-authored
   // questions appear in search without requiring a backend round-trip.
-  const edits = useAdmin((s) => s.edits);
-  const adds = useAdmin((s) => s.adds);
-  const deletes = useAdmin((s) => s.deletes);
+  const edits = useAdmin((s: any) => s.edits);
+  const adds = useAdmin((s: any) => s.adds);
+  const deletes = useAdmin((s: any) => s.deletes);
   const questions = useMemo(() => {
     const merged = applyDiff(rawQuestions, { edits, adds, deletes });
     return filterQuestionsByPlatform(merged, allTopics, platform);
@@ -80,7 +80,7 @@ export default function SearchPage() {
       },
     });
     ms.addAll(
-      questions.map((q) => ({
+      questions.map((q: any) => ({
         id: q.id,
         q: questionText(q) || '',
         a: answerText(q) || '',
@@ -96,13 +96,13 @@ export default function SearchPage() {
     let pool;
     if (query.trim()) {
       const hits = index.search(query.trim());
-      const order = new Map(hits.map((h, i) => [h.id, i]));
-      pool = questions.filter((q) => order.has(q.id))
-                      .sort((a, b) => order.get(a.id) - order.get(b.id));
+      const order = new Map(hits.map((h: any, i: any) => [h.id, i]));
+      pool = questions.filter((q: any) => order.has(q.id))
+                      .sort((a: any, b: any) => order.get(a.id) - order.get(b.id));
     } else {
       pool = questions;
     }
-    return pool.filter((q) => {
+    return pool.filter((q: any) => {
       if (facets.level && q.level !== facets.level) return false;
       if (facets.difficulty && q.difficulty !== facets.difficulty) return false;
       if (facets.status) {
@@ -113,14 +113,14 @@ export default function SearchPage() {
     });
   }, [query, facets, index, questions]);
 
-  const setFacet = (key, value) =>
-    setFacets((f) => ({ ...f, [key]: f[key] === value ? null : value }));
+  const setFacet = (key: any, value: any) =>
+    setFacets((f: any) => ({ ...f, [key]: f[key] === value ? null : value }));
   const clearFacets = () => setFacets({ level: null, difficulty: null, status: null });
   const hasFacets = facets.level || facets.difficulty || facets.status;
 
   // Focus shortcut: '/' focuses search
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: any) => {
       if (e.key === '/' && !e.metaKey && !e.ctrlKey) {
         const tag = (e.target.tagName || '').toLowerCase();
         if (['input', 'textarea'].includes(tag) || e.target.isContentEditable) return;
@@ -133,7 +133,7 @@ export default function SearchPage() {
   }, []);
 
   const labelFor = useCallback(
-    (key, value) => {
+    (key: any, value: any) => {
       if (key === 'level') return { junior: t.juniorOption, mid: t.midOption, senior: t.seniorOption }[value];
       if (key === 'difficulty') return { easy: t.easy, medium: t.medium, hard: t.hard }[value];
       if (key === 'status') return { not_started: t.filterTodo, in_progress: t.filterInProgress, completed: t.filterDone }[value];
@@ -153,7 +153,7 @@ export default function SearchPage() {
   if (isLoading) return <SearchSkeleton lang={lang} />;
 
   // Active facet count drives the badge on the mobile filters trigger.
-  const facetCount = ['level', 'difficulty', 'status'].filter((k) => facets[k]).length;
+  const facetCount = ['level', 'difficulty', 'status'].filter((k: any) => facets[k]).length;
 
   return (
     <div className="bg-page">
@@ -189,8 +189,8 @@ export default function SearchPage() {
               spellCheck={false}
               autoCapitalize="off"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onFocus={(e) => {
+              onChange={(e: any) => setInput(e.target.value)}
+              onFocus={(e: any) => {
                 setTimeout(() => {
                   try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                   catch { /* older Safari */ }
@@ -246,12 +246,12 @@ export default function SearchPage() {
         </div>
 
         <div className="mb-6 hidden space-y-3 sm:block">
-          {Object.keys(FACETS).map((key) => (
+          {Object.keys(FACETS).map((key: any) => (
             <div key={key} className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted w-24">
                 {groupHeading[key]}
               </span>
-              {FACETS[key].map((value) => {
+              {FACETS[key].map((value: any) => {
                 const active = facets[key] === value;
                 return (
                   <button
@@ -300,13 +300,13 @@ export default function SearchPage() {
           }
         >
           <div className="space-y-5 pt-1">
-            {Object.keys(FACETS).map((key) => (
+            {Object.keys(FACETS).map((key: any) => (
               <div key={key}>
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   {groupHeading[key]}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {FACETS[key].map((value) => {
+                  {FACETS[key].map((value: any) => {
                     const active = facets[key] === value;
                     return (
                       <button
@@ -368,7 +368,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {results.map((q, i) => (
+            {results.map((q: any, i: any) => (
               <div key={q.id} className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                   <span className="text-brand">
@@ -397,12 +397,12 @@ function SearchSkeleton({ lang }: any) {
         <Skeleton className="mb-6 h-9 w-1/2 max-w-md" />
         <Skeleton className="mb-6 h-12 w-full rounded-md" />
         <div className="mb-6 flex gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_: any, i: any) => (
             <Skeleton key={i} className="h-7 w-16 rounded-md" />
           ))}
         </div>
         <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_: any, i: any) => (
             <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="mt-2 h-3 w-1/2" />

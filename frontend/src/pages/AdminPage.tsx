@@ -39,12 +39,12 @@ export default function AdminPage() {
   // Subscribe to individual slices so each selector returns a stable primitive
   // or the same reference until the slice actually changes — otherwise a
   // method that builds a fresh object every render triggers an infinite loop.
-  const edits = useAdmin((s) => s.edits);
-  const adds = useAdmin((s) => s.adds);
-  const deletes = useAdmin((s) => s.deletes);
-  const addAction = useAdmin((s) => s.add);
-  const restoreAction = useAdmin((s) => s.restore);
-  const resetAction = useAdmin((s) => s.reset);
+  const edits = useAdmin((s: any) => s.edits);
+  const adds = useAdmin((s: any) => s.adds);
+  const deletes = useAdmin((s: any) => s.deletes);
+  const addAction = useAdmin((s: any) => s.add);
+  const restoreAction = useAdmin((s: any) => s.restore);
+  const resetAction = useAdmin((s: any) => s.reset);
 
   const stats = useMemo(() => ({
     edits: Object.keys(edits).length,
@@ -69,7 +69,7 @@ export default function AdminPage() {
     return applyDiff(baseQuestions, { edits, adds, deletes });
   }, [baseQuestions, edits, adds, deletes]);
 
-  const topicById = useMemo(() => Object.fromEntries(topics.map((t) => [t.id, t])), [topics]);
+  const topicById = useMemo(() => Object.fromEntries(topics.map((t: any) => [t.id, t])), [topics]);
 
   const { enabled: aiEnabled } = useAiHealth();
   // useState must run before any conditional return — keep the AI-draft
@@ -80,7 +80,7 @@ export default function AdminPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return merged
-      .filter((x) => {
+      .filter((x: any) => {
         if (filterTopic !== 'all' && x.topic_id !== Number(filterTopic)) return false;
         if (filterLevel !== 'all') {
           const lvl = topicById[x.topic_id]?.level;
@@ -97,12 +97,12 @@ export default function AdminPage() {
         }
         return true;
       })
-      .sort((a, b) => (a.topic_id - b.topic_id) || (a.order_index - b.order_index));
+      .sort((a: any, b: any) => (a.topic_id - b.topic_id) || (a.order_index - b.order_index));
   }, [merged, search, filterTopic, filterLevel, filterDifficulty, filterStatus, diff, topicById]);
 
   // Include deleted base items so the user can undo deletions
   const deletedItems = useMemo(() => {
-    return baseQuestions.filter((q) => deletes[q.id]);
+    return baseQuestions.filter((q: any) => deletes[q.id]);
   }, [baseQuestions, deletes]);
 
   if (topicsQ.isLoading || questionsQ.isLoading) return <FullPageLoader />;
@@ -216,7 +216,7 @@ export default function AdminPage() {
             <SearchIcon className="h-4 w-4 text-muted" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e: any) => setSearch(e.target.value)}
               placeholder={lang === 'ru' ? 'Поиск по тексту…' : 'Search text…'}
               className="h-10 flex-1 bg-transparent text-sm text-ink placeholder:text-muted-2 outline-none"
             />
@@ -261,7 +261,7 @@ export default function AdminPage() {
             onChange={setFilterTopic}
             options={[
               { value: 'all', label: lang === 'ru' ? 'Все' : 'All' },
-              ...topics.map((tp) => ({ value: String(tp.id), label: tp.title })),
+              ...topics.map((tp: any) => ({ value: String(tp.id), label: tp.title })),
             ]}
           />
           <FilterPills
@@ -270,7 +270,7 @@ export default function AdminPage() {
             onChange={setFilterLevel}
             options={[
               { value: 'all', label: 'All' },
-              ...LEVELS.map((l) => ({ value: l, label: t[l].short })),
+              ...LEVELS.map((l: any) => ({ value: l, label: t[l].short })),
             ]}
           />
           <FilterPills
@@ -279,14 +279,14 @@ export default function AdminPage() {
             onChange={setFilterDifficulty}
             options={[
               { value: 'all', label: 'All' },
-              ...DIFFICULTIES.map((d) => ({ value: d, label: d })),
+              ...DIFFICULTIES.map((d: any) => ({ value: d, label: d })),
             ]}
           />
           <FilterPills
             label={lang === 'ru' ? 'Статус' : 'Status'}
             value={filterStatus}
             onChange={setFilterStatus}
-            options={STATUS_FILTERS.map((s) => ({ value: s, label: s }))}
+            options={STATUS_FILTERS.map((s: any) => ({ value: s, label: s }))}
           />
           <span className="ml-auto font-mono text-[11px] uppercase tracking-wider text-muted">
             {filtered.length} {lang === 'ru' ? 'найдено' : 'shown'}
@@ -300,7 +300,7 @@ export default function AdminPage() {
               {lang === 'ru' ? 'Удалено в diff (можно вернуть)' : 'Deleted in diff (can restore)'}
             </div>
             <ul className="space-y-1">
-              {deletedItems.map((q) => (
+              {deletedItems.map((q: any) => (
                 <li key={q.id} className="flex items-center gap-2 text-xs">
                   <span className="font-mono text-muted">#{q.id}</span>
                   <span className="flex-1 truncate text-ink-2 line-through decoration-coral">
@@ -329,7 +329,7 @@ export default function AdminPage() {
               </p>
             </div>
           ) : (
-            filtered.map((q) => (
+            filtered.map((q: any) => (
               <QuestionRow
                 key={q.id}
                 question={q}
@@ -337,7 +337,7 @@ export default function AdminPage() {
                 lang={lang}
                 t={t}
                 expanded={openId === q.id}
-                onToggle={() => setOpenId((p) => (p === q.id ? null : q.id))}
+                onToggle={() => setOpenId((p: any) => (p === q.id ? null : q.id))}
                 topics={topics}
               />
             ))
@@ -354,10 +354,10 @@ function FilterPills({ label, value, onChange, options }: any) {
       <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{label}</span>
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e: any) => onChange(e.target.value)}
         className="rounded-lg border border-rule/12 bg-paper-2 px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink outline-none transition-all duration-200 focus:border-brand/40 focus:ring-2 focus:ring-brand/15"
       >
-        {options.map((o) => (
+        {options.map((o: any) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
@@ -366,9 +366,9 @@ function FilterPills({ label, value, onChange, options }: any) {
 }
 
 function QuestionRow({ question, topic, lang, t, expanded, onToggle, topics }: any) {
-  const edits = useAdmin((s) => s.edits);
-  const adds = useAdmin((s) => s.adds);
-  const deletes = useAdmin((s) => s.deletes);
+  const edits = useAdmin((s: any) => s.edits);
+  const adds = useAdmin((s: any) => s.adds);
+  const deletes = useAdmin((s: any) => s.deletes);
   const status = statusOf(question.id, { edits, adds, deletes });
   const isAdded = status === 'added';
 
@@ -414,16 +414,16 @@ function QuestionRow({ question, topic, lang, t, expanded, onToggle, topics }: a
 }
 
 function Editor({ question, topics, lang, onClose, isAdded }: any) {
-  const patch = useAdmin((s) => s.patch);
-  const remove = useAdmin((s) => s.remove);
-  const revertEdit = useAdmin((s) => s.revertEdit);
+  const patch = useAdmin((s: any) => s.patch);
+  const remove = useAdmin((s: any) => s.remove);
+  const revertEdit = useAdmin((s: any) => s.revertEdit);
   const [draft, setDraft] = useState(question);
 
   // Reset draft when the question id changes (different row opened)
   useEffect(() => { setDraft(question); }, [question.id]);
 
   const dirty = useMemo(() => {
-    return Object.keys(draft).some((k) => draft[k] !== question[k]);
+    return Object.keys(draft).some((k: any) => draft[k] !== question[k]);
   }, [draft, question]);
 
   const save = () => {
@@ -460,10 +460,10 @@ function Editor({ question, topics, lang, onClose, isAdded }: any) {
         <Field label={lang === 'ru' ? 'Тема' : 'Topic'}>
           <select
             value={draft.topic_id}
-            onChange={(e) => setDraft({ ...draft, topic_id: Number(e.target.value) })}
+            onChange={(e: any) => setDraft({ ...draft, topic_id: Number(e.target.value) })}
             className="w-full rounded-xl border border-rule/12 bg-paper-2/60 px-2 py-1.5 text-sm outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15"
           >
-            {topics.map((tp) => (
+            {topics.map((tp: any) => (
               <option key={tp.id} value={tp.id}>{tp.title}</option>
             ))}
           </select>
@@ -472,13 +472,13 @@ function Editor({ question, topics, lang, onClose, isAdded }: any) {
           <input
             type="number"
             value={draft.order_index}
-            onChange={(e) => setDraft({ ...draft, order_index: Number(e.target.value) })}
+            onChange={(e: any) => setDraft({ ...draft, order_index: Number(e.target.value) })}
             className="w-full rounded-xl border border-rule/12 bg-paper-2/60 px-2 py-1.5 text-sm outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15 font-mono"
           />
         </Field>
         <Field label={lang === 'ru' ? 'Сложность' : 'Difficulty'}>
           <div className="flex gap-1">
-            {DIFFICULTIES.map((d) => (
+            {DIFFICULTIES.map((d: any) => (
               <button
                 key={d}
                 type="button"
@@ -498,10 +498,10 @@ function Editor({ question, topics, lang, onClose, isAdded }: any) {
         <Field label={lang === 'ru' ? 'Язык кода' : 'Code language'}>
           <select
             value={draft.code_language || 'dart'}
-            onChange={(e) => setDraft({ ...draft, code_language: e.target.value })}
+            onChange={(e: any) => setDraft({ ...draft, code_language: e.target.value })}
             className="w-full rounded-xl border border-rule/12 bg-paper-2/60 px-2 py-1.5 text-sm outline-none transition-all duration-200 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/15"
           >
-            {['dart', 'json', 'yaml', 'bash', 'shell', 'javascript', 'typescript', 'xml', 'ruby'].map((l) => (
+            {['dart', 'json', 'yaml', 'bash', 'shell', 'javascript', 'typescript', 'xml', 'ruby'].map((l: any) => (
               <option key={l} value={l}>{l}</option>
             ))}
           </select>
@@ -511,7 +511,7 @@ function Editor({ question, topics, lang, onClose, isAdded }: any) {
       <Field label={lang === 'ru' ? 'Вопрос' : 'Question'} className="mt-4">
         <textarea
           value={draft.question}
-          onChange={(e) => setDraft({ ...draft, question: e.target.value })}
+          onChange={(e: any) => setDraft({ ...draft, question: e.target.value })}
           rows={2}
           autoCorrect="off"
           spellCheck={false}
@@ -522,7 +522,7 @@ function Editor({ question, topics, lang, onClose, isAdded }: any) {
       <Field label={lang === 'ru' ? 'Ответ' : 'Answer'} className="mt-4">
         <textarea
           value={draft.answer}
-          onChange={(e) => setDraft({ ...draft, answer: e.target.value })}
+          onChange={(e: any) => setDraft({ ...draft, answer: e.target.value })}
           rows={10}
           autoCorrect="off"
           spellCheck={false}
@@ -536,7 +536,7 @@ function Editor({ question, topics, lang, onClose, isAdded }: any) {
       <Field label={lang === 'ru' ? 'Пример кода' : 'Code example'} className="mt-4">
         <textarea
           value={draft.code_example || ''}
-          onChange={(e) => setDraft({ ...draft, code_example: e.target.value || null })}
+          onChange={(e: any) => setDraft({ ...draft, code_example: e.target.value || null })}
           rows={12}
           autoCorrect="off"
           spellCheck={false}
@@ -587,7 +587,7 @@ function ExportMenu({ topics, questions, diff, lang }: any) {
     setOpen(false);
   };
 
-  const exportTopic = (topic) => {
+  const exportTopic = (topic: any) => {
     exportTopicJson(topic, questions, diff);
     toast.success(`${topic.slug}.json downloaded`);
     setOpen(false);
@@ -595,7 +595,7 @@ function ExportMenu({ topics, questions, diff, lang }: any) {
 
   return (
     <div className="relative">
-      <Button variant="codex" onClick={() => setOpen((v) => !v)}>
+      <Button variant="codex" onClick={() => setOpen((v: any) => !v)}>
         <Download className="h-4 w-4" />
         {lang === 'ru' ? 'Экспорт' : 'Export'}
         <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
@@ -618,7 +618,7 @@ function ExportMenu({ topics, questions, diff, lang }: any) {
             {lang === 'ru' ? 'По темам (для backend seed)' : 'Per topic (backend seed)'}
           </div>
           <div className="max-h-60 overflow-y-auto">
-            {topics.map((topic) => (
+            {topics.map((topic: any) => (
               <button
                 key={topic.id}
                 onClick={() => exportTopic(topic)}

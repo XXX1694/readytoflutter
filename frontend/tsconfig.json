@@ -8,8 +8,8 @@
     "strict": true,
     // The migration landed all .jsx → .tsx in one go. We relax these two
     // strict gates because lots of useState call sites infer wide and many
-    // small helper components still take `any` props. Tighten incrementally
-    // by giving each component proper Props/State types — the relaxation
+    // helper components still take `any` props. Tighten incrementally by
+    // giving each component proper Props/State types — the relaxation here
     // keeps the build green while that work proceeds.
     "noImplicitAny": false,
     "strictNullChecks": false,

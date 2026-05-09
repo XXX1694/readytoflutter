@@ -37,7 +37,7 @@ const COPY = {
       tier: 'Tier', admin: 'Admin', actions: 'Actions',
       makeAdmin: 'Make admin', removeAdmin: 'Remove admin',
       promotePro: 'Set Pro', promoteLifetime: 'Set Lifetime', demoteFree: 'Set Free',
-      totalLabel: (n) => `${n} users`,
+      totalLabel: (n: any) => `${n} users`,
       loadMore: 'Load more',
     },
     inbox: {
@@ -75,7 +75,7 @@ const COPY = {
       tier: 'Тариф', admin: 'Админ', actions: 'Действия',
       makeAdmin: 'Сделать админом', removeAdmin: 'Снять права',
       promotePro: 'Pro', promoteLifetime: 'Lifetime', demoteFree: 'Free',
-      totalLabel: (n) => `${n} пользователей`,
+      totalLabel: (n: any) => `${n} пользователей`,
       loadMore: 'Ещё',
     },
     inbox: {
@@ -113,9 +113,9 @@ export default function AdminDashboardPage() {
   const { lang } = useLang();
   const T = COPY[lang === 'ru' ? 'ru' : 'en'];
   const navigate = useNavigate();
-  const user = useAuth((s) => s.user);
-  const token = useAuth((s) => s.token);
-  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const user = useAuth((s: any) => s.user);
+  const token = useAuth((s: any) => s.token);
+  const backendAvailable = useAuth((s: any) => s.backendAvailable);
 
   // Auth gates first — keep them dumb so the heavy data hooks below never
   // fire for unauthorized viewers.
@@ -223,8 +223,8 @@ function OverviewTab({ T, lang }: any) {
     let alive = true;
     setLoading(true);
     adminGetStats()
-      .then((d) => { if (alive) { setStats(d); setLoading(false); } })
-      .catch((err) => { if (alive) { setError(err); setLoading(false); } });
+      .then((d: any) => { if (alive) { setStats(d); setLoading(false); } })
+      .catch((err: any) => { if (alive) { setError(err); setLoading(false); } });
     return () => { alive = false; };
   }, []);
 
@@ -252,7 +252,7 @@ function OverviewTab({ T, lang }: any) {
     <section>
       <Eyebrow className="mb-4">{T.eyebrow}</Eyebrow>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-        {tiles.map((t) => (
+        {tiles.map((t: any) => (
           <div
             key={t.label}
             className="rounded-lg border border-rule/15 bg-paper-2 p-4 shadow-codex-sm"
@@ -308,11 +308,11 @@ function UsersTab({ T, lang, self }: any) {
     // eslint-disable-next-line
   }, [q]);
 
-  const update = async (id, patch, label) => {
+  const update = async (id: any, patch: any, label: any) => {
     setBusy(id + label);
     try {
       const { user } = await adminPatchUser(id, patch);
-      setItems((prev) => prev.map((u) => (u.id === id ? { ...u, ...user } : u)));
+      setItems((prev: any) => prev.map((u: any) => (u.id === id ? { ...u, ...user } : u)));
       toast.success('Updated');
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Update failed');
@@ -332,7 +332,7 @@ function UsersTab({ T, lang, self }: any) {
         <Search className="h-4 w-4 text-muted" />
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e: any) => setQ(e.target.value)}
           placeholder={T.searchPh}
           className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
         />
@@ -352,7 +352,7 @@ function UsersTab({ T, lang, self }: any) {
             </tr>
           </thead>
           <tbody>
-            {items.map((u) => (
+            {items.map((u: any) => (
               <tr key={u.id} className="border-b border-rule/8 last:border-0">
                 <td className="px-3 py-2.5">
                   <div className="text-ink">{u.email}</div>
@@ -438,11 +438,11 @@ function InboxTab({ T, lang }: any) {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [filter]);
 
-  const setStatus = async (id, status) => {
+  const setStatus = async (id: any, status: any) => {
     setBusy(id);
     try {
       const { message } = await adminPatchContact(id, { status });
-      setItems((prev) => prev.map((m) => (m.id === id ? message : m)));
+      setItems((prev: any) => prev.map((m: any) => (m.id === id ? message : m)));
       toast.success('Updated');
     } catch {
       toast.error('Update failed');
@@ -475,7 +475,7 @@ function InboxTab({ T, lang }: any) {
         </p>
       ) : (
         <ul className="space-y-3">
-          {items.map((m) => (
+          {items.map((m: any) => (
             <li
               key={m.id}
               className="rounded-lg border border-rule/15 bg-paper-2 p-4 shadow-codex-sm"

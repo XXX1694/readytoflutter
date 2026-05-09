@@ -13,7 +13,7 @@ import RouteTransition from './RouteTransition';
 import { usePrefs } from '../store/prefs';
 
 export default function Layout() {
-  const theme = usePrefs((s) => s.theme);
+  const theme = usePrefs((s: any) => s.theme);
   const bottomNavRef = useRef(null);
 
   // Publish the BottomNav's actual rendered height as a CSS custom property
@@ -21,7 +21,7 @@ export default function Layout() {
   // hard-coding a magic 56/64 value. ResizeObserver keeps it in sync if the
   // user adds a tab on rotation, etc.
   useEffect(() => {
-    const set = (h) => {
+    const set = (h: any) => {
       document.documentElement.style.setProperty('--bottom-nav-h', `${Math.round(h)}px`);
     };
     const el = bottomNavRef.current;

@@ -16,7 +16,7 @@ let healthPromise = null;
 function probeHealth() {
   if (healthCache) return Promise.resolve(healthCache);
   if (!healthPromise) {
-    healthPromise = aiHealth().then((data) => {
+    healthPromise = aiHealth().then((data: any) => {
       healthCache = data || { enabled: false };
       return healthCache;
     });
@@ -29,7 +29,7 @@ export function useAiHealth() {
   useEffect(() => {
     if (healthCache) return;
     let alive = true;
-    probeHealth().then((data) => { if (alive) setState(data); });
+    probeHealth().then((data: any) => { if (alive) setState(data); });
     return () => { alive = false; };
   }, []);
   return state || { enabled: false };
@@ -294,7 +294,7 @@ function ResultPanel({ result, lang, onRetry }: any) {
                 {lang === 'ru' ? 'Сильно' : 'Strengths'}
               </div>
               <ul className="space-y-1.5">
-                {strengths.map((s, i) => (
+                {strengths.map((s: any, i: any) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-ink-2">
                     <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint" />
                     <span>{s}</span>
@@ -309,7 +309,7 @@ function ResultPanel({ result, lang, onRetry }: any) {
                 {lang === 'ru' ? 'Пробелы' : 'Gaps'}
               </div>
               <ul className="space-y-1.5">
-                {gaps.map((g, i) => (
+                {gaps.map((g: any, i: any) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-ink-2">
                     <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-coral" />
                     <span>{g}</span>

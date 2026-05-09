@@ -41,19 +41,19 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function CommandPalette() {
-  const open = usePrefs((s) => s.commandOpen);
-  const setOpen = usePrefs((s) => s.setCommandOpen);
-  const theme = usePrefs((s) => s.theme);
-  const setTheme = usePrefs((s) => s.setTheme);
-  const recallMode = usePrefs((s) => s.recallMode);
-  const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
-  const platform = usePrefs((s) => s.platform);
-  const setPlatform = usePrefs((s) => s.setPlatform);
-  const authToken = useAuth((s) => s.token);
-  const authUser = useAuth((s) => s.user);
-  const backendAvailable = useAuth((s) => s.backendAvailable);
-  const clearSession = useAuth((s) => s.clearSession);
-  const markSynced = useAuth((s) => s.markSynced);
+  const open = usePrefs((s: any) => s.commandOpen);
+  const setOpen = usePrefs((s: any) => s.setCommandOpen);
+  const theme = usePrefs((s: any) => s.theme);
+  const setTheme = usePrefs((s: any) => s.setTheme);
+  const recallMode = usePrefs((s: any) => s.recallMode);
+  const toggleRecallMode = usePrefs((s: any) => s.toggleRecallMode);
+  const platform = usePrefs((s: any) => s.platform);
+  const setPlatform = usePrefs((s: any) => s.setPlatform);
+  const authToken = useAuth((s: any) => s.token);
+  const authUser = useAuth((s: any) => s.user);
+  const backendAvailable = useAuth((s: any) => s.backendAvailable);
+  const clearSession = useAuth((s: any) => s.clearSession);
+  const markSynced = useAuth((s: any) => s.markSynced);
   const navigate = useNavigate();
   const { lang, setLang } = useLang();
   const t = useT(lang);
@@ -70,9 +70,9 @@ export default function CommandPalette() {
 
   const close = () => setOpen(false);
 
-  const run = (fn) => () => { close(); fn(); };
+  const run = (fn: any) => () => { close(); fn(); };
 
-  const goTopic = (slug) => run(() => navigate(`/topic/${slug}`));
+  const goTopic = (slug: any) => run(() => navigate(`/topic/${slug}`));
 
   const handleReset = run(async () => {
     if (!window.confirm(t.resetConfirm)) return;
@@ -89,9 +89,9 @@ export default function CommandPalette() {
   // iOS the palette shouldn't dump 23 Flutter rows.
   const scopedTopics = filterTopicsByPlatform(topics, platform);
   const groupedTopics = {
-    junior: scopedTopics.filter((tp) => tp.level === 'junior'),
-    mid: scopedTopics.filter((tp) => tp.level === 'mid'),
-    senior: scopedTopics.filter((tp) => tp.level === 'senior'),
+    junior: scopedTopics.filter((tp: any) => tp.level === 'junior'),
+    mid: scopedTopics.filter((tp: any) => tp.level === 'mid'),
+    senior: scopedTopics.filter((tp: any) => tp.level === 'senior'),
   };
 
   return (
@@ -233,7 +233,7 @@ export default function CommandPalette() {
                             status: v?.status,
                             notes: v?.notes || null,
                             updated_at: v?.updated_at || new Date().toISOString(),
-                          })).filter((p) => p.questionId && p.status);
+                          })).filter((p: any) => p.questionId && p.status);
                           if (items.length === 0) {
                             toast.info(lang === 'ru' ? 'Локального прогресса нет' : 'Nothing to sync');
                             return;
@@ -273,7 +273,7 @@ export default function CommandPalette() {
                 heading={t.platformLabel}
                 className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
               >
-                {PLATFORMS.map((p) => (
+                {PLATFORMS.map((p: any) => (
                   <CmdItem
                     key={p.key}
                     icon={<Smartphone />}
@@ -321,7 +321,7 @@ export default function CommandPalette() {
                 </CmdItem>
               </Command.Group>
 
-              {(['junior', 'mid', 'senior']).map((level) => {
+              {(['junior', 'mid', 'senior']).map((level: any) => {
                 const items = groupedTopics[level];
                 if (!items.length) return null;
                 return (
@@ -330,7 +330,7 @@ export default function CommandPalette() {
                     heading={`${t.cmdTopics} · ${t[level].short}`}
                     className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
                   >
-                    {items.map((topic) => (
+                    {items.map((topic: any) => (
                       <CmdItem
                         key={topic.id}
                         icon={<Layers />}

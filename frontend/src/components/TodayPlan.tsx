@@ -48,8 +48,8 @@ function buildPlan(questions, topics, now = Date.now()) {
   }
 
   // Most-overdue first
-  dueIds.sort((a, b) => b.lateness - a.lateness);
-  const dueChosen = dueIds.slice(0, DUE_CAP).map((x) => x.q);
+  dueIds.sort((a: any, b: any) => b.lateness - a.lateness);
+  const dueChosen = dueIds.slice(0, DUE_CAP).map((x: any) => x.q);
 
   // Build per-topic mastery to find the weakest topic that still has gaps
   const perTopic = new Map();
@@ -79,7 +79,7 @@ function buildPlan(questions, topics, now = Date.now()) {
     }
   }
 
-  const masteryFor = (row) => {
+  const masteryFor = (row: any) => {
     if (row.total === 0) return 100;
     const compScore = (row.completed / row.total) * 100;
     if (row.easeCount === 0) return Math.round(compScore);
@@ -88,36 +88,36 @@ function buildPlan(questions, topics, now = Date.now()) {
   };
 
   const weakRow = [...perTopic.values()]
-    .filter((r) => r.total >= 3 && r.gapQuestions.length > 0 && masteryFor(r) < 80)
-    .sort((a, b) => masteryFor(a) - masteryFor(b))[0];
+    .filter((r: any) => r.total >= 3 && r.gapQuestions.length > 0 && masteryFor(r) < 80)
+    .sort((a: any, b: any) => masteryFor(a) - masteryFor(b))[0];
 
   // Pick weak-topic candidates not already in due
-  const dueSet = new Set(dueChosen.map((q) => q.id));
+  const dueSet = new Set(dueChosen.map((q: any) => q.id));
   let weakChosen = [];
   if (weakRow) {
     weakChosen = weakRow.gapQuestions
-      .filter((g) => !dueSet.has(g.q.id))
+      .filter((g: any) => !dueSet.has(g.q.id))
       // Prefer cards with low ease (=struggling); fall back to fresh
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         if (a.reps === 0 && b.reps > 0) return -1;
         if (b.reps === 0 && a.reps > 0) return 1;
         return a.ease - b.ease;
       })
       .slice(0, WEAK_CAP)
-      .map((g) => g.q);
+      .map((g: any) => g.q);
   }
 
   // Fresh: any never-seen question not already in due/weak
-  const takenSet = new Set([...dueChosen.map((q) => q.id), ...weakChosen.map((q) => q.id)]);
+  const takenSet = new Set([...dueChosen.map((q: any) => q.id), ...weakChosen.map((q: any) => q.id)]);
   const freshChosen = freshIds
-    .map((x) => x.q)
-    .filter((q) => !takenSet.has(q.id))
+    .map((x: any) => x.q)
+    .filter((q: any) => !takenSet.has(q.id))
     .slice(0, FRESH_CAP);
 
   const all = [...dueChosen, ...weakChosen, ...freshChosen].slice(0, PLAN_LIMIT);
 
   return {
-    ids: all.map((q) => q.id),
+    ids: all.map((q: any) => q.id),
     due: dueChosen.length,
     weak: weakChosen.length,
     fresh: freshChosen.length,
@@ -134,7 +134,7 @@ export default function TodayPlan() {
   const { topicTitle } = useContent(lang);
   const { data: allQuestions = [] } = useQuestions();
   const { data: allTopics = [] } = useTopics();
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
 
   // Scope today's plan to the currently-selected platform so an iOS-focused
   // user doesn't get Flutter cards in their session, and vice versa.

@@ -75,32 +75,32 @@ export default function RoundPage() {
 
   const reveal = () => setRevealed(true);
 
-  const rate = (rating) => {
+  const rate = (rating: any) => {
     if (!current) return;
     const text = answers[current.id]?.text || '';
-    setAnswers((prev) => ({ ...prev, [current.id]: { text, rating } }));
+    setAnswers((prev: any) => ({ ...prev, [current.id]: { text, rating } }));
     if (cursor + 1 >= chain.length) {
       setPhase('done');
     } else {
-      setCursor((c) => c + 1);
+      setCursor((c: any) => c + 1);
     }
   };
 
   const skip = () => {
     if (!current) return;
-    setAnswers((prev) => ({
+    setAnswers((prev: any) => ({
       ...prev,
       [current.id]: { text: prev[current.id]?.text || '', rating: 'skipped' },
     }));
     if (cursor + 1 >= chain.length) {
       setPhase('done');
     } else {
-      setCursor((c) => c + 1);
+      setCursor((c: any) => c + 1);
     }
   };
 
-  const updateAnswer = (text) =>
-    current && setAnswers((prev) => ({ ...prev, [current.id]: { ...prev[current.id], text } }));
+  const updateAnswer = (text: any) =>
+    current && setAnswers((prev: any) => ({ ...prev, [current.id]: { ...prev[current.id], text } }));
 
   const restart = () => {
     setPhase('running');
@@ -111,7 +111,7 @@ export default function RoundPage() {
   };
 
   // Hotkeys
-  useHotkeys('mod+enter', (e) => {
+  useHotkeys('mod+enter', (e: any) => {
     if (phase !== 'running' || !current) return;
     e.preventDefault();
     if (!revealed) reveal();
@@ -206,7 +206,7 @@ export default function RoundPage() {
             <Pill tone={difficultyTone[current.difficulty] || 'neutral'} size="xs">
               {difficultyLabel}
             </Pill>
-            {(current.tags || '').split(',').map((tag, i) => {
+            {(current.tags || '').split(',').map((tag: any, i: any) => {
               const t = tag.trim();
               if (!t) return null;
               return (
@@ -224,7 +224,7 @@ export default function RoundPage() {
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                 {lang === 'ru' ? 'покопай:' : 'dig:'}
               </span>
-              {followUps.map((fu) => {
+              {followUps.map((fu: any) => {
                 const open = openFollowUp === fu.key;
                 return (
                   <button
@@ -257,7 +257,7 @@ export default function RoundPage() {
                 className="overflow-hidden"
               >
                 <div className="mt-3 rounded-md border border-brand/30 bg-brand/5 px-3 py-2 text-[13px] leading-relaxed text-ink-2 dark:bg-brand/10">
-                  {followUps.find((f) => f.key === openFollowUp)?.body}
+                  {followUps.find((f: any) => f.key === openFollowUp)?.body}
                 </div>
               </motion.div>
             )}
@@ -274,8 +274,8 @@ export default function RoundPage() {
             <textarea
               ref={textareaRef}
               value={userText}
-              onChange={(e) => updateAnswer(e.target.value)}
-              onFocus={(e) => {
+              onChange={(e: any) => updateAnswer(e.target.value)}
+              onFocus={(e: any) => {
                 setTimeout(() => {
                   try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                   catch { /* older Safari */ }
@@ -353,7 +353,7 @@ export default function RoundPage() {
             </section>
 
             <section className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {RATINGS.map((r) => (
+              {RATINGS.map((r: any) => (
                 <button
                   key={r.key}
                   type="button"
@@ -387,8 +387,8 @@ export default function RoundPage() {
    Each marker is one node in the chain; difficulty controls the height
    so the strip visually reads as a ramp. */
 function ChainStrip({ chain, cursor, answers }: any) {
-  const heightFor = (diff) => ({ easy: 'h-2', medium: 'h-3', hard: 'h-4' }[diff] || 'h-2.5');
-  const ratingTone = (rating) => ({
+  const heightFor = (diff: any) => ({ easy: 'h-2', medium: 'h-3', hard: 'h-4' }[diff] || 'h-2.5');
+  const ratingTone = (rating: any) => ({
     again: 'bg-coral',
     hard:  'bg-[rgb(var(--amber))]',
     good:  'bg-brand',
@@ -398,7 +398,7 @@ function ChainStrip({ chain, cursor, answers }: any) {
 
   return (
     <div className="flex items-end gap-1.5">
-      {chain.map((q, i) => {
+      {chain.map((q: any, i: any) => {
         const a = answers[q.id];
         const isCurrent = i === cursor;
         const isPast = i < cursor || (a && a.rating);
@@ -463,7 +463,7 @@ function DoneScreen({
             { key: 'hard',    label: lang === 'ru' ? 'С трудом' : 'Rough',  accent: 'text-[rgb(var(--amber))]' },
             { key: 'again',   label: lang === 'ru' ? 'Провалил' : 'Bombed', accent: 'text-coral' },
             { key: 'skipped', label: lang === 'ru' ? 'Скип' : 'Skipped',     accent: 'text-muted' },
-          ].map((b) => (
+          ].map((b: any) => (
             <div key={b.key} className="rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm">
               <div className={cn('num text-3xl', b.accent)}>{buckets[b.key] || 0}</div>
               <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">{b.label}</div>
@@ -478,7 +478,7 @@ function DoneScreen({
               {lang === 'ru' ? 'Покрытые концепты' : 'Concepts covered'}
             </Eyebrow>
             <div className="flex flex-wrap gap-1.5">
-              {concepts.map((c) => (
+              {concepts.map((c: any) => (
                 <Pill key={c} tone="neutral" size="xs">{c}</Pill>
               ))}
             </div>
@@ -491,7 +491,7 @@ function DoneScreen({
             {lang === 'ru' ? 'Цепочка' : 'Chain'}
           </Eyebrow>
           <div className="space-y-2">
-            {chain.map((q, i) => {
+            {chain.map((q: any, i: any) => {
               const a = answers[q.id];
               const r = a?.rating || 'skipped';
               const tone = r === 'easy' ? 'mint' : r === 'good' ? 'brand' : r === 'hard' ? 'amber' : r === 'again' ? 'coral' : 'ghost';

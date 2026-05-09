@@ -41,9 +41,9 @@ export default function StudyPage() {
   const { lang } = useLang();
   const t = useT(lang);
   const { questionText, answerText } = useContent(lang);
-  const recallMode = usePrefs((s) => s.recallMode);
-  const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
-  const platform = usePrefs((s) => s.platform);
+  const recallMode = usePrefs((s: any) => s.recallMode);
+  const toggleRecallMode = usePrefs((s: any) => s.toggleRecallMode);
+  const platform = usePrefs((s: any) => s.platform);
   // Pre-warm /ai/health so the grader appears instantly after card flip in
   // recall mode, instead of after a 200ms probe race.
   useAiHealth();
@@ -56,10 +56,10 @@ export default function StudyPage() {
     // already curated the set.
     if (idsScope) {
       const idSet = new Set(idsScope.split(',').map(Number).filter(Boolean));
-      return allQuestions.filter((q) => idSet.has(q.id));
+      return allQuestions.filter((q: any) => idSet.has(q.id));
     }
     const scoped = filterQuestionsByPlatform(allQuestions, allTopics, platform);
-    return scoped.filter((q) => {
+    return scoped.filter((q: any) => {
       if (levelScope && q.level !== levelScope) return false;
       if (topicScope && q.topic_slug !== topicScope) return false;
       return true;
@@ -68,7 +68,7 @@ export default function StudyPage() {
 
   const hasScope = Boolean(levelScope || topicScope || idsScope);
   const scopeText = scopeLabel
-    || (topicScope && allQuestions.find((q) => q.topic_slug === topicScope)?.topic_title)
+    || (topicScope && allQuestions.find((q: any) => q.topic_slug === topicScope)?.topic_title)
     || (levelScope && t[levelScope]?.label)
     || (idsScope && (lang === 'ru' ? 'Закладки' : 'Bookmarks'))
     || null;
@@ -129,14 +129,14 @@ export default function StudyPage() {
   const next = () => {
     setFlipped(false);
     setShowCode(false);
-    setCursor((c) => c + 1);
+    setCursor((c: any) => c + 1);
   };
 
-  const handleRate = (key) => {
+  const handleRate = (key: any) => {
     if (!current || !flipped) return;
     tapMedium();
     rateCard(current.id, key);
-    setStats((s) => ({ ...s, [key]: s[key] + 1 }));
+    setStats((s: any) => ({ ...s, [key]: s[key] + 1 }));
     next();
   };
 
@@ -155,14 +155,14 @@ export default function StudyPage() {
     maxOffAxis: 80,
   });
 
-  const updateGist = (text) => {
+  const updateGist = (text: any) => {
     if (!current) return;
-    setGists((g) => ({ ...g, [current.id]: text }));
+    setGists((g: any) => ({ ...g, [current.id]: text }));
   };
 
-  const appendGistVoice = (chunk) => {
+  const appendGistVoice = (chunk: any) => {
     if (!current) return;
-    setGists((g) => {
+    setGists((g: any) => {
       const existing = g[current.id] || '';
       const sep = existing && !/\s$/.test(existing) ? ' ' : '';
       const next = (existing + sep + chunk).slice(0, 280);
@@ -171,7 +171,7 @@ export default function StudyPage() {
   };
 
   // Hotkeys
-  useHotkeys('space', (e) => { e.preventDefault(); if (!finished) setFlipped((v) => !v); }, [finished]);
+  useHotkeys('space', (e: any) => { e.preventDefault(); if (!finished) setFlipped((v: any) => !v); }, [finished]);
   useHotkeys('1', () => handleRate('again'), [current, flipped]);
   useHotkeys('2', () => handleRate('hard'), [current, flipped]);
   useHotkeys('3', () => handleRate('good'), [current, flipped]);
@@ -389,7 +389,7 @@ export default function StudyPage() {
                   <div className="mt-5">
                     <button
                       type="button"
-                      onClick={() => setShowCode((v) => !v)}
+                      onClick={() => setShowCode((v: any) => !v)}
                       className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand"
                     >
                       <Code2 className="h-3 w-3" />
@@ -427,8 +427,8 @@ export default function StudyPage() {
                 <textarea
                   ref={gistRef}
                   value={gists[current.id] || ''}
-                  onChange={(e) => updateGist(e.target.value.slice(0, 280))}
-                  onFocus={(e) => {
+                  onChange={(e: any) => updateGist(e.target.value.slice(0, 280))}
+                  onFocus={(e: any) => {
                     setTimeout(() => {
                       try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                       catch { /* older Safari */ }
@@ -474,7 +474,7 @@ export default function StudyPage() {
               transition={{ duration: 0.18 }}
               className="mt-6 hidden grid-cols-4 gap-2 sm:grid"
             >
-              {RATINGS.map((r) => (
+              {RATINGS.map((r: any) => (
                 <button
                   key={r.key}
                   type="button"
@@ -531,7 +531,7 @@ export default function StudyPage() {
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             <div className="grid grid-cols-4 gap-1.5 px-3 pt-2">
-              {RATINGS.map((r) => (
+              {RATINGS.map((r: any) => (
                 <button
                   key={r.key}
                   type="button"
@@ -602,7 +602,7 @@ function CompletionScreen({ stats, total, lang, onClose, onAgain }: any) {
             { key: 'hard',  label: lang === 'ru' ? 'Тяжело' : 'Hard', cls: 'text-[rgb(var(--amber))]' },
             { key: 'good',  label: lang === 'ru' ? 'Хорошо' : 'Good', cls: 'text-brand' },
             { key: 'easy',  label: lang === 'ru' ? 'Легко' : 'Easy', cls: 'text-mint' },
-          ].map((r) => (
+          ].map((r: any) => (
             <div key={r.key} className="flex flex-col items-center gap-1 rounded-md border border-rule px-2 py-3">
               <span className={cn('num text-2xl', r.cls)}>{stats[r.key]}</span>
               <span className="font-mono text-[10px] uppercase text-muted">{r.label}</span>

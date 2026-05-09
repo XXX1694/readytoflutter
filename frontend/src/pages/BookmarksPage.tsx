@@ -19,11 +19,11 @@ export default function BookmarksPage() {
   const { data: questions = [], isLoading } = useQuestions();
   const { data: topics = [] } = useTopics();
   const ids = useBookmarkIds();
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
 
   const bookmarked = useMemo(() => {
     const set = new Set(ids);
-    const own = questions.filter((q) => set.has(q.id));
+    const own = questions.filter((q: any) => set.has(q.id));
     return filterQuestionsByPlatform(own, topics, platform);
   }, [questions, topics, ids, platform]);
 
@@ -36,7 +36,7 @@ export default function BookmarksPage() {
           <Skeleton className="mb-1 h-9 w-2/3" />
           <Skeleton className="mb-6 h-3 w-1/3" />
           <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {Array.from({ length: 4 }).map((_: any, i: any) => (
               <Skeleton key={i} className="h-20 rounded-md" />
             ))}
           </div>
@@ -76,7 +76,7 @@ export default function BookmarksPage() {
                 variant="brand"
                 size="sm"
                 onClick={() => {
-                  const ids = bookmarked.map((q) => q.id).join(',');
+                  const ids = bookmarked.map((q: any) => q.id).join(',');
                   navigate(`/study?ids=${ids}&label=${encodeURIComponent(lang === 'ru' ? 'Закладки' : 'Bookmarks')}`);
                 }}
               >
@@ -87,7 +87,7 @@ export default function BookmarksPage() {
                 variant="codex"
                 size="sm"
                 onClick={() => {
-                  const ids = bookmarked.map((q) => q.id).join(',');
+                  const ids = bookmarked.map((q: any) => q.id).join(',');
                   navigate(`/mock?ids=${ids}`);
                 }}
               >
@@ -142,7 +142,7 @@ export default function BookmarksPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {bookmarked.map((q, i) => (
+            {bookmarked.map((q: any, i: any) => (
               <QuestionCard key={q.id} question={q} index={i} />
             ))}
           </div>

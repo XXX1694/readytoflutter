@@ -87,7 +87,7 @@ export default function WelcomeDialog() {
   };
 
   const next = () => {
-    if (step < STEPS.length - 1) setStep((s) => s + 1);
+    if (step < STEPS.length - 1) setStep((s: any) => s + 1);
     else dismiss();
   };
 
@@ -95,7 +95,7 @@ export default function WelcomeDialog() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
+    <Dialog.Root open={open} onOpenChange={(v: any) => { if (!v) dismiss(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 outline-none data-[state=open]:animate-slide-up">
@@ -126,7 +126,7 @@ export default function WelcomeDialog() {
             {/* Dots + actions */}
             <div className="flex items-center justify-between border-t border-rule/15 px-5 py-3">
               <div className="flex items-center gap-1.5">
-                {STEPS.map((_, i) => (
+                {STEPS.map((_: any, i: any) => (
                   <button
                     key={i}
                     type="button"
@@ -175,7 +175,7 @@ function Step({ step, lang }: any) {
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
             {lang === 'ru' ? 'Хоткей' : 'Hotkey'}
           </span>
-          {text.kbd.map((k, i) => (
+          {text.kbd.map((k: any, i: any) => (
             <kbd
               key={i}
               className="rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-2"

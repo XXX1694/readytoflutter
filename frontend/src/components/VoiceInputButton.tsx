@@ -24,7 +24,7 @@ export default function VoiceInputButton({
 }: any) {
   const { supported, listening, interim, error, toggle } = useSpeechRecognition({
     lang: lang as 'en' | 'ru',
-    onFinal: (text) => {
+    onFinal: (text: any) => {
       const trimmed = text.trim();
       if (trimmed) onAppend?.(trimmed);
     },

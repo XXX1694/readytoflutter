@@ -38,7 +38,7 @@ export default function CheatsheetPage() {
 
   const items = useMemo(() => {
     if (!topic?.questions) return [];
-    return topic.questions.map((q) => ({
+    return topic.questions.map((q: any) => ({
       id: q.id,
       question: questionText(q),
       hint: extractHint(answerText(q)),
@@ -55,7 +55,7 @@ export default function CheatsheetPage() {
       '',
       topicDesc(topic),
       '',
-      ...items.map((it, i) => {
+      ...items.map((it: any, i: any) => {
         const parts = [
           `### ${String(i + 1).padStart(2, '0')}. ${it.question}`,
           '',
@@ -160,7 +160,7 @@ export default function CheatsheetPage() {
 
         {/* Items grid */}
         <ol className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 cheatsheet-grid">
-          {items.map((it, i) => (
+          {items.map((it: any, i: any) => (
             <li
               key={it.id}
               className="cheatsheet-item break-inside-avoid rounded border border-rule bg-paper-2 p-3"

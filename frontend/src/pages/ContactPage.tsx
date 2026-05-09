@@ -46,7 +46,7 @@ const COPY = {
 export default function ContactPage() {
   const { lang } = useLang();
   const T = COPY[lang === 'ru' ? 'ru' : 'en'];
-  const user = useAuth((s) => s.user);
+  const user = useAuth((s: any) => s.user);
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -57,14 +57,14 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const errLabel = (key) => (key ? T.err[key] || T.err.generic : null);
-  const inputCls = (hasErr) => cn(
+  const errLabel = (key: any) => (key ? T.err[key] || T.err.generic : null);
+  const inputCls = (hasErr: any) => cn(
     'w-full rounded-md border bg-paper px-3 py-2 text-sm text-ink shadow-codex-sm transition-colors',
     'focus:outline-none focus:ring-2 focus:ring-brand/30',
     hasErr ? 'border-coral/40' : 'border-rule/20 focus:border-rule/40',
   );
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (submitting) return;
     setErrors({});
@@ -133,7 +133,7 @@ export default function ContactPage() {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e: any) => setName(e.target.value)}
                 placeholder={T.namePh}
                 className={inputCls(false)}
                 autoComplete="name"
@@ -147,7 +147,7 @@ export default function ContactPage() {
                 inputMode="email"
                 autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e: any) => setEmail(e.target.value)}
                 placeholder={T.emailPh}
                 className={inputCls(!!errors.email)}
               />
@@ -159,7 +159,7 @@ export default function ContactPage() {
               <textarea
                 rows={6}
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e: any) => setMessage(e.target.value)}
                 placeholder={T.messagePh}
                 className={cn(inputCls(!!errors.message), 'resize-y')}
                 maxLength={4000}
@@ -174,7 +174,7 @@ export default function ContactPage() {
               aria-hidden
               autoComplete="off"
               value={website}
-              onChange={(e) => setWebsite(e.target.value)}
+              onChange={(e: any) => setWebsite(e.target.value)}
               className="absolute left-[-9999px] h-0 w-0 opacity-0"
               name="website"
             />

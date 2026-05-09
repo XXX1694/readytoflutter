@@ -26,8 +26,8 @@ const schema = z.object({
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const setSession = useAuth((s) => s.setSession);
-  const markSynced = useAuth((s) => s.markSynced);
+  const setSession = useAuth((s: any) => s.setSession);
+  const markSynced = useAuth((s: any) => s.markSynced);
   const qc = useQueryClient();
   const { lang } = useLang();
   const isRu = lang === 'ru';
@@ -42,9 +42,9 @@ export default function SignupPage() {
   const [syncSummary, setSyncSummary] = useState<any>(null);
 
   const T = useSignupCopy(lang);
-  const errLabel = (key) => (key ? T.errors[key] || key : null);
+  const errLabel = (key: any) => (key ? T.errors[key] || key : null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (submitting) return;
     setErrors({});
@@ -173,8 +173,8 @@ export default function SignupPage() {
                 autoComplete="name"
                 autoCapitalize="words"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                onFocus={(e) => {
+                onChange={(e: any) => setName(e.target.value)}
+                onFocus={(e: any) => {
                   setTimeout(() => {
                     try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                     catch { /* older Safari */ }
@@ -194,8 +194,8 @@ export default function SignupPage() {
                 spellCheck={false}
                 autoCapitalize="none"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={(e) => {
+                onChange={(e: any) => setEmail(e.target.value)}
+                onFocus={(e: any) => {
                   setTimeout(() => {
                     try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                     catch { /* older Safari */ }
@@ -214,7 +214,7 @@ export default function SignupPage() {
               trailing={(
                 <button
                   type="button"
-                  onClick={() => setShowPwd((v) => !v)}
+                  onClick={() => setShowPwd((v: any) => !v)}
                   className="font-mono text-[10px] uppercase tracking-wider text-muted hover:text-ink"
                   aria-label={showPwd ? T.hidePwd : T.showPwd}
                 >
@@ -229,8 +229,8 @@ export default function SignupPage() {
                 spellCheck={false}
                 autoCapitalize="off"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={(e) => {
+                onChange={(e: any) => setPassword(e.target.value)}
+                onFocus={(e: any) => {
                   setTimeout(() => {
                     try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                     catch { /* older Safari */ }
@@ -291,7 +291,7 @@ function Field({ label, icon, error, hint, trailing, optional, children }: any) 
   );
 }
 
-const inputClass = (hasErr) => cn(
+const inputClass = (hasErr: any) => cn(
   'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
   hasErr
     ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'

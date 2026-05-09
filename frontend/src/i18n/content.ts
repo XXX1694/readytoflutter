@@ -19,19 +19,19 @@ export function useContent(lang: Lang): ContentHelpers {
   const isRu = lang === 'ru';
 
   return {
-    topicTitle: (topic) => {
+    topicTitle: (topic: any) => {
       if (!isRu) return topic.title;
       return TOPICS_RU[topic.id]?.title || topic.title;
     },
-    topicDesc: (topic) => {
+    topicDesc: (topic: any) => {
       if (!isRu) return topic.description;
       return TOPICS_RU[topic.id]?.description || topic.description;
     },
-    questionText: (question) => {
+    questionText: (question: any) => {
       if (!isRu) return question.question;
       return QUESTIONS_RU[question.id]?.question || question.question;
     },
-    answerText: (question) => {
+    answerText: (question: any) => {
       if (!isRu) return question.answer;
       return QUESTIONS_RU[question.id]?.answer || question.answer;
     },

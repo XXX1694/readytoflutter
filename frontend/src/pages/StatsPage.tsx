@@ -14,7 +14,7 @@ import { filterTopicsByPlatform, filterQuestionsByPlatform, topicPlatform, PLATF
 
 const LEVELS = ['junior', 'mid', 'senior'];
 
-const easeBucket = (ease) => {
+const easeBucket = (ease: any) => {
   if (ease >= 2.7) return { label: 'strong', tone: 'mint' };
   if (ease >= 2.3) return { label: 'solid',  tone: 'brand' };
   if (ease >= 1.8) return { label: 'shaky',  tone: 'amber' };
@@ -30,7 +30,7 @@ export default function StatsPage() {
   const topicsQ = useTopics();
   const questionsQ = useQuestions();
   const statsQ = useStats();
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
 
   if (topicsQ.isLoading || questionsQ.isLoading) return <StatsSkeleton />;
 
@@ -43,10 +43,10 @@ export default function StatsPage() {
   const stats = statsQ.data;
 
   // Build per-topic breakdown
-  const perTopic = topics.map((topic) => {
-    const tQuestions = questions.filter((q) => q.topic_id === topic.id);
-    const completed = tQuestions.filter((q) => q.status === 'completed').length;
-    const inProgress = tQuestions.filter((q) => q.status === 'in_progress').length;
+  const perTopic = topics.map((topic: any) => {
+    const tQuestions = questions.filter((q: any) => q.topic_id === topic.id);
+    const completed = tQuestions.filter((q: any) => q.status === 'completed').length;
+    const inProgress = tQuestions.filter((q: any) => q.status === 'in_progress').length;
 
     let easeSum = 0;
     let easeCount = 0;
@@ -79,7 +79,7 @@ export default function StatsPage() {
   const srs = getSrsSummary(questions);
 
   // Mastery score: blends completion % and SRS ease
-  const mastery = (row) => {
+  const mastery = (row: any) => {
     const compScore = row.pct;
     if (!row.avgEase) return compScore;
     // ease 2.5 → 100, 1.3 → 0 — clamped
@@ -88,34 +88,34 @@ export default function StatsPage() {
   };
 
   const overallMastery = perTopic.length
-    ? Math.round(perTopic.reduce((s, r) => s + mastery(r), 0) / perTopic.length)
+    ? Math.round(perTopic.reduce((s: any, r: any) => s + mastery(r), 0) / perTopic.length)
     : 0;
 
   // Weakest topics (lowest mastery, ignoring 0%)
   const weakest = [...perTopic]
-    .filter((r) => r.total > 0)
-    .sort((a, b) => mastery(a) - mastery(b))
+    .filter((r: any) => r.total > 0)
+    .sort((a: any, b: any) => mastery(a) - mastery(b))
     .slice(0, 3);
 
   // Stack × grade breakdown — only meaningful when the user is looking at
   // every platform, otherwise the row would always be a single line.
   const stackBreakdown = platform === 'all'
-    ? PLATFORM_GROUPS.map((group) => {
+    ? PLATFORM_GROUPS.map((group: any) => {
         const tIds = new Set(
-          allTopics.filter((tp) => topicPlatform(tp) === group.key).map((tp) => tp.id),
+          allTopics.filter((tp: any) => topicPlatform(tp) === group.key).map((tp: any) => tp.id),
         );
-        const groupQs = allQuestions.filter((q) => tIds.has(q.topic_id));
+        const groupQs = allQuestions.filter((q: any) => tIds.has(q.topic_id));
         if (!groupQs.length) return null;
-        const byLevel = ['junior', 'mid', 'senior'].reduce((acc, lv) => {
-          const levelQs = groupQs.filter((q) => q.level === lv);
+        const byLevel = ['junior', 'mid', 'senior'].reduce((acc: any, lv: any) => {
+          const levelQs = groupQs.filter((q: any) => q.level === lv);
           acc[lv] = {
             total: levelQs.length,
-            completed: levelQs.filter((q) => q.status === 'completed').length,
+            completed: levelQs.filter((q: any) => q.status === 'completed').length,
           };
           return acc;
         }, {});
         const total = groupQs.length;
-        const completed = groupQs.filter((q) => q.status === 'completed').length;
+        const completed = groupQs.filter((q: any) => q.status === 'completed').length;
         return { group, byLevel, total, completed };
       }).filter(Boolean)
     : [];
@@ -204,7 +204,7 @@ export default function StatsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stackBreakdown.map((row) => {
+                  {stackBreakdown.map((row: any) => {
                     const overallPct = row.total > 0
                       ? Math.round((row.completed / row.total) * 100)
                       : 0;
@@ -218,7 +218,7 @@ export default function StatsPage() {
                             </span>
                           </span>
                         </td>
-                        {['junior', 'mid', 'senior'].map((lv) => {
+                        {['junior', 'mid', 'senior'].map((lv: any) => {
                           const cell = row.byLevel[lv];
                           if (!cell.total) {
                             return (
@@ -255,13 +255,13 @@ export default function StatsPage() {
         )}
 
         {/* Weakest topics */}
-        {weakest.some((r) => mastery(r) < 80) && (
+        {weakest.some((r: any) => mastery(r) < 80) && (
           <section className="mb-10">
             <Eyebrow accent="amber" className="mb-3">
               {lang === 'ru' ? 'Слабые места' : 'Weakest topics'}
             </Eyebrow>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {weakest.map((row) => (
+              {weakest.map((row: any) => (
                 <button
                   key={row.topic.id}
                   type="button"
@@ -288,11 +288,11 @@ export default function StatsPage() {
         )}
 
         {/* Per-level breakdown */}
-        {LEVELS.map((level, idx) => {
-          const rows = perTopic.filter((r) => r.topic.level === level);
+        {LEVELS.map((level: any, idx: any) => {
+          const rows = perTopic.filter((r: any) => r.topic.level === level);
           if (!rows.length) return null;
           const levelT = t[level];
-          const levelMastery = Math.round(rows.reduce((s, r) => s + mastery(r), 0) / rows.length);
+          const levelMastery = Math.round(rows.reduce((s: any, r: any) => s + mastery(r), 0) / rows.length);
           return (
             <section key={level} className="mb-10">
               <header className="mb-4 flex items-end justify-between border-b border-rule/15 pb-2">
@@ -312,7 +312,7 @@ export default function StatsPage() {
                 </div>
               </header>
               <div className="space-y-2">
-                {rows.map((row) => (
+                {rows.map((row: any) => (
                   <TopicRow
                     key={row.topic.id}
                     row={row}
@@ -409,21 +409,21 @@ function StatsSkeleton() {
           <Skeleton className="mt-1 h-3 w-1/2" />
         </header>
         <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_: any, i: any) => (
             <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="mt-3 h-9 w-12" />
             </div>
           ))}
         </div>
-        {[1, 2, 3].map((row) => (
+        {[1, 2, 3].map((row: any) => (
           <section key={row} className="mb-10">
             <div className="mb-4 border-b border-rule/15 pb-2">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="mt-2 h-6 w-40" />
             </div>
             <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 4 }).map((_: any, i: any) => (
                 <div key={i} className="flex items-center gap-3 rounded-md border border-rule bg-paper-2/80 px-4 py-3">
                   <Skeleton className="h-9 w-9 rounded-md" />
                   <div className="flex-1 space-y-2">

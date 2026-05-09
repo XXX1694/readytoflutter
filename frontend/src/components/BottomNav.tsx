@@ -58,8 +58,8 @@ export default function BottomNav() {
   const location = useLocation();
   const path = location.pathname;
 
-  const token = useAuth((s) => s.token);
-  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const token = useAuth((s: any) => s.token);
+  const backendAvailable = useAuth((s: any) => s.backendAvailable);
 
   // Hide the bar when a text input/textarea is focused — on iOS the virtual
   // keyboard pushes the bar up over the input, defeating its purpose. We
@@ -68,13 +68,13 @@ export default function BottomNav() {
   // hooks-order stable.
   const [inputFocused, setInputFocused] = useState(false);
   useEffect(() => {
-    const isField = (el) => {
+    const isField = (el: any) => {
       if (!el) return false;
       const tag = el.tagName?.toLowerCase();
       return tag === 'input' || tag === 'textarea' || el.isContentEditable;
     };
-    const onFocusIn = (e) => { if (isField(e.target)) setInputFocused(true); };
-    const onFocusOut = (e) => { if (isField(e.target)) setInputFocused(false); };
+    const onFocusIn = (e: any) => { if (isField(e.target)) setInputFocused(true); };
+    const onFocusOut = (e: any) => { if (isField(e.target)) setInputFocused(false); };
     document.addEventListener('focusin', onFocusIn);
     document.addEventListener('focusout', onFocusOut);
     return () => {
@@ -96,7 +96,7 @@ export default function BottomNav() {
     /\/print$/,
     /\/cheatsheet$/,
   ];
-  if (HIDE_PATTERNS.some((re) => re.test(path))) return null;
+  if (HIDE_PATTERNS.some((re: any) => re.test(path))) return null;
   if (inputFocused) return null;
 
   const accountTo = token ? '/settings' : '/login';
@@ -114,7 +114,7 @@ export default function BottomNav() {
   // Determine which tab matches the current path so framer can place the
   // pill. End-matched routes (Home) need exact equality; others match by
   // prefix so /topic/* still highlights nothing (none of the tabs match).
-  const activeIndex = items.findIndex((it) => {
+  const activeIndex = items.findIndex((it: any) => {
     if (it.end) return path === it.to;
     return path === it.to || path.startsWith(it.to + '/');
   });
@@ -129,7 +129,7 @@ export default function BottomNav() {
       aria-label={isRu ? 'Нижняя навигация' : 'Bottom navigation'}
     >
       <ul className={cn('grid', cols)}>
-        {items.map((it, idx) => {
+        {items.map((it: any, idx: any) => {
           const isActive = idx === activeIndex;
           return (
             <li key={it.to}>

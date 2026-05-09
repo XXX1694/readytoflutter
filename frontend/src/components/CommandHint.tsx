@@ -16,7 +16,7 @@ const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
  * to either, instead of nesting a span[role=button] inside another button.
  */
 export default function CommandHint() {
-  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const setCommandOpen = usePrefs((s: any) => s.setCommandOpen);
   const { lang } = useLang();
   const [visible, setVisible] = useState(false);
 
@@ -45,7 +45,7 @@ export default function CommandHint() {
   // transition; dismiss() is idempotent if already hidden.
   useEffect(() => {
     let prev = usePrefs.getState().commandOpen;
-    return usePrefs.subscribe((state) => {
+    return usePrefs.subscribe((state: any) => {
       const open = state.commandOpen;
       if (open && !prev) dismiss();
       prev = open;

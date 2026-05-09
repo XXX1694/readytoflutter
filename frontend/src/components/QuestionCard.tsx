@@ -34,7 +34,7 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
   const effectiveTopicSlug = topicSlug || question.topic_slug;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledExpanded ?? internalOpen;
-  const toggleOpen = onToggleExpand || (() => setInternalOpen((v) => !v));
+  const toggleOpen = onToggleExpand || (() => setInternalOpen((v: any) => !v));
 
   const [status, setStatus] = useState(question.status || 'not_started');
   const [showCode, setShowCode] = useState(false);
@@ -44,7 +44,7 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
   const { questionText, answerText } = useContent(lang);
   const update = useUpdateProgress();
   const [bookmarked, toggleBookmarked] = useBookmark(question.id);
-  const recallMode = usePrefs((s) => s.recallMode);
+  const recallMode = usePrefs((s: any) => s.recallMode);
 
   // Hint-ladder reveal (only when recallMode is on):
   //   'hidden' → 'hint' → 'full'
@@ -86,7 +86,7 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
   );
 
   const handleStatus = useCallback(
-    async (next) => {
+    async (next: any) => {
       if (status === next) return;
       const prev = status;
       setStatus(next);
@@ -148,7 +148,7 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
             {question.tags &&
               question.tags
                 .split(',')
-                .map((tag, i) => (
+                .map((tag: any, i: any) => (
                   <Pill key={`${tag}-${i}`} tone="neutral" size="xs">
                     {tag.trim()}
                   </Pill>
@@ -160,8 +160,8 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
           <span
             role="button"
             tabIndex={0}
-            onClick={(e) => { e.stopPropagation(); toggleBookmarked(); }}
-            onKeyDown={(e) => {
+            onClick={(e: any) => { e.stopPropagation(); toggleBookmarked(); }}
+            onKeyDown={(e: any) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.stopPropagation();
                 e.preventDefault();
@@ -208,7 +208,7 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
                   {t.markAs}
                 </span>
                 <div className="inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm">
-                  {STATUS_KEYS.map((key) => {
+                  {STATUS_KEYS.map((key: any) => {
                     const Icon = STATUS_META[key].icon;
                     const active = status === key;
                     return (
@@ -376,7 +376,7 @@ const QuestionCard = forwardRef<HTMLElement, any>(function QuestionCard(
                 <section className="px-4 pb-4 sm:px-5">
                   <button
                     type="button"
-                    onClick={() => setShowCode((v) => !v)}
+                    onClick={() => setShowCode((v: any) => !v)}
                     aria-expanded={showCode}
                     className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand transition-colors hover:text-brand-ink"
                   >
@@ -458,8 +458,8 @@ function NotesEditor({ questionId, initialNotes, status, topicSlug }: any) {
       </header>
       <textarea
         value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        onFocus={(e) => {
+        onChange={(e: any) => setNotes(e.target.value)}
+        onFocus={(e: any) => {
           // Mobile keyboard pop can hide the field — re-center it.
           setTimeout(() => {
             try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }

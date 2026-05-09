@@ -16,8 +16,8 @@ const STORAGE_KEY = 'rtf:stackpicker:v1';
 export default function StackPickerDialog() {
   const { lang } = useLang();
   const t = useT(lang);
-  const platform = usePrefs((s) => s.platform);
-  const setPlatform = usePrefs((s) => s.setPlatform);
+  const platform = usePrefs((s: any) => s.platform);
+  const setPlatform = usePrefs((s: any) => s.setPlatform);
   const { data: topics = [] } = useTopics();
   const [open, setOpen] = useState(false);
 
@@ -40,7 +40,7 @@ export default function StackPickerDialog() {
     try { localStorage.setItem(STORAGE_KEY, '1'); } catch { /* quota */ }
   };
 
-  const choose = (key) => {
+  const choose = (key: any) => {
     setPlatform(key);
     persist();
     setOpen(false);
@@ -60,7 +60,7 @@ export default function StackPickerDialog() {
   }, {});
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => { if (!v) skip(); }}>
+    <Dialog.Root open={open} onOpenChange={(v: any) => { if (!v) skip(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-lg -translate-x-1/2 -translate-y-1/2 outline-none data-[state=open]:animate-slide-up">
@@ -92,7 +92,7 @@ export default function StackPickerDialog() {
               </p>
 
               <ul className="mt-5 space-y-2">
-                {PLATFORMS.map((p) => {
+                {PLATFORMS.map((p: any) => {
                   const count = countsByPlatform[p.key] || 0;
                   return (
                     <li key={p.key}>

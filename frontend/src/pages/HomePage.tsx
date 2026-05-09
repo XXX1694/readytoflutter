@@ -26,9 +26,9 @@ export default function HomePage({ landing = null }: any) {
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
-  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
-  const platform = usePrefs((s) => s.platform);
-  const setPlatform = usePrefs((s) => s.setPlatform);
+  const setCommandOpen = usePrefs((s: any) => s.setCommandOpen);
+  const platform = usePrefs((s: any) => s.platform);
+  const setPlatform = usePrefs((s: any) => s.setPlatform);
   const navigate = useNavigate();
 
   // Landing-page mode: when this HomePage is rendered as /flutter, /ios, etc.
@@ -237,8 +237,8 @@ export default function HomePage({ landing = null }: any) {
               </p>
             </div>
           )}
-          {LEVELS.map((level, idx) => {
-            const items = topics.filter((tp) => tp.level === level);
+          {LEVELS.map((level: any, idx: any) => {
+            const items = topics.filter((tp: any) => tp.level === level);
             if (!items.length) return null;
             const levelT = t[level];
             return (
@@ -257,7 +257,7 @@ export default function HomePage({ landing = null }: any) {
                   </div>
                 </header>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                  {items.map((topic) => (
+                  {items.map((topic: any) => (
                     <TopicTile
                       key={topic.id}
                       topic={topic}
@@ -311,7 +311,7 @@ function DashboardSkeleton() {
 
         {/* Stat tiles */}
         <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_: any, i: any) => (
             <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="mt-3 h-8 w-12" />
@@ -338,7 +338,7 @@ function DashboardSkeleton() {
           <Skeleton className="mb-4 h-3 w-44" />
           <div className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
             <div className="flex flex-wrap gap-1">
-              {Array.from({ length: 14 * 7 }).map((_, i) => (
+              {Array.from({ length: 14 * 7 }).map((_: any, i: any) => (
                 <Skeleton key={i} className="h-3 w-3 rounded-[3px]" />
               ))}
             </div>
@@ -346,12 +346,12 @@ function DashboardSkeleton() {
         </section>
 
         {/* Topic grid */}
-        {[1, 2, 3].map((row) => (
+        {[1, 2, 3].map((row: any) => (
           <section key={row} className="mb-12">
             <Skeleton className="mb-3 h-3 w-24" />
             <Skeleton className="mb-2 h-8 w-56" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 4 }).map((_: any, i: any) => (
                 <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
                   <Skeleton className="h-9 w-9 rounded-md" />
                   <Skeleton className="mt-3 h-5 w-3/4" />

@@ -112,7 +112,7 @@ export default function PrintTopicPage() {
 
         {/* Questions — natural flow, no forced gaps */}
         <ol className="list-none">
-          {questions.map((q, i) => {
+          {questions.map((q: any, i: any) => {
             const difficultyLabel = { easy: t.easy, medium: t.medium, hard: t.hard }[q.difficulty] || q.difficulty;
             return (
               <li key={q.id} className="print-question mb-5">

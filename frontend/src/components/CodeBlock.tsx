@@ -7,7 +7,7 @@ import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
 export default function CodeBlock({ code, language = 'dart', className }: any) {
-  const theme = usePrefs((s) => s.theme);
+  const theme = usePrefs((s: any) => s.theme);
   const { lang } = useLang();
   const [html, setHtml] = useState<any>(null);
   const [copied, setCopied] = useState(false);
@@ -16,7 +16,7 @@ export default function CodeBlock({ code, language = 'dart', className }: any) {
   useEffect(() => {
     cancelled.current = false;
     highlightCode(code, language, theme === 'dark')
-      .then((h) => { if (!cancelled.current) setHtml(h); })
+      .then((h: any) => { if (!cancelled.current) setHtml(h); })
       .catch(() => { if (!cancelled.current) setHtml(null); });
     return () => { cancelled.current = true; };
   }, [code, language, theme]);

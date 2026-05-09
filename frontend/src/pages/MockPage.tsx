@@ -41,7 +41,7 @@ const RATINGS = [
   { key: 'easy',  tone: 'mint',   hotkey: '4', labelEn: 'Nailed', labelRu: 'Идеально' },
 ];
 
-const shuffle = (arr) => {
+const shuffle = (arr: any) => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -62,7 +62,7 @@ export default function MockPage() {
   const { questionText, answerText } = useContent(lang);
   const { data: allQuestions = [], isLoading } = useQuestions();
   const { data: allTopics = [] } = useTopics();
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
   // Honor the persisted stack so a user prepping for iOS doesn't get Flutter
   // questions in their mock interview. Direct deep-links via `?ids=` bypass
   // this — those callers already curated their set.
@@ -128,11 +128,11 @@ export default function MockPage() {
     let pool;
     if (config.ids?.length) {
       const idSet = new Set(config.ids);
-      pool = allQuestions.filter((q) => idSet.has(q.id));
+      pool = allQuestions.filter((q: any) => idSet.has(q.id));
     } else {
       pool = questions;
-      if (config.topic) pool = pool.filter((q) => q.topic_slug === config.topic);
-      if (config.level !== 'all') pool = pool.filter((q) => q.level === config.level);
+      if (config.topic) pool = pool.filter((q: any) => q.topic_slug === config.topic);
+      if (config.level !== 'all') pool = pool.filter((q: any) => q.level === config.level);
     }
     if (pool.length === 0) return;
     const picked = shuffle(pool).slice(0, config.count);
@@ -164,18 +164,18 @@ export default function MockPage() {
 
   const reveal = () => setRevealed(true);
 
-  const rate = (rating) => {
+  const rate = (rating: any) => {
     if (!current) return;
     const elapsed = Math.floor((Date.now() - perQuestionStart) / 1000);
     const text = answers[current.id]?.text || '';
-    setAnswers((prev) => ({
+    setAnswers((prev: any) => ({
       ...prev,
       [current.id]: { text, rating, elapsed },
     }));
     if (cursor + 1 >= queue.length) {
       setPhase('done');
     } else {
-      setCursor((c) => c + 1);
+      setCursor((c: any) => c + 1);
       setRevealed(false);
       setPerQuestionStart(Date.now());
       // Focus textarea on next question
@@ -185,30 +185,30 @@ export default function MockPage() {
 
   const skip = () => {
     if (!current) return;
-    setAnswers((prev) => ({
+    setAnswers((prev: any) => ({
       ...prev,
       [current.id]: { text: prev[current.id]?.text || '', rating: 'skipped', elapsed: 0 },
     }));
     if (cursor + 1 >= queue.length) {
       setPhase('done');
     } else {
-      setCursor((c) => c + 1);
+      setCursor((c: any) => c + 1);
       setRevealed(false);
       setPerQuestionStart(Date.now());
     }
   };
 
-  const updateAnswer = (text) => {
+  const updateAnswer = (text: any) => {
     if (!current) return;
-    setAnswers((prev) => ({
+    setAnswers((prev: any) => ({
       ...prev,
       [current.id]: { ...prev[current.id], text },
     }));
   };
 
-  const appendVoice = (chunk) => {
+  const appendVoice = (chunk: any) => {
     if (!current) return;
-    setAnswers((prev) => {
+    setAnswers((prev: any) => {
       const existing = prev[current.id]?.text || '';
       const sep = existing && !/\s$/.test(existing) ? ' ' : '';
       return {
@@ -219,7 +219,7 @@ export default function MockPage() {
   };
 
   // Hotkeys
-  useHotkeys('mod+enter', (e) => {
+  useHotkeys('mod+enter', (e: any) => {
     if (phase !== 'running' || !current) return;
     e.preventDefault();
     if (!revealed) reveal();
@@ -239,11 +239,11 @@ export default function MockPage() {
     let available;
     if (config.ids?.length) {
       const idSet = new Set(config.ids);
-      available = allQuestions.filter((q) => idSet.has(q.id));
+      available = allQuestions.filter((q: any) => idSet.has(q.id));
     } else {
       available = questions;
-      if (config.topic) available = available.filter((q) => q.topic_slug === config.topic);
-      if (config.level !== 'all') available = available.filter((q) => q.level === config.level);
+      if (config.topic) available = available.filter((q: any) => q.topic_slug === config.topic);
+      if (config.level !== 'all') available = available.filter((q: any) => q.level === config.level);
     }
     return (
       <SetupScreen
@@ -342,8 +342,8 @@ export default function MockPage() {
             <textarea
               ref={textareaRef}
               value={userText}
-              onChange={(e) => updateAnswer(e.target.value)}
-              onFocus={(e) => {
+              onChange={(e: any) => updateAnswer(e.target.value)}
+              onFocus={(e: any) => {
                 setTimeout(() => {
                   try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                   catch { /* older Safari */ }
@@ -422,7 +422,7 @@ export default function MockPage() {
             </section>
 
             <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {RATINGS.map((r) => (
+              {RATINGS.map((r: any) => (
                 <button
                   key={r.key}
                   type="button"
@@ -453,7 +453,7 @@ export default function MockPage() {
 }
 
 function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount, lang, showPlatformFilter }: any) {
-  const update = (patch) => onConfigChange({ ...config, ...patch });
+  const update = (patch: any) => onConfigChange({ ...config, ...patch });
   const insufficient = availableCount === 0;
   const realCount = Math.min(config.count, availableCount);
 
@@ -489,7 +489,7 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
 
           <Field label={lang === 'ru' ? 'Уровень' : 'Level'}>
             <div className="flex flex-wrap gap-2">
-              {LEVELS.map((l) => (
+              {LEVELS.map((l: any) => (
                 <ToggleChip
                   key={l.key}
                   active={config.level === l.key}
@@ -503,7 +503,7 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
 
           <Field label={lang === 'ru' ? 'Кол-во вопросов' : 'Questions'}>
             <div className="flex flex-wrap gap-2">
-              {COUNT_OPTIONS.map((c) => (
+              {COUNT_OPTIONS.map((c: any) => (
                 <ToggleChip
                   key={c}
                   active={config.count === c}
@@ -517,7 +517,7 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
 
           <Field label={lang === 'ru' ? 'Таймер на вопрос' : 'Per-question timer'}>
             <div className="flex flex-wrap gap-2">
-              {TIMER_OPTIONS.map((tm) => (
+              {TIMER_OPTIONS.map((tm: any) => (
                 <ToggleChip
                   key={tm.key}
                   active={config.timer === tm.key}
@@ -641,7 +641,7 @@ function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answe
             { key: 'hard',    label: lang === 'ru' ? 'С трудом' : 'Rough',  accent: 'text-[rgb(var(--amber))]',      dot: 'bg-[rgb(var(--amber))]',      glow: 'from-amber/[0.10] to-transparent' },
             { key: 'again',   label: lang === 'ru' ? 'Провалил' : 'Bombed', accent: 'text-coral',                    dot: 'bg-coral',                    glow: 'from-coral/[0.10] to-transparent' },
             { key: 'skipped', label: lang === 'ru' ? 'Скип' : 'Skipped',    accent: 'text-muted',                    dot: 'bg-muted',                    glow: 'from-muted/[0.06] to-transparent' },
-          ].map((b) => (
+          ].map((b: any) => (
             <div
               key={b.key}
               className="group relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 p-5 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] transition-all duration-300 hover:-translate-y-0.5"
@@ -661,7 +661,7 @@ function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answe
             {lang === 'ru' ? 'По вопросам' : 'Per question'}
           </div>
           <div className="space-y-2">
-            {queue.map((q, i) => {
+            {queue.map((q: any, i: any) => {
               const a = answers[q.id];
               const r = a?.rating || 'skipped';
               const tone = r === 'easy' ? 'mint' : r === 'good' ? 'brand' : r === 'hard' ? 'amber' : r === 'again' ? 'coral' : 'ghost';

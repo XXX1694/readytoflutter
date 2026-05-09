@@ -23,8 +23,8 @@ export default function TopicPage() {
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
 
-  const filter = usePrefs((s) => s.topicFilter);
-  const setFilter = usePrefs((s) => s.setTopicFilter);
+  const filter = usePrefs((s: any) => s.topicFilter);
+  const setFilter = usePrefs((s: any) => s.setTopicFilter);
 
   const { data: topic, isLoading, error } = useTopic(slug);
 
@@ -60,7 +60,7 @@ export default function TopicPage() {
 
   const questions = topic?.questions || [];
   const filtered = useMemo(() => {
-    return questions.filter((q) => {
+    return questions.filter((q: any) => {
       if (filter === 'all') return true;
       if (filter === 'not_started') return !q.status || q.status === 'not_started';
       return q.status === filter;
@@ -69,9 +69,9 @@ export default function TopicPage() {
 
   const counts = useMemo(() => ({
     all: questions.length,
-    not_started: questions.filter((q) => !q.status || q.status === 'not_started').length,
-    in_progress: questions.filter((q) => q.status === 'in_progress').length,
-    completed: questions.filter((q) => q.status === 'completed').length,
+    not_started: questions.filter((q: any) => !q.status || q.status === 'not_started').length,
+    in_progress: questions.filter((q: any) => q.status === 'in_progress').length,
+    completed: questions.filter((q: any) => q.status === 'completed').length,
   }), [questions]);
 
   // Reset cursor if filter list shrinks below it
@@ -79,12 +79,12 @@ export default function TopicPage() {
     if (cursor >= filtered.length) setCursor(0);
   }, [filtered.length, cursor]);
 
-  const scrollIntoView = (id) => {
+  const scrollIntoView = (id: any) => {
     const el = refs.current.get(id);
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
-  useHotkeys('j, ArrowDown', (e) => {
+  useHotkeys('j, ArrowDown', (e: any) => {
     e.preventDefault();
     if (!filtered.length) return;
     const next = Math.min(cursor + 1, filtered.length - 1);
@@ -92,7 +92,7 @@ export default function TopicPage() {
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
 
-  useHotkeys('k, ArrowUp', (e) => {
+  useHotkeys('k, ArrowUp', (e: any) => {
     e.preventDefault();
     if (!filtered.length) return;
     const next = Math.max(cursor - 1, 0);
@@ -100,11 +100,11 @@ export default function TopicPage() {
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
 
-  useHotkeys('space', (e) => {
+  useHotkeys('space', (e: any) => {
     if (!filtered.length) return;
     e.preventDefault();
     const q = filtered[cursor];
-    setOpenId((prev) => (prev === q.id ? null : q.id));
+    setOpenId((prev: any) => (prev === q.id ? null : q.id));
   }, { preventDefault: true });
 
   if (isLoading) return <TopicSkeleton />;
@@ -122,13 +122,13 @@ export default function TopicPage() {
     );
   }
 
-  const completedCount = questions.filter((q) => q.status === 'completed').length;
+  const completedCount = questions.filter((q: any) => q.status === 'completed').length;
   const pct = questions.length > 0 ? Math.round((completedCount / questions.length) * 100) : 0;
   const levelT = t[topic.level];
   // Resolve platform metadata (label + dot) so the breadcrumb above the title
   // tells the user "iOS · Swift · Swift Basics" without making them guess.
   const platformKey = topicPlatform(topic);
-  const platformMeta = PLATFORMS.find((p) => p.key === platformKey);
+  const platformMeta = PLATFORMS.find((p: any) => p.key === platformKey);
 
   return (
     <div className="bg-page">
@@ -288,7 +288,7 @@ export default function TopicPage() {
             chips never overflow into a second row. The strip is bled to the
             full viewport width on small screens via -mx-4 + px-4 padding. */}
         <div className="-mx-4 mb-5 flex items-center gap-2 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:mb-6 sm:flex-wrap sm:overflow-visible sm:px-0">
-          {FILTERS.map((f) => {
+          {FILTERS.map((f: any) => {
             const label = {
               all: t.filterAll,
               not_started: t.filterTodo,
@@ -335,17 +335,17 @@ export default function TopicPage() {
               </p>
             </div>
           ) : (
-            filtered.map((q, i) => (
+            filtered.map((q: any, i: any) => (
               <QuestionCard
                 key={q.id}
-                ref={(el) => {
+                ref={(el: any) => {
                   if (el) refs.current.set(q.id, el);
                   else refs.current.delete(q.id);
                 }}
                 question={q}
                 index={questions.indexOf(q)}
                 expanded={openId === q.id}
-                onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
+                onToggleExpand={() => setOpenId((prev: any) => (prev === q.id ? null : q.id))}
                 focused={cursor === i}
                 topicSlug={slug}
               />
@@ -418,12 +418,12 @@ function TopicSkeleton() {
           </div>
         </header>
         <div className="mb-6 flex gap-2">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_: any, i: any) => (
             <Skeleton key={i} className="h-7 w-20 rounded-md" />
           ))}
         </div>
         <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_: any, i: any) => (
             <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
               <div className="flex items-start gap-3">
                 <Skeleton className="h-7 w-7 rounded-md" />

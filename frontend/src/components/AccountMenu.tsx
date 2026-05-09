@@ -13,7 +13,7 @@ import { track, resetIdentity } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
-const initialsOf = (user) => {
+const initialsOf = (user: any) => {
   const source = user?.name?.trim() || user?.email || '?';
   const parts = source.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -26,13 +26,13 @@ export default function AccountMenu() {
   const { lang } = useLang();
   const isRu = lang === 'ru';
 
-  const token = useAuth((s) => s.token);
-  const user = useAuth((s) => s.user);
-  const backendAvailable = useAuth((s) => s.backendAvailable);
-  const probeBackend = useAuth((s) => s.probeBackend);
-  const clearSession = useAuth((s) => s.clearSession);
-  const markSynced = useAuth((s) => s.markSynced);
-  const lastSyncAt = useAuth((s) => s.lastSyncAt);
+  const token = useAuth((s: any) => s.token);
+  const user = useAuth((s: any) => s.user);
+  const backendAvailable = useAuth((s: any) => s.backendAvailable);
+  const probeBackend = useAuth((s: any) => s.probeBackend);
+  const clearSession = useAuth((s: any) => s.clearSession);
+  const markSynced = useAuth((s: any) => s.markSynced);
+  const lastSyncAt = useAuth((s: any) => s.lastSyncAt);
   const qc = useQueryClient();
 
   // Probe once on mount so we know whether to show the auth UI at all.
@@ -80,7 +80,7 @@ export default function AccountMenu() {
       status: v?.status,
       notes: v?.notes || null,
       updated_at: v?.updated_at || new Date().toISOString(),
-    })).filter((p) => p.questionId && p.status);
+    })).filter((p: any) => p.questionId && p.status);
 
     if (items.length === 0) {
       toast.info(isRu ? 'Локального прогресса нет' : 'No local progress to import');

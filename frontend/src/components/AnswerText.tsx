@@ -60,7 +60,7 @@ export default function AnswerText({ text, className, codeClassName }: any) {
 
   return (
     <div className={cn('space-y-3', className)}>
-      {segments.map((seg, i) => {
+      {segments.map((seg: any, i: any) => {
         if (seg.kind === 'prose') {
           // Trim only the leading/trailing newline that hugged a fence so the
           // gap collapses to the `space-y-3` rhythm.

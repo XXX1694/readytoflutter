@@ -57,7 +57,7 @@ const MEDIA_TYPES = [
   { key: 'channel', en: 'Channel', ru: 'Канал', icon: Tv },
 ];
 
-const isPlayable = (r) => r?.media_type === 'video' || r?.media_type === 'playlist';
+const isPlayable = (r: any) => r?.media_type === 'video' || r?.media_type === 'playlist';
 
 export default function KnowledgePage() {
   const navigate = useNavigate();
@@ -104,14 +104,14 @@ export default function KnowledgePage() {
     setRecentIds(getRecentlyWatched());
   };
 
-  const toggleSave = (id) => { toggleSaved(id); setSavedIds(getSavedIds()); };
+  const toggleSave = (id: any) => { toggleSaved(id); setSavedIds(getSavedIds()); };
 
-  const handleOpenExternal = (id) => {
+  const handleOpenExternal = (id: any) => {
     markVisited(id);
     setVisitedIds(getVisitedIds());
   };
 
-  const handlePlay = (resource) => {
+  const handlePlay = (resource: any) => {
     if (!resource) return;
     pushRecentlyWatched(resource.id);
     markVisited(resource.id);
@@ -120,11 +120,11 @@ export default function KnowledgePage() {
     setRecentIds(getRecentlyWatched());
   };
 
-  const handleClosePlayer = (open) => {
+  const handleClosePlayer = (open: any) => {
     if (!open) setPlaying(null);
   };
 
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
   const categories = data?.categories ?? [];
   const rawResources = data?.resources ?? [];
   // Resources without an explicit `platform` field are treated as Flutter
@@ -137,16 +137,16 @@ export default function KnowledgePage() {
   const counts = useMemo(() => countByCategory(allResources), [allResources]);
 
   const recent = useMemo(() => {
-    const map = new Map(allResources.map((r) => [r.id, r]));
-    return recentIds.map((id) => map.get(id)).filter(Boolean);
+    const map = new Map(allResources.map((r: any) => [r.id, r]));
+    return recentIds.map((id: any) => map.get(id)).filter(Boolean);
   }, [allResources, recentIds]);
 
   const filtered = useMemo(() => {
     let list = filterResources(allResources, {
       category, level: level as any, lang: langFilter, free: freeOnly, query,
     });
-    if (media !== 'all') list = list.filter((r) => r.media_type === media);
-    if (savedOnly) list = list.filter((r) => savedIds.has(r.id));
+    if (media !== 'all') list = list.filter((r: any) => r.media_type === media);
+    if (savedOnly) list = list.filter((r: any) => savedIds.has(r.id));
     return list;
   }, [allResources, category, level, langFilter, media, freeOnly, query, savedOnly, savedIds]);
 
@@ -158,8 +158,8 @@ export default function KnowledgePage() {
       map.get(r.category).push(r);
     }
     return categories
-      .filter((c) => map.has(c.key))
-      .map((c) => ({ category: c.key, items: map.get(c.key) }));
+      .filter((c: any) => map.has(c.key))
+      .map((c: any) => ({ category: c.key, items: map.get(c.key) }));
   }, [filtered, category, categories]);
 
   if (isLoading) return <FullPageLoader />;
@@ -251,7 +251,7 @@ export default function KnowledgePage() {
               </button>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {recent.map((r) => (
+              {recent.map((r: any) => (
                 <RecentChip key={r.id} resource={r} isRu={isRu} onClick={() => handlePlay(r)} />
               ))}
             </div>
@@ -275,8 +275,8 @@ export default function KnowledgePage() {
             spellCheck={false}
             autoCapitalize="off"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={(e) => {
+            onChange={(e: any) => setQuery(e.target.value)}
+            onFocus={(e: any) => {
               setTimeout(() => {
                 try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                 catch { /* older Safari */ }
@@ -309,7 +309,7 @@ export default function KnowledgePage() {
             count={totalCount}
             Icon={Sparkles}
           />
-          {categories.map((c) => (
+          {categories.map((c: any) => (
             <CategoryChip
               key={c.key}
               active={category === c.key}
@@ -338,21 +338,21 @@ export default function KnowledgePage() {
         {/* Filter row — desktop / tablet inline grid */}
         <div className="mb-6 hidden flex-wrap items-center gap-x-4 gap-y-2 border-y border-rule py-3 font-mono text-[10px] uppercase tracking-wider text-muted sm:flex">
           <FilterGroup label={isRu ? 'Уровень' : 'Level'}>
-            {LEVELS.map((l) => (
+            {LEVELS.map((l: any) => (
               <ToggleChip key={l.key} active={level === l.key} onClick={() => setLevel(l.key)}>
                 {isRu ? l.ru : l.en}
               </ToggleChip>
             ))}
           </FilterGroup>
           <FilterGroup label={isRu ? 'Язык' : 'Lang'}>
-            {LANGS.map((l) => (
+            {LANGS.map((l: any) => (
               <ToggleChip key={l.key} active={langFilter === l.key} onClick={() => setLangFilter(l.key)}>
                 {isRu ? l.ru : l.en}
               </ToggleChip>
             ))}
           </FilterGroup>
           <FilterGroup label={isRu ? 'Тип' : 'Type'}>
-            {MEDIA_TYPES.map((m) => {
+            {MEDIA_TYPES.map((m: any) => {
               const Icon = m.icon;
               return (
                 <ToggleChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
@@ -363,10 +363,10 @@ export default function KnowledgePage() {
             })}
           </FilterGroup>
           <FilterGroup>
-            <ToggleChip active={freeOnly} onClick={() => setFreeOnly((v) => !v)}>
+            <ToggleChip active={freeOnly} onClick={() => setFreeOnly((v: any) => !v)}>
               {isRu ? 'Бесплатно' : 'Free only'}
             </ToggleChip>
-            <ToggleChip active={savedOnly} onClick={() => setSavedOnly((v) => !v)}>
+            <ToggleChip active={savedOnly} onClick={() => setSavedOnly((v: any) => !v)}>
               <Bookmark className="h-3 w-3" />
               {isRu ? 'Сохранённое' : 'Saved'}
               {savedIds.size > 0 && (
@@ -397,21 +397,21 @@ export default function KnowledgePage() {
         >
           <div className="space-y-5 pt-1">
             <SheetGroup label={isRu ? 'Уровень' : 'Level'}>
-              {LEVELS.map((l) => (
+              {LEVELS.map((l: any) => (
                 <SheetChip key={l.key} active={level === l.key} onClick={() => setLevel(l.key)}>
                   {isRu ? l.ru : l.en}
                 </SheetChip>
               ))}
             </SheetGroup>
             <SheetGroup label={isRu ? 'Язык' : 'Lang'}>
-              {LANGS.map((l) => (
+              {LANGS.map((l: any) => (
                 <SheetChip key={l.key} active={langFilter === l.key} onClick={() => setLangFilter(l.key)}>
                   {isRu ? l.ru : l.en}
                 </SheetChip>
               ))}
             </SheetGroup>
             <SheetGroup label={isRu ? 'Тип' : 'Type'}>
-              {MEDIA_TYPES.map((m) => {
+              {MEDIA_TYPES.map((m: any) => {
                 const Icon = m.icon;
                 return (
                   <SheetChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
@@ -422,10 +422,10 @@ export default function KnowledgePage() {
               })}
             </SheetGroup>
             <SheetGroup>
-              <SheetChip active={freeOnly} onClick={() => setFreeOnly((v) => !v)}>
+              <SheetChip active={freeOnly} onClick={() => setFreeOnly((v: any) => !v)}>
                 {isRu ? 'Только бесплатное' : 'Free only'}
               </SheetChip>
-              <SheetChip active={savedOnly} onClick={() => setSavedOnly((v) => !v)}>
+              <SheetChip active={savedOnly} onClick={() => setSavedOnly((v: any) => !v)}>
                 <Bookmark className="h-3.5 w-3.5" />
                 {isRu ? 'Сохранённое' : 'Saved'}
                 {savedIds.size > 0 && (
@@ -447,7 +447,7 @@ export default function KnowledgePage() {
         ) : (
           <div className="space-y-10">
             {grouped.map(({ category: catKey, items }) => {
-              const meta = categories.find((c) => c.key === catKey);
+              const meta = categories.find((c: any) => c.key === catKey);
               const Icon = CATEGORY_ICONS[catKey] || FileText;
               return (
                 <section key={catKey}>
@@ -468,7 +468,7 @@ export default function KnowledgePage() {
                     )}
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {items.map((r) => (
+                    {items.map((r: any) => (
                       <ResourceCard
                         key={r.id}
                         resource={r}
@@ -643,7 +643,7 @@ function ResourceCard({ resource: r, isRu, saved, visited, onToggleSave, onPlay,
               alt=""
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-[1.02]"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-paper">
@@ -739,7 +739,7 @@ function ResourceCard({ resource: r, isRu, saved, visited, onToggleSave, onPlay,
         )}
         {r.topics?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1">
-            {r.topics.map((t) => (
+            {r.topics.map((t: any) => (
               <span
                 key={t}
                 className="inline-flex items-center rounded border border-rule px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-2"

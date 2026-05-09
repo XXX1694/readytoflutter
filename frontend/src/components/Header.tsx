@@ -35,12 +35,12 @@ export default function Header() {
   const navigate = useNavigate();
   const { lang, setLang } = useLang();
   const t = useT(lang);
-  const theme = usePrefs((s) => s.theme);
-  const toggleTheme = usePrefs((s) => s.toggleTheme);
-  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
-  const platform = usePrefs((s) => s.platform);
+  const theme = usePrefs((s: any) => s.theme);
+  const toggleTheme = usePrefs((s: any) => s.toggleTheme);
+  const setCommandOpen = usePrefs((s: any) => s.setCommandOpen);
+  const platform = usePrefs((s: any) => s.platform);
   const online = useOnlineStatus();
-  const platformMeta = PLATFORMS.find((p) => p.key === platform) || PLATFORMS[0];
+  const platformMeta = PLATFORMS.find((p: any) => p.key === platform) || PLATFORMS[0];
 
   // Subtle scroll-shadow on the header — gives the page a sense of depth
   // when the user starts scrolling the main content.
@@ -115,7 +115,7 @@ export default function Header() {
 
         {/* Language — segmented EN / RU control */}
         <div className="hidden h-9 items-center rounded-xl border border-rule/12 bg-paper-2/60 p-0.5 font-mono text-[11px] uppercase sm:inline-flex">
-          {(['en', 'ru']).map((code) => {
+          {(['en', 'ru']).map((code: any) => {
             const active = lang === code;
             return (
               <button

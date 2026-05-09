@@ -26,7 +26,7 @@ const CommandHintLazy = lazy(() => import('./CommandHint'));
 // Once mounted we keep the chunk loaded for the rest of the session —
 // re-opening shouldn't re-pay the network cost.
 function LazyCommandPalette() {
-  const open = usePrefs((s) => s.commandOpen);
+  const open = usePrefs((s: any) => s.commandOpen);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { if (open && !mounted) setMounted(true); }, [open, mounted]);
   if (!mounted) return null;
@@ -73,7 +73,7 @@ function LazyShortcutsOverlay() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     if (mounted) return;
-    const onKey = (e) => {
+    const onKey = (e: any) => {
       if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
         const tag = (e.target.tagName || '').toLowerCase();
         if (['input', 'textarea'].includes(tag) || e.target.isContentEditable) return;

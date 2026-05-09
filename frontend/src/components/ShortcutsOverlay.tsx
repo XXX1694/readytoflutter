@@ -73,7 +73,7 @@ export default function ShortcutsOverlay() {
   // skip render later, instead of early-returning before the hook.
   const touchOnly = isTouchOnly();
 
-  useHotkeys('shift+/', (e) => {
+  useHotkeys('shift+/', (e: any) => {
     // `?` lives on Shift+/ — most layouts. Don't fire while typing in form fields.
     const target = e.target as HTMLElement | null;
     const tag = (target?.tagName || '').toLowerCase();
@@ -117,19 +117,19 @@ export default function ShortcutsOverlay() {
 
             {/* Body */}
             <div className="grid max-h-[70vh] grid-cols-1 gap-x-8 gap-y-6 overflow-y-auto p-6 sm:grid-cols-2">
-              {SHORTCUTS.map((g) => (
+              {SHORTCUTS.map((g: any) => (
                 <section key={g.group.en}>
                   <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                     {isRu ? g.group.ru : g.group.en}
                   </div>
                   <ul className="space-y-2">
-                    {g.items.map((it, i) => (
+                    {g.items.map((it: any, i: any) => (
                       <li key={i} className="flex items-center justify-between gap-3">
                         <span className="text-[13px] text-ink-2">
                           {isRu ? it.ru : it.en}
                         </span>
                         <span className="flex shrink-0 items-center gap-1">
-                          {it.keys.map((k, ki) => (
+                          {it.keys.map((k: any, ki: any) => (
                             <kbd key={ki} className="rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-2">
                               {k}
                             </kbd>

@@ -22,10 +22,10 @@ export default function SettingsPage() {
   const isRu = lang === 'ru';
   const T = isRu ? RU : EN;
 
-  const token = useAuth((s) => s.token);
-  const user = useAuth((s) => s.user);
-  const setSession = useAuth((s) => s.setSession);
-  const clearSession = useAuth((s) => s.clearSession);
+  const token = useAuth((s: any) => s.token);
+  const user = useAuth((s: any) => s.user);
+  const setSession = useAuth((s: any) => s.setSession);
+  const clearSession = useAuth((s: any) => s.clearSession);
   const qc = useQueryClient();
 
   // Soft-redirect to login if not authenticated
@@ -126,10 +126,10 @@ function Section({ title, subtitle, children }: any) {
 
 // ── Preferences (theme, language, recall mode) ─────────────────────────────
 function PreferencesSection({ T, isRu }: any) {
-  const theme = usePrefs((s) => s.theme);
-  const setTheme = usePrefs((s) => s.setTheme);
-  const recallMode = usePrefs((s) => s.recallMode);
-  const setRecallMode = usePrefs((s) => s.setRecallMode);
+  const theme = usePrefs((s: any) => s.theme);
+  const setTheme = usePrefs((s: any) => s.setTheme);
+  const recallMode = usePrefs((s: any) => s.recallMode);
+  const setRecallMode = usePrefs((s: any) => s.setRecallMode);
   const { lang, setLang } = useLang();
 
   const themes = [
@@ -167,7 +167,7 @@ function PreferencesSection({ T, isRu }: any) {
               {isRu ? 'Тема' : 'Theme'}
             </div>
             <div role="radiogroup" aria-label={isRu ? 'Тема' : 'Theme'} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {themes.map((t) => {
+              {themes.map((t: any) => {
                 const active = theme === t.key;
                 const { Icon } = t;
                 return (
@@ -213,7 +213,7 @@ function PreferencesSection({ T, isRu }: any) {
               {isRu ? 'Язык интерфейса' : 'Interface language'}
             </div>
             <div role="radiogroup" aria-label={isRu ? 'Язык' : 'Language'} className="inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm">
-              {['en', 'ru'].map((code) => {
+              {['en', 'ru'].map((code: any) => {
                 const active = lang === code;
                 return (
                   <button
@@ -261,7 +261,7 @@ function PreferencesSection({ T, isRu }: any) {
             aria-checked={recallMode}
             tabIndex={0}
             onClick={() => setRecallMode(!recallMode)}
-            onKeyDown={(e) => {
+            onKeyDown={(e: any) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 setRecallMode(!recallMode);
@@ -291,7 +291,7 @@ function ProfileSection({ user, setSession, token, qc, T }: any) {
   const [saving, setSaving] = useState(false);
   const dirty = name.trim() !== (user.name || '').trim();
 
-  const save = async (e) => {
+  const save = async (e: any) => {
     e.preventDefault();
     if (!dirty || saving) return;
     setSaving(true);
@@ -315,7 +315,7 @@ function ProfileSection({ user, setSession, token, qc, T }: any) {
             type="text"
             autoCapitalize="words"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: any) => setName(e.target.value)}
             onFocus={focusCenter}
             placeholder={T.namePh}
             maxLength={80}
@@ -352,7 +352,7 @@ function SecuritySection({ T }: any) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<any>(null);
 
-  const submit = async (e) => {
+  const submit = async (e: any) => {
     e.preventDefault();
     setError(null);
 
@@ -386,7 +386,7 @@ function SecuritySection({ T }: any) {
           trailing={
             <button
               type="button"
-              onClick={() => setShowCurrent((v) => !v)}
+              onClick={() => setShowCurrent((v: any) => !v)}
               className="text-muted hover:text-ink"
               aria-label={showCurrent ? T.hidePwd : T.showPwd}
             >
@@ -401,7 +401,7 @@ function SecuritySection({ T }: any) {
             spellCheck={false}
             autoCapitalize="off"
             value={current}
-            onChange={(e) => setCurrent(e.target.value)}
+            onChange={(e: any) => setCurrent(e.target.value)}
             onFocus={focusCenter}
             className={inputClass(false)}
           />
@@ -414,7 +414,7 @@ function SecuritySection({ T }: any) {
           trailing={
             <button
               type="button"
-              onClick={() => setShowNext((v) => !v)}
+              onClick={() => setShowNext((v: any) => !v)}
               className="text-muted hover:text-ink"
               aria-label={showNext ? T.hidePwd : T.showPwd}
             >
@@ -429,7 +429,7 @@ function SecuritySection({ T }: any) {
             spellCheck={false}
             autoCapitalize="off"
             value={next}
-            onChange={(e) => setNext(e.target.value)}
+            onChange={(e: any) => setNext(e.target.value)}
             onFocus={focusCenter}
             className={inputClass(false)}
           />
@@ -443,7 +443,7 @@ function SecuritySection({ T }: any) {
             spellCheck={false}
             autoCapitalize="off"
             value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
+            onChange={(e: any) => setConfirm(e.target.value)}
             onFocus={focusCenter}
             className={inputClass(false)}
           />
@@ -481,7 +481,7 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<any>(null);
 
-  const submit = async (e) => {
+  const submit = async (e: any) => {
     e.preventDefault();
     setError(null);
     if (!/.+@.+\..+/.test(newEmail)) return setError('invalid_email');
@@ -524,7 +524,7 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
             type="email"
             autoComplete="email"
             value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
+            onChange={(e: any) => setNewEmail(e.target.value)}
             placeholder="you@example.com"
             className={inputClass(false)}
           />
@@ -536,7 +536,7 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
           trailing={
             <button
               type="button"
-              onClick={() => setShowPwd((v) => !v)}
+              onClick={() => setShowPwd((v: any) => !v)}
               className="text-muted hover:text-ink"
             >
               {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -547,7 +547,7 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
             type={showPwd ? 'text' : 'password'}
             autoComplete="current-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e: any) => setPassword(e.target.value)}
             className={inputClass(false)}
           />
         </Field>
@@ -572,7 +572,7 @@ function DeleteAccountSection({ T, onAfter }: any) {
   const [working, setWorking] = useState(false);
   const matches = confirmText.trim().toLowerCase() === 'delete';
 
-  const submit = async (e) => {
+  const submit = async (e: any) => {
     e.preventDefault();
     if (!matches || working) return;
     if (!window.confirm(T.deleteFinalConfirm)) return;
@@ -602,7 +602,7 @@ function DeleteAccountSection({ T, onAfter }: any) {
           <input
             type="text"
             value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
+            onChange={(e: any) => setConfirmText(e.target.value)}
             placeholder="delete"
             className={inputClass(false)}
           />
@@ -647,7 +647,7 @@ function Field({ label, icon, hint, trailing, children }: any) {
   );
 }
 
-const inputClass = (hasErr) => cn(
+const inputClass = (hasErr: any) => cn(
   'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
   hasErr
     ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'
@@ -656,7 +656,7 @@ const inputClass = (hasErr) => cn(
 
 // Re-center the focused field on phones — iOS often hides it behind the
 // virtual keyboard otherwise.
-const focusCenter = (e) => {
+const focusCenter = (e: any) => {
   setTimeout(() => {
     try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
     catch { /* older Safari */ }

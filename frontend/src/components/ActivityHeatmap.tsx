@@ -24,7 +24,7 @@ export default function ActivityHeatmap({ weeks = 14 }: any) {
     return { cols: buildHeatmap(weeks, map), streaks: computeStreaks(map) };
   }, [weeks]);
 
-  const fmt = (date) =>
+  const fmt = (date: any) =>
     new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
       month: 'short',
       day: 'numeric',
@@ -52,9 +52,9 @@ export default function ActivityHeatmap({ weeks = 14 }: any) {
         {/* Heatmap grid */}
         <div className="flex flex-1 flex-col items-end gap-2 overflow-x-auto">
           <div className="flex gap-[3px]">
-            {cols.map((col, ci) => (
+            {cols.map((col: any, ci: any) => (
               <div key={ci} className="flex flex-col gap-[3px]">
-                {col.map((cell, ri) =>
+                {col.map((cell: any, ri: any) =>
                   cell ? (
                     <Tooltip.Root key={cell.key}>
                       <Tooltip.Trigger asChild>
@@ -86,7 +86,7 @@ export default function ActivityHeatmap({ weeks = 14 }: any) {
           </div>
           <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted">
             <span>{lang === 'ru' ? 'Меньше' : 'Less'}</span>
-            {INTENSITY_CLASS.map((c, i) => (
+            {INTENSITY_CLASS.map((c: any, i: any) => (
               <span
                 key={i}
                 className={cn('h-2.5 w-2.5 rounded-[2px] ring-1 ring-rule/15 dark:ring-rule/20', c)}

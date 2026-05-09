@@ -35,15 +35,15 @@ function MainNavLink({ to, end, onClose, icon: Icon, children }: any) {
 // interview grade. Grade is still surfaced inside the dashboard hero.
 
 export default function Sidebar() {
-  const sidebarOpen = usePrefs((s) => s.sidebarOpen);
-  const setSidebarOpen = usePrefs((s) => s.setSidebarOpen);
+  const sidebarOpen = usePrefs((s: any) => s.sidebarOpen);
+  const setSidebarOpen = usePrefs((s: any) => s.setSidebarOpen);
 
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle } = useContent(lang);
 
   const { data: topics = [] } = useTopics();
-  const platform = usePrefs((s) => s.platform);
+  const platform = usePrefs((s: any) => s.platform);
 
   // Sidebar always shows every stack with its own progress so the user can
   // size up the whole catalog at a glance. The active stack only controls
@@ -64,10 +64,10 @@ export default function Sidebar() {
   // Default-expand the platform that's currently selected; when 'all', open
   // the first non-empty group so the user always sees something on first paint.
   const [expanded, setExpanded] = useState<any>({});
-  const expandedFor = (key) => {
+  const expandedFor = (key: any) => {
     if (key in expanded) return expanded[key];
     if (platform !== 'all') return platform === key;
-    return key === PLATFORM_GROUPS.find((g) => topics.some((t) => topicPlatform(t) === g.key))?.key;
+    return key === PLATFORM_GROUPS.find((g: any) => topics.some((t: any) => topicPlatform(t) === g.key))?.key;
   };
 
   // Top progress block: when a specific stack is active we report just that
@@ -76,12 +76,12 @@ export default function Sidebar() {
     () => filterTopicsByPlatform(topics, platform),
     [topics, platform],
   );
-  const total = scopedTopics.reduce((s, tp) => s + (tp.question_count || 0), 0);
-  const completed = scopedTopics.reduce((s, tp) => s + (tp.completed_count || 0), 0);
+  const total = scopedTopics.reduce((s: any, tp: any) => s + (tp.question_count || 0), 0);
+  const completed = scopedTopics.reduce((s: any, tp: any) => s + (tp.completed_count || 0), 0);
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const overallLabel = platform === 'all'
     ? t.overallProgress
-    : `${t.overallProgress} · ${t[PLATFORM_GROUPS.find((g) => g.key === platform)?.labelKey] || ''}`;
+    : `${t.overallProgress} · ${t[PLATFORM_GROUPS.find((g: any) => g.key === platform)?.labelKey] || ''}`;
 
   const isCompact = useIsCompact();
   const close = () => { tapLight(); setSidebarOpen(false); };
@@ -89,7 +89,7 @@ export default function Sidebar() {
   // Pointer-driven drag to close — committed when the user pulls the drawer
   // > 80px to the left or flicks it. Below threshold it springs back.
   // Disabled at lg+ since the drawer is static (always visible).
-  const onDragEnd = (_, info) => {
+  const onDragEnd = (_: any, info: any) => {
     if (info.offset.x < -80 || info.velocity.x < -300) close();
   };
 
@@ -217,8 +217,8 @@ export default function Sidebar() {
 
           <div className="my-3 mx-5 h-px bg-rule/10" />
 
-          {PLATFORM_GROUPS.map((group) => {
-            const items = topics.filter((tp) => topicPlatform(tp) === group.key);
+          {PLATFORM_GROUPS.map((group: any) => {
+            const items = topics.filter((tp: any) => topicPlatform(tp) === group.key);
             if (!items.length) return null;
             const isOpen = expandedFor(group.key);
             const groupRow = groupStats.get(group.key) || { total: 0, completed: 0 };
@@ -229,9 +229,9 @@ export default function Sidebar() {
               <div key={group.key} className="mb-0.5">
                 <button
                   type="button"
-                  onClick={(ev) => {
+                  onClick={(ev: any) => {
                     ev.stopPropagation();
-                    setExpanded((e) => ({ ...e, [group.key]: !isOpen }));
+                    setExpanded((e: any) => ({ ...e, [group.key]: !isOpen }));
                   }}
                   aria-expanded={isOpen}
                   className="mx-2 flex w-[calc(100%-1rem)] flex-col gap-1.5 rounded-xl px-3 py-2 text-left transition-all duration-200 hover:bg-rule/8"
@@ -273,7 +273,7 @@ export default function Sidebar() {
 
                 {isOpen && (
                   <ul className="ml-2 space-y-px py-1">
-                    {items.map((topic) => {
+                    {items.map((topic: any) => {
                       const tPct = topic.question_count > 0
                         ? Math.round((topic.completed_count / topic.question_count) * 100)
                         : 0;

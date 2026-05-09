@@ -36,8 +36,8 @@ function safeRedirect(target) {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const setSession = useAuth((s) => s.setSession);
-  const markSynced = useAuth((s) => s.markSynced);
+  const setSession = useAuth((s: any) => s.setSession);
+  const markSynced = useAuth((s: any) => s.markSynced);
   const qc = useQueryClient();
   const { lang } = useLang();
   const isRu = lang === 'ru';
@@ -49,9 +49,9 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const T = useLoginCopy(lang);
-  const errLabel = (key) => (key ? T.errors[key] || key : null);
+  const errLabel = (key: any) => (key ? T.errors[key] || key : null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (submitting) return;
     setErrors({});
@@ -149,8 +149,8 @@ export default function LoginPage() {
                 spellCheck={false}
                 autoCapitalize="none"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={(e) => {
+                onChange={(e: any) => setEmail(e.target.value)}
+                onFocus={(e: any) => {
                   setTimeout(() => {
                     try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                     catch { /* older Safari */ }
@@ -169,7 +169,7 @@ export default function LoginPage() {
               trailing={(
                 <button
                   type="button"
-                  onClick={() => setShowPwd((v) => !v)}
+                  onClick={() => setShowPwd((v: any) => !v)}
                   className="font-mono text-[10px] uppercase tracking-wider text-muted hover:text-ink"
                   aria-label={showPwd ? T.hidePwd : T.showPwd}
                 >
@@ -184,8 +184,8 @@ export default function LoginPage() {
                 spellCheck={false}
                 autoCapitalize="off"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={(e) => {
+                onChange={(e: any) => setPassword(e.target.value)}
+                onFocus={(e: any) => {
                   setTimeout(() => {
                     try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                     catch { /* older Safari */ }
@@ -250,7 +250,7 @@ function Field({ label, icon, error, trailing, children }: any) {
   );
 }
 
-const inputClass = (hasErr) => cn(
+const inputClass = (hasErr: any) => cn(
   'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
   hasErr
     ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'

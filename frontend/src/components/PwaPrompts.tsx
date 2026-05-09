@@ -41,7 +41,7 @@ const isIOS = () =>
   && /iP(ad|hone|od)/.test(navigator.userAgent)
   && !(window as Window & { MSStream?: unknown }).MSStream;
 
-const dismissedRecently = (key) => {
+const dismissedRecently = (key: any) => {
   if (typeof localStorage === 'undefined') return false;
   const v = localStorage.getItem(key);
   if (!v) return false;
@@ -50,7 +50,7 @@ const dismissedRecently = (key) => {
   return Date.now() - ts < DISMISS_DAYS * 24 * 60 * 60 * 1000;
 };
 
-const persistDismiss = (key) => {
+const persistDismiss = (key: any) => {
   try { localStorage.setItem(key, String(Date.now())); } catch { /* quota */ }
 };
 
@@ -148,7 +148,7 @@ export default function PwaPrompts() {
     if (isStandalone()) return;
     if (dismissedRecently(STORAGE.installDismissed)) return;
 
-    const onPrompt = (e) => {
+    const onPrompt = (e: any) => {
       e.preventDefault();
       installEvent.current = e;
       // Hold the prompt back until the user has shown some intent —

@@ -8,8 +8,8 @@ import { cn } from '../lib/cn';
 export default function PlatformFilter({ className, hideLabel = false }: any) {
   const { lang } = useLang();
   const t = useT(lang);
-  const platform = usePrefs((s) => s.platform);
-  const setPlatform = usePrefs((s) => s.setPlatform);
+  const platform = usePrefs((s: any) => s.platform);
+  const setPlatform = usePrefs((s: any) => s.setPlatform);
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
@@ -22,7 +22,7 @@ export default function PlatformFilter({ className, hideLabel = false }: any) {
         aria-label={t.platformLabel}
         className="-mx-1 flex flex-wrap gap-1 overflow-x-auto px-1 sm:flex-nowrap"
       >
-        {PLATFORMS.map((p) => {
+        {PLATFORMS.map((p: any) => {
           const active = platform === p.key;
           return (
             <button
