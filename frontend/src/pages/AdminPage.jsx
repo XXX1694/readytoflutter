@@ -6,14 +6,14 @@ import {
 import { toast } from 'sonner';
 import { useTopics, useQuestions } from '../lib/queries';
 import { useAdmin, applyDiff, statusOf } from '../store/admin';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
 import {
   exportStaticDataJson,
   exportTopicJson,
   nextQuestionId,
 } from '../lib/exportData';
-import { Button, Pill, FullPageLoader, Eyebrow } from '../ui/index.js';
+import { Button, Pill, FullPageLoader, Eyebrow } from '../ui/index';
 import { cn } from '../lib/cn';
 import { aiDraftQuestion } from '../api/api';
 import { useAiHealth } from '../components/AnswerGrader.jsx';

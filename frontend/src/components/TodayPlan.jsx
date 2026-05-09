@@ -6,9 +6,9 @@ import {
 import { useQuestions, useTopics } from '../lib/queries';
 import { getCardState } from '../lib/srs';
 import { computeStreaks } from '../lib/activity';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useContent } from '../i18n/content.js';
-import { Button, Eyebrow, Pill } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { useContent } from '../i18n/content';
+import { Button, Eyebrow, Pill } from '../ui/index';
 import { cn } from '../lib/cn';
 import { usePrefs } from '../store/prefs';
 import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform';

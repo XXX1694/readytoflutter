@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Smartphone, X } from 'lucide-react';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
 import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
-import { Button, Eyebrow } from '../ui/index.js';
+import { Button, Eyebrow } from '../ui/index';
 import { cn } from '../lib/cn';
 
 // One-time onboarding gate. Independent from the welcome tour gate so that

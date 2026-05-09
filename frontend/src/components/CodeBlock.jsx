@@ -3,7 +3,7 @@ import { Copy, Check, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { highlightCode } from '../lib/highlighter';
 import { usePrefs } from '../store/prefs';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
 export default function CodeBlock({ code, language = 'dart', className }) {

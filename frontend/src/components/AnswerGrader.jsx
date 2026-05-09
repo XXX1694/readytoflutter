@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Sparkles, Loader2, AlertCircle, Check, X, ChevronRight, MessagesSquare, Zap,
 } from 'lucide-react';
-import { Button, Pill } from '../ui/index.js';
+import { Button, Pill } from '../ui/index';
 import { aiHealth, aiGradeAnswer } from '../api/api';
 import { track } from '../lib/analytics';
 

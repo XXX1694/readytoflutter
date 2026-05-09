@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ClipboardCopy, Check, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTopic } from '../lib/queries';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
-import { useContent } from '../i18n/content.js';
-import { FullPageLoader } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
+import { useContent } from '../i18n/content';
+import { FullPageLoader } from '../ui/index';
 import { extractHint, shortenCode } from '../lib/hint';
 
 /**

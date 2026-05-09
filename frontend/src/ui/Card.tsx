@@ -1,22 +1,16 @@
-import { forwardRef } from 'react';
-import { cva } from 'class-variance-authority';
+import { forwardRef, type HTMLAttributes, type ElementType } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/cn';
 
-/**
- * Atlas Card — soft border + layered shadow + bigger radius. Variant names
- * preserved from old Codex set.
- */
 const card = cva(
   ['relative transition-all duration-200 ease-out'],
   {
     variants: {
       variant: {
-        // Atlas signature — soft elevation, gentle hover lift
         codex: [
           'bg-paper-2 border border-rule/10 rounded-2xl',
           'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
         ],
-        // Interactive — bigger lift + hairline brand glow on hover
         codexInteractive: [
           'bg-paper-2 border border-rule/10 rounded-2xl cursor-pointer text-left',
           'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
@@ -25,13 +19,9 @@ const card = cva(
           'active:translate-y-0',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
         ],
-        // Soft — same Atlas look but no shadow (for dense lists)
         soft: ['bg-paper-2 border border-rule/10 rounded-xl'],
-        // Quiet — flat, even quieter border (for nested rows inside cards)
         quiet: ['bg-paper-2 border border-rule/8 rounded-xl'],
-        // Outlined — transparent fill
         outline: ['bg-transparent border border-rule/15 rounded-xl'],
-        // Glass — translucent with backdrop blur (use over aurora bg)
         glass: [
           'rounded-2xl glass',
           'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.08)]',
@@ -51,8 +41,26 @@ const card = cva(
   },
 );
 
-const Card = forwardRef(function Card({ className, variant, padding, as: Comp = 'div', ...props }, ref) {
-  return <Comp ref={ref} className={cn(card({ variant, padding }), className)} {...props} />;
+export type CardVariantProps = VariantProps<typeof card>;
+
+export interface CardProps
+  extends HTMLAttributes<HTMLElement>,
+    CardVariantProps {
+  as?: ElementType;
+}
+
+const Card = forwardRef<HTMLElement, CardProps>(function Card(
+  { className, variant, padding, as: Comp = 'div', ...props },
+  ref,
+) {
+  const Component = Comp as ElementType;
+  return (
+    <Component
+      ref={ref}
+      className={cn(card({ variant, padding }), className)}
+      {...props}
+    />
+  );
 });
 
 export { Card, card as cardVariants };

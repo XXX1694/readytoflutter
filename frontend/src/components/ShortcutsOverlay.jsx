@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Keyboard, X } from 'lucide-react';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);

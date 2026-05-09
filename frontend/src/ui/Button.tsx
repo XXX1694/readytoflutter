@@ -1,5 +1,5 @@
-import { forwardRef } from 'react';
-import { cva } from 'class-variance-authority';
+import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/cn';
 
 /**
@@ -18,14 +18,12 @@ const button = cva(
   {
     variants: {
       variant: {
-        // Atlas signature primary — solid invert (ink on light, paper on dark)
         codex: [
           'bg-ink text-paper rounded-xl',
           'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.20),0_4px_12px_-2px_rgb(var(--shadow)/0.18)]',
           'hover:-translate-y-px hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.20),0_12px_24px_-4px_rgb(var(--shadow)/0.24)]',
           'active:translate-y-0 active:shadow-[0_1px_2px_0_rgb(var(--shadow)/0.20)]',
         ],
-        // Brand-filled — indigo glow on hover
         brand: [
           'text-white rounded-xl',
           'bg-gradient-to-br from-brand to-brand-ink',
@@ -33,19 +31,16 @@ const button = cva(
           'hover:-translate-y-px hover:shadow-[0_2px_4px_0_rgb(var(--brand)/0.40),0_16px_32px_-6px_rgb(var(--brand)/0.50)]',
           'active:translate-y-0',
         ],
-        // Subtle outline — secondary actions
         outline: [
           'bg-paper-2 text-ink rounded-xl border border-rule/15',
           'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04)]',
           'hover:bg-paper-2 hover:border-rule/30 hover:-translate-y-px',
           'active:translate-y-0',
         ],
-        // Quiet — for navigation, dense controls
         ghost: [
           'bg-transparent text-ink-2 rounded-xl',
           'hover:bg-rule/8 hover:text-ink',
         ],
-        // Link-style
         link: [
           'bg-transparent text-brand underline-offset-4 hover:underline rounded-sm p-0',
         ],
@@ -66,12 +61,30 @@ const button = cva(
   },
 );
 
-const Button = forwardRef(function Button(
+export type ButtonVariantProps = VariantProps<typeof button>;
+
+export interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
+    ButtonVariantProps {
+  asChild?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { className, variant, size, asChild = false, ...props },
   ref,
 ) {
-  const Comp = asChild ? 'span' : 'button';
-  return <Comp ref={ref} className={cn(button({ variant, size }), className)} {...props} />;
+  if (asChild) {
+    // When asChild, render as <span> so the parent (often <Link>) controls
+    // the actual element. Drop button-only attrs that <span> doesn't take.
+    return (
+      <span
+        ref={ref as unknown as React.Ref<HTMLSpanElement>}
+        className={cn(button({ variant, size }), className)}
+        {...(props as React.HTMLAttributes<HTMLSpanElement>)}
+      />
+    );
+  }
+  return <button ref={ref} className={cn(button({ variant, size }), className)} {...props} />;
 });
 
 export { Button, button as buttonVariants };

@@ -1,8 +1,8 @@
-import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
 import { usePrefs } from '../store/prefs';
 import { PLATFORMS } from '../lib/platform';
-import { Eyebrow } from '../ui/index.js';
+import { Eyebrow } from '../ui/index';
 import { cn } from '../lib/cn';
 
 export default function PlatformFilter({ className, hideLabel = false }) {

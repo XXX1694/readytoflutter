@@ -40,7 +40,7 @@ export const UI = {
     progressReset: 'Progress reset',
     offline: 'Offline',
     offlineHint: 'Offline — writes are local',
-    topicCount: (n) => `${n} topic${n !== 1 ? 's' : ''}`,
+    topicCount: (n: number) => `${n} topic${n !== 1 ? 's' : ''}`,
     completedOf: 'completed',
 
     // Level labels
@@ -61,8 +61,8 @@ export const UI = {
 
     // SearchPage
     searchHeading: 'Search:',
-    resultCount: (n) => `${n} result${n !== 1 ? 's' : ''}`,
-    noResultsFor: (q) => `Nothing found for “${q}”`,
+    resultCount: (n: number) => `${n} result${n !== 1 ? 's' : ''}`,
+    noResultsFor: (q: { id: number }) => `Nothing found for “${q}”`,
     tryDifferentKeywords: 'Try different words or loosen the filters',
     filterByLevel: 'Filter by level',
     filterByDifficulty: 'Filter by difficulty',
@@ -138,7 +138,7 @@ export const UI = {
     stackPickerTitle: 'Which stack are you preparing for?',
     stackPickerSubtitle: 'Pick one to focus the catalog. You can switch any time from the dashboard or Cmd+K.',
     stackPickerLater: 'Decide later',
-    stackPickerCount: (n) => `${n} topic${n === 1 ? '' : 's'}`,
+    stackPickerCount: (n: number) => `${n} topic${n === 1 ? '' : 's'}`,
     platformDescAll: 'See every topic across every stack — good for browsing.',
     platformDescFlutter: 'Flutter & Dart — widgets, state, async, navigation, internals.',
     platformDescIos: 'Swift, SwiftUI, UIKit, Combine, iOS architecture & performance.',
@@ -193,7 +193,7 @@ export const UI = {
     progressReset: 'Прогресс сброшен',
     offline: 'Офлайн',
     offlineHint: 'Нет сети — пишем локально',
-    topicCount: (n) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
+    topicCount: (n: number) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
     completedOf: 'пройдено',
 
     // Level labels
@@ -214,8 +214,8 @@ export const UI = {
 
     // SearchPage
     searchHeading: 'Поиск:',
-    resultCount: (n) => `${n} ${n === 1 ? 'результат' : n < 5 ? 'результата' : 'результатов'}`,
-    noResultsFor: (q) => `Ничего по запросу «${q}»`,
+    resultCount: (n: number) => `${n} ${n === 1 ? 'результат' : n < 5 ? 'результата' : 'результатов'}`,
+    noResultsFor: (q: { id: number }) => `Ничего по запросу «${q}»`,
     tryDifferentKeywords: 'Попробуй другие слова или сними фильтры',
     filterByLevel: 'Фильтр по уровню',
     filterByDifficulty: 'Фильтр по сложности',
@@ -291,7 +291,7 @@ export const UI = {
     stackPickerTitle: 'Какой стек готовишь?',
     stackPickerSubtitle: 'Выбери один — каталог свернётся под него. Поменять можно в любой момент с дашборда или из Cmd+K.',
     stackPickerLater: 'Позже',
-    stackPickerCount: (n) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
+    stackPickerCount: (n: number) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
     platformDescAll: 'Все темы по всем стекам — для общего обзора.',
     platformDescFlutter: 'Flutter и Dart — виджеты, состояние, async, навигация, внутренности.',
     platformDescIos: 'Swift, SwiftUI, UIKit, Combine, архитектура и перформанс iOS.',
@@ -306,4 +306,6 @@ export const UI = {
   },
 };
 
-export const useT = (lang) => UI[lang] || UI.en;
+export type UICopy = typeof UI.en;
+
+export const useT = (lang: 'en' | 'ru'): UICopy => (UI[lang] || UI.en) as UICopy;

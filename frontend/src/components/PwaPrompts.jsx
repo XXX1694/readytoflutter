@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Download, X, Share2, RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 
 /**
  * PWA install + update prompts.

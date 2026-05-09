@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
-import { useLang } from '../i18n/LangContext.jsx';
-import { Button, Eyebrow, Pill } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { Button, Eyebrow, Pill } from '../ui/index';
 import {
   adminGetStats, adminListUsers, adminPatchUser,
   adminListContact, adminPatchContact,

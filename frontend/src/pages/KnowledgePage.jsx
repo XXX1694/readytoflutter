@@ -6,7 +6,7 @@ import {
   CircleDot, X, Sparkles, Play, History, Trash2, ListVideo, Tv,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 import {
   loadResources, filterResources, countByCategory,
   toggleSaved, markVisited, getSavedIds, getVisitedIds,
@@ -16,7 +16,7 @@ import {
   getRecentlyWatched, clearRecentlyWatched, pushRecentlyWatched,
 } from '../lib/youtube';
 import VideoPlayer from '../components/VideoPlayer.jsx';
-import { Button, Pill, FullPageLoader } from '../ui/index.js';
+import { Button, Pill, FullPageLoader } from '../ui/index';
 import { cn } from '../lib/cn';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet.jsx';

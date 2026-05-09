@@ -13,9 +13,9 @@ import {
   serializeLocalProgress,
 } from '../api/api';
 import { track, identify } from '../lib/analytics';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useSignupCopy } from '../i18n/signupPage.js';
-import { Button, Eyebrow } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { useSignupCopy } from '../i18n/signupPage';
+import { Button, Eyebrow } from '../ui/index';
 import { cn } from '../lib/cn';
 
 const schema = z.object({

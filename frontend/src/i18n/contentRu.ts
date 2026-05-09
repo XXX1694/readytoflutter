@@ -1,7 +1,17 @@
 // Russian translations for topics and questions
 // Questions without a translation fall back to English automatically.
 
-export const TOPICS_RU = {
+interface TopicTranslation {
+  title: string;
+  description: string;
+}
+
+interface QuestionTranslation {
+  question: string;
+  answer: string;
+}
+
+export const TOPICS_RU: Record<number, TopicTranslation> = {
   1:  { title: 'Основы Dart', description: 'Переменные, типы, функции, null safety и базовый синтаксис Dart' },
   2:  { title: 'ООП в Dart', description: 'Классы, наследование, интерфейсы, примеси и абстрактные классы' },
   3:  { title: 'Основы Flutter', description: 'Дерево виджетов, StatelessWidget, StatefulWidget, BuildContext' },
@@ -65,7 +75,7 @@ export const TOPICS_RU = {
   53: { title: 'CI/CD мобилки', description: 'Fastlane, GitHub Actions, подпись, TestFlight, Play Internal, build flavors' },
 };
 
-export const QUESTIONS_RU = {
+export const QUESTIONS_RU: Record<number, QuestionTranslation> = {
   // ── Dart Basics (topic 1) ──────────────────────────────────────────────────
   1: {
     question: 'Что такое null safety в Dart и чем отличаются nullable и non-nullable типы?',

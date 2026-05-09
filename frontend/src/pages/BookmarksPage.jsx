@@ -4,9 +4,9 @@ import { ArrowLeft, BookmarkX, Bookmark, Brain, Target, Star, ArrowRight } from 
 import { useQuestions, useTopics } from '../lib/queries';
 import { useBookmarkIds } from '../lib/useBookmark';
 import { clearAllBookmarks } from '../lib/bookmarks';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
-import { Button, Skeleton } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
+import { Button, Skeleton } from '../ui/index';
 import QuestionCard from '../components/QuestionCard.jsx';
 import PlatformFilter from '../components/PlatformFilter.jsx';
 import { usePrefs } from '../store/prefs';

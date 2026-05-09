@@ -21,7 +21,7 @@ const RU = {
   haveAccount: 'Уже есть аккаунт?',
   toLogin: 'Войти',
   syncEyebrow: 'Синхронизация',
-  syncTitle: (n) => `Импортировать ${n} ${n === 1 ? 'карточку' : n < 5 ? 'карточки' : 'карточек'}?`,
+  syncTitle: (n: number) => `Импортировать ${n} ${n === 1 ? 'карточку' : n < 5 ? 'карточки' : 'карточек'}?`,
   syncSubtitle: 'У тебя есть прогресс в этом браузере. Перенести на сервер? Локальная копия очистится после успешного импорта.',
   syncConfirm: 'Импортировать',
   syncing: 'Импортирую…',
@@ -55,7 +55,7 @@ const EN = {
   haveAccount: 'Already have an account?',
   toLogin: 'Sign in',
   syncEyebrow: 'Sync',
-  syncTitle: (n) => `Import ${n} ${n === 1 ? 'card' : 'cards'}?`,
+  syncTitle: (n: number) => `Import ${n} ${n === 1 ? 'card' : 'cards'}?`,
   syncSubtitle: 'You have local progress in this browser. Push it to the server? Local copy is cleared after a successful import.',
   syncConfirm: 'Import',
   syncing: 'Importing…',
@@ -70,6 +70,8 @@ const EN = {
   },
 };
 
-export const signupCopy = { ru: RU, en: EN };
+export type SignupCopy = typeof EN;
 
-export const useSignupCopy = (lang) => (lang === 'ru' ? RU : EN);
+export const signupCopy: { ru: SignupCopy; en: SignupCopy } = { ru: RU, en: EN };
+
+export const useSignupCopy = (lang: 'en' | 'ru'): SignupCopy => (lang === 'ru' ? RU : EN);

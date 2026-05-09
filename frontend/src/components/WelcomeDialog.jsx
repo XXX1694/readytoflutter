@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Command, Brain, Target, ArrowRight, X, Bookmark, TrendingUp } from 'lucide-react';
-import { useLang } from '../i18n/LangContext.jsx';
-import { Button, Pill } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { Button, Pill } from '../ui/index';
 import { cn } from '../lib/cn';
 
 const STORAGE_KEY = 'rtf:welcome:v1';

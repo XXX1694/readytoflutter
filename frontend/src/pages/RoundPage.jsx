@@ -8,10 +8,10 @@ import {
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTopic } from '../lib/queries';
 import { buildRound, chainConcepts } from '../lib/roundBuilder';
-import { useLang } from '../i18n/LangContext.jsx';
-import { useT } from '../i18n/ui.js';
-import { useContent } from '../i18n/content.js';
-import { Button, Pill, ProgressBar, Eyebrow, FullPageLoader, difficultyTone } from '../ui/index.js';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
+import { useContent } from '../i18n/content';
+import { Button, Pill, ProgressBar, Eyebrow, FullPageLoader, difficultyTone } from '../ui/index';
 import AnswerText from '../components/AnswerText.jsx';
 import CodeBlock from '../components/CodeBlock.jsx';
 import AnswerGrader, { useAiHealth } from '../components/AnswerGrader.jsx';

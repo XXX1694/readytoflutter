@@ -5,16 +5,26 @@ const TONES = {
   mint:     'bg-mint',
   amber:    'bg-[rgb(var(--amber))]',
   ink:      'bg-ink',
-  // Atlas signature gradient — indigo → violet, with a soft inner highlight
   gradient: 'bg-gradient-to-r from-brand to-brand-sky shadow-[inset_0_0_0_1px_rgb(255_255_255/0.10)]',
-};
+} as const;
 
 const SIZES = {
   xs: 'h-1',
   sm: 'h-1.5',
   md: 'h-2',
   lg: 'h-2.5',
-};
+} as const;
+
+export interface ProgressBarProps {
+  value?: number;
+  max?: number;
+  tone?: keyof typeof TONES;
+  size?: keyof typeof SIZES;
+  showLabel?: boolean;
+  className?: string;
+  trackClassName?: string;
+  label?: string;
+}
 
 export function ProgressBar({
   value = 0,
@@ -25,7 +35,7 @@ export function ProgressBar({
   className,
   trackClassName,
   label,
-}) {
+}: ProgressBarProps) {
   const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((value / max) * 100))) : 0;
   return (
     <div className={cn('w-full', className)}>

@@ -11,9 +11,9 @@ import { useAuth } from '../store/auth';
 import {
   authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
 } from '../api/api';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 import { usePrefs } from '../store/prefs';
-import { Button, Eyebrow } from '../ui/index.js';
+import { Button, Eyebrow } from '../ui/index';
 import { cn } from '../lib/cn';
 
 export default function SettingsPage() {

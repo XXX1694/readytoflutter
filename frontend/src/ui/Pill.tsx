@@ -1,6 +1,8 @@
-import { forwardRef } from 'react';
-import { cva } from 'class-variance-authority';
+import { forwardRef, type HTMLAttributes } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/cn';
+
+import type { Level, Difficulty, ProgressStatus } from '../types/domain';
 
 /**
  * Atlas Pill — soft tinted background, no border by default. Replaces the
@@ -44,24 +46,34 @@ const pill = cva(
   },
 );
 
-const Pill = forwardRef(function Pill({ className, tone, size, shape, ...props }, ref) {
+export type PillVariantProps = VariantProps<typeof pill>;
+export type PillTone = NonNullable<PillVariantProps['tone']>;
+
+export interface PillProps
+  extends HTMLAttributes<HTMLSpanElement>,
+    PillVariantProps {}
+
+const Pill = forwardRef<HTMLSpanElement, PillProps>(function Pill(
+  { className, tone, size, shape, ...props },
+  ref,
+) {
   return <span ref={ref} className={cn(pill({ tone, size, shape }), className)} {...props} />;
 });
 
 // Convenience helpers — semantic mapping for level + difficulty
-export const levelTone = {
+export const levelTone: Record<Level, PillTone> = {
   junior: 'brand',
   mid: 'plum',
   senior: 'ink',
 };
 
-export const difficultyTone = {
+export const difficultyTone: Record<Difficulty, PillTone> = {
   easy: 'mint',
   medium: 'amber',
   hard: 'coral',
 };
 
-export const statusTone = {
+export const statusTone: Record<ProgressStatus, PillTone> = {
   not_started: 'ghost',
   in_progress: 'amber',
   completed: 'mint',

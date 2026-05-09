@@ -1,12 +1,21 @@
+import type { ReactNode } from 'react';
 import { cn } from '../lib/cn';
+
+export type EyebrowAccent = 'brand' | 'mint' | 'amber' | 'ink' | 'muted';
+
+export interface EyebrowProps {
+  index?: number | string; // legacy prop, kept for backwards compat — ignored
+  children: ReactNode;
+  className?: string;
+  accent?: EyebrowAccent;
+  dot?: boolean;
+}
 
 /**
  * Atlas eyebrow — small uppercase mono label with an optional dot accent.
- * Drops the numeric "01/" prefix; replaces it with a colored dot for a
- * cleaner modern feel. (Index prop kept for backwards compat — ignored.)
  */
-export function Eyebrow({ index, children, className, accent = 'brand', dot = true }) {
-  const DOT = {
+export function Eyebrow({ children, className, accent = 'brand', dot = true }: EyebrowProps) {
+  const DOT: Record<EyebrowAccent, string> = {
     brand: 'bg-brand',
     mint:  'bg-mint',
     amber: 'bg-[rgb(var(--amber))]',

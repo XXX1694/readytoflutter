@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { buildHeatmap, computeStreaks, buildDayMap, intensity } from '../lib/activity';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
 // Atlas: aurora-ramp from rule-faint to brand-glow, with brand-sky on the

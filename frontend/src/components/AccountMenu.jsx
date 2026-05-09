@@ -10,7 +10,7 @@ import {
   readLocalProgress, clearLocalProgress, apiBaseUrl,
 } from '../api/api';
 import { track, resetIdentity } from '../lib/analytics';
-import { useLang } from '../i18n/LangContext.jsx';
+import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
 const initialsOf = (user) => {
