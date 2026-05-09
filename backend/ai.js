@@ -18,6 +18,7 @@ const rateLimit = require('express-rate-limit');
 const { z } = require('zod');
 const db = require('./database');
 const auth = require('./auth');
+const { TIER_LIMITS } = require('./config');
 
 // Lazy + tolerant of the package being missing — keeps the server bootable
 // when the dependency hasn't been npm-installed yet.
@@ -151,6 +152,31 @@ async function gradeHandler(req, res) {
     return res.status(404).json({ error: 'Question not found', code: 'not_found' });
   }
 
+  // Tier-based daily quota. Pro / lifetime users skip the count entirely.
+  // Free signed-in users get FREE_AI_GRADES_PER_DAY; anonymous visitors get
+  // a tighter ANON_AI_GRADES_PER_DAY so the endpoint isn't a free LLM bot.
+  const fullUser = req.user ? db.getUserById(req.user.id) : null;
+  const isPro = db.isUserPro(fullUser);
+  if (!isPro) {
+    const cap = req.user ? TIER_LIMITS.FREE_AI_GRADES_PER_DAY : TIER_LIMITS.ANON_AI_GRADES_PER_DAY;
+    const used = db.aiGradeCountLast24h({
+      userId: req.user?.id || null,
+      ip: req.user ? null : req.ip,
+    });
+    if (used >= cap) {
+      return res.status(402).json({
+        error: req.user
+          ? 'Daily AI-grade limit reached on the free plan.'
+          : 'Sign in or upgrade to keep grading today.',
+        code: 'paywall_required',
+        reason: req.user ? 'free_quota_exceeded' : 'anon_quota_exceeded',
+        used,
+        cap,
+        tier: req.user ? (fullUser.pro_tier || 'free') : 'anon',
+      });
+    }
+  }
+
   const startedAt = Date.now();
   try {
     const message = await client.messages.create({
@@ -180,8 +206,11 @@ async function gradeHandler(req, res) {
     }
 
     const usage = message.usage || {};
+    // Quota counter ticks ONLY on a successful grade — failed upstream calls
+    // don't burn the user's daily allowance.
+    db.logAiGrade({ userId: req.user?.id || null, ip: req.user ? null : req.ip });
     console.log(
-      `[ai] grade qid=${questionId} userId=${req.user?.id || 0} `
+      `[ai] grade qid=${questionId} userId=${req.user?.id || 0} tier=${isPro ? 'pro' : 'free'} `
         + `in=${usage.input_tokens || 0} out=${usage.output_tokens || 0} `
         + `cacheR=${usage.cache_read_input_tokens || 0} ms=${Date.now() - startedAt}`,
     );
@@ -298,14 +327,34 @@ async function draftHandler(req, res) {
 }
 
 function attach(app) {
-  app.get('/api/ai/health', (_req, res) => {
+  app.get('/api/ai/health', auth.optionalAuth, (req, res) => {
     // Report why we're disabled so misconfigurations can be diagnosed from
     // a single curl. Never echo the key itself; only whether one is set.
     let reason = null;
     if (!AnthropicCtor) reason = 'sdk_missing';
     else if (!process.env.ANTHROPIC_API_KEY) reason = 'key_missing';
     const enabled = reason === null;
-    res.json({ enabled, reason, model: MODEL, minChars: MIN_USER_ANSWER_CHARS });
+
+    // Quota for the current viewer so the frontend can render "X grades left"
+    // without an extra round-trip. Pro / lifetime users get -1 to signify
+    // unlimited; free / anon get the remaining count for today.
+    const fullUser = req.user ? db.getUserById(req.user.id) : null;
+    const isPro = db.isUserPro(fullUser);
+    let remaining = -1;
+    let cap = -1;
+    if (!isPro) {
+      cap = req.user ? TIER_LIMITS.FREE_AI_GRADES_PER_DAY : TIER_LIMITS.ANON_AI_GRADES_PER_DAY;
+      const used = db.aiGradeCountLast24h({
+        userId: req.user?.id || null,
+        ip: req.user ? null : req.ip,
+      });
+      remaining = Math.max(0, cap - used);
+    }
+    res.json({
+      enabled, reason, model: MODEL, minChars: MIN_USER_ANSWER_CHARS,
+      tier: isPro ? (fullUser?.pro_tier || 'pro') : (req.user ? 'free' : 'anon'),
+      cap, remaining,
+    });
   });
 
   // optionalAuth: we don't require sign-in to grade (the user wants

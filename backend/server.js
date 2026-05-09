@@ -5,6 +5,9 @@ const rateLimit = require('express-rate-limit');
 const db = require('./database');
 const auth = require('./auth');
 const ai = require('./ai');
+const admin = require('./admin');
+const contact = require('./contact');
+const billing = require('./billing');
 const { LIMITS } = require('./config');
 
 db.init();
@@ -59,6 +62,10 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
+// Stripe webhook needs the raw body to verify its signature. Mount the
+// billing module BEFORE the JSON parser so its raw-body route wins.
+billing.attach(app);
+
 app.use(express.json({ limit: '256kb' }));
 
 // Lightweight request id for log correlation.
@@ -104,6 +111,10 @@ auth.attach(app);
 // Mounted regardless of whether ANTHROPIC_API_KEY is set — the /health
 // endpoint reports `enabled: false` and the frontend hides the UI.
 ai.attach(app);
+
+// ── Public contact form + admin inbox (auth-gated) ──────────────────────────
+contact.attach(app);
+admin.attach(app);
 
 // ── Topics (public reads — show personalized progress when authenticated) ───
 app.get('/api/topics', auth.optionalAuth, readLimiter, (req, res) => {

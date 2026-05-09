@@ -17,10 +17,21 @@ const LIMITS = Object.freeze({
 
   MAX_NOTES_LEN: 1000,
   BULK_MAX_ITEMS: 1000,
+
+  // Contact form: max length and a soft per-IP rate cap (5 messages / day).
+  CONTACT_MAX_MESSAGE_LEN: 4000,
+  CONTACT_MAX_PER_IP_PER_DAY: 5,
+});
+
+// Override-friendly tier limits. Pulled from env at boot; defaults match the
+// pricing copy (free: 10/day, pro: unlimited).
+const TIER_LIMITS = Object.freeze({
+  FREE_AI_GRADES_PER_DAY: Number(process.env.FREE_AI_GRADES_PER_DAY) || 10,
+  ANON_AI_GRADES_PER_DAY: Number(process.env.ANON_AI_GRADES_PER_DAY) || 3,
 });
 
 const SECURITY = Object.freeze({
   BCRYPT_ROUNDS: 11,
 });
 
-module.exports = { LIMITS, SECURITY };
+module.exports = { LIMITS, SECURITY, TIER_LIMITS };

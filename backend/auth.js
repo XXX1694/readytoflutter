@@ -75,8 +75,19 @@ const loginSchema = z.object({
 
 const sanitizeUser = (user) => {
   if (!user) return null;
-  const { password_hash, ...rest } = user;
-  return rest;
+  // Strip secrets but keep tier + admin flag — the frontend uses them to gate
+  // /admin and the AI grader paywall. Stripe IDs stay server-side.
+  const {
+    password_hash: _pw,
+    stripe_customer_id: _scid,
+    stripe_subscription_id: _ssid,
+    ...rest
+  } = user;
+  return {
+    ...rest,
+    is_admin: rest.is_admin ? 1 : 0,
+    pro_tier: rest.pro_tier || 'free',
+  };
 };
 
 const signToken = (user) =>
@@ -119,6 +130,15 @@ function optionalAuth(req, res, next) {
     // Treat invalid tokens as anonymous — the frontend will see 401 on the
     // next protected call and clear local state.
   }
+  next();
+}
+
+// Admin-only routes. Stacks on top of requireAuth implicitly: it 401s for
+// anonymous and 403s for authenticated-but-not-admin. Use as the second
+// middleware on any /api/admin/* route.
+function requireAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' });
   next();
 }
 
@@ -263,4 +283,6 @@ module.exports = {
   attach,
   requireAuth,
   optionalAuth,
+  requireAdmin,
+  sanitizeUser,
 };

@@ -151,6 +151,26 @@ function init() {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      name TEXT,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      ip TEXT,
+      created_at TEXT NOT NULL,
+      resolved_at TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ai_grade_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      ip TEXT,
+      created_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_topics_level ON topics(level);
     CREATE INDEX IF NOT EXISTS idx_topics_order ON topics(order_index);
     CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic_id);
@@ -158,6 +178,10 @@ function init() {
     CREATE INDEX IF NOT EXISTS idx_questions_order ON questions(order_index);
     CREATE INDEX IF NOT EXISTS idx_progress_status ON progress(status);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_contact_status ON contact_messages(status);
+    CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_ai_grade_user_time ON ai_grade_log(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_grade_ip_time ON ai_grade_log(ip, created_at);
   `);
 
   sqlite.exec(`
@@ -168,11 +192,46 @@ function init() {
   `);
 
   migrateProgressToUserScoped();
+  migrateUsersBilling();
   seedIfEmpty();
+  bootstrapAdminFromEnv();
   runOnce('remove_general_questions', removeGeneralQuestions);
   runOnce('normalize_existing_questions', normalizeExistingQuestions);
   runOnce('strip_topic_icons', stripTopicIcons);
   runOnce('drop_known_duplicates', dropKnownDuplicates);
+}
+
+// Idempotent: extends `users` with admin + Stripe billing columns. Each
+// ALTER is guarded by a column check so the migration is safe to re-run on
+// a DB that already has some of the columns.
+function migrateUsersBilling() {
+  const cols = sqlite.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+  const adds = [
+    ['is_admin', 'INTEGER NOT NULL DEFAULT 0'],
+    ['pro_tier', "TEXT NOT NULL DEFAULT 'free'"],
+    ['pro_expires_at', 'TEXT'],
+    ['stripe_customer_id', 'TEXT'],
+    ['stripe_subscription_id', 'TEXT'],
+  ];
+  for (const [name, type] of adds) {
+    if (!cols.includes(name)) {
+      sqlite.exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
+    }
+  }
+}
+
+// Promote a single email to admin on boot when ADMIN_BOOTSTRAP_EMAIL is set.
+// Used to seed the very first admin without writing SQL by hand. Safe to
+// re-run: idempotent UPDATE that only touches matching rows.
+function bootstrapAdminFromEnv() {
+  const email = (process.env.ADMIN_BOOTSTRAP_EMAIL || '').trim().toLowerCase();
+  if (!email) return;
+  const result = sqlite
+    .prepare('UPDATE users SET is_admin = 1 WHERE email = ?')
+    .run(email);
+  if (result.changes > 0) {
+    console.log(`👑 Promoted ${email} to admin via ADMIN_BOOTSTRAP_EMAIL`);
+  }
 }
 
 function runOnce(name, fn) {
@@ -544,6 +603,195 @@ function deleteUser(id) {
   sqlite.prepare('DELETE FROM users WHERE id = ?').run(Number(id));
 }
 
+// ── Admin / billing user helpers ────────────────────────────────────────────
+
+function setUserAdmin(id, isAdmin) {
+  const now = new Date().toISOString();
+  sqlite
+    .prepare('UPDATE users SET is_admin = ?, updated_at = ? WHERE id = ?')
+    .run(isAdmin ? 1 : 0, now, Number(id));
+  return getUserById(id);
+}
+
+function setUserProTier(id, { tier, expiresAt = null, stripeCustomerId, stripeSubscriptionId }) {
+  const now = new Date().toISOString();
+  const fields = ['pro_tier = @tier', 'updated_at = @now'];
+  const params = { id: Number(id), tier, now };
+  if (expiresAt !== undefined) { fields.push('pro_expires_at = @expiresAt'); params.expiresAt = expiresAt; }
+  if (stripeCustomerId !== undefined) { fields.push('stripe_customer_id = @stripeCustomerId'); params.stripeCustomerId = stripeCustomerId; }
+  if (stripeSubscriptionId !== undefined) { fields.push('stripe_subscription_id = @stripeSubscriptionId'); params.stripeSubscriptionId = stripeSubscriptionId; }
+  sqlite.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = @id`).run(params);
+  return getUserById(id);
+}
+
+function getUserByStripeCustomerId(customerId) {
+  if (!customerId) return null;
+  return sqlite
+    .prepare('SELECT * FROM users WHERE stripe_customer_id = ?')
+    .get(String(customerId));
+}
+
+// Active pro check: tier !== 'free' AND (no expiry OR expiry in the future).
+// 'lifetime' tier has no expires_at by design, so the second branch matches.
+function isUserPro(user) {
+  if (!user || user.pro_tier === 'free' || !user.pro_tier) return false;
+  if (!user.pro_expires_at) return true;
+  return user.pro_expires_at > new Date().toISOString();
+}
+
+function listUsers({ limit = 50, offset = 0, search = '' } = {}) {
+  const params = { limit: Math.min(Number(limit) || 50, 200), offset: Number(offset) || 0 };
+  let where = '';
+  if (search) {
+    where = 'WHERE LOWER(u.email) LIKE LOWER(@q) OR LOWER(COALESCE(u.name, \'\')) LIKE LOWER(@q)';
+    params.q = `%${search}%`;
+  }
+  const rows = sqlite
+    .prepare(`
+      SELECT
+        u.id, u.email, u.name, u.created_at, u.updated_at,
+        u.is_admin, u.pro_tier, u.pro_expires_at,
+        u.stripe_customer_id, u.stripe_subscription_id,
+        (SELECT COUNT(*) FROM progress p WHERE p.user_id = u.id) AS progress_count,
+        (SELECT MAX(p.updated_at) FROM progress p WHERE p.user_id = u.id) AS last_active_at
+      FROM users u
+      ${where}
+      ORDER BY u.created_at DESC
+      LIMIT @limit OFFSET @offset
+    `)
+    .all(params);
+  const total = sqlite
+    .prepare(`SELECT COUNT(*) AS c FROM users u ${where}`)
+    .get(params).c;
+  return { rows, total };
+}
+
+// Aggregated metrics for the admin dashboard. All numbers are derived from
+// SQLite rows we already maintain — no external analytics dependency.
+function getAdminStats() {
+  const since = (h) => new Date(Date.now() - h * 3600_000).toISOString();
+  const totalUsers = sqlite.prepare('SELECT COUNT(*) AS c FROM users').get().c;
+  const proUsers = sqlite
+    .prepare("SELECT COUNT(*) AS c FROM users WHERE pro_tier != 'free' AND (pro_expires_at IS NULL OR pro_expires_at > ?)")
+    .get(new Date().toISOString()).c;
+  const signups24h = sqlite
+    .prepare('SELECT COUNT(*) AS c FROM users WHERE created_at >= ?')
+    .get(since(24)).c;
+  const signups7d = sqlite
+    .prepare('SELECT COUNT(*) AS c FROM users WHERE created_at >= ?')
+    .get(since(168)).c;
+  const activeUsers7d = sqlite
+    .prepare('SELECT COUNT(DISTINCT user_id) AS c FROM progress WHERE updated_at >= ? AND user_id != 0')
+    .get(since(168)).c;
+  const activeUsers30d = sqlite
+    .prepare('SELECT COUNT(DISTINCT user_id) AS c FROM progress WHERE updated_at >= ? AND user_id != 0')
+    .get(since(720)).c;
+  const totalProgress = sqlite.prepare('SELECT COUNT(*) AS c FROM progress').get().c;
+  const completed = sqlite.prepare("SELECT COUNT(*) AS c FROM progress WHERE status = 'completed'").get().c;
+  const aiGrades24h = sqlite
+    .prepare('SELECT COUNT(*) AS c FROM ai_grade_log WHERE created_at >= ?')
+    .get(since(24)).c;
+  const openContacts = sqlite
+    .prepare("SELECT COUNT(*) AS c FROM contact_messages WHERE status = 'open'")
+    .get().c;
+  return {
+    totalUsers, proUsers, signups24h, signups7d,
+    activeUsers7d, activeUsers30d,
+    totalProgress, completed,
+    aiGrades24h, openContacts,
+    totalQuestions: sqlite.prepare('SELECT COUNT(*) AS c FROM questions').get().c,
+    totalTopics: sqlite.prepare('SELECT COUNT(*) AS c FROM topics').get().c,
+  };
+}
+
+// ── Contact inbox ────────────────────────────────────────────────────────────
+
+function createContactMessage({ userId = null, name = null, email, message, ip = null }) {
+  const now = new Date().toISOString();
+  const info = sqlite
+    .prepare(`
+      INSERT INTO contact_messages (user_id, name, email, message, status, ip, created_at)
+      VALUES (@user_id, @name, @email, @message, 'open', @ip, @created_at)
+    `)
+    .run({
+      user_id: userId ? Number(userId) : null,
+      name: name || null,
+      email: String(email).trim().toLowerCase(),
+      message: String(message).trim(),
+      ip: ip || null,
+      created_at: now,
+    });
+  return getContactMessage(info.lastInsertRowid);
+}
+
+function getContactMessage(id) {
+  return sqlite
+    .prepare('SELECT * FROM contact_messages WHERE id = ?')
+    .get(Number(id));
+}
+
+function listContactMessages({ status = null, limit = 50, offset = 0 } = {}) {
+  const params = { limit: Math.min(Number(limit) || 50, 200), offset: Number(offset) || 0 };
+  let where = '';
+  if (status) { where = 'WHERE status = @status'; params.status = status; }
+  const rows = sqlite
+    .prepare(`
+      SELECT cm.*, u.email AS user_email, u.name AS user_name
+      FROM contact_messages cm
+      LEFT JOIN users u ON u.id = cm.user_id
+      ${where}
+      ORDER BY cm.created_at DESC
+      LIMIT @limit OFFSET @offset
+    `)
+    .all(params);
+  const total = sqlite
+    .prepare(`SELECT COUNT(*) AS c FROM contact_messages ${where}`)
+    .get(params).c;
+  return { rows, total };
+}
+
+function setContactStatus(id, status) {
+  const now = new Date().toISOString();
+  const resolvedAt = status === 'resolved' ? now : null;
+  sqlite
+    .prepare('UPDATE contact_messages SET status = ?, resolved_at = ? WHERE id = ?')
+    .run(status, resolvedAt, Number(id));
+  return getContactMessage(id);
+}
+
+function recentContactsByIp(ip, withinMs) {
+  if (!ip) return 0;
+  const since = new Date(Date.now() - withinMs).toISOString();
+  return sqlite
+    .prepare('SELECT COUNT(*) AS c FROM contact_messages WHERE ip = ? AND created_at >= ?')
+    .get(String(ip), since).c;
+}
+
+// ── AI grade quota ───────────────────────────────────────────────────────────
+
+function logAiGrade({ userId = null, ip = null }) {
+  sqlite
+    .prepare('INSERT INTO ai_grade_log (user_id, ip, created_at) VALUES (?, ?, ?)')
+    .run(userId ? Number(userId) : null, ip || null, new Date().toISOString());
+}
+
+// Counts grades fired in the last 24h by the same identity. Falls back to IP
+// for anonymous users so an unauthed visitor can't loop the endpoint either.
+function aiGradeCountLast24h({ userId = null, ip = null }) {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+  if (userId) {
+    return sqlite
+      .prepare('SELECT COUNT(*) AS c FROM ai_grade_log WHERE user_id = ? AND created_at >= ?')
+      .get(Number(userId), since).c;
+  }
+  if (ip) {
+    return sqlite
+      .prepare('SELECT COUNT(*) AS c FROM ai_grade_log WHERE ip = ? AND created_at >= ? AND user_id IS NULL')
+      .get(String(ip), since).c;
+  }
+  return 0;
+}
+
 // ── Lifecycle ───────────────────────────────────────────────────────────────
 
 function questionExists(questionId) {
@@ -599,4 +847,17 @@ module.exports = {
   updateUserPassword,
   updateUserEmail,
   deleteUser,
+  setUserAdmin,
+  setUserProTier,
+  getUserByStripeCustomerId,
+  isUserPro,
+  listUsers,
+  getAdminStats,
+  createContactMessage,
+  getContactMessage,
+  listContactMessages,
+  setContactStatus,
+  recentContactsByIp,
+  logAiGrade,
+  aiGradeCountLast24h,
 };
