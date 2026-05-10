@@ -108,7 +108,7 @@ function startPreviewServer() {
       resolved = true;
       clearInterval(pollTimer);
       clearTimeout(timeout);
-      resolve(proc);
+      resolve({ proc, basePath: servedPath });
     };
 
     const onChunk = (chunk) => {
@@ -120,8 +120,11 @@ function startPreviewServer() {
       buf = (buf + text).slice(-4096);
       const m = buf.match(/Local:\s+(http:\/\/[^\s/]+(?:\/[^\s]*)?)/i);
       if (m) {
-        // Capture the actual base path Vite serves so the HTTP probe targets
-        // the right URL. Falls back to "/" if no match.
+        // Capture the actual base path Vite serves so the HTTP probe + the
+        // route URLs we navigate to both target the right path. On Pages
+        // builds vite uses base /<repo>/, so a bare /flutter request gets
+        // a "did you mean /<repo>/flutter" stub — which we'd then save as
+        // dist/flutter/index.html. Real bug from CI run #45-46.
         const url = new URL(m[1]);
         servedPath = url.pathname || '/';
         ready();
@@ -175,6 +178,9 @@ function writeHtml(route, html) {
   // unfurls 404.
   let final = html;
   if (SITE_URL) {
+    // Strip the localhost origin AND any base prefix Vite injected during
+    // canonical/og:image construction. We want absolute https URLs that
+    // match the production site.
     final = final.replace(new RegExp(`http://localhost:${PORT}`, 'g'), SITE_URL);
   }
   fs.writeFileSync(path.join(outDir, 'index.html'), final);
@@ -207,7 +213,14 @@ async function main() {
     console.log('   (no SITE_URL / GITHUB_REPOSITORY — canonicals stay on localhost; set SITE_URL for prod)');
   }
 
-  const preview = await startPreviewServer();
+  const { proc: preview, basePath } = await startPreviewServer();
+  // Strip trailing slash so concatenation with route (which starts with /)
+  // doesn't produce a double slash (`//flutter`).
+  const baseNoTrail = basePath.replace(/\/$/, '');
+  if (basePath !== '/') {
+    console.log(`   serving under base ${basePath}`);
+  }
+
   let browser;
   try {
     browser = await puppeteer.launch({
@@ -231,7 +244,13 @@ async function main() {
         while (queue.length > 0) {
           const route = queue.shift();
           if (!route) break;
-          const url = `${HOST}${route}`;
+          // Route is the in-app path (`/`, `/flutter`, etc.). Vite preview
+          // mounts the app under `basePath` (`/<repo>/` on Pages builds),
+          // so we have to prefix the full URL with that base or we'll get
+          // a tiny "did you mean /<repo>/<route>" stub instead of the app.
+          const url = route === '/'
+            ? `${HOST}${basePath}`
+            : `${HOST}${baseNoTrail}${route}`;
           try {
             await page.goto(url, { waitUntil: 'domcontentloaded' });
             await waitForReady(page);
