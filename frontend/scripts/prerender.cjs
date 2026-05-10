@@ -36,8 +36,22 @@ const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const STATIC_DATA = path.join(DIST, 'seed', 'static-data.json');
 const PORT = Number(process.env.PRERENDER_PORT) || 4173;
-const BASE = process.env.PRERENDER_BASE || '';
-const HOST = `http://localhost:${PORT}${BASE}`;
+const HOST = `http://localhost:${PORT}`;
+// Base path Vite serves the app under. MUST mirror the logic in
+// frontend/vite.config.js exactly — otherwise our HTTP requests miss
+// the mount and Vite returns its 201-byte "did you mean ..." stub,
+// which we'd then save as the prerendered HTML (real bug from CI #46).
+function detectBasePath() {
+  if (process.env.VITE_BASE_PATH) return process.env.VITE_BASE_PATH;
+  const repo = process.env.GITHUB_REPOSITORY;
+  if (process.env.GITHUB_ACTIONS && repo && repo.includes('/')) {
+    const name = repo.split('/')[1];
+    return `/${name}/`;
+  }
+  return '/';
+}
+const BASE_PATH = detectBasePath();
+const BASE_NO_TRAIL = BASE_PATH.replace(/\/$/, '');
 // Production site URL substituted into canonical / og:url / og:image links
 // after rendering. Falls back to deriving from GITHUB_REPOSITORY in CI so
 // Pages deploys end up with correct absolute URLs without manual config.
@@ -102,48 +116,36 @@ function startPreviewServer() {
       { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] },
     );
     let resolved = false;
-    let buf = '';
     const ready = () => {
       if (resolved) return;
       resolved = true;
       clearInterval(pollTimer);
       clearTimeout(timeout);
-      resolve({ proc, basePath: servedPath });
+      resolve(proc);
     };
 
-    const onChunk = (chunk) => {
-      const text = chunk.toString();
-      process.stderr.write(`[preview] ${text}`);
-      if (resolved) return;
-      // Keep last 4KB; "Local: http://..." line is well within that and the
-      // bound prevents unbounded growth from Vite's progress chatter.
-      buf = (buf + text).slice(-4096);
-      const m = buf.match(/Local:\s+(http:\/\/[^\s/]+(?:\/[^\s]*)?)/i);
-      if (m) {
-        // Capture the actual base path Vite serves so the HTTP probe + the
-        // route URLs we navigate to both target the right path. On Pages
-        // builds vite uses base /<repo>/, so a bare /flutter request gets
-        // a "did you mean /<repo>/flutter" stub — which we'd then save as
-        // dist/flutter/index.html. Real bug from CI run #45-46.
-        const url = new URL(m[1]);
-        servedPath = url.pathname || '/';
-        ready();
-      }
-    };
-    proc.stdout.on('data', onChunk);
-    proc.stderr.on('data', onChunk);
+    proc.stdout.on('data', (c) => process.stderr.write(`[preview] ${c}`));
+    proc.stderr.on('data', (c) => process.stderr.write(`[preview] ${c}`));
     proc.on('exit', (code) => {
       if (!resolved) reject(new Error(`vite preview exited (code ${code}) before starting`));
     });
 
-    // HTTP probe — fires every 500ms. Tries multiple host/path combos so a
-    // single binding mismatch (IPv6-only resolution, base-path 404) doesn't
-    // sink the readiness signal.
-    let servedPath = '/';
-    const probeOnce = (host, path) => {
+    // Readiness via HTTP probe — fires every 500ms. We probe the BASE_PATH
+    // explicitly (not `/`), because on Pages builds Vite serves under
+    // `/<repo>/` and `/` returns a 200 redirect stub that would
+    // false-positive as "ready" while the actual app mount is still
+    // initialising. (See CI run #46 — / was 200, /readytoflutter/ wasn't,
+    // and the prerender then captured the stub.)
+    const probeOnce = (host) => {
       const req = require('http').request(
-        { host, port: PORT, path, method: 'GET', timeout: 1500 },
-        (res) => { res.resume(); ready(); },
+        { host, port: PORT, path: BASE_PATH, method: 'GET', timeout: 1500 },
+        (res) => {
+          res.resume();
+          // 200/304 means the app is being served at the base path. A 404
+          // would mean Vite is up but didn't recognise the base — keep
+          // polling rather than calling ready().
+          if (res.statusCode && res.statusCode < 400) ready();
+        },
       );
       req.on('error', () => {});
       req.on('timeout', () => req.destroy());
@@ -151,18 +153,13 @@ function startPreviewServer() {
     };
     const pollTimer = setInterval(() => {
       if (resolved) return;
-      // Default Vite base on Pages is `/<repo>/`; probing both `/` and the
-      // detected base catches either binding.
-      for (const host of ['127.0.0.1', '::1', 'localhost']) {
-        probeOnce(host, servedPath);
-        if (servedPath !== '/') probeOnce(host, '/');
-      }
+      for (const host of ['127.0.0.1', '::1', 'localhost']) probeOnce(host);
     }, 500);
 
     const timeout = setTimeout(() => {
       if (!resolved) {
         clearInterval(pollTimer);
-        reject(new Error('vite preview did not start within 180s'));
+        reject(new Error(`vite preview did not start within 180s (base=${BASE_PATH})`));
       }
     }, 180_000);
   });
@@ -213,13 +210,10 @@ async function main() {
     console.log('   (no SITE_URL / GITHUB_REPOSITORY — canonicals stay on localhost; set SITE_URL for prod)');
   }
 
-  const { proc: preview, basePath } = await startPreviewServer();
-  // Strip trailing slash so concatenation with route (which starts with /)
-  // doesn't produce a double slash (`//flutter`).
-  const baseNoTrail = basePath.replace(/\/$/, '');
-  if (basePath !== '/') {
-    console.log(`   serving under base ${basePath}`);
+  if (BASE_PATH !== '/') {
+    console.log(`   base path ${BASE_PATH}`);
   }
+  const preview = await startPreviewServer();
 
   let browser;
   try {
@@ -245,12 +239,12 @@ async function main() {
           const route = queue.shift();
           if (!route) break;
           // Route is the in-app path (`/`, `/flutter`, etc.). Vite preview
-          // mounts the app under `basePath` (`/<repo>/` on Pages builds),
-          // so we have to prefix the full URL with that base or we'll get
-          // a tiny "did you mean /<repo>/<route>" stub instead of the app.
+          // mounts the app under BASE_PATH (`/<repo>/` on Pages builds),
+          // so we prefix every URL with that base or Vite returns its
+          // 201-byte "did you mean /<repo>/<route>" stub.
           const url = route === '/'
-            ? `${HOST}${basePath}`
-            : `${HOST}${baseNoTrail}${route}`;
+            ? `${HOST}${BASE_PATH}`
+            : `${HOST}${BASE_NO_TRAIL}${route}`;
           try {
             await page.goto(url, { waitUntil: 'domcontentloaded' });
             await waitForReady(page);
