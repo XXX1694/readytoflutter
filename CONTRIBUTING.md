@@ -32,9 +32,10 @@ Run these before opening a PR — CI runs the same:
 ```bash
 # Frontend
 cd frontend
-npm run lint    # ESLint flat config
-npm run test    # Vitest — unit tests for srs / roundBuilder
-npm run build   # Production build (also runs in deploy)
+npm run lint       # ESLint flat config
+npm run typecheck  # tsc --noEmit
+npm run test       # Vitest — unit tests for srs / roundBuilder
+npm run build      # Production build (also runs in deploy)
 
 # Backend
 cd backend
