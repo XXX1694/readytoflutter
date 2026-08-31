@@ -1,15 +1,23 @@
 /* ─────────────────────────────────────────────────────────────────────────────
- * Atlas — modern design system (replaces Codex brutalist).
- * Inspired by Linear / Vercel / Raycast: off-white surfaces, true near-black
- * ink, soft layered shadows, subtle aurora background, single sans family
- * (Inter) — no more serif headlines, no more brutalist hard offsets.
+ * Marginalia — the design system for Onsite.
  *
- * Token names are kept identical to the previous Codex set so existing 40+
- * pages inherit the new look automatically. Only the *values* changed.
+ * The premise: this is a book you study from, not a dashboard you monitor.
+ * Warm paper, warm near-black ink, and exactly one accent — a citron
+ * highlighter that only ever appears as a wash *behind* ink, the way a real
+ * marker works. Everything else is set in type and spacing.
+ *
+ * Three type roles, each earned:
+ *   Schibsted Grotesk  UI, navigation, headings — scanned, not read
+ *   Newsreader         answers and long prose — actually read, at length
+ *   Spline Sans Mono   code and figures — where character width means something
+ *
+ * Token names are inherited from the previous set so 40+ pages pick up the
+ * new look without edits. Only the values changed.
  * ──────────────────────────────────────────────────────────────────────────── */
 
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/jetbrains-mono';
+@import '@fontsource-variable/schibsted-grotesk';
+@import '@fontsource-variable/newsreader';
+@import '@fontsource-variable/spline-sans-mono';
 
 @tailwind base;
 @tailwind components;
@@ -17,28 +25,35 @@
 
 @layer base {
   :root {
-    /* Light — off-white with true white surfaces. Zinc-toned ink for premium feel. */
-    --paper:        250 250 251;   /* #FAFAFB page bg */
-    --paper-2:      255 255 255;   /* #FFFFFF elevated surface */
-    --ink:           10  10  12;   /* #0A0A0C near-black */
-    --ink-2:         63  63  70;   /* #3F3F46 zinc-700 secondary */
-    --ink-3:        113 113 122;   /* #71717A zinc-500 tertiary */
-    --rule:          24  24  27;   /* used as alpha base — see border below */
-    --rule-strong:   24  24  27;   /* same — strength via alpha */
-    --muted:        113 113 122;   /* #71717A — ~5.0:1 on white */
-    --muted-2:      130 130 140;   /* #82828C — was #A1A1AA (only 2.7:1, fails AA) */
+    /* Light — warm paper stock, warm near-black ink. */
+    --paper:        249 249 246;   /* #F9F9F6 page */
+    --paper-2:      255 255 253;   /* #FFFFFD sheet */
+    --ink:           26  25  21;   /* #1A1915 warm near-black */
+    --ink-2:         61  59  52;   /* #3D3B34 */
+    --ink-3:        107 104  94;   /* #6B685E */
+    --rule:          26  25  21;   /* ink, always used through an alpha */
+    --rule-strong:   26  25  21;
+    --muted:        107 104  94;   /* #6B685E — 4.9:1 on paper */
+    --muted-2:      110 106  95;   /* #6E6A5F — 4.6:1, still body-safe */
 
-    /* Brand: indigo-violet. Aurora-friendly. */
-    --brand:         99 102 241;   /* #6366F1 indigo-500 */
-    --brand-ink:     79  70 229;   /* #4F46E5 indigo-600 */
-    --brand-sky:    139  92 246;   /* #8B5CF6 violet-500 */
-    --mint:          16 185 129;   /* #10B981 emerald-500 */
-    --amber:        245 158  11;   /* #F59E0B amber-500 */
-    --coral:        239  68  68;   /* #EF4444 red-500 */
-    --plum:         168  85 247;   /* #A855F7 purple-500 */
+    /* The one accent. Never a text colour, never a fill for large areas —
+       it is a marker stroke laid behind ink. See .marker below. */
+    --marker:       205 232  74;   /* #CDE84A citron */
 
-    /* Soft shadow base (cool dark) — used at low alpha by the new shadow set */
-    --shadow:        15  23  42;   /* #0F172A slate-900 */
+    /* Interactive: petrol navy. Sober, high contrast, and the complement of
+       the citron — which is why the two can share a page without fighting. */
+    --brand:         34  56  79;   /* #22384F — 10.5:1 on paper */
+    --brand-ink:     25  42  60;   /* #192A3C pressed */
+    --brand-sky:     58  92 124;   /* #3A5C7C secondary */
+
+    /* Semantics, mixed toward the ink so they read as annotations rather
+       than status lights. */
+    --mint:          47 107  79;   /* #2F6B4F right / easy */
+    --amber:        151 105  18;   /* #976912 partial / medium — 4.6:1 on paper */
+    --coral:        163  58  46;   /* #A33A2E wrong / hard */
+    --plum:         141  87  59;   /* #8D573B clay — fourth category */
+
+    --shadow:        32  30  24;   /* warm, so elevation doesn't go blue */
 
     /* New tokens (also expose the old names above as their aliases) */
     --bg:            var(--paper);
@@ -50,26 +65,29 @@
   }
 
   .dark {
-    /* Dark — true zinc-950 base with bright text. Vercel/Linear vibe. */
-    --paper:          9   9  11;   /* #09090B zinc-950 */
-    --paper-2:       24  24  27;   /* #18181B zinc-900 elevated */
-    --ink:          250 250 250;   /* #FAFAFA zinc-50 */
-    --ink-2:        212 212 216;   /* #D4D4D8 zinc-300 */
-    --ink-3:        161 161 170;   /* #A1A1AA zinc-400 */
-    --rule:         255 255 255;   /* white at low alpha */
-    --rule-strong:  255 255 255;
-    --muted:        161 161 170;   /* #A1A1AA — ~6.5:1 on paper-2 */
-    --muted-2:      138 138 148;   /* #8A8A94 — bumped from #71717A (was 4.0:1, fails AA body) */
+    /* Dark — the same paper after hours: warm black, warm off-white ink. */
+    --paper:         18  18  16;   /* #121210 */
+    --paper-2:       28  28  25;   /* #1C1C19 */
+    --ink:          242 241 234;   /* #F2F1EA */
+    --ink-2:        199 196 185;
+    --ink-3:        158 154 143;
+    --rule:         255 255 250;
+    --rule-strong:  255 255 250;
+    --muted:        158 154 143;   /* #9E9A8F — 6.2:1 on the sheet */
+    --muted-2:      136 132 122;   /* #88847A — 4.6:1 on the sheet */
 
-    --brand:        129 140 248;   /* #818CF8 indigo-400 brighter */
-    --brand-ink:    165 180 252;   /* #A5B4FC indigo-300 hover */
-    --brand-sky:    167 139 250;   /* #A78BFA violet-400 */
-    --mint:          52 211 153;   /* #34D399 emerald-400 */
-    --amber:        251 191  36;   /* #FBBF24 amber-400 */
-    --coral:        248 113 113;   /* #F87171 red-400 */
-    --plum:         192 132 252;   /* #C084FC purple-400 */
+    --marker:       176 202  62;   /* #B0CA3E — dimmer citron, same job */
 
-    --shadow:         0   0   0;   /* pure black for dark elevation */
+    --brand:        126 165 200;   /* #7EA5C8 petrol, inverted for dark */
+    --brand-ink:    160 192 220;
+    --brand-sky:    100 138 172;
+
+    --mint:         111 191 149;   /* #6FBF95 */
+    --amber:        224 177  92;   /* #E0B15C */
+    --coral:        229 139 126;   /* #E58B7E */
+    --plum:         198 146 112;   /* #C69270 clay */
+
+    --shadow:         0   0   0;
 
     color-scheme: dark;
   }
@@ -92,9 +110,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    /* Inter OpenType: contextual alternates + tabular default off so prose
-       stays proportional; numeric blocks opt in via .num. */
-    font-feature-settings: 'cv11', 'ss01', 'ss03', 'cv02';
+    /* Proportional figures in prose; numeric blocks opt into tabular via
+       .num. Contextual alternates on for the grotesk's ligature pairs. */
+    font-feature-settings: 'calt' 1, 'kern' 1;
   }
   body {
     background: rgb(var(--paper));
@@ -133,13 +151,13 @@
     }
   }
 
-  /* All headings use sans now — Inter Display weights. The `font-display`
-     Tailwind class (legacy) maps to the same family, just with tighter
-     tracking + heavier weight via @layer components below. */
-  h1, h2, h3, h4 { letter-spacing: -0.022em; font-weight: 600; }
-  h1 { letter-spacing: -0.03em; font-weight: 600; }
+  /* Headings are set in the grotesk. Schibsted has a large x-height and
+     needs less negative tracking than Inter did — overtightening it closes
+     up the counters and is what makes headlines look machine-set. */
+  h1, h2, h3, h4 { letter-spacing: -0.012em; font-weight: 600; }
+  h1 { letter-spacing: -0.018em; font-weight: 600; }
 
-  ::selection { background: rgb(var(--brand) / 0.22); color: rgb(var(--ink)); }
+  ::selection { background: rgb(var(--marker) / 0.55); color: rgb(var(--ink)); }
 
   /* Sleeker scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -152,47 +170,52 @@
   }
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--rule) / 0.32); background-clip: padding-box; }
 
-  /* Focus ring — 2px brand glow with offset, modern */
+  /* Focus is the marker again, at full strength so it is unmissable. */
   :focus-visible {
-    outline: 2px solid rgb(var(--brand) / 0.6);
+    outline: 2px solid rgb(var(--ink) / 0.85);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 4px rgb(var(--marker) / 0.55);
   }
 }
 
 @layer components {
-  /* ── Page background — fixed aurora gradient mesh.
-     Two soft radial gradients, super-low opacity, to give the page ambient
-     "lighting" instead of a flat surface. Very Linear/Vercel. */
+  /* ── Page background. Flat paper. The previous build floated three
+       radial gradients here; ambient "lighting" is the single loudest tell
+       of a templated dashboard, and it fought the marker for attention. */
   .bg-page {
     background: rgb(var(--paper));
     position: relative;
   }
-  .bg-page::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(ellipse 80% 50% at 15% 0%,
-        rgb(var(--brand) / 0.10), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 85% 100%,
-        rgb(var(--brand-sky) / 0.08), transparent 60%),
-      radial-gradient(ellipse 50% 30% at 50% 50%,
-        rgb(var(--mint) / 0.04), transparent 60%);
-  }
-  .dark .bg-page::before {
-    background:
-      radial-gradient(ellipse 80% 50% at 15% 0%,
-        rgb(var(--brand) / 0.18), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 85% 100%,
-        rgb(var(--brand-sky) / 0.14), transparent 60%),
-      radial-gradient(ellipse 50% 30% at 50% 50%,
-        rgb(var(--mint) / 0.06), transparent 60%);
-  }
-  /* Make sure children sit above the aurora layer */
+  /* Kept so the old stacking contract (children above the background) still
+     holds for anything that relied on it. */
   .bg-page > * { position: relative; z-index: 1; }
+
+  /* ── The marker. The one accent in the system: a citron wash laid behind
+       ink, clipped to the text box like a real highlighter stroke, with the
+       ends left slightly ragged. Never use --marker as a text colour. */
+  .marker {
+    background-image: linear-gradient(
+      to right,
+      rgb(var(--marker) / 0) 0%,
+      rgb(var(--marker) / 0.62) 1.5%,
+      rgb(var(--marker) / 0.62) 98%,
+      rgb(var(--marker) / 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 0.72em;
+    background-position: 0 0.72em;
+    padding: 0 0.12em;
+  }
+  .dark .marker {
+    background-image: linear-gradient(
+      to right,
+      rgb(var(--marker) / 0) 0%,
+      rgb(var(--marker) / 0.28) 1.5%,
+      rgb(var(--marker) / 0.28) 98%,
+      rgb(var(--marker) / 0) 100%
+    );
+  }
 
   /* ── Glass surface — translucent with backdrop blur. Use for floating
        UI like sidebars, headers, command palette. */
@@ -206,96 +229,57 @@
     background: rgb(var(--paper-2) / 0.55);
     border: 1px solid rgb(var(--rule) / 0.08);
   }
-  /* ── Numbered section eyebrow — kept for back-compat. */
+  /* ── Section label. Sentence case in the grotesk. Letterspaced small-caps
+       mono was the house style here; at 10px it is unreadable and it is the
+       single most overused "technical" flourish in dashboard design. */
   .eyebrow {
-    @apply font-mono text-[11px] uppercase tracking-[0.18em] text-muted;
+    @apply text-[12px] font-medium tracking-normal text-muted;
   }
 
-  /* ── Cards. Both names point at the same modern style now: rounded-2xl,
-       soft border, layered shadow, subtle hover lift. */
-  .codex-card,
-  .soft-card {
+  /* ── Cards. A sheet on the page: hairline border, barely-there shadow,
+       10px radius. The hover state changes the border only — the 2px lift
+       every card used to do is motion without meaning. */
+  .codex-card {
     background: rgb(var(--paper-2));
-    border: 1px solid rgb(var(--rule) / 0.10);
-    border-radius: 16px;
-    box-shadow:
-      0 1px 2px 0 rgb(var(--shadow) / 0.04),
-      0 4px 12px -4px rgb(var(--shadow) / 0.06);
-    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-                box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
-                border-color 200ms;
+    border: 1px solid rgb(var(--rule) / 0.12);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px 0 rgb(var(--shadow) / 0.04);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
   }
-  .codex-card:hover,
-  .soft-card:hover {
+  .codex-card:hover {
+    border-color: rgb(var(--rule) / 0.24);
+    box-shadow: 0 1px 3px 0 rgb(var(--shadow) / 0.07);
+  }
+  .dark .codex-card {
+    border-color: rgb(var(--rule) / 0.09);
+    box-shadow: none;
+  }
+  .dark .codex-card:hover {
     border-color: rgb(var(--rule) / 0.18);
-    box-shadow:
-      0 1px 2px 0 rgb(var(--shadow) / 0.06),
-      0 12px 32px -8px rgb(var(--shadow) / 0.10);
-    transform: translateY(-2px);
-  }
-  .dark .codex-card,
-  .dark .soft-card {
-    background: rgb(var(--paper-2));
-    border-color: rgb(var(--rule) / 0.06);
-  }
-  .dark .codex-card:hover,
-  .dark .soft-card:hover {
-    border-color: rgb(var(--rule) / 0.14);
-    box-shadow:
-      0 1px 2px 0 rgb(0 0 0 / 0.5),
-      0 12px 32px -8px rgb(var(--brand) / 0.14);
+    box-shadow: none;
   }
 
-  /* ── Big editorial number (still used by stats tiles + percentages).
-       Inter at heavy weight + tabular figures + tight tracking. */
+  /* ── Figures. Tabular so counters don't jitter as they tick, and set in
+       the grotesk rather than the mono — at display sizes a monospace
+       number reads as a stopwatch, not a result. */
   .num {
     font-family: theme('fontFamily.sans');
-    font-feature-settings: 'tnum', 'lnum', 'cv11';
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    font-variant-numeric: tabular-nums lining-nums;
     font-weight: 600;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.015em;
   }
 
-  /* ── Legacy badges — softer Atlas tones */
-  .level-badge-junior { @apply bg-brand/10 text-brand border border-brand/20; }
-  .level-badge-mid    { @apply bg-plum/10 text-plum border border-plum/20; }
-  .level-badge-senior { @apply bg-mint/10 text-mint border border-mint/20; }
+  /* ── Level and difficulty chips. Tinted background + matching text, no
+       border — one less line per chip, and rows of them stop looking like
+       a control panel. */
+  .level-badge-junior { @apply bg-brand/8 text-brand; }
+  .level-badge-mid    { @apply bg-plum/10 text-plum; }
+  .level-badge-senior { @apply bg-ink/8 text-ink-2; }
 
   .diff-easy   { @apply bg-mint/10 text-mint; }
-  .diff-medium { @apply bg-amber/10 text-[rgb(var(--amber))]; }
+  .diff-medium { @apply bg-amber/12 text-[rgb(var(--amber))]; }
   .diff-hard   { @apply bg-coral/10 text-coral; }
-
-  /* ── Subtle gradient text — for hero headlines */
-  .text-gradient {
-    background: linear-gradient(
-      135deg,
-      rgb(var(--ink)) 0%,
-      rgb(var(--ink)) 40%,
-      rgb(var(--brand)) 70%,
-      rgb(var(--brand-sky)) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
-  .text-gradient-brand {
-    background: linear-gradient(
-      135deg,
-      rgb(var(--brand)) 0%,
-      rgb(var(--brand-sky)) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
-
-  /* ── Subtle ring used on focused / hovered cards (keyboard nav) */
-  .ring-aurora {
-    box-shadow:
-      0 0 0 1px rgb(var(--brand) / 0.45),
-      0 0 24px rgb(var(--brand) / 0.18);
-  }
 
   /* ── Touch-target — Apple HIG 44px / Material 48px. Apply to small icons
        sitting inside dense rows so the tap area covers a full finger pad
@@ -418,55 +402,35 @@
   background: transparent !important;
 }
 
-/* Answer text formatting */
+/* Answers are the one thing on the site read at length rather than
+   scanned, so they get the reading face, a longer measure and real leading.
+   (Newsreader has an optical-size axis, but @fontsource-variable ships the
+   wght-only file by default, so there is nothing to set here — weight is the
+   axis we actually have.) */
 .answer-text {
+  font-family: theme('fontFamily.serif');
+  font-size: 1.0625rem;
+  line-height: 1.68;
+  max-width: 68ch;
   white-space: pre-wrap;
-  line-height: 1.72;
   text-wrap: pretty;
   hyphens: auto;
   -webkit-hyphens: auto;
+  color: rgb(var(--ink-2));
 }
-.answer-text strong, .answer-text b { color: rgb(var(--ink)); font-weight: 600; }
+.answer-text strong, .answer-text b { color: rgb(var(--ink)); font-weight: 650; }
 .answer-text em { color: rgb(var(--ink-2)); font-style: italic; }
+/* Inline code inside an answer stays in the mono, sized down to sit on the
+   serif baseline without bulging the line. */
+.answer-text code {
+  font-family: theme('fontFamily.mono');
+  font-size: 0.86em;
+  background: rgb(var(--rule) / 0.06);
+  border-radius: 3px;
+  padding: 0.1em 0.32em;
+}
 
 h1, h2, h3 { text-wrap: balance; }
-
-/* Skeleton shimmer */
-@keyframes rtf-shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.skeleton-shine {
-  background-image: linear-gradient(
-    100deg,
-    rgb(var(--rule) / 0.06) 20%,
-    rgb(var(--rule) / 0.18) 50%,
-    rgb(var(--rule) / 0.06) 80%
-  );
-  background-size: 200% 100%;
-  animation: rtf-shimmer 1.6s ease-in-out infinite;
-}
-.dark .skeleton-shine {
-  background-image: linear-gradient(
-    100deg,
-    rgb(255 255 255 / 0.06) 20%,
-    rgb(255 255 255 / 0.14) 50%,
-    rgb(255 255 255 / 0.06) 80%
-  );
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shine { animation: none; background-image: none; background-color: rgb(var(--rule) / 0.10); }
-}
-
-/* Aurora pulse — for the active streak ring on dashboard */
-@keyframes aurora-pulse {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50%      { opacity: 1.0; transform: scale(1.04); }
-}
-.aurora-pulse { animation: aurora-pulse 3.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .aurora-pulse { animation: none; opacity: 0.85; transform: none; }
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * Print rules — for the /topic/:slug/print revision-sheet view.
@@ -478,21 +442,36 @@ h1, h2, h3 { text-wrap: balance; }
   }
   @page :first { margin-top: 18mm; }
 
+  /* Force the light palette and push it to full contrast — a revision sheet
+     is read on paper under bad light, and toner is cheaper than squinting.
+     Warm neutrals, matching the screen palette rather than the old cool set. */
   :root, .dark {
     --paper:        255 255 255;
-    --paper-2:      250 250 248;
-    --ink:           20  24  32;
-    --ink-2:         48  56  72;
-    --ink-3:         92 100 120;
+    --paper-2:      255 255 255;
+    --ink:            0   0   0;
+    --ink-2:         38  36  32;
+    --ink-3:         82  79  72;
     --rule:           0   0   0;
     --rule-strong:    0   0   0;
-    --muted:         96 104 120;
-    --muted-2:      140 148 164;
-    --shadow:       0 0 0;
+    --muted:         82  79  72;
+    --muted-2:      104 100  92;
+    --shadow:         0   0   0;
+    color-scheme: light;
   }
-  .bg-page::before { display: none !important; }
   .codex-card, .soft-card {
     box-shadow: none !important;
-    border: 1px solid rgb(0 0 0 / 0.15) !important;
+    border: 1px solid rgb(0 0 0 / 0.25) !important;
   }
+  /* Browsers drop background images when printing, and on a mono printer the
+     citron would come out as an indistinct grey band anyway. The marker's job
+     is emphasis, so on paper it becomes a rule under the text instead. */
+  .marker {
+    background-image: none;
+    padding: 0;
+    border-bottom: 2px solid rgb(0 0 0 / 0.55);
+  }
+  /* Keep a heading with the text it introduces, and don't strand single
+     lines of an answer across a page break. */
+  h1, h2, h3, h4 { break-after: avoid-page; }
+  .answer-text { orphans: 3; widows: 3; }
 }
