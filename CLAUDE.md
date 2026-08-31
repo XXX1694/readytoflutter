@@ -78,12 +78,12 @@ at all (that is the GitHub Pages deploy). A bare `api.get(...)` without a
 localStorage/static-data fallback breaks anonymous mode, and nothing in CI
 catches it.
 
-**Don't add `any` to component props.** The data layer (`types/domain.ts`,
-`api/api.ts`, `lib/queries.ts`, `store/*`, `ui/*`) is properly typed; the
-remaining debt is `({ ...props }: any)` in pages and components. `tsconfig.json`
-still relaxes `noImplicitAny` and `strictNullChecks` while that is cleaned up —
-the count of `tsc --noEmit --noImplicitAny --strictNullChecks` errors only goes
-down. New code is typed from the start. `npm run typecheck` is a CI gate.
+**`tsconfig.json` is fully strict — keep it that way.** `strict`,
+`noUnusedLocals` and `noUnusedParameters` are all on, and `npm run typecheck` is
+a CI gate. The migration debt that once justified relaxing `noImplicitAny` and
+`strictNullChecks` (~170 errors, mostly `({ ...props }: any)` in pages) is paid
+off. Type new props with a real interface; never widen a signature to `any` or
+reach for `as any` to silence the compiler.
 
 **Keep `i18n/contentRu.ts` out of the eager graph.** It is ~630 KB of source.
 `i18n/content.ts` loads it through a dynamic import for exactly this reason —

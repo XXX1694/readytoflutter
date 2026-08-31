@@ -5,16 +5,13 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
+    // Fully strict. The .jsx → .tsx migration originally landed with
+    // noImplicitAny and strictNullChecks relaxed because ~170 call sites
+    // still took `any` props; those are all typed now, so the relaxations
+    // are gone and the CI typecheck job holds the line.
     "strict": true,
-    // The migration landed all .jsx → .tsx in one go. We relax these two
-    // strict gates because lots of useState call sites infer wide and many
-    // helper components still take `any` props. Tighten incrementally by
-    // giving each component proper Props/State types — the relaxation here
-    // keeps the build green while that work proceeds.
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "useDefineForClassFields": true,
