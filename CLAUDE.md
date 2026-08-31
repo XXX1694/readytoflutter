@@ -60,6 +60,47 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Project Invariants
+
+**These are specific to this repo. Breaking one produces a green local run and a
+red CI, a broken anonymous mode, or a silent perf regression.**
+
+**Seed content has one source.** Questions and topics are edited only in
+`backend/data/seed/topics.json` and `backend/data/seed/questions/*.json`. After
+any change there, run `npm --prefix backend run generate:static-data` — the
+committed `frontend/public/seed/static-data.json` is generated, never
+hand-edited. CI's `static-data-sync` job runs the same script with `--check`
+and fails the PR on drift.
+
+**Every API call goes through `tryRemote(remote, fallback)`.** See
+`frontend/src/api/api.ts`. The frontend must stay fully usable with no backend
+at all (that is the GitHub Pages deploy). A bare `api.get(...)` without a
+localStorage/static-data fallback breaks anonymous mode, and nothing in CI
+catches it.
+
+**Don't add `any` to component props.** The data layer (`types/domain.ts`,
+`api/api.ts`, `lib/queries.ts`, `store/*`, `ui/*`) is properly typed; the
+remaining debt is `({ ...props }: any)` in pages and components. `tsconfig.json`
+still relaxes `noImplicitAny` and `strictNullChecks` while that is cleaned up —
+the count of `tsc --noEmit --noImplicitAny --strictNullChecks` errors only goes
+down. New code is typed from the start. `npm run typecheck` is a CI gate.
+
+**Keep `i18n/contentRu.ts` out of the eager graph.** It is ~630 KB of source.
+`i18n/content.ts` loads it through a dynamic import for exactly this reason —
+anything statically importing it from the `App → Layout → Sidebar` chain puts
+the whole Russian corpus back into the entry chunk for every visitor. The entry
+chunk should stay well under 100 KB gzip; `npm run build` prints it.
+
+**Never rename a persistence key to match a rebrand.** `readytoflutter_progress_v1`
+(`api/api.ts`, `lib/activity.ts`) holds anonymous users' progress and the
+`rtf-*` Workbox cache names hold their offline data. They intentionally keep
+pre-rename names; changing one silently destroys or orphans real user data and
+needs an explicit migration, not a find-and-replace.
+
+**Tests are `*.test.ts` next to the module they cover.** Vitest collects
+`src/**/*.test.{ts,tsx,js,jsx}` (`vite.config.js`). Backend tests use the
+built-in `node:test` runner — don't add a test framework dependency.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
