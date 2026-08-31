@@ -51,6 +51,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 export default function App() {
   // Probe the backend exactly once on app boot so the auth UI knows whether
@@ -241,6 +242,17 @@ export default function App() {
                   element={
                     <Suspense fallback={<FullPageLoader />}>
                       <KnowledgePage />
+                    </Suspense>
+                  }
+                />
+                {/* Catch-all — must stay last inside the Layout route so a
+                    bad URL renders the app chrome with a 404 body instead of
+                    an empty root. */}
+                <Route
+                  path="*"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <NotFoundPage />
                     </Suspense>
                   }
                 />
