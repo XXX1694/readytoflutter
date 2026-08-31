@@ -13,31 +13,30 @@ import RouteTransition from './RouteTransition';
 import { usePrefs } from '../store/prefs';
 
 export default function Layout() {
-  const theme = usePrefs((s: any) => s.theme);
-  const bottomNavRef = useRef(null);
+  const theme = usePrefs((s) => s.theme);
+  const bottomNavRef = useRef<HTMLDivElement>(null);
 
   // Publish the BottomNav's actual rendered height as a CSS custom property
   // so sticky/CTA panels on individual pages can dock right above it without
   // hard-coding a magic 56/64 value. ResizeObserver keeps it in sync if the
   // user adds a tab on rotation, etc.
   useEffect(() => {
-    const set = (h: any) => {
+    const set = (h: number) => {
       document.documentElement.style.setProperty('--bottom-nav-h', `${Math.round(h)}px`);
     };
     const el = bottomNavRef.current;
     if (!el) { set(0); return; }
     const update = () => {
-      const r = el.getBoundingClientRect();
       // When the nav is hidden by a flow route, height collapses to 0 — that
       // is the right value to publish so sticky CTAs sit at the safe-area
       // edge instead of leaving a 56px hole.
-      set(r.height);
+      set(el.getBoundingClientRect().height);
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  });
+  }, []);
 
   return (
     // Use dynamic viewport units (`100dvh`) so the iOS browser chrome /
@@ -73,10 +72,15 @@ export default function Layout() {
       <Toaster
         theme={theme === 'dark' ? 'dark' : 'light'}
         position="bottom-right"
+        /* Toasts anchor to the bottom edge, which on narrow screens belongs to
+           the bottom nav — an infinite-duration toast (the PWA update prompt)
+           parked there covers it. --bottom-nav-h is measured above and is 0 on
+           routes that hide the nav. */
+        mobileOffset={{ bottom: 'calc(var(--bottom-nav-h, 56px) + 12px)', left: '12px', right: '12px' }}
         toastOptions={{
           classNames: {
             toast:
-              '!font-sans !text-sm !rounded-2xl !border !border-rule/12 !bg-paper-2/90 !backdrop-blur-xl !text-ink !shadow-[0_4px_8px_-2px_rgb(var(--shadow)/0.10),0_16px_40px_-8px_rgb(var(--shadow)/0.18)]',
+              '!font-sans !text-sm !rounded-lg !border !border-rule/12 !bg-paper-2 !text-ink !shadow-codex-lg',
             description: '!text-ink-2',
           },
         }}

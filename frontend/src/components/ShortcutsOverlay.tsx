@@ -3,12 +3,22 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Keyboard, X } from 'lucide-react';
 import { useLang } from '../i18n/LangContext';
-import { cn } from '../lib/cn';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const M = isMac ? '⌘' : 'Ctrl';
 
-const SHORTCUTS = [
+interface Shortcut {
+  keys: string[];
+  en: string;
+  ru: string;
+}
+
+interface ShortcutGroup {
+  group: { en: string; ru: string };
+  items: Shortcut[];
+}
+
+const SHORTCUTS: ShortcutGroup[] = [
   { group: { en: 'Navigation', ru: 'Навигация' }, items: [
     { keys: [M, 'K'], en: 'Open command bar', ru: 'Открыть палитру' },
     { keys: [M, 'S'], en: 'Start study session', ru: 'Начать сессию' },
@@ -52,20 +62,33 @@ const SHORTCUTS = [
 ];
 
 /**
- * Power-user keyboard shortcuts overlay. Press `?` anywhere to open.
- * Glass surface, brand-tinted kbd capsules.
+ * Power-user keyboard shortcuts overlay. Press `?` anywhere to open. Keys are
+ * one of the few places the mono face is the right call — a keycap is a
+ * fixed-width glyph.
  *
  * Skipped entirely on touch-only devices: there's no physical keyboard to
  * hit Shift+/, and none of the listed shortcuts apply on mobile anyway.
  */
-const isTouchOnly = () => {
+const isTouchOnly = (): boolean => {
   if (typeof window === 'undefined') return false;
   // Coarse pointer + no fine pointer = touch device with no mouse/trackpad.
   return window.matchMedia?.('(hover: none) and (pointer: coarse)').matches ?? false;
 };
 
-export default function ShortcutsOverlay() {
-  const [open, setOpen] = useState(false);
+const KEYCAP = 'rounded border border-rule/15 bg-paper px-1.5 py-0.5 font-mono text-[11px] text-ink-2';
+
+export interface ShortcutsOverlayProps {
+  /**
+   * Start open. LazyOverlays only mounts this component *because* the user
+   * pressed `?`, and that keypress is already spent by the time the lazy
+   * chunk resolves — without this the first press only downloaded the chunk
+   * and the user had to press `?` a second time to actually see it.
+   */
+  defaultOpen?: boolean;
+}
+
+export default function ShortcutsOverlay({ defaultOpen = false }: ShortcutsOverlayProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const { lang } = useLang();
   const isRu = lang === 'ru';
 
@@ -73,13 +96,15 @@ export default function ShortcutsOverlay() {
   // skip render later, instead of early-returning before the hook.
   const touchOnly = isTouchOnly();
 
-  useHotkeys('shift+/', (e: any) => {
-    // `?` lives on Shift+/ — most layouts. Don't fire while typing in form fields.
+  // react-hotkeys-hook matches on `event.code`, so the key half has to be
+  // `slash`, not `/` — `'shift+/'` silently never fires.
+  useHotkeys('shift+slash', (e: KeyboardEvent) => {
+    // `?` lives on Shift+/ on most layouts. Don't fire while typing in a field.
     const target = e.target as HTMLElement | null;
     const tag = (target?.tagName || '').toLowerCase();
     if (['input', 'textarea'].includes(tag) || target?.isContentEditable) return;
     e.preventDefault();
-    setOpen((v: boolean) => !v);
+    setOpen((v) => !v);
   }, { enabled: !touchOnly });
 
   // Don't render on phones — saves a Radix subtree.
@@ -89,25 +114,20 @@ export default function ShortcutsOverlay() {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
-        <Dialog.Content
-          className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 outline-none',
-            'data-[state=open]:animate-slide-up',
-          )}
-        >
-          <div className="overflow-hidden rounded-2xl border border-rule/12 glass shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_64px_-12px_rgb(var(--shadow)/0.30)]">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 outline-none data-[state=open]:animate-slide-up">
+          <div className="overflow-hidden rounded-xl border border-rule/12 bg-paper-2 shadow-codex-lg">
             {/* Header */}
-            <div className="flex items-center justify-between gap-2 border-b border-rule/8 px-5 py-3.5">
-              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-                <Keyboard className="h-3.5 w-3.5" />
-                <Dialog.Title className="font-mono">
+            <div className="flex items-center justify-between gap-2 border-b border-rule/12 px-5 py-3.5">
+              <div className="flex items-center gap-2 text-ink">
+                <Keyboard className="h-4 w-4 text-muted" aria-hidden />
+                <Dialog.Title className="font-display text-base font-semibold">
                   {isRu ? 'Горячие клавиши' : 'Keyboard shortcuts'}
                 </Dialog.Title>
               </div>
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted hover:bg-rule/10 hover:text-ink"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded text-muted hover:bg-rule/8 hover:text-ink"
                   aria-label={isRu ? 'Закрыть' : 'Close'}
                 >
                   <X className="h-3.5 w-3.5" />
@@ -117,22 +137,18 @@ export default function ShortcutsOverlay() {
 
             {/* Body */}
             <div className="grid max-h-[70vh] grid-cols-1 gap-x-8 gap-y-6 overflow-y-auto p-6 sm:grid-cols-2">
-              {SHORTCUTS.map((g: any) => (
+              {SHORTCUTS.map((g) => (
                 <section key={g.group.en}>
-                  <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                    {isRu ? g.group.ru : g.group.en}
-                  </div>
+                  <h3 className="eyebrow mb-3">{isRu ? g.group.ru : g.group.en}</h3>
                   <ul className="space-y-2">
-                    {g.items.map((it: any, i: any) => (
-                      <li key={i} className="flex items-center justify-between gap-3">
+                    {g.items.map((it) => (
+                      <li key={it.en} className="flex items-center justify-between gap-3">
                         <span className="text-[13px] text-ink-2">
                           {isRu ? it.ru : it.en}
                         </span>
                         <span className="flex shrink-0 items-center gap-1">
-                          {it.keys.map((k: any, ki: any) => (
-                            <kbd key={ki} className="rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-2">
-                              {k}
-                            </kbd>
+                          {it.keys.map((k) => (
+                            <kbd key={k} className={KEYCAP}>{k}</kbd>
                           ))}
                         </span>
                       </li>
@@ -142,12 +158,14 @@ export default function ShortcutsOverlay() {
               ))}
             </div>
 
-            {/* Footer */}
-            <div className="border-t border-rule/8 px-5 py-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-muted-2">
-              {isRu ? 'Жми' : 'Press'}{' '}
-              <kbd className="rounded-md border border-rule/15 bg-paper-2 px-1 py-px font-mono text-[10px] text-ink-2">?</kbd>{' '}
-              {isRu ? 'чтобы вызвать снова' : 'anywhere to bring this back'}
-            </div>
+            {/* Footer — doubles as the dialog's accessible description. */}
+            <Dialog.Description asChild>
+              <p className="border-t border-rule/12 px-5 py-3 text-center text-[13px] text-muted">
+                {isRu ? 'Жми' : 'Press'}{' '}
+                <kbd className={KEYCAP}>?</kbd>{' '}
+                {isRu ? 'чтобы вызвать снова' : 'anywhere to bring this back'}
+              </p>
+            </Dialog.Description>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

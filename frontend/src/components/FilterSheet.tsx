@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import { Drawer } from 'vaul';
 import { X, SlidersHorizontal } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { tapLight } from '../lib/haptics';
 
 /**
- * Generic bottom-sheet wrapper around `vaul`, skinned to match Atlas
+ * Generic bottom-sheet wrapper around `vaul`, skinned to match the paper
  * surfaces. Use it for filter / facet groups on mobile pages.
  *
  * Usage:
@@ -18,27 +19,62 @@ import { tapLight } from '../lib/haptics';
  * The drawer auto-snaps to ~85% of the viewport but is dismissible by
  * dragging the handle, tapping the overlay, or pressing Escape.
  */
-export default function FilterSheet({ open, onOpenChange, title, children, footer = null }: any) {
+export interface FilterSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  /**
+   * Optional sentence describing what the sheet controls. Rendered under the
+   * title and wired up as the dialog's accessible description. Without it the
+   * content opts out explicitly — Radix warns about a missing description
+   * unless `aria-describedby` is passed as undefined.
+   */
+  description?: ReactNode;
+  closeLabel?: string;
+}
+
+export default function FilterSheet({
+  open,
+  onOpenChange,
+  title,
+  children,
+  footer = null,
+  description,
+  closeLabel = 'Close',
+}: FilterSheetProps) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         <Drawer.Overlay data-vaul-overlay className="fixed inset-0 z-50" />
         <Drawer.Content
           data-vaul-drawer
+          // Radix points aria-describedby at a generated id and warns when
+          // nothing owns it. With no description to render we clear the
+          // attribute instead, which is the documented opt-out.
+          {...(description ? {} : { 'aria-describedby': undefined })}
           className="fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[88dvh] flex-col"
         >
           {/* Drag handle — vaul renders one too but we hide its default and
-              ship our own so the visual matches the Atlas hairlines. */}
+              ship our own so the visual matches the page hairlines. */}
           <span className="vaul-handle" aria-hidden />
-          <div className="flex items-center justify-between px-5 pb-2 pt-3">
-            <Drawer.Title className="font-display text-lg font-semibold text-ink">
-              {title}
-            </Drawer.Title>
+          <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-3">
+            <div className="min-w-0">
+              <Drawer.Title className="font-display text-lg font-semibold text-ink">
+                {title}
+              </Drawer.Title>
+              {description && (
+                <Drawer.Description className="mt-0.5 text-[13px] leading-snug text-muted">
+                  {description}
+                </Drawer.Description>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => { tapLight(); onOpenChange(false); }}
-              aria-label="Close"
-              className="touch-target tap-feedback inline-flex items-center justify-center rounded-xl text-muted active:text-ink"
+              aria-label={closeLabel}
+              className="touch-target tap-feedback -mr-2 inline-flex shrink-0 items-center justify-center rounded-md text-muted active:text-ink"
             >
               <X className="h-5 w-5" />
             </button>
@@ -53,23 +89,35 @@ export default function FilterSheet({ open, onOpenChange, title, children, foote
   );
 }
 
+export interface FilterSheetTriggerProps {
+  onClick?: () => void;
+  count?: number;
+  label?: string;
+  className?: string;
+}
+
 /**
  * Pre-styled trigger pill with optional count badge — drop into a filter row.
  */
-export function FilterSheetTrigger({ onClick, count = 0, label = 'Filters', className }: any) {
+export function FilterSheetTrigger({
+  onClick,
+  count = 0,
+  label = 'Filters',
+  className,
+}: FilterSheetTriggerProps) {
   return (
     <button
       type="button"
       onClick={() => { tapLight(); onClick?.(); }}
       className={cn(
-        'inline-flex min-h-[40px] items-center gap-2 rounded-full border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 transition-all active:scale-95',
+        'inline-flex min-h-[40px] items-center gap-2 rounded-full border border-rule/12 bg-paper-2 px-3.5 py-1.5 text-[13px] font-medium text-ink-2 transition-colors active:border-rule/30',
         className,
       )}
     >
       <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
       <span>{label}</span>
       {count > 0 && (
-        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-ink px-1.5 font-mono text-[10px] font-semibold text-paper">
+        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-ink px-1.5 text-[11px] font-semibold tabular-nums text-paper">
           {count}
         </span>
       )}
@@ -77,14 +125,26 @@ export function FilterSheetTrigger({ onClick, count = 0, label = 'Filters', clas
   );
 }
 
-FilterSheet.Footer = function Footer({ onApply, onClear, applyLabel = 'Apply', clearLabel = 'Clear' }) {
+export interface FilterSheetFooterProps {
+  onApply?: () => void;
+  onClear?: (() => void) | null;
+  applyLabel?: string;
+  clearLabel?: string;
+}
+
+FilterSheet.Footer = function Footer({
+  onApply,
+  onClear,
+  applyLabel = 'Apply',
+  clearLabel = 'Clear',
+}: FilterSheetFooterProps) {
   return (
     <div className="flex gap-2 border-t border-rule/10 px-5 py-3">
       {onClear && (
         <button
           type="button"
           onClick={() => { tapLight(); onClear(); }}
-          className="flex-1 rounded-xl border border-rule/15 bg-paper-2 py-3 font-display text-[14px] font-medium text-ink-2 active:scale-95 transition-transform"
+          className="flex-1 rounded-md border border-rule/15 bg-paper-2 py-3 text-[14px] font-medium text-ink-2 transition-transform active:scale-95"
         >
           {clearLabel}
         </button>
@@ -92,7 +152,7 @@ FilterSheet.Footer = function Footer({ onApply, onClear, applyLabel = 'Apply', c
       <button
         type="button"
         onClick={() => { tapLight(); onApply?.(); }}
-        className="flex-[2] rounded-xl bg-ink py-3 font-display text-[14px] font-semibold text-paper shadow-[0_4px_12px_-2px_rgb(var(--shadow)/0.18)] active:scale-95 transition-transform"
+        className="flex-[2] rounded-md bg-ink py-3 text-[14px] font-semibold text-paper transition-transform active:scale-95"
       >
         {applyLabel}
       </button>

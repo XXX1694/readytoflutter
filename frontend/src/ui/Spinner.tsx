@@ -12,6 +12,7 @@ export interface SpinnerProps {
   label?: string;
 }
 
+/** A ring of hairline with one ink arc. The rotation is the whole signal. */
 export function Spinner({ size = 'md', className, label }: SpinnerProps) {
   return (
     <span
@@ -19,7 +20,7 @@ export function Spinner({ size = 'md', className, label }: SpinnerProps) {
       aria-label={label || 'Loading'}
       className={cn(
         'inline-block animate-spin rounded-full',
-        'border-rule/20 border-t-brand',
+        'border-rule/14 border-t-ink',
         SIZES[size],
         className,
       )}
@@ -27,17 +28,16 @@ export function Spinner({ size = 'md', className, label }: SpinnerProps) {
   );
 }
 
-export function FullPageLoader({ label }: { label?: string }) {
+export interface FullPageLoaderProps {
+  label?: string;
+}
+
+export function FullPageLoader({ label }: FullPageLoaderProps) {
   return (
     <div className="flex h-full items-center justify-center">
-      <div className="relative flex flex-col items-center gap-4">
-        <span aria-hidden className="absolute inset-0 -z-10 m-auto h-24 w-24 rounded-full bg-gradient-to-br from-brand/20 to-brand-sky/10 blur-2xl" />
+      <div className="flex flex-col items-center gap-3">
         <Spinner size="lg" label={label} />
-        {label && (
-          <span className="font-mono text-xs uppercase tracking-[0.18em] text-muted">
-            {label}
-          </span>
-        )}
+        {label && <span className="text-[13px] text-muted">{label}</span>}
       </div>
     </div>
   );

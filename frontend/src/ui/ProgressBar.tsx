@@ -5,7 +5,8 @@ const TONES = {
   mint:     'bg-mint',
   amber:    'bg-[rgb(var(--amber))]',
   ink:      'bg-ink',
-  gradient: 'bg-gradient-to-r from-brand to-brand-sky shadow-[inset_0_0_0_1px_rgb(255_255_255/0.10)]',
+  // Legacy name from the gradient era — now the same flat brand fill.
+  gradient: 'bg-brand',
 } as const;
 
 const SIZES = {
@@ -52,16 +53,13 @@ export function ProgressBar({
         )}
       >
         <div
-          className={cn(
-            'h-full rounded-full transition-[width] duration-700 ease-out',
-            TONES[tone],
-          )}
+          // The width transition is the one piece of motion here that carries
+          // meaning: it shows the value moving. Everything else is static.
+          className={cn('h-full rounded-full transition-[width] duration-500 ease-out', TONES[tone])}
           style={{ width: `${pct}%` }}
         />
       </div>
-      {showLabel && (
-        <div className="mt-1 font-mono text-[11px] text-muted">{pct}%</div>
-      )}
+      {showLabel && <div className="num mt-1 text-[11px] text-muted">{pct}%</div>}
     </div>
   );
 }

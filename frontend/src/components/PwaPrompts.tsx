@@ -23,6 +23,18 @@ import { useLang } from '../i18n/LangContext';
  * `updateServiceWorker(true)` which skipsWaiting + clientsClaim + reloads.
  */
 
+// Not in lib.dom yet — Chromium-only, and the shape we actually consume.
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+// The virtual module ships no declarations; this is the slice we use.
+interface RegisterSWResult {
+  needRefresh: [boolean, (value: boolean) => void];
+  updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
+}
+
 const STORAGE = {
   installDismissed: 'rtf:pwa:install-dismissed',
   iosHintDismissed: 'rtf:pwa:ios-hint-dismissed',
@@ -31,17 +43,17 @@ const STORAGE = {
 const DISMISS_DAYS = 30;
 const VISIT_GATE = 3;
 
-const isStandalone = () =>
+const isStandalone = (): boolean =>
   typeof window !== 'undefined'
   && (window.matchMedia?.('(display-mode: standalone)').matches
       || (window.navigator as Navigator & { standalone?: boolean })?.standalone === true);
 
-const isIOS = () =>
+const isIOS = (): boolean =>
   typeof navigator !== 'undefined'
   && /iP(ad|hone|od)/.test(navigator.userAgent)
   && !(window as Window & { MSStream?: unknown }).MSStream;
 
-const dismissedRecently = (key: any) => {
+const dismissedRecently = (key: string): boolean => {
   if (typeof localStorage === 'undefined') return false;
   const v = localStorage.getItem(key);
   if (!v) return false;
@@ -50,22 +62,22 @@ const dismissedRecently = (key: any) => {
   return Date.now() - ts < DISMISS_DAYS * 24 * 60 * 60 * 1000;
 };
 
-const persistDismiss = (key: any) => {
+const persistDismiss = (key: string): void => {
   try { localStorage.setItem(key, String(Date.now())); } catch { /* quota */ }
 };
 
 export default function PwaPrompts() {
   const { lang } = useLang();
   const isRu = lang === 'ru';
-  const installEvent = useRef(null);
+  const installEvent = useRef<BeforeInstallPromptEvent | null>(null);
   const [showIosHint, setShowIosHint] = useState(false);
 
   // ── Service worker update handler ──────────────────────────────────────
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
-  } = useRegisterSW({
-    onRegisteredSW(_swUrl, r) {
+  }: RegisterSWResult = useRegisterSW({
+    onRegisteredSW(_swUrl: string, r: ServiceWorkerRegistration | undefined) {
       // Periodic background check — a tab left open for hours catches
       // updates without the user reloading manually.
       if (!r) return;
@@ -73,7 +85,7 @@ export default function PwaPrompts() {
         try { r.update(); } catch { /* offline / aborted */ }
       }, 60 * 60 * 1000);
     },
-    onRegisterError(err) {
+    onRegisterError(err: unknown) {
       console.warn('[PWA] SW registration failed', err);
     },
   });
@@ -107,7 +119,7 @@ export default function PwaPrompts() {
     try { localStorage.setItem(STORAGE.visitCount, String(n)); } catch { /* quota */ }
   }, []);
 
-  const visitsEnough = () => {
+  const visitsEnough = (): boolean => {
     if (typeof localStorage === 'undefined') return false;
     return Number(localStorage.getItem(STORAGE.visitCount) || '0') >= VISIT_GATE;
   };
@@ -148,9 +160,9 @@ export default function PwaPrompts() {
     if (isStandalone()) return;
     if (dismissedRecently(STORAGE.installDismissed)) return;
 
-    const onPrompt = (e: any) => {
+    const onPrompt = (e: Event) => {
       e.preventDefault();
-      installEvent.current = e;
+      installEvent.current = e as BeforeInstallPromptEvent;
       // Hold the prompt back until the user has shown some intent —
       // bombarding first-time visitors hurts conversion.
       if (!visitsEnough()) return;
@@ -189,21 +201,25 @@ export default function PwaPrompts() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-2 sm:hidden"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}
+      className="fixed inset-x-0 z-40 px-3 sm:hidden"
+      // Sit above the bottom nav rather than on top of it. Layout measures the
+      // nav into --bottom-nav-h (0 on routes where it's hidden), and that
+      // measurement already includes the nav's own safe-area padding — so
+      // adding env(safe-area-inset-bottom) here again would double-count it.
+      style={{ bottom: 'calc(var(--bottom-nav-h, 56px) + 8px)' }}
       aria-live="polite"
     >
-      <div className="relative rounded-2xl border border-rule/15 bg-paper-2/95 p-3 shadow-[0_8px_24px_-6px_rgb(var(--shadow)/0.20)] backdrop-blur-md">
+      <div className="relative rounded-xl border border-rule/15 bg-paper-2 p-3 shadow-codex-lg">
         <button
           type="button"
           onClick={dismissIosHint}
           aria-label={isRu ? 'Закрыть' : 'Close'}
-          className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted active:text-ink"
+          className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded text-muted active:text-ink"
         >
           <X className="h-4 w-4" />
         </button>
         <div className="flex items-start gap-3 pr-8">
-          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-brand-sky text-white">
+          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand/8 text-brand">
             <Share2 className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -212,7 +228,7 @@ export default function PwaPrompts() {
             </div>
             <p className="mt-0.5 text-[12px] leading-snug text-muted">
               {isRu
-                ? 'Нажми кнопку Поделиться, потом «На экран „Домой"» — приложение откроется как нативное.'
+                ? 'Нажми кнопку «Поделиться», потом «На экран „Домой“» — приложение откроется как нативное.'
                 : 'Tap Share, then "Add to Home Screen" — opens fullscreen, no browser chrome.'}
             </p>
           </div>

@@ -9,8 +9,9 @@ const SIZES = {
 
 const VARIANTS = {
   ghost:   'text-ink-2 hover:bg-rule/8 hover:text-ink',
-  outline: 'border border-rule/15 text-ink hover:bg-rule/5 hover:border-rule/25',
-  codex:   'border border-rule/15 bg-paper-2 text-ink shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04)] hover:-translate-y-px hover:shadow-[0_2px_8px_-2px_rgb(var(--shadow)/0.10)]',
+  outline: 'border border-rule/12 text-ink hover:border-rule/22',
+  // The filled one, matching Button's primary: ink, never a coloured fill.
+  codex:   'bg-ink text-paper hover:bg-ink/90 active:bg-ink/80',
 } as const;
 
 export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
@@ -20,6 +21,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   children: ReactNode;
 }
 
+/** Focus is drawn by the global `:focus-visible` rule — see Button.tsx. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   { className, size = 'md', variant = 'ghost', label, children, ...props },
   ref,
@@ -30,8 +32,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type="button"
       aria-label={label}
       className={cn(
-        'inline-flex items-center justify-center rounded-xl transition-all duration-200',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+        'inline-flex items-center justify-center rounded-lg',
+        'transition-colors duration-150',
         'disabled:opacity-50 disabled:pointer-events-none',
         SIZES[size],
         VARIANTS[variant],

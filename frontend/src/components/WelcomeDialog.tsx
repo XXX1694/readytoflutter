@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Command, Brain, Target, ArrowRight, X, Bookmark, TrendingUp } from 'lucide-react';
-import { useLang } from '../i18n/LangContext';
-import { Button, Pill } from '../ui/index';
+import { Command, Brain, Target, ArrowRight, X, Bookmark, type LucideIcon } from 'lucide-react';
+import { useLang, type Lang } from '../i18n/LangContext';
+import { Button } from '../ui/index';
 import { cn } from '../lib/cn';
 
 const STORAGE_KEY = 'rtf:welcome:v1';
@@ -11,7 +11,19 @@ const STACK_PICKER_KEY = 'rtf:stackpicker:v1';
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const mod = isMac ? '⌘' : 'Ctrl';
 
-const STEPS = [
+interface StepCopy {
+  title: string;
+  body: string;
+  kbd: string[];
+}
+
+interface TourStep {
+  icon: LucideIcon;
+  en: StepCopy;
+  ru: StepCopy;
+}
+
+const STEPS: TourStep[] = [
   {
     icon: Command,
     en: {
@@ -42,12 +54,12 @@ const STEPS = [
     icon: Target,
     en: {
       title: 'Mock interview',
-      body: 'Pick level + count + timer, type your answer, reveal the reference, self-rate. The recap screen scores you and breaks down by question.',
+      body: 'Pick level, count and timer, type your answer, reveal the reference, self-rate. The recap screen scores you and breaks the round down by question.',
       kbd: ['⌘', 'M'],
     },
     ru: {
       title: 'Mock-собеседование',
-      body: 'Уровень + количество + таймер. Печатаешь ответ → раскрываешь эталон → self-grade. На финале — итоговый счёт и разбор по вопросам.',
+      body: 'Уровень, количество и таймер. Печатаешь ответ, раскрываешь эталон, ставишь себе оценку. На финале — итоговый счёт и разбор по вопросам.',
       kbd: ['⌘', 'M'],
     },
   },
@@ -55,12 +67,12 @@ const STEPS = [
     icon: Bookmark,
     en: {
       title: 'Tough questions',
-      body: 'Star any card to bookmark it. Then drill or mock JUST your bookmarks — perfect for the day before the interview.',
+      body: 'Star any card to bookmark it, then drill or mock just your bookmarks — the right list for the day before the interview.',
       kbd: ['⌘', 'B'],
     },
     ru: {
       title: 'Закладки',
-      body: 'Звёздочка на любой карточке = в закладки. Потом — drill/mock только по закладкам. Идеально за день до собеса.',
+      body: 'Звёздочка на карточке кладёт её в закладки. Потом можно учить или проходить mock только по ним — то что нужно за день до собеса.',
       kbd: ['⌘', 'B'],
     },
   },
@@ -87,32 +99,28 @@ export default function WelcomeDialog() {
   };
 
   const next = () => {
-    if (step < STEPS.length - 1) setStep((s: any) => s + 1);
+    if (step < STEPS.length - 1) setStep((s) => s + 1);
     else dismiss();
   };
 
-  const skip = () => dismiss();
   const isLast = step === STEPS.length - 1;
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v: any) => { if (!v) dismiss(); }}>
+    <Dialog.Root open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm data-[state=open]:animate-fade-in" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 outline-none data-[state=open]:animate-slide-up">
-          <div className="overflow-hidden rounded-2xl border border-rule/12 glass shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_64px_-12px_rgb(var(--shadow)/0.30)]">
+          <div className="overflow-hidden rounded-xl border border-rule/12 bg-paper-2 shadow-codex-lg">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-rule/15 px-5 py-3">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-                  {lang === 'ru' ? 'Знакомство · 4 шага' : 'Quick tour · 4 steps'}
-                </span>
-              </div>
-              <Dialog.Title className="sr-only">
-                {lang === 'ru' ? 'Гайд по приложению' : 'App tour'}
-              </Dialog.Title>
+            <div className="flex items-center justify-between gap-3 border-b border-rule/12 px-5 py-3">
+              <span className="eyebrow">
+                {lang === 'ru'
+                  ? `Знакомство · шаг ${step + 1} из ${STEPS.length}`
+                  : `Quick tour · step ${step + 1} of ${STEPS.length}`}
+              </span>
               <button
                 type="button"
-                onClick={skip}
+                onClick={dismiss}
                 aria-label={lang === 'ru' ? 'Закрыть' : 'Close'}
                 className="text-muted hover:text-ink"
               >
@@ -120,17 +128,18 @@ export default function WelcomeDialog() {
               </button>
             </div>
 
-            {/* Step body */}
+            {/* Step body — carries the dialog's accessible name and description */}
             <Step step={STEPS[step]} lang={lang} />
 
             {/* Dots + actions */}
-            <div className="flex items-center justify-between border-t border-rule/15 px-5 py-3">
+            <div className="flex items-center justify-between border-t border-rule/12 px-5 py-3">
               <div className="flex items-center gap-1.5">
-                {STEPS.map((_: any, i: any) => (
+                {STEPS.map((s, i) => (
                   <button
-                    key={i}
+                    key={s.en.title}
                     type="button"
-                    aria-label={`Step ${i + 1}`}
+                    aria-label={lang === 'ru' ? `Шаг ${i + 1}` : `Step ${i + 1}`}
+                    aria-current={i === step}
                     onClick={() => setStep(i)}
                     className={cn(
                       'h-1.5 w-6 rounded-full transition-colors',
@@ -140,7 +149,7 @@ export default function WelcomeDialog() {
                 ))}
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={skip}>
+                <Button variant="ghost" size="sm" onClick={dismiss}>
                   {lang === 'ru' ? 'Пропустить' : 'Skip'}
                 </Button>
                 <Button variant="brand" size="sm" onClick={next}>
@@ -158,33 +167,40 @@ export default function WelcomeDialog() {
   );
 }
 
-function Step({ step, lang }: any) {
+interface StepProps {
+  step: TourStep;
+  lang: Lang;
+}
+
+function Step({ step, lang }: StepProps) {
   const Icon = step.icon;
   const text = lang === 'ru' ? step.ru : step.en;
   return (
     <div className="px-6 py-7 sm:px-7">
-      <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand/15 to-brand/5 text-brand ring-1 ring-brand/20">
-        <Icon className="h-6 w-6" />
+      <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-md bg-brand/8 text-brand">
+        <Icon className="h-5 w-5" aria-hidden />
       </div>
-      <h2 className="font-display text-2xl font-medium leading-tight tracking-tight text-ink">
-        {text.title}
-      </h2>
-      <p className="mt-3 text-sm leading-relaxed text-ink-2">{text.body}</p>
-      {text.kbd && (
-        <div className="mt-5 inline-flex items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2 px-2.5 py-1">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-            {lang === 'ru' ? 'Хоткей' : 'Hotkey'}
-          </span>
-          {text.kbd.map((k: any, i: any) => (
-            <kbd
-              key={i}
-              className="rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-2"
-            >
-              {k === '⌘' ? mod : k}
-            </kbd>
-          ))}
-        </div>
-      )}
+      <Dialog.Title asChild>
+        <h2 className="font-display text-2xl font-medium leading-tight text-ink">
+          {text.title}
+        </h2>
+      </Dialog.Title>
+      <Dialog.Description asChild>
+        <p className="mt-3 text-sm leading-relaxed text-ink-2">{text.body}</p>
+      </Dialog.Description>
+      <div className="mt-5 inline-flex items-center gap-1.5">
+        <span className="text-[12px] text-muted">
+          {lang === 'ru' ? 'Хоткей' : 'Hotkey'}
+        </span>
+        {text.kbd.map((k) => (
+          <kbd
+            key={k}
+            className="rounded border border-rule/15 bg-paper px-1.5 py-0.5 font-mono text-[11px] text-ink-2"
+          >
+            {k === '⌘' ? mod : k}
+          </kbd>
+        ))}
+      </div>
     </div>
   );
 }

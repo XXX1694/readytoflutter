@@ -4,30 +4,25 @@ import { cn } from '../lib/cn';
 export type EyebrowAccent = 'brand' | 'mint' | 'amber' | 'ink' | 'muted';
 
 export interface EyebrowProps {
-  index?: number | string; // legacy prop, kept for backwards compat — ignored
   children: ReactNode;
   className?: string;
+  /**
+   * `accent`, `dot` and `index` are inert. They drove the coloured dot and the
+   * caps-mono treatment this label used to have; the eyebrow is now a single
+   * muted line, so none of them change the output. They stay declared only so
+   * the ~25 call sites that still pass them keep compiling — drop the prop
+   * when you next touch one of those files.
+   */
   accent?: EyebrowAccent;
   dot?: boolean;
+  index?: number | string;
 }
 
 /**
- * Atlas eyebrow — small uppercase mono label with an optional dot accent.
+ * Section label. Sentence case, 12px grotesk, muted — see DESIGN.md rule 2 for
+ * why this is not uppercase mono at 10px. Styling lives in the `.eyebrow`
+ * component class in index.css so page-level `@apply` sites match it exactly.
  */
-export function Eyebrow({ children, className, accent = 'brand', dot = true }: EyebrowProps) {
-  const DOT: Record<EyebrowAccent, string> = {
-    brand: 'bg-brand',
-    mint:  'bg-mint',
-    amber: 'bg-[rgb(var(--amber))]',
-    ink:   'bg-ink',
-    muted: 'bg-muted',
-  };
-  return (
-    <div className={cn('inline-flex items-center gap-2', className)}>
-      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', DOT[accent])} aria-hidden />}
-      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted">
-        {children}
-      </span>
-    </div>
-  );
+export function Eyebrow({ children, className }: EyebrowProps) {
+  return <div className={cn('eyebrow', className)}>{children}</div>;
 }

@@ -1,6 +1,6 @@
 import { Mic, MicOff } from 'lucide-react';
 import { useSpeechRecognition } from '../lib/speech';
-import { Button } from '../ui/index';
+import { Button, type ButtonProps } from '../ui/index';
 import { cn } from '../lib/cn';
 
 const labels = {
@@ -15,16 +15,27 @@ const labels = {
  * each finalized phrase so the parent can splice it into its current value.
  * Also shows live interim text inline so the user sees progress.
  */
+type SpeechLang = keyof typeof labels;
+
+export interface VoiceInputButtonProps {
+  lang?: SpeechLang;
+  /** Called once per finalized phrase, so the parent can splice it in. */
+  onAppend?: (chunk: string) => void;
+  size?: ButtonProps['size'];
+  className?: string;
+  showInterim?: boolean;
+}
+
 export default function VoiceInputButton({
   lang = 'en',
   onAppend,
   size = 'sm',
   className,
   showInterim = true,
-}: any) {
+}: VoiceInputButtonProps) {
   const { supported, listening, interim, error, toggle } = useSpeechRecognition({
-    lang: lang as 'en' | 'ru',
-    onFinal: (text: any) => {
+    lang,
+    onFinal: (text: string) => {
       const trimmed = text.trim();
       if (trimmed) onAppend?.(trimmed);
     },
@@ -36,7 +47,7 @@ export default function VoiceInputButton({
     return (
       <span
         title={L.unsupported}
-        className={cn('inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-muted-2', className)}
+        className={cn('inline-flex items-center gap-1 text-[12px] text-muted-2', className)}
       >
         <MicOff className="h-3 w-3" aria-hidden /> {L.unsupported}
       </span>
@@ -53,13 +64,10 @@ export default function VoiceInputButton({
         aria-pressed={listening}
         aria-label={listening ? L.stop : L.start}
         title={listening ? L.stop : L.start}
-        className={cn(listening && 'bg-coral border-rule/15 text-white')}
+        className={cn(listening && 'border-coral/30 bg-coral/12 text-coral')}
       >
         <Mic className={cn('h-3.5 w-3.5', listening && 'animate-pulse')} aria-hidden />
         <span>{listening ? L.listening : L.idle}</span>
-        {listening && (
-          <span className="ml-0.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" aria-hidden />
-        )}
       </Button>
       {/* Screen-reader-only state announcement. */}
       <span role="status" aria-live="polite" className="sr-only">
@@ -69,14 +77,14 @@ export default function VoiceInputButton({
         <span
           role="status"
           aria-live="polite"
-          className="hidden truncate font-mono text-[10px] uppercase tracking-wider text-muted sm:inline"
+          className="hidden truncate text-[12px] text-muted sm:inline"
           title={interim}
         >
           {interim.length > 32 ? `…${interim.slice(-32)}` : interim}
         </span>
       )}
       {error && error !== 'aborted' && error !== 'no-speech' && !listening && (
-        <span role="alert" className="font-mono text-[10px] uppercase tracking-wider text-coral">
+        <span role="alert" className="text-[12px] text-coral">
           {error}
         </span>
       )}

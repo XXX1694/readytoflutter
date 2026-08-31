@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -32,67 +32,103 @@ import { usePrefs } from '../store/prefs';
 import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
-import { useT } from '../i18n/ui';
+import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import {
   resetProgress, authLogout, bulkSyncProgress,
-  readLocalProgress, clearLocalProgress,
+  readLocalProgress, serializeLocalProgress, clearLocalProgress,
 } from '../api/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from '../lib/cn';
+import type { Level } from '../types/domain';
+
+// Group headings are sentence case in the grotesk — see DESIGN.md rule 2.
+const GROUP_CLASS =
+  'px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-[12px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted';
+
+const LEVELS: Level[] = ['junior', 'mid', 'senior'];
+
+// `PLATFORMS` stores its i18n keys as plain strings — resolve them against the
+// copy table without widening the table to `any`.
+const copy = (t: UICopy, key: string): string => {
+  const value = t[key as keyof UICopy];
+  return typeof value === 'string' ? value : '';
+};
 
 export default function CommandPalette() {
-  const open = usePrefs((s: any) => s.commandOpen);
-  const setOpen = usePrefs((s: any) => s.setCommandOpen);
-  const theme = usePrefs((s: any) => s.theme);
-  const setTheme = usePrefs((s: any) => s.setTheme);
-  const recallMode = usePrefs((s: any) => s.recallMode);
-  const toggleRecallMode = usePrefs((s: any) => s.toggleRecallMode);
-  const platform = usePrefs((s: any) => s.platform);
-  const setPlatform = usePrefs((s: any) => s.setPlatform);
-  const authToken = useAuth((s: any) => s.token);
-  const authUser = useAuth((s: any) => s.user);
-  const backendAvailable = useAuth((s: any) => s.backendAvailable);
-  const clearSession = useAuth((s: any) => s.clearSession);
-  const markSynced = useAuth((s: any) => s.markSynced);
+  const open = usePrefs((s) => s.commandOpen);
+  const setOpen = usePrefs((s) => s.setCommandOpen);
+  const theme = usePrefs((s) => s.theme);
+  const setTheme = usePrefs((s) => s.setTheme);
+  const recallMode = usePrefs((s) => s.recallMode);
+  const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
+  const platform = usePrefs((s) => s.platform);
+  const setPlatform = usePrefs((s) => s.setPlatform);
+  const authToken = useAuth((s) => s.token);
+  const authUser = useAuth((s) => s.user);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const clearSession = useAuth((s) => s.clearSession);
+  const markSynced = useAuth((s) => s.markSynced);
   const navigate = useNavigate();
   const { lang, setLang } = useLang();
   const t = useT(lang);
   const { topicTitle } = useContent(lang);
   const { data: topics = [] } = useTopics();
   const qc = useQueryClient();
-  const [query, setQuery] = useState('');
 
   // All keyboard shortcuts now live in `GlobalHotkeys` so they work even
   // before the user opens the palette for the first time (this whole
   // module is lazy-loaded the moment `commandOpen` flips to true).
-
-  useEffect(() => { if (!open) setQuery(''); }, [open]);
+  //
+  // The search box is uncontrolled: Radix unmounts Dialog.Content on close,
+  // which takes cmdk's internal search state with it, so every open starts
+  // empty without us mirroring the value into React state.
 
   const close = () => setOpen(false);
 
-  const run = (fn: any) => () => { close(); fn(); };
+  const run = (fn: () => void | Promise<void>) => () => { close(); void fn(); };
 
-  const goTopic = (slug: any) => run(() => navigate(`/topic/${slug}`));
+  const goTopic = (slug: string) => run(() => navigate(`/topic/${slug}`));
 
   const handleReset = run(async () => {
     if (!window.confirm(t.resetConfirm)) return;
     try {
       await resetProgress();
       qc.invalidateQueries();
-      toast.success(t.completed + ' ✓');
+      toast.success(t.progressReset);
     } catch {
       toast.error(t.failedReset);
     }
   });
 
+  const handleSync = run(async () => {
+    const items = serializeLocalProgress(readLocalProgress());
+    if (items.length === 0) {
+      toast.info(lang === 'ru' ? 'Локального прогресса нет' : 'Nothing to sync');
+      return;
+    }
+    try {
+      const r = await bulkSyncProgress(items);
+      clearLocalProgress();
+      markSynced();
+      qc.invalidateQueries();
+      toast.success(lang === 'ru' ? `Импортировано ${r.imported}` : `Imported ${r.imported}`);
+    } catch {
+      toast.error(lang === 'ru' ? 'Не удалось импортировать' : 'Sync failed');
+    }
+  });
+
+  const handleSignOut = run(async () => {
+    try { await authLogout(); } catch { /* the session is dropped either way */ }
+    clearSession();
+    qc.invalidateQueries();
+    toast.success(lang === 'ru' ? 'Вышел' : 'Signed out');
+    navigate('/');
+  });
+
   // Topic shortcuts respect the active stack — when the user has narrowed to
   // iOS the palette shouldn't dump 23 Flutter rows.
   const scopedTopics = filterTopicsByPlatform(topics, platform);
-  const groupedTopics = {
-    junior: scopedTopics.filter((tp: any) => tp.level === 'junior'),
-    mid: scopedTopics.filter((tp: any) => tp.level === 'mid'),
-    senior: scopedTopics.filter((tp: any) => tp.level === 'senior'),
-  };
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -109,13 +145,11 @@ export default function CommandPalette() {
           <Dialog.Description className="sr-only">{t.commandHint}</Dialog.Description>
           <Command
             label={t.commandPlaceholder}
-            className="overflow-hidden rounded-2xl border border-rule/12 glass shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_64px_-12px_rgb(var(--shadow)/0.30)]"
+            className="overflow-hidden rounded-xl border border-rule/12 glass shadow-codex-lg"
           >
             <div className="flex items-center gap-2 border-b border-rule/8 px-4 py-3.5">
-              <Search className="h-4 w-4 text-muted shrink-0" aria-hidden />
+              <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
               <Command.Input
-                value={query}
-                onValueChange={setQuery}
                 placeholder={t.commandPlaceholder}
                 inputMode="search"
                 enterKeyHint="search"
@@ -124,8 +158,8 @@ export default function CommandPalette() {
                 autoCapitalize="off"
                 className="flex-1 bg-transparent text-base sm:text-[15px] text-ink placeholder:text-muted-2 outline-none"
               />
-              <kbd className="hidden sm:flex items-center gap-1 rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-2">
-                ESC
+              <kbd className="hidden items-center rounded border border-rule/12 px-1.5 py-0.5 font-mono text-[11px] text-muted-2 sm:flex">
+                Esc
               </kbd>
             </div>
 
@@ -136,10 +170,7 @@ export default function CommandPalette() {
                 {t.cmdNoResults}
               </Command.Empty>
 
-              <Command.Group
-                heading={t.cmdNavigation}
-                className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
-              >
+              <Command.Group heading={t.cmdNavigation} className={GROUP_CLASS}>
                 <CmdItem icon={<Home />} onSelect={run(() => navigate('/'))}>
                   {t.cmdGoDashboard}
                 </CmdItem>
@@ -200,7 +231,7 @@ export default function CommandPalette() {
                 <CmdItem
                   icon={<HelpCircle />}
                   onSelect={run(() => {
-                    try { localStorage.removeItem('rtf:welcome:v1'); } catch {}
+                    try { localStorage.removeItem('rtf:welcome:v1'); } catch { /* private mode */ }
                     window.location.reload();
                   })}
                 >
@@ -211,7 +242,7 @@ export default function CommandPalette() {
               {backendAvailable && (
                 <Command.Group
                   heading={lang === 'ru' ? 'Аккаунт' : 'Account'}
-                  className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
+                  className={GROUP_CLASS}
                 >
                   {!authToken ? (
                     <>
@@ -224,42 +255,12 @@ export default function CommandPalette() {
                     </>
                   ) : (
                     <>
-                      <CmdItem
-                        icon={<Cloud />}
-                        onSelect={run(async () => {
-                          const local = readLocalProgress();
-                          const items = Object.entries(local).map(([k, v]) => ({
-                            questionId: Number(k),
-                            status: v?.status,
-                            notes: v?.notes || null,
-                            updated_at: v?.updated_at || new Date().toISOString(),
-                          })).filter((p: any) => p.questionId && p.status);
-                          if (items.length === 0) {
-                            toast.info(lang === 'ru' ? 'Локального прогресса нет' : 'Nothing to sync');
-                            return;
-                          }
-                          try {
-                            const r = await bulkSyncProgress(items);
-                            clearLocalProgress();
-                            markSynced();
-                            qc.invalidateQueries();
-                            toast.success(lang === 'ru' ? `Импортировано ${r.imported}` : `Imported ${r.imported}`);
-                          } catch {
-                            toast.error(lang === 'ru' ? 'Не удалось импортировать' : 'Sync failed');
-                          }
-                        })}
-                      >
+                      <CmdItem icon={<Cloud />} onSelect={handleSync}>
                         {lang === 'ru' ? 'Синхронизировать прогресс' : 'Sync local progress'}
                       </CmdItem>
                       <CmdItem
                         icon={<LogOut />}
-                        onSelect={run(async () => {
-                          try { await authLogout(); } catch {}
-                          clearSession();
-                          qc.invalidateQueries();
-                          toast.success(lang === 'ru' ? 'Вышел' : 'Signed out');
-                          navigate('/');
-                        })}
+                        onSelect={handleSignOut}
                         trailing={authUser?.email}
                       >
                         {lang === 'ru' ? 'Выйти' : 'Sign out'}
@@ -269,37 +270,31 @@ export default function CommandPalette() {
                 </Command.Group>
               )}
 
-              <Command.Group
-                heading={t.platformLabel}
-                className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
-              >
-                {PLATFORMS.map((p: any) => (
+              <Command.Group heading={t.platformLabel} className={GROUP_CLASS}>
+                {PLATFORMS.map((p) => (
                   <CmdItem
                     key={p.key}
                     icon={<Smartphone />}
                     onSelect={run(() => setPlatform(p.key))}
-                    trailing={platform === p.key ? '●' : ''}
+                    current={platform === p.key}
                   >
-                    {t[p.labelKey]}
+                    {copy(t, p.labelKey)}
                   </CmdItem>
                 ))}
               </Command.Group>
 
-              <Command.Group
-                heading={t.cmdAppearance}
-                className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
-              >
+              <Command.Group heading={t.cmdAppearance} className={GROUP_CLASS}>
                 <CmdItem
                   icon={<Sun />}
                   onSelect={run(() => setTheme('light'))}
-                  trailing={theme === 'light' ? '●' : ''}
+                  current={theme === 'light'}
                 >
                   {lang === 'ru' ? 'Тема — светлая' : 'Theme — light'}
                 </CmdItem>
                 <CmdItem
                   icon={<Moon />}
                   onSelect={run(() => setTheme('dark'))}
-                  trailing={theme === 'dark' ? '●' : ''}
+                  current={theme === 'dark'}
                 >
                   {lang === 'ru' ? 'Тема — тёмная' : 'Theme — dark'}
                 </CmdItem>
@@ -313,7 +308,9 @@ export default function CommandPalette() {
                 <CmdItem
                   icon={<Edit3 />}
                   onSelect={run(toggleRecallMode)}
-                  trailing={recallMode ? 'ON' : 'OFF'}
+                  trailing={recallMode
+                    ? (lang === 'ru' ? 'Вкл' : 'On')
+                    : (lang === 'ru' ? 'Выкл' : 'Off')}
                 >
                   {lang === 'ru'
                     ? 'Режим активного припоминания'
@@ -321,16 +318,16 @@ export default function CommandPalette() {
                 </CmdItem>
               </Command.Group>
 
-              {(['junior', 'mid', 'senior']).map((level: any) => {
-                const items = groupedTopics[level];
+              {LEVELS.map((level) => {
+                const items = scopedTopics.filter((tp) => tp.level === level);
                 if (!items.length) return null;
                 return (
                   <Command.Group
                     key={level}
                     heading={`${t.cmdTopics} · ${t[level].short}`}
-                    className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
+                    className={GROUP_CLASS}
                   >
-                    {items.map((topic: any) => (
+                    {items.map((topic) => (
                       <CmdItem
                         key={topic.id}
                         icon={<Layers />}
@@ -344,10 +341,7 @@ export default function CommandPalette() {
                 );
               })}
 
-              <Command.Group
-                heading={t.cmdActions}
-                className="px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-muted"
-              >
+              <Command.Group heading={t.cmdActions} className={GROUP_CLASS}>
                 <CmdItem icon={<RotateCcw />} onSelect={handleReset} danger>
                   {t.cmdReset}
                 </CmdItem>
@@ -360,24 +354,42 @@ export default function CommandPalette() {
   );
 }
 
-function CmdItem({ icon, children, trailing, onSelect, danger }: any) {
+interface CmdItemProps {
+  icon: ReactNode;
+  children: ReactNode;
+  onSelect: () => void;
+  /** Trailing hint — a keyboard shortcut, a count, an account email. */
+  trailing?: ReactNode;
+  /** This row is the value currently in effect (stack, theme, recall mode). */
+  current?: boolean;
+  danger?: boolean;
+}
+
+function CmdItem({ icon, children, trailing, current, onSelect, danger }: CmdItemProps) {
   return (
     <Command.Item
       onSelect={onSelect}
-      className={
-        'group flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-sm text-ink-2 ' +
-        'data-[selected=true]:bg-brand/10 data-[selected=true]:text-ink dark:data-[selected=true]:bg-brand/15 ' +
-        (danger ? 'data-[selected=true]:!bg-coral/15 data-[selected=true]:!text-[rgb(var(--coral))]' : '')
-      }
+      className={cn(
+        'group flex cursor-pointer items-center gap-3 rounded px-2.5 py-2 text-sm text-ink-2',
+        'data-[selected=true]:bg-rule/8 data-[selected=true]:text-ink',
+        danger && 'data-[selected=true]:!bg-coral/12 data-[selected=true]:!text-coral',
+      )}
     >
-      <span className="grid h-5 w-5 place-items-center text-muted group-data-[selected=true]:text-brand">
+      <span className={cn('grid h-5 w-5 shrink-0 place-items-center', danger ? 'text-coral' : 'text-muted')}>
         {icon}
       </span>
-      <span className="flex-1 truncate">{children}</span>
+      {/* The marker means "this is the one in effect" — the same signal the
+          Sidebar and BottomNav give for the route you are on. */}
+      <span className="min-w-0 flex-1 truncate">
+        <span className={cn(current && 'marker font-medium text-ink')}>{children}</span>
+      </span>
       {trailing && (
-        <span className="font-mono text-[11px] text-muted">{trailing}</span>
+        <span className="shrink-0 font-mono text-[11px] text-muted-2">{trailing}</span>
       )}
-      <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-data-[selected=true]:opacity-100 text-brand" aria-hidden />
+      <ArrowRight
+        className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-data-[selected=true]:opacity-100"
+        aria-hidden
+      />
     </Command.Item>
   );
 }

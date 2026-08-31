@@ -4,6 +4,8 @@ import { resolvePlayable, buildEmbedUrl } from '../lib/youtube';
 import { Pill } from '../ui/index';
 import { cn } from '../lib/cn';
 
+import type { Resource } from '../types/domain';
+
 /**
  * In-app YouTube player. Opens a modal with a privacy-enhanced iframe so the
  * user doesn't get pulled out of the app to youtube.com.
@@ -12,7 +14,14 @@ import { cn } from '../lib/cn';
  * (KnowledgePage) is responsible for marking the resource as recently
  * watched so we don't double-write to localStorage.
  */
-export default function VideoPlayer({ resource, isRu, onOpenChange }: any) {
+export interface VideoPlayerProps {
+  /** `null` closes the dialog; the caller owns which resource is playing. */
+  resource: Resource | null;
+  isRu: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function VideoPlayer({ resource, isRu, onOpenChange }: VideoPlayerProps) {
   const open = Boolean(resource);
   const playable = resource ? resolvePlayable(resource) : null;
   const embed = playable ? buildEmbedUrl(playable, { autoplay: true }) : null;
@@ -51,7 +60,7 @@ export default function VideoPlayer({ resource, isRu, onOpenChange }: any) {
                   {title}
                 </h2>
               </Dialog.Title>
-              <div className="mt-0.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-2">
+              <div className="mt-0.5 flex items-center gap-2 text-[12px] text-muted-2">
                 {resource.source && <span className="truncate">{resource.source}</span>}
                 {isPlaylist && <Pill tone="brand" size="xs">{isRu ? 'Плейлист' : 'Playlist'}</Pill>}
                 {!isPlaylist && playable?.videoId && (
@@ -64,7 +73,7 @@ export default function VideoPlayer({ resource, isRu, onOpenChange }: any) {
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-md border border-rule/15 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-rule/15 hover:text-ink"
+              className="inline-flex items-center gap-1 rounded border border-rule/15 px-2 py-1 text-[12px] text-muted transition-colors hover:border-rule/30 hover:text-ink"
               aria-label={isRu ? 'Открыть на YouTube' : 'Open on YouTube'}
             >
               <ExternalLink className="h-3 w-3" /> YouTube

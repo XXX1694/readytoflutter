@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  motion,
+  AnimatePresence,
+  type Transition,
+  type TargetAndTransition,
+} from 'framer-motion';
 import { useIsMobile } from '../lib/useMediaQuery';
 
 /**
@@ -26,9 +31,13 @@ import { useIsMobile } from '../lib/useMediaQuery';
 // these counts as a tab swap, not a push/pop.
 const TAB_ROOTS = ['/', '/study', '/bookmarks', '/knowledge', '/settings', '/login', '/signup', '/stats', '/search', '/mock'];
 
-const isTabRoot = (path: any) => TAB_ROOTS.includes(path);
+const isTabRoot = (path: string): boolean => TAB_ROOTS.includes(path);
 
-export default function RouteTransition({ children }: any) {
+export interface RouteTransitionProps {
+  children: ReactNode;
+}
+
+export default function RouteTransition({ children }: RouteTransitionProps) {
   const location = useLocation();
   const navType = useNavigationType(); // 'PUSH' | 'POP' | 'REPLACE'
   const lastPath = useRef(location.pathname);
@@ -66,9 +75,11 @@ export default function RouteTransition({ children }: any) {
   // Pick variants by tier. Mobile push/pop get a *light* slide (16% offset,
   // not 100%) so the GPU only repaints a strip, not the whole screen, and
   // the motion finishes before lazy chunks would otherwise feel sluggish.
-  let variants;
-  let transition;
-  let mode;
+  // Annotated so the cubic-bezier stays a 4-tuple rather than widening to
+  // number[], and so `mode` keeps AnimatePresence's union.
+  let variants: { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition };
+  let transition: Transition;
+  let mode: 'wait' | 'popLayout' | 'sync';
 
   if (!isMobile) {
     variants = {

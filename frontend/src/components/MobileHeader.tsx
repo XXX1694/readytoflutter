@@ -23,13 +23,18 @@ import { cn } from '../lib/cn';
  *   is no prior entry (deep link / first visit).
  * - The right action is `Search` everywhere; on focus-flow routes (Study /
  *   Mock / Round / login / signup) the X close swaps in instead.
+ *
+ * The citron marker appears here only on the home route, where the title *is*
+ * the wordmark — same treatment the Sidebar gives it. Ordinary page titles
+ * stay plain ink: the marker means "the wordmark" or "the nav item you are
+ * on" (Sidebar rows, BottomNav tabs), never "here is a heading".
  */
 const FOCUS_ROUTES = [/^\/study(\/|$)/, /^\/mock(\/|$)/, /^\/round(\/|$)/, /^\/login(\/|$)/, /^\/signup(\/|$)/];
 
-const slugToLabel = (slug: any) =>
-  slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, (c: any) => c.toUpperCase()) : '';
+const slugToLabel = (slug: string): string =>
+  slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
 
-function usePageTitle() {
+function usePageTitle(): string {
   const location = useLocation();
   const { lang } = useLang();
   const { topicTitle } = useContent(lang);
@@ -38,7 +43,7 @@ function usePageTitle() {
   const path = location.pathname;
   const topicMatch = path.match(/^\/(?:topic|round)\/([^/]+)/);
   if (topicMatch) {
-    const topic = topics.find((tp: any) => tp.slug === topicMatch[1]);
+    const topic = topics.find((tp) => tp.slug === topicMatch[1]);
     if (topic) return topicTitle(topic);
     return slugToLabel(topicMatch[1]);
   }
@@ -56,22 +61,25 @@ function usePageTitle() {
   return '';
 }
 
+const ACTION_CLASS =
+  'touch-target tap-feedback inline-flex items-center justify-center rounded-lg text-ink-2 active:text-ink';
+
 export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const { lang } = useLang();
   const t = useT(lang);
-  const toggleSidebar = usePrefs((s: any) => s.toggleSidebar);
-  const setCommandOpen = usePrefs((s: any) => s.setCommandOpen);
+  const toggleSidebar = usePrefs((s) => s.toggleSidebar);
+  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
 
   const title = usePageTitle();
   const isHome = location.pathname === '/';
-  const isFocus = FOCUS_ROUTES.some((re: any) => re.test(location.pathname));
+  const isFocus = FOCUS_ROUTES.some((re) => re.test(location.pathname));
 
   // Track scroll direction on the main scroller so we can auto-hide the
   // bar like Twitter/Instagram. `mainEl` resolves after Layout mounts —
   // the hook handles a null target gracefully on the first render.
-  const [mainEl, setMainEl] = useState<any>(null);
+  const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
   useEffect(() => {
     const find = () => setMainEl(document.querySelector('main'));
     find();
@@ -107,7 +115,7 @@ export default function MobileHeader() {
     >
       <div className="relative flex h-14 items-center px-2">
         {/* Leading slot — menu on home, back arrow elsewhere. The button
-            wrapper is 48×48 so even tapping near the edge stays inside the
+            wrapper is 44×44 so even tapping near the edge stays inside the
             target. */}
         <div className="flex w-12 shrink-0 items-center">
           {isHome ? (
@@ -115,7 +123,7 @@ export default function MobileHeader() {
               type="button"
               onClick={onMenu}
               aria-label={t.openMenu}
-              className="touch-target tap-feedback ml-0.5 inline-flex items-center justify-center rounded-xl text-ink-2 active:text-ink"
+              className={cn(ACTION_CLASS, 'ml-0.5')}
             >
               <Menu className="h-[22px] w-[22px]" aria-hidden />
             </button>
@@ -124,7 +132,7 @@ export default function MobileHeader() {
               type="button"
               onClick={onBack}
               aria-label={lang === 'ru' ? 'Назад' : 'Back'}
-              className="touch-target tap-feedback ml-0.5 inline-flex items-center justify-center rounded-xl text-ink-2 active:text-ink"
+              className={cn(ACTION_CLASS, 'ml-0.5')}
             >
               <ArrowLeft className="h-[22px] w-[22px]" aria-hidden />
             </button>
@@ -132,12 +140,12 @@ export default function MobileHeader() {
         </div>
 
         {/* Title — absolutely centered so it doesn't shift when actions
-            change. Truncates beyond 60% width to keep edges clear. */}
+            change. Truncates beyond 64% width to keep edges clear. */}
         <h1
           className="pointer-events-none absolute left-1/2 top-1/2 max-w-[64%] -translate-x-1/2 -translate-y-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink"
           aria-live="polite"
         >
-          {title}
+          <span className={cn(isHome && 'marker text-[17px] tracking-[-0.02em]')}>{title}</span>
         </h1>
 
         {/* Trailing slot — search by default, X on focus-flow routes. */}
@@ -147,7 +155,7 @@ export default function MobileHeader() {
               type="button"
               onClick={onClose}
               aria-label={lang === 'ru' ? 'Выйти' : 'Close'}
-              className="touch-target tap-feedback mr-0.5 inline-flex items-center justify-center rounded-xl text-ink-2 active:text-ink"
+              className={cn(ACTION_CLASS, 'mr-0.5')}
             >
               <X className="h-[22px] w-[22px]" aria-hidden />
             </button>
@@ -156,7 +164,7 @@ export default function MobileHeader() {
               type="button"
               onClick={onSearch}
               aria-label={t.searchOpenHint}
-              className="touch-target tap-feedback mr-0.5 inline-flex items-center justify-center rounded-xl text-ink-2 active:text-ink"
+              className={cn(ACTION_CLASS, 'mr-0.5')}
             >
               <Search className="h-[22px] w-[22px]" aria-hidden />
             </button>

@@ -2,6 +2,10 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePrefs } from '../store/prefs';
 import { PLATFORM_KEYS } from '../lib/platform';
+import type { PlatformKey } from '../types/domain';
+
+const isPlatformKey = (value: string): value is PlatformKey =>
+  (PLATFORM_KEYS as readonly string[]).includes(value);
 
 // Bidirectional sync: ?stack=ios <-> prefs.platform.
 //
@@ -11,19 +15,19 @@ import { PLATFORM_KEYS } from '../lib/platform';
 // 'all' stays out of the URL so bare links remain clean.
 
 export default function PlatformUrlSync() {
-  const platform = usePrefs((s: any) => s.platform);
+  const platform = usePrefs((s) => s.platform);
   const [searchParams, setSearchParams] = useSearchParams();
   const urlStack = searchParams.get('stack');
-  const hydrated = useRef(false);
+  const hydrated = useRef<boolean | null>(null);
 
   // Synchronous one-shot URL → prefs hydration. Done in render (not effect)
   // so the prefs→URL effect below sees the freshly-applied platform via
   // getState() — otherwise the stale closure would write the old platform
   // back to the URL on first paint.
-  if (!hydrated.current) {
+  if (hydrated.current == null) {
     hydrated.current = true;
-    if (urlStack && (PLATFORM_KEYS as string[]).includes(urlStack) && urlStack !== platform) {
-      usePrefs.setState({ platform: urlStack as any });
+    if (urlStack && isPlatformKey(urlStack) && urlStack !== platform) {
+      usePrefs.setState({ platform: urlStack });
     }
   }
 

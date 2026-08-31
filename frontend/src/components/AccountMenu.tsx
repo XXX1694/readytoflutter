@@ -1,19 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogIn, LogOut, Cloud, Trash2, Shield, ChevronDown, Settings, Sparkles, Crown, Star, Mail } from 'lucide-react';
+import { LogIn, LogOut, Cloud, Trash2, Shield, ChevronDown, Settings, Sparkles, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
 import {
   authLogout, authDeleteAccount, bulkSyncProgress,
-  readLocalProgress, clearLocalProgress, apiBaseUrl,
+  readLocalProgress, serializeLocalProgress, clearLocalProgress, apiBaseUrl,
 } from '../api/api';
 import { track, resetIdentity } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
+import type { User } from '../types/domain';
 
-const initialsOf = (user: any) => {
+const initialsOf = (user: User | null): string => {
   const source = user?.name?.trim() || user?.email || '?';
   const parts = source.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -26,13 +27,13 @@ export default function AccountMenu() {
   const { lang } = useLang();
   const isRu = lang === 'ru';
 
-  const token = useAuth((s: any) => s.token);
-  const user = useAuth((s: any) => s.user);
-  const backendAvailable = useAuth((s: any) => s.backendAvailable);
-  const probeBackend = useAuth((s: any) => s.probeBackend);
-  const clearSession = useAuth((s: any) => s.clearSession);
-  const markSynced = useAuth((s: any) => s.markSynced);
-  const lastSyncAt = useAuth((s: any) => s.lastSyncAt);
+  const token = useAuth((s) => s.token);
+  const user = useAuth((s) => s.user);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const probeBackend = useAuth((s) => s.probeBackend);
+  const clearSession = useAuth((s) => s.clearSession);
+  const markSynced = useAuth((s) => s.markSynced);
+  const lastSyncAt = useAuth((s) => s.lastSyncAt);
   const qc = useQueryClient();
 
   // Probe once on mount so we know whether to show the auth UI at all.
@@ -47,7 +48,7 @@ export default function AccountMenu() {
   // Probing — render a placeholder of the same dimensions to avoid layout
   // jumps when the probe resolves.
   if (backendAvailable === null) {
-    return <div className="h-9 w-9 rounded-xl border border-rule/10 bg-paper-2/40" aria-hidden />;
+    return <div className="h-9 w-9 rounded-lg border border-rule/10" aria-hidden />;
   }
 
   // Logged out
@@ -55,7 +56,7 @@ export default function AccountMenu() {
     return (
       <Link
         to="/login"
-        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2/60 px-3 font-mono text-[11px] uppercase tracking-wider text-ink transition-all hover:border-rule/25 hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-rule/12 px-3 text-[13px] font-medium text-ink transition-colors hover:border-rule/24"
       >
         <LogIn className="h-3.5 w-3.5" aria-hidden />
         {isRu ? 'Войти' : 'Sign in'}
@@ -74,14 +75,7 @@ export default function AccountMenu() {
   };
 
   const handleSync = async () => {
-    const local = readLocalProgress();
-    const items = Object.entries(local).map(([k, v]) => ({
-      questionId: Number(k),
-      status: v?.status,
-      notes: v?.notes || null,
-      updated_at: v?.updated_at || new Date().toISOString(),
-    })).filter((p: any) => p.questionId && p.status);
-
+    const items = serializeLocalProgress(readLocalProgress());
     if (items.length === 0) {
       toast.info(isRu ? 'Локального прогресса нет' : 'No local progress to import');
       return;
@@ -121,15 +115,22 @@ export default function AccountMenu() {
       })
     : null;
 
+  const tier = user?.pro_tier;
+  const tierLabel = tier === 'lifetime'
+    ? (isRu ? 'Навсегда' : 'Lifetime')
+    : tier === 'pro'
+      ? 'Pro'
+      : null;
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="inline-flex h-9 items-center gap-2 rounded-xl border border-rule/12 bg-paper-2/60 px-1.5 transition-all hover:border-rule/25 hover:bg-paper-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-rule/12 pl-1 pr-1.5 transition-colors hover:border-rule/24"
           aria-label={isRu ? 'Меню аккаунта' : 'Account menu'}
         >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-brand-sky font-mono text-[10px] font-semibold uppercase text-white shadow-[0_2px_4px_-1px_rgb(var(--brand)/0.40)]">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded bg-ink text-[11px] font-semibold text-paper">
             {initialsOf(user)}
           </span>
           <ChevronDown className="hidden h-3 w-3 text-muted sm:block" aria-hidden />
@@ -141,47 +142,42 @@ export default function AccountMenu() {
           align="end"
           sideOffset={6}
           className={cn(
-            'z-50 w-64 overflow-hidden rounded-2xl border border-rule/12 glass p-1 shadow-[0_8px_16px_-4px_rgb(var(--shadow)/0.15),0_24px_48px_-12px_rgb(var(--shadow)/0.20)]',
+            'z-50 w-64 overflow-hidden rounded-xl border border-rule/12 glass p-1 shadow-codex-lg',
             'data-[state=open]:animate-fade-in',
           )}
         >
-          <div className="border-b border-rule/15 px-3 py-3">
+          <div className="border-b border-rule/12 px-3 py-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="font-display text-sm font-medium text-ink truncate">
+                <div className="truncate font-display text-sm font-medium text-ink">
                   {user?.name || user?.email}
                 </div>
                 {user?.name && (
-                  <div className="font-mono text-[10px] text-muted-2 truncate">
+                  <div className="truncate font-mono text-[11px] text-muted-2">
                     {user.email}
                   </div>
                 )}
               </div>
-              {/* Tier marker — Pro / Lifetime get a brand pill, free users
-                  see nothing here (the Upgrade row below is the CTA). */}
-              {user?.pro_tier === 'lifetime' && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--plum))]/12 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[rgb(var(--plum))]">
-                  <Crown className="h-2.5 w-2.5" /> lifetime
-                </span>
-              )}
-              {user?.pro_tier === 'pro' && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-brand/12 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-brand">
-                  <Star className="h-2.5 w-2.5" /> pro
+              {/* Tier marker — Pro / Lifetime only. Free users see the
+                  Upgrade row below instead. */}
+              {tierLabel && (
+                <span className="shrink-0 rounded bg-rule/8 px-1.5 py-0.5 text-[11px] font-medium text-ink-2">
+                  {tierLabel}
                 </span>
               )}
             </div>
             {lastSyncLabel && (
-              <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-2">
-                {isRu ? 'Синх:' : 'Sync:'} {lastSyncLabel}
+              <div className="mt-1.5 text-[12px] text-muted-2">
+                {isRu ? 'Синхронизация' : 'Last sync'} · {lastSyncLabel}
               </div>
             )}
           </div>
 
           {/* Upgrade row — only shown to free-plan users so paying users
-              never see a "buy" prompt again. Brand-tinted to stand out. */}
-          {(!user?.pro_tier || user.pro_tier === 'free') && (
+              never see a "buy" prompt again. */}
+          {(!tier || tier === 'free') && (
             <Item
-              icon={<Sparkles className="h-3.5 w-3.5 text-brand" />}
+              icon={<Sparkles className="h-3.5 w-3.5" />}
               onSelect={() => navigate('/pricing')}
               accent
             >
@@ -207,7 +203,7 @@ export default function AccountMenu() {
             {isRu ? 'Выйти' : 'Sign out'}
           </Item>
 
-          <DropdownMenu.Separator className="my-1 h-px bg-rule" />
+          <DropdownMenu.Separator className="my-1 h-px bg-rule/12" />
 
           <Item
             icon={<Trash2 className="h-3.5 w-3.5" />}
@@ -216,40 +212,36 @@ export default function AccountMenu() {
           >
             {isRu ? 'Удалить аккаунт' : 'Delete account'}
           </Item>
-
-          <DropdownMenu.Separator className="my-1 h-px bg-rule" />
-
-          <div className="px-3 py-2 font-mono text-[9px] uppercase tracking-wider text-muted-2">
-            <Shield className="mr-1 inline h-2.5 w-2.5" />
-            {isRu ? 'JWT · 30 дней' : 'JWT · 30-day session'}
-          </div>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   );
 }
 
-function Item({ icon, children, onSelect, danger, accent }: any) {
+interface ItemProps {
+  icon: ReactNode;
+  children: ReactNode;
+  onSelect: () => void;
+  danger?: boolean;
+  accent?: boolean;
+}
+
+function Item({ icon, children, onSelect, danger, accent }: ItemProps) {
   return (
     <DropdownMenu.Item
       onSelect={onSelect}
       className={cn(
-        'flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2 text-sm outline-none',
-        'data-[highlighted]:bg-brand/10 data-[highlighted]:text-ink dark:data-[highlighted]:bg-brand/15',
+        'flex cursor-pointer items-center gap-2.5 rounded px-3 py-2 text-sm outline-none',
+        'data-[highlighted]:bg-rule/8 data-[highlighted]:text-ink',
         danger
-          ? 'text-[rgb(var(--coral))] data-[highlighted]:!bg-coral/15'
+          ? 'text-coral data-[highlighted]:!bg-coral/12'
           : accent
-          ? 'font-medium text-ink'
-          : 'text-ink-2',
+            ? 'font-medium text-ink'
+            : 'text-ink-2',
       )}
     >
-      <span className={cn(accent ? 'text-brand' : 'text-muted')}>{icon}</span>
+      <span className={cn('shrink-0', danger ? 'text-coral' : 'text-muted')}>{icon}</span>
       <span>{children}</span>
     </DropdownMenu.Item>
   );
 }
-
-// Auto-sign-out helper — wired to the api.js 401 interceptor (which already
-// clears the session). Exposed here in case a feature needs to drop the
-// session manually from outside the menu.
-export const signOut = () => useAuth.getState().clearSession();
