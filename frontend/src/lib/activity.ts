@@ -14,7 +14,7 @@ interface ProgressRecord {
   updated_at?: string;
 }
 
-type ProgressMap = Record<string, ProgressRecord>;
+export type ProgressMap = Record<string, ProgressRecord>;
 
 export interface HeatmapCell {
   date: Date;
@@ -40,6 +40,21 @@ const ymd = (d: Date): string => {
 };
 
 const startOfDay = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/**
+ * 'YYYY-MM-DD' back to local midnight.
+ *
+ * `new Date('2026-03-15')` is specified to parse a date-only string as *UTC*
+ * midnight, which is the previous day everywhere west of Greenwich. Day keys
+ * here are produced from local dates by `ymd()`, so reading them back with the
+ * built-in parser shifted every key by a day for those users and made the
+ * longest-streak walk match nothing — "Best" rendered as 0 no matter how long
+ * the user's real streak was.
+ */
+const fromYmd = (key: string): Date => {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
 
 export function readProgress(): ProgressMap {
   try {
@@ -67,8 +82,11 @@ export function buildDayMap(progress: ProgressMap = readProgress()): Map<string,
 }
 
 /**
- * Returns `weeks` columns × 7 rows (0=Sun..6=Sat) of `{ date, key, count }`,
- * ending today. Suitable for direct rendering as an SVG/CSS grid.
+ * Returns `weeks` columns × 7 rows of `{ date, key, count }`, ending today.
+ *
+ * Rows are seven consecutive days, NOT weekdays — the grid is not aligned to
+ * week boundaries the way a contribution graph is, so row index carries no
+ * meaning and the renderer must not label rows Mon/Tue/…
  */
 export function buildHeatmap(
   weeks = 14,
@@ -109,12 +127,12 @@ export function computeStreaks(dayMap: Map<string, number> = buildDayMap()): Str
   let longest = 0;
   for (const k of keys) {
     // Only start from a "streak head" (no previous day in set) for efficiency
-    const prev = new Date(k);
+    const prev = fromYmd(k);
     prev.setDate(prev.getDate() - 1);
     if (set.has(ymd(prev))) continue;
 
     let len = 0;
-    const cursor = new Date(k);
+    const cursor = fromYmd(k);
     while (set.has(ymd(cursor))) {
       len += 1;
       cursor.setDate(cursor.getDate() + 1);

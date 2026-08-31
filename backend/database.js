@@ -3,7 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const BetterSqlite3 = require('better-sqlite3');
 
-const DATA_DIR = path.join(__dirname, 'data');
+// Test seam: point the whole data directory (SQLite file + seed JSON) at a
+// throwaway dir so `node --test` never touches the real backend/data/interview.db.
+const DATA_DIR = process.env.ONSITE_DATA_DIR
+  ? path.resolve(process.env.ONSITE_DATA_DIR)
+  : path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'interview.db');
 const SEED_DIR = path.join(DATA_DIR, 'seed');
 const SEED_TOPICS_FILE = path.join(SEED_DIR, 'topics.json');
@@ -502,6 +506,11 @@ function bulkSetProgress(userId, items) {
         notes: it.notes || null,
         updated_at: incomingAt,
       });
+      // Track what we just wrote: the payload is not de-duplicated, so a
+      // second item for the same question must be compared against this
+      // write, not against the pre-batch snapshot. Without this a stale
+      // duplicate later in the array reverts the newer one.
+      existingMap.set(qid, incomingAt);
       imported += 1;
     }
   });

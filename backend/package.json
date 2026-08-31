@@ -4,6 +4,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test": "node --test",
     "dev": "node --env-file=.env --watch server.js",
     "generate:static-data": "node scripts/generate-static-data.js"
   },
