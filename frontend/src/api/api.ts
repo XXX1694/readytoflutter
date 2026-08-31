@@ -92,6 +92,9 @@ interface LocalProgressEntry {
 type LocalProgressMap = Record<string, LocalProgressEntry>;
 
 const STATIC_DATA_URL = `${import.meta.env.BASE_URL}seed/static-data.json`;
+// The key predates the rename to Onsite and deliberately keeps the old name:
+// it holds every anonymous user's progress, so renaming it silently wipes
+// them. Changing it requires a read-old → write-new migration first.
 const PROGRESS_STORAGE_KEY = 'readytoflutter_progress_v1';
 // Re-fetch the static bundle once an hour. Without this, a user with an
 // open tab keeps serving the in-memory copy from the first load — so seed

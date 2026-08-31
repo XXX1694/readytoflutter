@@ -42,7 +42,7 @@ function usePageTitle() {
     if (topic) return topicTitle(topic);
     return slugToLabel(topicMatch[1]);
   }
-  if (path === '/' || path === '') return 'prepiroshi';
+  if (path === '/' || path === '') return 'Onsite';
   if (path === '/study')     return lang === 'ru' ? 'Повторение' : 'Study';
   if (path === '/mock')      return lang === 'ru' ? 'Mock-собес' : 'Mock';
   if (path === '/search')    return lang === 'ru' ? 'Поиск' : 'Search';

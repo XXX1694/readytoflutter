@@ -28,6 +28,8 @@ export interface StreakStats {
   totalDays: number;
 }
 
+// Must stay byte-identical to PROGRESS_STORAGE_KEY in api/api.ts — see the
+// note there on why the pre-rename name is kept.
 const PROGRESS_KEY = 'readytoflutter_progress_v1';
 
 const ymd = (d: Date): string => {

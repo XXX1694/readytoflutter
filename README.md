@@ -1,6 +1,6 @@
 <div align="center">
 
-# prepiroshi · Codex
+# Onsite · Codex
 
 **Серьёзная подготовка к мобильному собесу: Flutter, iOS, Android, KMP.**
 392 вопроса, 53 темы, SRS, mock-собеседование, активное припоминание, шпаргалки и интервью-раунды.
@@ -42,11 +42,11 @@
 
 ## Стек
 
-**Frontend** &middot; React 18 &middot; Vite 5 &middot; **TypeScript (incremental, allowJs)** &middot; Tailwind CSS &middot; Zustand &middot; TanStack Query &middot; React Router 6 &middot; Framer Motion &middot; Radix UI &middot; cmdk &middot; MiniSearch &middot; Shiki &middot; Sonner &middot; vite-plugin-pwa.
+**Frontend** &middot; React 18 &middot; Vite 5 &middot; **TypeScript** &middot; Tailwind CSS &middot; Zustand &middot; TanStack Query &middot; React Router 6 &middot; Framer Motion &middot; Radix UI &middot; cmdk &middot; MiniSearch &middot; Shiki &middot; Sonner &middot; vite-plugin-pwa.
 
 **Backend** &middot; Node 18+ &middot; Express 4 &middot; better-sqlite3 (WAL) &middot; bcryptjs &middot; jsonwebtoken &middot; helmet &middot; express-rate-limit &middot; zod.
 
-**Без AI**, без внешних ML-сервисов, без сторонних auth-провайдеров. Всё работает локально.
+Без сторонних auth-провайдеров — свои email + bcrypt + JWT. Внешние сервисы только опциональные и деградируют молча: Anthropic для AI-грейдера и Stripe для биллинга. Без их ключей приложение работает целиком, просто без этих двух фич.
 
 ---
 
@@ -54,8 +54,8 @@
 
 ```bash
 # 1. Клонируй
-git clone <your-repo>.git readytoflutter
-cd readytoflutter
+git clone <your-repo>.git onsite
+cd onsite
 
 # 2. Backend
 cd backend
@@ -84,7 +84,7 @@ npm run dev            # http://localhost:3000
 ## Структура
 
 ```
-readytoflutter/
+onsite/
 ├── backend/                Express + SQLite API
 │   ├── server.js           Маршруты, helmet, rate-limit, CORS
 │   ├── auth.js             bcrypt + JWT, zod-валидация, middleware
@@ -102,9 +102,9 @@ readytoflutter/
 │   │   ├── components/     Layout / Header / Sidebar / BottomNav /
 │   │   │                   QuestionCard / TodayPlan / AccountMenu / ...
 │   │   ├── ui/             Codex дизайн-кит: Button, Card, Pill, ...
-│   │   ├── lib/            srs.js, activity.js, hint.js, roundBuilder.js, ...
+│   │   ├── lib/            srs.ts, activity.ts, hint.ts, roundBuilder.ts, ...
 │   │   ├── store/          Zustand: prefs, auth
-│   │   ├── api/api.js      Dual-mode (remote → localStorage fallback)
+│   │   ├── api/api.ts      Dual-mode (remote → localStorage fallback)
 │   │   └── i18n/           EN/RU UI и контент
 │   └── public/seed/        Статический бандл вопросов для Pages
 │

@@ -32,7 +32,7 @@ export default function PrintTopicPage() {
     if (!topic) return;
     const original = document.title;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    document.title = `${safe} — prepiroshi`;
+    document.title = `${safe} — Onsite`;
     return () => { document.title = original; };
   }, [topic, topicTitle]);
 
@@ -96,7 +96,7 @@ export default function PrintTopicPage() {
         {/* Cover header */}
         <header className="mb-6 border-b-2 border-rule/15 pb-4">
           <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-            <span>prepiroshi</span>
+            <span>Onsite</span>
             <span>{today}</span>
           </div>
           <h1 className="mt-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
@@ -149,7 +149,7 @@ export default function PrintTopicPage() {
         </ol>
 
         <footer className="mt-8 border-t border-rule pt-3 text-center font-mono text-[10px] uppercase tracking-wider text-muted-2">
-          prepiroshi · {topicTitle(topic)} · {today}
+          Onsite · {topicTitle(topic)} · {today}
         </footer>
       </article>
     </div>

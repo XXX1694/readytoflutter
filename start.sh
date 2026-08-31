@@ -5,7 +5,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 # Resolve the script's own directory (works regardless of where you call it from)
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-echo "🚀 Starting ReadyToFlutter..."
+echo "🚀 Starting Onsite..."
 
 # Verify dependencies are installed before trying to run anything. A missing
 # node_modules is the #1 silent-failure reason on a fresh clone.

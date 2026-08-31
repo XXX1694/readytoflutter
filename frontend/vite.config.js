@@ -29,8 +29,8 @@ export default defineConfig({
         // Stable identifier so `start_url` query strings don't fork the
         // installed PWA into multiple "apps" in Chrome.
         id: '/',
-        name: 'prepiroshi — Mobile Interview Prep',
-        short_name: 'prepiroshi',
+        name: 'Onsite — Mobile Interview Prep',
+        short_name: 'Onsite',
         description: 'Flutter, iOS, Android & cross-platform mobile interview workspace with spaced repetition, mock interviews and a curated knowledge base.',
         // Theme color tracks the app's light surface so the iOS status bar
         // and the Android system chrome blend with the paper background.

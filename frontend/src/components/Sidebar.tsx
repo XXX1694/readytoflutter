@@ -153,7 +153,7 @@ export default function Sidebar() {
             </span>
             <span className="flex flex-col">
               <span className="font-display text-[15px] font-semibold leading-tight tracking-tight text-ink">
-                prepiroshi
+                Onsite
               </span>
               {/* Tracking dropped from 0.22em → 0.08em — at the previous
                   spacing the Cyrillic подписи split into ghost-words; the
