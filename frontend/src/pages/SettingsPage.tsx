@@ -1,20 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  ArrowLeft, User, Lock, AtSign, Trash2, Save, Eye, EyeOff, Shield,
-  Mail, AlertTriangle, Sliders, Sun, Moon, Languages, Edit3,
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../store/auth';
 import {
   authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
 } from '../api/api';
-import { useLang } from '../i18n/LangContext';
-import { usePrefs } from '../store/prefs';
-import { Button, Eyebrow } from '../ui/index';
+import { useLang, type Lang } from '../i18n/LangContext';
+import { usePrefs, type Theme } from '../store/prefs';
+import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
 import { cn } from '../lib/cn';
+import type { User } from '../types/domain';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -22,10 +20,9 @@ export default function SettingsPage() {
   const isRu = lang === 'ru';
   const T = isRu ? RU : EN;
 
-  const token = useAuth((s: any) => s.token);
-  const user = useAuth((s: any) => s.user);
-  const setSession = useAuth((s: any) => s.setSession);
-  const clearSession = useAuth((s: any) => s.clearSession);
+  const token = useAuth((s) => s.token);
+  const user = useAuth((s) => s.user);
+  const clearSession = useAuth((s) => s.clearSession);
   const qc = useQueryClient();
 
   // Soft-redirect to login if not authenticated
@@ -34,62 +31,63 @@ export default function SettingsPage() {
   }, [token, navigate]);
   if (!token || !user) return null;
 
-  const handleLogoutAll = () => {
+  const handleAccountDeleted = () => {
     clearSession();
     qc.invalidateQueries();
     navigate('/login');
   };
 
+  const joined = new Date(user.created_at).toLocaleDateString(isRu ? 'ru-RU' : 'en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           to="/"
-          className="mb-5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-ink"
+          className="mb-6 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           {T.back}
         </Link>
 
-        {/* Header */}
-        <header className="mb-8 border-b border-rule/15 pb-6">
-          <Eyebrow accent="brand">
-            <User className="mr-1 inline h-3 w-3" />
-            {T.eyebrow}
-          </Eyebrow>
-          <h1 className="mt-3 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-4xl">
+        <header className="mb-8 border-b border-rule/12 pb-6">
+          <Eyebrow>{T.eyebrow}</Eyebrow>
+          <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
             {T.title}
           </h1>
-          <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-muted">
-            {user.email} · {T.joined} {new Date(user.created_at).toLocaleDateString(isRu ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          <p className="mt-2 text-sm text-muted">
+            {user.email} · {T.joined} {joined}
           </p>
         </header>
 
         <Tabs.Root defaultValue="preferences">
           <Tabs.List
-            className="mb-6 inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm"
+            className="no-scrollbar mb-8 flex gap-1 overflow-x-auto border-b border-rule/12"
             aria-label={T.tabs}
           >
-            <TabTrigger value="preferences" icon={<Sliders className="h-3.5 w-3.5" />}>{T.tabPreferences}</TabTrigger>
-            <TabTrigger value="profile" icon={<User className="h-3.5 w-3.5" />}>{T.tabProfile}</TabTrigger>
-            <TabTrigger value="security" icon={<Lock className="h-3.5 w-3.5" />}>{T.tabSecurity}</TabTrigger>
-            <TabTrigger value="danger" icon={<AlertTriangle className="h-3.5 w-3.5" />}>{T.tabDanger}</TabTrigger>
+            <TabTrigger value="preferences">{T.tabPreferences}</TabTrigger>
+            <TabTrigger value="profile">{T.tabProfile}</TabTrigger>
+            <TabTrigger value="security">{T.tabSecurity}</TabTrigger>
+            <TabTrigger value="account">{T.tabAccount}</TabTrigger>
           </Tabs.List>
 
-          <Tabs.Content value="preferences" className="outline-none">
-            <PreferencesSection T={T} isRu={isRu} />
+          <Tabs.Content value="preferences">
+            <PreferencesSection T={T} />
           </Tabs.Content>
 
-          <Tabs.Content value="profile" className="outline-none">
-            <ProfileSection user={user} setSession={setSession} token={token} qc={qc} T={T} />
+          <Tabs.Content value="profile">
+            <ProfileSection user={user} token={token} T={T} />
           </Tabs.Content>
 
-          <Tabs.Content value="security" className="outline-none">
+          <Tabs.Content value="security">
             <SecuritySection T={T} />
           </Tabs.Content>
 
-          <Tabs.Content value="danger" className="outline-none">
-            <DangerSection user={user} setSession={setSession} token={token} qc={qc} T={T} onLogout={handleLogoutAll} />
+          <Tabs.Content value="account" className="space-y-6">
+            <ChangeEmailSection user={user} T={T} />
+            <DeleteAccountSection T={T} onDeleted={handleAccountDeleted} />
           </Tabs.Content>
         </Tabs.Root>
       </div>
@@ -97,201 +95,84 @@ export default function SettingsPage() {
   );
 }
 
-function TabTrigger({ value, icon, children }: any) {
-  return (
-    <Tabs.Trigger
-      value={value}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted transition-colors',
-        'data-[state=active]:bg-ink data-[state=active]:text-paper hover:text-ink',
-      )}
-    >
-      {icon}
-      {children}
-    </Tabs.Trigger>
-  );
-}
-
-function Section({ title, subtitle, children }: any) {
-  return (
-    <section className="rounded-md border border-rule/15 bg-paper-2 p-5 shadow-codex-sm sm:p-6">
-      <div className="mb-5 border-b border-rule pb-3">
-        <h2 className="font-display text-xl font-medium tracking-tight text-ink">{title}</h2>
-        {subtitle && <p className="mt-1 text-xs text-muted">{subtitle}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 // ── Preferences (theme, language, recall mode) ─────────────────────────────
-function PreferencesSection({ T, isRu }: any) {
-  const theme = usePrefs((s: any) => s.theme);
-  const setTheme = usePrefs((s: any) => s.setTheme);
-  const recallMode = usePrefs((s: any) => s.recallMode);
-  const setRecallMode = usePrefs((s: any) => s.setRecallMode);
+function PreferencesSection({ T }: { T: Copy }) {
+  const theme = usePrefs((s) => s.theme);
+  const setTheme = usePrefs((s) => s.setTheme);
+  const recallMode = usePrefs((s) => s.recallMode);
+  const setRecallMode = usePrefs((s) => s.setRecallMode);
   const { lang, setLang } = useLang();
 
-  const themes = [
-    {
-      key: 'light',
-      label: isRu ? 'Светлая' : 'Light',
-      Icon: Sun,
-      // Visual swatch — paper + ink stripes so the choice is obvious at a glance.
-      swatch: 'bg-[#fafaf9]',
-      stripeA: 'bg-[#171717]',
-      stripeB: 'bg-[#06b6d4]',
-    },
-    {
-      key: 'dark',
-      label: isRu ? 'Тёмная' : 'Dark',
-      Icon: Moon,
-      swatch: 'bg-[#0a0a0a]',
-      stripeA: 'bg-[#fafafa]',
-      stripeB: 'bg-[#22d3ee]',
-    },
-  ];
-
   return (
-    <div className="space-y-5">
-      <Section
-        title={isRu ? 'Внешний вид' : 'Appearance'}
-        subtitle={isRu
-          ? 'Тема и шрифт сохраняются на этом устройстве.'
-          : 'Theme is saved per device. Hotkey: T to cycle.'}
-      >
+    <div className="space-y-6">
+      <Section title={T.appearanceTitle} subtitle={T.appearanceSubtitle}>
         <div className="space-y-5">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-              <Sun className="h-3 w-3" />
-              {isRu ? 'Тема' : 'Theme'}
-            </div>
-            <div role="radiogroup" aria-label={isRu ? 'Тема' : 'Theme'} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {themes.map((t: any) => {
-                const active = theme === t.key;
-                const { Icon } = t;
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => setTheme(t.key as any)}
-                    className={cn(
-                      'group relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all',
-                      active
-                        ? 'border-ink shadow-codex-sm ring-2 ring-brand/30'
-                        : 'border-rule/15 hover:border-rule/30 hover:shadow-codex-sm',
-                    )}
-                  >
-                    {/* Mini "browser" swatch — body + two stripes hint at ink + brand */}
-                    <div className={cn('relative h-20 w-full overflow-hidden rounded-md border border-rule/15', t.swatch)}>
-                      <div className={cn('absolute left-3 top-3 h-1.5 w-12 rounded-full', t.stripeA)} />
-                      <div className={cn('absolute left-3 top-6 h-1.5 w-8 rounded-full', t.stripeB, 'opacity-80')} />
-                      <div className={cn('absolute bottom-3 right-3 h-2 w-2 rounded-full', t.stripeB)} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 font-display text-sm font-medium text-ink">
-                        <Icon className="h-3.5 w-3.5 text-muted" />
-                        {t.label}
-                      </span>
-                      {active && (
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-brand">
-                          {isRu ? 'выбрано' : 'active'}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-              <Languages className="h-3 w-3" />
-              {isRu ? 'Язык интерфейса' : 'Interface language'}
-            </div>
-            <div role="radiogroup" aria-label={isRu ? 'Язык' : 'Language'} className="inline-flex items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm">
-              {['en', 'ru'].map((code: any) => {
-                const active = lang === code;
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => setLang(code as any)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-colors',
-                      active
-                        ? 'bg-ink text-paper'
-                        : 'text-muted hover:text-ink',
-                    )}
-                  >
-                    {code === 'en' ? 'English' : 'Русский'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <Segmented<Theme>
+            label={T.themeLabel}
+            value={theme}
+            onChange={setTheme}
+            options={[
+              { value: 'light', label: T.themeLight },
+              { value: 'dark', label: T.themeDark },
+            ]}
+          />
+          <Segmented<Lang>
+            label={T.langLabel}
+            value={lang}
+            onChange={setLang}
+            options={[
+              { value: 'en', label: 'English' },
+              { value: 'ru', label: 'Русский' },
+            ]}
+          />
         </div>
       </Section>
 
-      <Section
-        title={isRu ? 'Учебный режим' : 'Study behavior'}
-        subtitle={isRu
-          ? 'Recall прячет ответ за подсказкой, чтобы ты вспоминал, а не читал.'
-          : 'Recall hides the answer behind a hint ladder so you retrieve, not re-read.'}
-      >
-        <label className="flex cursor-pointer items-start justify-between gap-4 rounded-md border border-rule/15 bg-paper p-4 transition-colors hover:border-rule/30">
-          <span className="flex-1">
-            <span className="inline-flex items-center gap-1.5 font-display text-sm font-medium text-ink">
-              <Edit3 className="h-3.5 w-3.5 text-muted" />
-              {isRu ? 'Активное припоминание' : 'Active recall'}
-            </span>
-            <span className="mt-1 block text-xs text-muted">
-              {isRu
-                ? 'Карточки откроются с подсказкой и блюром. Хоткей: R.'
-                : 'Cards open blurred with a hint ladder. Hotkey: R.'}
-            </span>
-          </span>
-          <span
+      <Section title={T.studyTitle} subtitle={T.studySubtitle}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-ink">{T.recallLabel}</p>
+            <p className="mt-1 text-[13px] text-muted">{T.recallHint}</p>
+          </div>
+          <button
+            type="button"
             role="switch"
             aria-checked={recallMode}
-            tabIndex={0}
+            aria-label={T.recallLabel}
             onClick={() => setRecallMode(!recallMode)}
-            onKeyDown={(e: any) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setRecallMode(!recallMode);
-              }
-            }}
-            className={cn(
-              'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors',
-              recallMode ? 'border-ink bg-ink' : 'border-rule/30 bg-paper-2',
-            )}
+            /* The track is 24px tall; the vertical padding brings the hit area
+               to the 44px touch target without changing what you see. */
+            className="-my-2.5 shrink-0 py-2.5"
           >
             <span
               className={cn(
-                'inline-block h-4 w-4 rounded-full bg-paper transition-transform',
-                recallMode ? 'translate-x-6' : 'translate-x-1',
+                'flex h-6 w-11 items-center rounded-full border transition-colors',
+                recallMode ? 'border-ink bg-ink' : 'border-rule/25 bg-paper',
               )}
-            />
-          </span>
-        </label>
+            >
+              <span
+                className={cn(
+                  'h-4 w-4 rounded-full bg-paper-2 transition-transform',
+                  recallMode ? 'translate-x-6' : 'translate-x-1',
+                )}
+              />
+            </span>
+          </button>
+        </div>
       </Section>
     </div>
   );
 }
 
-// ── Profile (name + email read-only) ────────────────────────────────────────
-function ProfileSection({ user, setSession, token, qc, T }: any) {
-  const [name, setName] = useState(user.name || '');
+// ── Profile (name; email is read-only here) ────────────────────────────────
+function ProfileSection({ user, token, T }: { user: User; token: string; T: Copy }) {
+  const setSession = useAuth((s) => s.setSession);
+  const qc = useQueryClient();
+  const [name, setName] = useState(user.name ?? '');
   const [saving, setSaving] = useState(false);
-  const dirty = name.trim() !== (user.name || '').trim();
+  const dirty = name.trim() !== (user.name ?? '').trim();
 
-  const save = async (e: any) => {
+  const save = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!dirty || saving) return;
     setSaving(true);
@@ -301,7 +182,7 @@ function ProfileSection({ user, setSession, token, qc, T }: any) {
       qc.invalidateQueries();
       toast.success(T.profileSaved);
     } catch {
-      toast.error(T.errorGeneric);
+      toast.error(T.errors.unknown_error);
     } finally {
       setSaving(false);
     }
@@ -309,32 +190,25 @@ function ProfileSection({ user, setSession, token, qc, T }: any) {
 
   return (
     <Section title={T.profileTitle} subtitle={T.profileSubtitle}>
-      <form onSubmit={save} className="space-y-4">
-        <Field label={T.name} icon={<User className="h-3.5 w-3.5" />} hint={T.nameHint}>
-          <input
-            type="text"
-            autoCapitalize="words"
-            value={name}
-            onChange={(e: any) => setName(e.target.value)}
-            onFocus={focusCenter}
-            placeholder={T.namePh}
-            maxLength={80}
-            className={inputClass(false)}
-          />
-        </Field>
-
-        <Field label={T.email} icon={<AtSign className="h-3.5 w-3.5" />} hint={T.emailReadOnlyHint}>
-          <input
-            type="email"
-            value={user.email}
-            readOnly
-            disabled
-            className={cn(inputClass(false), 'cursor-not-allowed bg-paper text-muted')}
-          />
-        </Field>
-
-        <Button type="submit" variant="brand" size="md" disabled={!dirty || saving}>
-          <Save className="h-4 w-4" />
+      <form onSubmit={save} className="space-y-5">
+        <TextField
+          label={T.name}
+          hint={T.nameHint}
+          value={name}
+          onChange={setName}
+          placeholder={T.namePh}
+          autoCapitalize="words"
+          autoComplete="name"
+          maxLength={80}
+        />
+        <TextField
+          label={T.email}
+          hint={T.emailReadOnlyHint}
+          type="email"
+          value={user.email}
+          readOnly
+        />
+        <Button type="submit" variant="codex" disabled={!dirty || saving}>
           {saving ? T.saving : T.saveProfile}
         </Button>
       </form>
@@ -343,16 +217,14 @@ function ProfileSection({ user, setSession, token, qc, T }: any) {
 }
 
 // ── Security (change password) ─────────────────────────────────────────────
-function SecuritySection({ T }: any) {
+function SecuritySection({ T }: { T: Copy }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNext, setShowNext] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const submit = async (e: any) => {
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -367,11 +239,8 @@ function SecuritySection({ T }: any) {
       setCurrent('');
       setNext('');
       setConfirm('');
-    } catch (err: any) {
-      const code = err?.response?.status;
-      const apiErr = err?.response?.data?.error;
-      if (code === 401) setError('wrong_current');
-      else setError(apiErr || 'unknown_error');
+    } catch (err) {
+      setError(httpStatus(err) === 401 ? 'wrong_current' : apiError(err));
     } finally {
       setSaving(false);
     }
@@ -379,84 +248,36 @@ function SecuritySection({ T }: any) {
 
   return (
     <Section title={T.securityTitle} subtitle={T.securitySubtitle}>
-      <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field
+      <form onSubmit={submit} className="space-y-5" noValidate>
+        <PasswordField
           label={T.currentPassword}
-          icon={<Lock className="h-3.5 w-3.5" />}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShowCurrent((v: any) => !v)}
-              className="text-muted hover:text-ink"
-              aria-label={showCurrent ? T.hidePwd : T.showPwd}
-            >
-              {showCurrent ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
-          }
-        >
-          <input
-            type={showCurrent ? 'text' : 'password'}
-            autoComplete="current-password"
-            autoCorrect="off"
-            spellCheck={false}
-            autoCapitalize="off"
-            value={current}
-            onChange={(e: any) => setCurrent(e.target.value)}
-            onFocus={focusCenter}
-            className={inputClass(false)}
-          />
-        </Field>
-
-        <Field
+          value={current}
+          onChange={setCurrent}
+          autoComplete="current-password"
+          showLabel={T.showPwd}
+          hideLabel={T.hidePwd}
+        />
+        <PasswordField
           label={T.newPassword}
-          icon={<Lock className="h-3.5 w-3.5" />}
           hint={T.newPasswordHint}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShowNext((v: any) => !v)}
-              className="text-muted hover:text-ink"
-              aria-label={showNext ? T.hidePwd : T.showPwd}
-            >
-              {showNext ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
-          }
-        >
-          <input
-            type={showNext ? 'text' : 'password'}
-            autoComplete="new-password"
-            autoCorrect="off"
-            spellCheck={false}
-            autoCapitalize="off"
-            value={next}
-            onChange={(e: any) => setNext(e.target.value)}
-            onFocus={focusCenter}
-            className={inputClass(false)}
-          />
-        </Field>
+          value={next}
+          onChange={setNext}
+          autoComplete="new-password"
+          showLabel={T.showPwd}
+          hideLabel={T.hidePwd}
+        />
+        <PasswordField
+          label={T.confirmPassword}
+          value={confirm}
+          onChange={setConfirm}
+          autoComplete="new-password"
+          showLabel={T.showPwd}
+          hideLabel={T.hidePwd}
+        />
 
-        <Field label={T.confirmPassword} icon={<Lock className="h-3.5 w-3.5" />}>
-          <input
-            type={showNext ? 'text' : 'password'}
-            autoComplete="new-password"
-            autoCorrect="off"
-            spellCheck={false}
-            autoCapitalize="off"
-            value={confirm}
-            onChange={(e: any) => setConfirm(e.target.value)}
-            onFocus={focusCenter}
-            className={inputClass(false)}
-          />
-        </Field>
+        <ErrorNote T={T} error={error} />
 
-        {error && (
-          <div className="rounded-md border border-coral/40 bg-coral/10 px-3 py-2 text-xs text-[rgb(var(--coral))]">
-            {T.errors[error] || error}
-          </div>
-        )}
-
-        <Button type="submit" variant="brand" size="md" disabled={saving || !current || !next || !confirm}>
-          <Shield className="h-4 w-4" />
+        <Button type="submit" variant="codex" disabled={saving || !current || !next || !confirm}>
           {saving ? T.saving : T.changePassword}
         </Button>
       </form>
@@ -464,24 +285,16 @@ function SecuritySection({ T }: any) {
   );
 }
 
-// ── Danger (change email / delete) ─────────────────────────────────────────
-function DangerSection({ user, setSession, token, qc, T, onLogout }: any) {
-  return (
-    <div className="space-y-5">
-      <ChangeEmailSection user={user} setSession={setSession} qc={qc} T={T} />
-      <DeleteAccountSection T={T} onAfter={onLogout} />
-    </div>
-  );
-}
-
-function ChangeEmailSection({ user, setSession, qc, T }: any) {
+// ── Account (change email / delete) ────────────────────────────────────────
+function ChangeEmailSection({ user, T }: { user: User; T: Copy }) {
+  const setSession = useAuth((s) => s.setSession);
+  const qc = useQueryClient();
   const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const submit = async (e: any) => {
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     if (!/.+@.+\..+/.test(newEmail)) return setError('invalid_email');
@@ -495,12 +308,11 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
       toast.success(T.emailChanged);
       setPassword('');
       setNewEmail('');
-    } catch (err: any) {
-      const code = err?.response?.status;
-      const apiErr = err?.response?.data?.error;
+    } catch (err) {
+      const code = httpStatus(err);
       if (code === 401) setError('wrong_password');
       else if (code === 409) setError('email_taken');
-      else setError(apiErr || 'unknown_error');
+      else setError(apiError(err));
     } finally {
       setSaving(false);
     }
@@ -508,58 +320,28 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
 
   return (
     <Section title={T.changeEmailTitle} subtitle={T.changeEmailSubtitle}>
-      <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field label={T.currentEmail} icon={<Mail className="h-3.5 w-3.5" />}>
-          <input
-            type="email"
-            value={user.email}
-            readOnly
-            disabled
-            className={cn(inputClass(false), 'cursor-not-allowed bg-paper text-muted')}
-          />
-        </Field>
-
-        <Field label={T.newEmail} icon={<AtSign className="h-3.5 w-3.5" />}>
-          <input
-            type="email"
-            autoComplete="email"
-            value={newEmail}
-            onChange={(e: any) => setNewEmail(e.target.value)}
-            placeholder="you@example.com"
-            className={inputClass(false)}
-          />
-        </Field>
-
-        <Field
+      <form onSubmit={submit} className="space-y-5" noValidate>
+        <TextField label={T.currentEmail} type="email" value={user.email} readOnly />
+        <TextField
+          label={T.newEmail}
+          type="email"
+          value={newEmail}
+          onChange={setNewEmail}
+          placeholder="you@example.com"
+          autoComplete="email"
+        />
+        <PasswordField
           label={T.confirmWithPassword}
-          icon={<Lock className="h-3.5 w-3.5" />}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShowPwd((v: any) => !v)}
-              className="text-muted hover:text-ink"
-            >
-              {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
-          }
-        >
-          <input
-            type={showPwd ? 'text' : 'password'}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e: any) => setPassword(e.target.value)}
-            className={inputClass(false)}
-          />
-        </Field>
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          showLabel={T.showPwd}
+          hideLabel={T.hidePwd}
+        />
 
-        {error && (
-          <div className="rounded-md border border-coral/40 bg-coral/10 px-3 py-2 text-xs text-[rgb(var(--coral))]">
-            {T.errors[error] || error}
-          </div>
-        )}
+        <ErrorNote T={T} error={error} />
 
-        <Button type="submit" variant="codex" size="md" disabled={saving || !password || !newEmail}>
-          <Save className="h-4 w-4" />
+        <Button type="submit" variant="outline" disabled={saving || !password || !newEmail}>
           {saving ? T.saving : T.changeEmail}
         </Button>
       </form>
@@ -567,12 +349,12 @@ function ChangeEmailSection({ user, setSession, qc, T }: any) {
   );
 }
 
-function DeleteAccountSection({ T, onAfter }: any) {
+function DeleteAccountSection({ T, onDeleted }: { T: Copy; onDeleted: () => void }) {
   const [confirmText, setConfirmText] = useState('');
   const [working, setWorking] = useState(false);
   const matches = confirmText.trim().toLowerCase() === 'delete';
 
-  const submit = async (e: any) => {
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!matches || working) return;
     if (!window.confirm(T.deleteFinalConfirm)) return;
@@ -580,45 +362,35 @@ function DeleteAccountSection({ T, onAfter }: any) {
     try {
       await authDeleteAccount();
       toast.success(T.accountDeleted);
-      onAfter();
+      onDeleted();
     } catch {
-      toast.error(T.errorGeneric);
+      toast.error(T.errors.unknown_error);
     } finally {
       setWorking(false);
     }
   };
 
   return (
-    <section className="rounded-md border border-coral/60 bg-coral/5 p-5 shadow-codex-sm sm:p-6">
-      <div className="mb-5 border-b border-coral/30 pb-3">
-        <h2 className="inline-flex items-center gap-2 font-display text-xl font-medium tracking-tight text-[rgb(var(--coral))]">
-          <Trash2 className="h-4 w-4" />
-          {T.deleteTitle}
-        </h2>
-        <p className="mt-1 text-xs text-ink-2">{T.deleteSubtitle}</p>
+    <section className="rounded-lg border border-coral/30 bg-paper-2 p-5 sm:p-6">
+      <div className="mb-5 border-b border-coral/20 pb-3">
+        <h2 className="font-display text-lg font-semibold text-coral">{T.deleteTitle}</h2>
+        <p className="mt-1 text-[13px] text-ink-2">{T.deleteSubtitle}</p>
       </div>
-      <form onSubmit={submit} className="space-y-3">
-        <Field label={T.deleteConfirmLabel} icon={<AlertTriangle className="h-3.5 w-3.5" />}>
-          <input
-            type="text"
-            value={confirmText}
-            onChange={(e: any) => setConfirmText(e.target.value)}
-            placeholder="delete"
-            className={inputClass(false)}
-          />
-        </Field>
+      <form onSubmit={submit} className="space-y-5">
+        <TextField
+          label={T.deleteConfirmLabel}
+          value={confirmText}
+          onChange={setConfirmText}
+          placeholder="delete"
+          autoComplete="off"
+        />
         <Button
           type="submit"
-          variant="codex"
-          size="md"
+          variant="outline"
           disabled={!matches || working}
-          className={cn(
-            'border-coral text-[rgb(var(--coral))] hover:bg-coral/10',
-            !matches && 'opacity-50',
-          )}
+          className="border-coral/40 text-coral hover:border-coral hover:bg-coral/8"
         >
-          <Trash2 className="h-4 w-4" />
-          {working ? T.saving : T.deleteCta}
+          {working ? T.deleting : T.deleteCta}
         </Button>
       </form>
     </section>
@@ -627,52 +399,183 @@ function DeleteAccountSection({ T, onAfter }: any) {
 
 // ── Reusable bits ──────────────────────────────────────────────────────────
 
-function Field({ label, icon, hint, trailing, children }: any) {
+function TabTrigger({ value, children }: { value: string; children: ReactNode }) {
   return (
-    <label className="block">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-          {icon}
-          {label}
-        </span>
-        {trailing}
-      </div>
-      {children}
-      {hint && (
-        <span className="mt-1 block font-mono text-[10px] uppercase tracking-wider text-muted-2">
-          {hint}
-        </span>
+    <Tabs.Trigger
+      value={value}
+      className={cn(
+        '-mb-px shrink-0 border-b-2 border-transparent px-3 py-3 text-sm font-medium text-muted',
+        'transition-colors hover:text-ink data-[state=active]:border-ink data-[state=active]:text-ink',
       )}
-    </label>
+    >
+      {children}
+    </Tabs.Trigger>
   );
 }
 
-const inputClass = (hasErr: any) => cn(
-  'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
-  hasErr
-    ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'
-    : 'border-rule/12 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/20',
-);
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return (
+    <section className="rounded-lg border border-rule/12 bg-paper-2 p-5 shadow-codex-sm sm:p-6">
+      <div className="mb-5 border-b border-rule/12 pb-3">
+        <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
+        {subtitle && <p className="mt-1 text-[13px] text-muted">{subtitle}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
 
-// Re-center the focused field on phones — iOS often hides it behind the
-// virtual keyboard otherwise.
-const focusCenter = (e: any) => {
-  setTimeout(() => {
-    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-    catch { /* older Safari */ }
-  }, 250);
+function ErrorNote({ T, error }: { T: Copy; error: string | null }) {
+  if (!error) return null;
+  return (
+    <p role="alert" className="rounded-md border border-coral/30 bg-coral/8 px-3 py-2 text-[13px] text-coral">
+      {T.errors[error as ErrorKey] ?? T.errors.unknown_error}
+    </p>
+  );
+}
+
+interface SegmentedProps<T extends string> {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: Array<{ value: T; label: string }>;
+}
+
+function Segmented<T extends string>({ label, value, onChange, options }: SegmentedProps<T>) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[13px] font-medium text-ink-2">{label}</p>
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="inline-flex items-center gap-1 rounded-md border border-rule/12 bg-paper p-1"
+      >
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={value === option.value}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              'rounded px-3.5 py-2 text-[13px] font-medium transition-colors',
+              value === option.value ? 'bg-ink text-paper' : 'text-muted hover:text-ink',
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Axios errors reach us as `unknown`; both helpers narrow without pulling the
+// axios types into a presentational module.
+const httpStatus = (err: unknown): number | undefined =>
+  (err as { response?: { status?: number } })?.response?.status;
+
+const apiError = (err: unknown): string =>
+  (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'unknown_error';
+
+const EN = {
+  back: 'Back to dashboard',
+  eyebrow: 'Account',
+  title: 'Settings',
+  joined: 'joined',
+  tabs: 'Settings sections',
+  tabPreferences: 'Preferences',
+  tabProfile: 'Profile',
+  tabSecurity: 'Security',
+  tabAccount: 'Account',
+
+  appearanceTitle: 'Appearance',
+  appearanceSubtitle: 'Saved on this device. Press T to switch themes from anywhere.',
+  themeLabel: 'Theme',
+  themeLight: 'Light',
+  themeDark: 'Dark',
+  langLabel: 'Interface language',
+
+  studyTitle: 'Study behaviour',
+  studySubtitle: 'Recall hides the answer behind a hint ladder so you retrieve it instead of re-reading it.',
+  recallLabel: 'Active recall',
+  recallHint: 'Cards open blurred with a hint ladder. Press R to toggle it mid-session.',
+
+  profileTitle: 'Profile',
+  profileSubtitle: 'Your name is only shown to you. Your email is your sign-in.',
+  name: 'Name',
+  namePh: 'What should we call you?',
+  nameHint: 'Optional, up to 80 characters',
+  email: 'Email',
+  emailReadOnlyHint: 'Change it under Account',
+  saveProfile: 'Save',
+  saving: 'Saving…',
+  profileSaved: 'Profile updated',
+
+  securityTitle: 'Change password',
+  securitySubtitle: 'At least 8 characters. Confirm with your current password.',
+  currentPassword: 'Current password',
+  newPassword: 'New password',
+  newPasswordHint: 'At least 8 characters',
+  confirmPassword: 'Confirm new password',
+  showPwd: 'Show password',
+  hidePwd: 'Hide password',
+  changePassword: 'Change password',
+  passwordChanged: 'Password updated',
+
+  changeEmailTitle: 'Change email',
+  changeEmailSubtitle: 'Your email is your sign-in. Confirm with your current password.',
+  currentEmail: 'Current email',
+  newEmail: 'New email',
+  confirmWithPassword: 'Current password',
+  changeEmail: 'Change email',
+  emailChanged: 'Email updated',
+
+  deleteTitle: 'Delete account',
+  deleteSubtitle: 'Permanently deletes your account and the progress stored on the server. The copy in this browser stays.',
+  deleteConfirmLabel: 'Type "delete" to confirm',
+  deleteCta: 'Delete forever',
+  deleting: 'Deleting…',
+  deleteFinalConfirm: 'Delete your account? This cannot be undone.',
+  accountDeleted: 'Account deleted',
+
+  errors: {
+    password_too_short: 'Use at least 8 characters.',
+    mismatch: 'The two new passwords differ. Retype them.',
+    same_as_current: 'Pick a value different from the current one.',
+    wrong_current: 'That current password is wrong. Try again.',
+    wrong_password: 'That current password is wrong. Try again.',
+    invalid_email: 'That email address is not valid. Check the spelling.',
+    email_taken: 'That email is already registered. Use another one.',
+    unknown_error: 'Something went wrong. Try again in a moment.',
+  },
 };
 
-const RU = {
+type Copy = typeof EN;
+type ErrorKey = keyof Copy['errors'];
+
+const RU: Copy = {
   back: 'На главную',
   eyebrow: 'Аккаунт',
   title: 'Настройки',
   joined: 'с',
   tabs: 'Разделы настроек',
-  tabPreferences: 'Настройки',
+  tabPreferences: 'Предпочтения',
   tabProfile: 'Профиль',
   tabSecurity: 'Безопасность',
-  tabDanger: 'Опасная зона',
+  tabAccount: 'Аккаунт',
+
+  appearanceTitle: 'Внешний вид',
+  appearanceSubtitle: 'Сохраняется на этом устройстве. Клавиша T переключает тему откуда угодно.',
+  themeLabel: 'Тема',
+  themeLight: 'Светлая',
+  themeDark: 'Тёмная',
+  langLabel: 'Язык интерфейса',
+
+  studyTitle: 'Учебный режим',
+  studySubtitle: 'Recall прячет ответ за подсказкой, чтобы ты вспоминал, а не перечитывал.',
+  recallLabel: 'Активное припоминание',
+  recallHint: 'Карточки открываются с подсказкой и блюром. Клавиша R переключает режим на ходу.',
 
   profileTitle: 'Профиль',
   profileSubtitle: 'Имя видно только тебе. Email используется для входа.',
@@ -680,19 +583,19 @@ const RU = {
   namePh: 'Как тебя называть?',
   nameHint: 'Опционально, до 80 символов',
   email: 'Email',
-  emailReadOnlyHint: 'Меняется в разделе «Опасная зона»',
+  emailReadOnlyHint: 'Меняется в разделе «Аккаунт»',
   saveProfile: 'Сохранить',
   saving: 'Сохраняю…',
   profileSaved: 'Профиль обновлён',
 
   securityTitle: 'Смена пароля',
-  securitySubtitle: 'Минимум 8 символов. Текущий пароль нужен для подтверждения.',
+  securitySubtitle: 'Минимум 8 символов. Подтверди текущим паролем.',
   currentPassword: 'Текущий пароль',
   newPassword: 'Новый пароль',
   newPasswordHint: 'Минимум 8 символов',
   confirmPassword: 'Подтвердить новый',
-  showPwd: 'Показать',
-  hidePwd: 'Скрыть',
+  showPwd: 'Показать пароль',
+  hidePwd: 'Скрыть пароль',
   changePassword: 'Сменить пароль',
   passwordChanged: 'Пароль обновлён',
 
@@ -705,82 +608,21 @@ const RU = {
   emailChanged: 'Email обновлён',
 
   deleteTitle: 'Удалить аккаунт',
-  deleteSubtitle: 'Безвозвратно удалит аккаунт и весь прогресс на сервере. Локальная копия остаётся.',
+  deleteSubtitle: 'Безвозвратно удаляет аккаунт и прогресс на сервере. Копия в этом браузере останется.',
   deleteConfirmLabel: 'Напечатай "delete" для подтверждения',
   deleteCta: 'Удалить навсегда',
-  deleteFinalConfirm: 'Точно удалить аккаунт? Это действие нельзя отменить.',
+  deleting: 'Удаляю…',
+  deleteFinalConfirm: 'Удалить аккаунт? Это действие нельзя отменить.',
   accountDeleted: 'Аккаунт удалён',
 
-  errorGeneric: 'Что-то пошло не так. Попробуй ещё раз.',
   errors: {
-    password_too_short: 'Минимум 8 символов',
-    mismatch: 'Пароли не совпадают',
-    same_as_current: 'Новое значение должно отличаться от текущего',
-    wrong_current: 'Текущий пароль неверный',
-    wrong_password: 'Текущий пароль неверный',
-    invalid_email: 'Некорректный email',
-    email_taken: 'Этот email уже занят',
-    unknown_error: 'Что-то пошло не так',
-  },
-};
-
-const EN = {
-  back: 'Back to dashboard',
-  eyebrow: 'Account',
-  title: 'Settings',
-  joined: 'joined',
-  tabs: 'Settings sections',
-  tabPreferences: 'Preferences',
-  tabProfile: 'Profile',
-  tabSecurity: 'Security',
-  tabDanger: 'Danger zone',
-
-  profileTitle: 'Profile',
-  profileSubtitle: 'Name is just for you. Email is your sign-in.',
-  name: 'Name',
-  namePh: 'What should we call you?',
-  nameHint: 'Optional, up to 80 characters',
-  email: 'Email',
-  emailReadOnlyHint: 'Change it in the Danger zone',
-  saveProfile: 'Save',
-  saving: 'Saving…',
-  profileSaved: 'Profile updated',
-
-  securityTitle: 'Change password',
-  securitySubtitle: 'At least 8 characters. Current password required to confirm.',
-  currentPassword: 'Current password',
-  newPassword: 'New password',
-  newPasswordHint: 'At least 8 characters',
-  confirmPassword: 'Confirm new password',
-  showPwd: 'Show',
-  hidePwd: 'Hide',
-  changePassword: 'Change password',
-  passwordChanged: 'Password updated',
-
-  changeEmailTitle: 'Change email',
-  changeEmailSubtitle: 'Email is your sign-in. Confirm with current password.',
-  currentEmail: 'Current email',
-  newEmail: 'New email',
-  confirmWithPassword: 'Current password',
-  changeEmail: 'Change email',
-  emailChanged: 'Email updated',
-
-  deleteTitle: 'Delete account',
-  deleteSubtitle: 'Permanently deletes your account and server-side progress. Local copy remains.',
-  deleteConfirmLabel: 'Type "delete" to confirm',
-  deleteCta: 'Delete forever',
-  deleteFinalConfirm: 'Really delete your account? This cannot be undone.',
-  accountDeleted: 'Account deleted',
-
-  errorGeneric: 'Something went wrong. Try again.',
-  errors: {
-    password_too_short: 'At least 8 characters',
-    mismatch: 'Passwords don\'t match',
-    same_as_current: 'New value must differ from current',
-    wrong_current: 'Current password is incorrect',
-    wrong_password: 'Current password is incorrect',
-    invalid_email: 'Invalid email address',
-    email_taken: 'Email is already in use',
-    unknown_error: 'Something went wrong',
+    password_too_short: 'Нужно минимум 8 символов.',
+    mismatch: 'Новые пароли не совпадают. Введи их заново.',
+    same_as_current: 'Новое значение должно отличаться от текущего.',
+    wrong_current: 'Текущий пароль неверный. Попробуй ещё раз.',
+    wrong_password: 'Текущий пароль неверный. Попробуй ещё раз.',
+    invalid_email: 'Некорректный email. Проверь написание.',
+    email_taken: 'Этот email уже зарегистрирован. Возьми другой.',
+    unknown_error: 'Что-то пошло не так. Попробуй ещё раз.',
   },
 };

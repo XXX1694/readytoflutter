@@ -1,50 +1,68 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
 
-const ACCENTS = {
-  brand: { num: 'text-brand',                  dot: 'bg-brand',                  glow: 'from-brand/[0.06] to-transparent' },
-  mint:  { num: 'text-mint',                   dot: 'bg-mint',                   glow: 'from-mint/[0.06] to-transparent' },
-  amber: { num: 'text-[rgb(var(--amber))]',    dot: 'bg-[rgb(var(--amber))]',    glow: 'from-amber/[0.06] to-transparent' },
-  ink:   { num: 'text-ink',                    dot: 'bg-ink-2',                  glow: 'from-ink/[0.04] to-transparent' },
-};
+/**
+ * A figure in a ruled band — the study tally, not a KPI card.
+ *
+ * Four bordered cards, each with a caps label, a coloured dot and a coloured
+ * numeral, is the analytics-template answer; it also spends four hues on data
+ * that has no four categories. Here every figure is ink, the reading is a
+ * fraction wherever the underlying number is one (`47 / 392` says more than
+ * `47` and `12%` in two separate boxes), and the only colour available is the
+ * marker — which lands on the single figure that asks for an action, the way
+ * you'd run a highlighter over the one line you have to deal with today.
+ *
+ * The band's rules are drawn by the parent (`border-y border-rule/12`), so a
+ * row of these reads as one strip of paper rather than four floating tiles.
+ */
+export interface StatTileProps {
+  /** Sentence case, no trailing colon. */
+  label: string;
+  value: number | string;
+  /** Denominator — renders as `/ 392` so the figure reads as a tally. */
+  of?: number;
+  /** Glued to the figure, e.g. `%`. */
+  suffix?: string;
+  /**
+   * Lays the marker wash behind the figure. At most one per screen: it means
+   * "this is the number to act on", and a second one dilutes the first.
+   */
+  marked?: boolean;
+  className?: string;
+}
 
-function StatTile({
-  label,
-  value,
-  suffix,
-  accent = 'ink',
-  className,
-}: any) {
-  const a = ACCENTS[accent] || ACCENTS.ink;
+function StatTile({ label, value, of, suffix, marked = false, className }: StatTileProps) {
+  const figure: ReactNode = (
+    <>
+      {value}
+      {suffix}
+    </>
+  );
+
   return (
-    <div
-      className={cn(
-        'group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 p-5 sm:p-6',
-        'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
-        // Was `transition-all` — we only animate transform/shadow/border, so
-        // limit the property list to keep paint cost low when many tiles
-        // mount at once.
-        'transition-[transform,box-shadow,border-color] duration-300 ease-out',
-        'hover:-translate-y-0.5 hover:border-rule/15',
-        'hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.10)]',
-        className,
-      )}
-    >
-      {/* Soft accent wash — pulled from the tile's accent colour */}
-      <span aria-hidden className={cn('pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100', a.glow)} />
-
-      <div className="relative flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-          {label}
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <div className="flex items-baseline gap-1.5">
+        <span className="num text-[32px] leading-none text-ink sm:text-[40px]">
+          {marked ? (
+            <span className="relative inline-block">
+              {/* The stroke, sized to the digits rather than the line box — the
+                  `.marker` utility is tuned for body copy and sits below the
+                  baseline at display sizes. */}
+              <span
+                aria-hidden
+                className="absolute inset-x-[-0.08em] bottom-[0.04em] top-[0.14em] bg-[rgb(var(--marker)/0.55)] dark:bg-[rgb(var(--marker)/0.28)]"
+              />
+              <span className="relative">{figure}</span>
+            </span>
+          ) : (
+            figure
+          )}
         </span>
-        <span className={cn('h-1.5 w-1.5 rounded-full', a.dot)} aria-hidden />
-      </div>
-      <div className="relative flex items-baseline gap-1.5">
-        <span className={cn('num text-display-xs sm:text-display-sm', a.num)}>{value}</span>
-        {suffix && (
-          <span className="font-mono text-xs uppercase text-muted">{suffix}</span>
+        {of != null && (
+          <span className="num text-[15px] leading-none text-muted">/ {of}</span>
         )}
       </div>
+      <span className="text-[13px] leading-snug text-muted">{label}</span>
     </div>
   );
 }

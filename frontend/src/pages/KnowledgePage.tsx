@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Search, Library, BookOpen, FileText, PlayCircle, GraduationCap,
-  Podcast, Users, Wrench, Bookmark, BookmarkCheck, ExternalLink, BadgeCheck,
-  CircleDot, X, Sparkles, Play, History, Trash2, ListVideo, Tv,
+  Podcast, Users, Wrench, Bookmark, BookmarkCheck, ExternalLink,
+  X, Play, Trash2, ListVideo, type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useLang } from '../i18n/LangContext';
@@ -16,14 +16,29 @@ import {
   getRecentlyWatched, clearRecentlyWatched, pushRecentlyWatched,
 } from '../lib/youtube';
 import VideoPlayer from '../components/VideoPlayer';
-import { Button, Pill, FullPageLoader } from '../ui/index';
+import { Button, Pill, Eyebrow, FullPageLoader } from '../ui/index';
 import { cn } from '../lib/cn';
 import PlatformFilter from '../components/PlatformFilter';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet';
 import { usePrefs } from '../store/prefs';
 import { filterResourcesByPlatform } from '../lib/platform';
+import type { Level, Resource } from '../types/domain';
 
-const CATEGORY_ICONS = {
+interface ResourceCategory {
+  key: string;
+  title_en: string;
+  title_ru: string;
+  subtitle_en?: string;
+  subtitle_ru?: string;
+}
+
+interface Option<K extends string> {
+  key: K;
+  en: string;
+  ru: string;
+}
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
   docs: BookOpen,
   articles: FileText,
   videos: PlayCircle,
@@ -34,30 +49,41 @@ const CATEGORY_ICONS = {
   tools: Wrench,
 };
 
-const LEVEL_TONE = { junior: 'brand', mid: 'plum', senior: 'mint' };
-const LANG_TONE = { en: 'ghost', ru: 'amber' };
+const LEVEL_LABEL: Record<Level, string> = {
+  junior: 'Junior',
+  mid: 'Mid',
+  senior: 'Senior',
+};
 
-const LEVELS = [
+// Only the two media types worth naming on a card — the rest are implied by
+// the category the card sits under.
+const MEDIA_LABEL: Record<string, Option<string>> = {
+  playlist: { key: 'playlist', en: 'Playlist', ru: 'Плейлист' },
+  channel: { key: 'channel', en: 'Channel', ru: 'Канал' },
+};
+
+const LEVELS: Option<Level | 'all'>[] = [
   { key: 'all', en: 'All levels', ru: 'Любой уровень' },
   { key: 'junior', en: 'Junior', ru: 'Junior' },
   { key: 'mid', en: 'Mid', ru: 'Mid' },
   { key: 'senior', en: 'Senior', ru: 'Senior' },
 ];
 
-const LANGS = [
+const LANGS: Option<string>[] = [
   { key: 'all', en: 'Any', ru: 'Любой' },
   { key: 'en', en: 'EN', ru: 'EN' },
   { key: 'ru', en: 'RU', ru: 'RU' },
 ];
 
-const MEDIA_TYPES = [
-  { key: 'all', en: 'Any', ru: 'Любой', icon: Sparkles },
-  { key: 'video', en: 'Video', ru: 'Видео', icon: PlayCircle },
-  { key: 'playlist', en: 'Playlist', ru: 'Плейлист', icon: ListVideo },
-  { key: 'channel', en: 'Channel', ru: 'Канал', icon: Tv },
+const MEDIA_TYPES: Option<string>[] = [
+  { key: 'all', en: 'Any', ru: 'Любой' },
+  { key: 'video', en: 'Video', ru: 'Видео' },
+  { key: 'playlist', en: 'Playlist', ru: 'Плейлист' },
+  { key: 'channel', en: 'Channel', ru: 'Канал' },
 ];
 
-const isPlayable = (r: any) => r?.media_type === 'video' || r?.media_type === 'playlist';
+const isPlayable = (r: Resource): boolean =>
+  r.media_type === 'video' || r.media_type === 'playlist';
 
 export default function KnowledgePage() {
   const navigate = useNavigate();
@@ -71,9 +97,8 @@ export default function KnowledgePage() {
     staleTime: 1000 * 60 * 60,
   });
 
-  const initialCategory = searchParams.get('cat') || 'all';
-  const [category, setCategory] = useState(initialCategory);
-  const [level, setLevel] = useState('all');
+  const [category, setCategory] = useState(() => searchParams.get('cat') || 'all');
+  const [level, setLevel] = useState<Level | 'all'>('all');
   const [langFilter, setLangFilter] = useState('all');
   const [media, setMedia] = useState('all');
   const [freeOnly, setFreeOnly] = useState(false);
@@ -82,7 +107,7 @@ export default function KnowledgePage() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   // The resource currently playing (in modal), or null.
-  const [playing, setPlaying] = useState<any>(null);
+  const [playing, setPlaying] = useState<Resource | null>(null);
 
   // Sync the active category back to the URL so deep-links work
   useEffect(() => {
@@ -98,21 +123,14 @@ export default function KnowledgePage() {
   const [visitedIds, setVisitedIds] = useState(() => getVisitedIds());
   const [recentIds, setRecentIds] = useState(() => getRecentlyWatched());
 
-  const refreshLocal = () => {
-    setSavedIds(getSavedIds());
-    setVisitedIds(getVisitedIds());
-    setRecentIds(getRecentlyWatched());
-  };
+  const toggleSave = (id: Resource['id']) => { toggleSaved(id); setSavedIds(getSavedIds()); };
 
-  const toggleSave = (id: any) => { toggleSaved(id); setSavedIds(getSavedIds()); };
-
-  const handleOpenExternal = (id: any) => {
+  const handleOpenExternal = (id: Resource['id']) => {
     markVisited(id);
     setVisitedIds(getVisitedIds());
   };
 
-  const handlePlay = (resource: any) => {
-    if (!resource) return;
+  const handlePlay = (resource: Resource) => {
     pushRecentlyWatched(resource.id);
     markVisited(resource.id);
     setPlaying(resource);
@@ -120,46 +138,53 @@ export default function KnowledgePage() {
     setRecentIds(getRecentlyWatched());
   };
 
-  const handleClosePlayer = (open: any) => {
-    if (!open) setPlaying(null);
+  const clearRecent = () => {
+    clearRecentlyWatched();
+    setRecentIds(getRecentlyWatched());
   };
 
-  const platform = usePrefs((s: any) => s.platform);
-  const categories = data?.categories ?? [];
-  const rawResources = data?.resources ?? [];
+  const platform = usePrefs((s) => s.platform);
+  const categories = useMemo(
+    () => (data?.categories ?? []) as ResourceCategory[],
+    [data],
+  );
   // Resources without an explicit `platform` field are treated as Flutter
   // (legacy data — see resourcePlatform in lib/platform). Tag new entries
   // with `"platform": "ios"` etc. to make them appear on the right stack.
   const allResources = useMemo(
-    () => filterResourcesByPlatform(rawResources, platform),
-    [rawResources, platform],
+    () => filterResourcesByPlatform(data?.resources ?? [], platform),
+    [data, platform],
   );
   const counts = useMemo(() => countByCategory(allResources), [allResources]);
 
   const recent = useMemo(() => {
-    const map = new Map(allResources.map((r: any) => [r.id, r]));
-    return recentIds.map((id: any) => map.get(id)).filter(Boolean);
+    const byId = new Map(allResources.map((r) => [r.id, r]));
+    return recentIds
+      .map((id) => byId.get(id))
+      .filter((r): r is Resource => Boolean(r));
   }, [allResources, recentIds]);
 
   const filtered = useMemo(() => {
     let list = filterResources(allResources, {
-      category, level: level as any, lang: langFilter, free: freeOnly, query,
-    });
-    if (media !== 'all') list = list.filter((r: any) => r.media_type === media);
-    if (savedOnly) list = list.filter((r: any) => savedIds.has(r.id));
+      category, level, lang: langFilter, free: freeOnly, query,
+    }) as Resource[];
+    if (media !== 'all') list = list.filter((r) => r.media_type === media);
+    if (savedOnly) list = list.filter((r) => savedIds.has(r.id));
     return list;
   }, [allResources, category, level, langFilter, media, freeOnly, query, savedOnly, savedIds]);
 
   const grouped = useMemo(() => {
     if (category !== 'all') return [{ category, items: filtered }];
-    const map = new Map();
+    const byCategory = new Map<string, Resource[]>();
     for (const r of filtered) {
-      if (!map.has(r.category)) map.set(r.category, []);
-      map.get(r.category).push(r);
+      const key = r.category || 'other';
+      const bucket = byCategory.get(key);
+      if (bucket) bucket.push(r);
+      else byCategory.set(key, [r]);
     }
     return categories
-      .filter((c: any) => map.has(c.key))
-      .map((c: any) => ({ category: c.key, items: map.get(c.key) }));
+      .filter((c) => byCategory.has(c.key))
+      .map((c) => ({ category: c.key, items: byCategory.get(c.key) as Resource[] }));
   }, [filtered, category, categories]);
 
   if (isLoading) return <FullPageLoader />;
@@ -171,7 +196,7 @@ export default function KnowledgePage() {
           <h1 className="font-display text-2xl text-ink">
             {isRu ? 'Не получилось загрузить базу знаний' : 'Could not load the knowledge base'}
           </h1>
-          <p className="mt-3 text-sm text-muted">{String(error.message || error)}</p>
+          <p className="mt-3 text-sm text-muted">{error.message}</p>
           <Button variant="codex" className="mt-6" onClick={() => window.location.reload()}>
             {isRu ? 'Перезагрузить' : 'Reload'}
           </Button>
@@ -192,6 +217,7 @@ export default function KnowledgePage() {
     freeOnly,
     savedOnly,
   ].filter(Boolean).length;
+
   const clearAllFilters = () => {
     setLevel('all'); setLangFilter('all'); setMedia('all');
     setFreeOnly(false); setSavedOnly(false);
@@ -210,48 +236,38 @@ export default function KnowledgePage() {
         </Button>
 
         {/* Header */}
-        <header className="mb-6 border-b border-rule/15 pb-5 sm:mb-8 sm:pb-6">
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-            <Library className="h-3 w-3" /> {isRu ? 'База знаний' : 'Knowledge base'}
-          </div>
-          <h1 className="mt-2 font-display text-2xl font-medium leading-tight tracking-tightest text-ink sm:text-display-sm md:text-display-md">
-            {isRu ? 'Учись шире, чем вопросы.' : 'Learn beyond the questions.'}
+        <header className="mb-6 border-b border-rule/12 pb-5 sm:mb-8 sm:pb-6">
+          <Eyebrow>{isRu ? 'База знаний' : 'Knowledge base'}</Eyebrow>
+          <h1 className="mt-2 font-display text-2xl font-medium leading-tight text-ink sm:text-display-sm">
+            {isRu ? 'Учись шире, чем вопросы' : 'Learn beyond the questions'}
           </h1>
-          <p className="mt-2 max-w-2xl text-[14px] text-muted sm:mt-3 sm:text-sm">
+          <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted sm:mt-3">
             {isRu
-              ? 'Подобранные доки, статьи, видео, плейлисты, курсы и комьюнити. Видео и плейлисты с YouTube открываются прямо здесь — никуда уходить не надо.'
-              : 'Curated docs, articles, videos, playlists, courses and communities. YouTube videos and playlists open right inside the app — no leaving for the tab graveyard.'}
+              ? 'Подобранные доки, статьи, видео, плейлисты, курсы и комьюнити. Видео и плейлисты с YouTube играют прямо здесь.'
+              : 'Curated docs, articles, videos, playlists, courses and communities. YouTube videos and playlists play inside the app.'}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-2">
-            <span>{totalCount} {isRu ? 'материалов' : 'resources'}</span>
-            <span>·</span>
-            <span>{categories.length} {isRu ? 'категорий' : 'categories'}</span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1">
-              <PlayCircle className="h-3 w-3 text-brand" />
-              {playableCount} {isRu ? 'играют в плеере' : 'play in app'}
-            </span>
-          </div>
+          <p className="mt-3 text-[13px] text-muted">
+            {isRu
+              ? `${totalCount} материалов в ${categories.length} категориях · ${playableCount} играют в плеере`
+              : `${totalCount} resources across ${categories.length} categories · ${playableCount} play in app`}
+          </p>
         </header>
 
         {/* Recently watched */}
         {recent.length > 0 && (
           <section className="mb-6">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                <History className="h-3 w-3" />
-                {isRu ? 'Недавно смотрел' : 'Recently watched'}
-              </div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <Eyebrow>{isRu ? 'Недавно смотрел' : 'Recently watched'}</Eyebrow>
               <button
                 type="button"
-                onClick={() => { clearRecentlyWatched(); refreshLocal(); }}
-                className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-muted hover:text-ink"
+                onClick={clearRecent}
+                className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-ink"
               >
-                <Trash2 className="h-3 w-3" /> {isRu ? 'Очистить' : 'Clear'}
+                <Trash2 className="h-3.5 w-3.5" aria-hidden /> {isRu ? 'Очистить' : 'Clear'}
               </button>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {recent.map((r: any) => (
+              {recent.map((r) => (
                 <RecentChip key={r.id} resource={r} isRu={isRu} onClick={() => handlePlay(r)} />
               ))}
             </div>
@@ -265,7 +281,7 @@ export default function KnowledgePage() {
         </div>
 
         {/* Search */}
-        <div className="mb-5 flex items-center gap-2 rounded-md border border-rule/15 bg-paper-2 px-3 py-2 shadow-codex-sm focus-within:shadow-codex">
+        <div className="mb-5 flex items-center gap-2 rounded-lg border border-rule/12 bg-paper-2 px-3 py-2">
           <Search className="h-4 w-4 text-muted" aria-hidden />
           <input
             type="search"
@@ -275,17 +291,12 @@ export default function KnowledgePage() {
             spellCheck={false}
             autoCapitalize="off"
             value={query}
-            onChange={(e: any) => setQuery(e.target.value)}
-            onFocus={(e: any) => {
-              setTimeout(() => {
-                try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-                catch { /* older Safari */ }
-              }, 250);
-            }}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label={isRu ? 'Поиск по базе знаний' : 'Search the knowledge base'}
             placeholder={isRu
               ? 'Найти материал — riverpod, тестирование, arch…'
               : 'Search — riverpod, testing, arch…'}
-            className="w-full bg-transparent font-sans text-base text-ink placeholder:text-muted-2 outline-none sm:text-sm"
+            className="w-full bg-transparent text-base text-ink placeholder:text-muted-2 outline-none sm:text-sm"
           />
           {query && (
             <button
@@ -307,16 +318,14 @@ export default function KnowledgePage() {
             onClick={() => setCategory('all')}
             label={isRu ? 'Всё' : 'All'}
             count={totalCount}
-            Icon={Sparkles}
           />
-          {categories.map((c: any) => (
+          {categories.map((c) => (
             <CategoryChip
               key={c.key}
               active={category === c.key}
               onClick={() => setCategory(c.key)}
               label={isRu ? c.title_ru : c.title_en}
               count={counts[c.key] || 0}
-              Icon={CATEGORY_ICONS[c.key] || FileText}
             />
           ))}
         </div>
@@ -330,53 +339,44 @@ export default function KnowledgePage() {
             count={filterCount}
             label={isRu ? 'Фильтры' : 'Filters'}
           />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
+          <span className="text-[13px] text-muted">
             {filteredCount} / {totalCount}
           </span>
         </div>
 
         {/* Filter row — desktop / tablet inline grid */}
-        <div className="mb-6 hidden flex-wrap items-center gap-x-4 gap-y-2 border-y border-rule py-3 font-mono text-[10px] uppercase tracking-wider text-muted sm:flex">
+        <div className="mb-6 hidden flex-wrap items-center gap-x-5 gap-y-2 border-y border-rule/12 py-3 sm:flex">
           <FilterGroup label={isRu ? 'Уровень' : 'Level'}>
-            {LEVELS.map((l: any) => (
+            {LEVELS.map((l) => (
               <ToggleChip key={l.key} active={level === l.key} onClick={() => setLevel(l.key)}>
                 {isRu ? l.ru : l.en}
               </ToggleChip>
             ))}
           </FilterGroup>
-          <FilterGroup label={isRu ? 'Язык' : 'Lang'}>
-            {LANGS.map((l: any) => (
+          <FilterGroup label={isRu ? 'Язык' : 'Language'}>
+            {LANGS.map((l) => (
               <ToggleChip key={l.key} active={langFilter === l.key} onClick={() => setLangFilter(l.key)}>
                 {isRu ? l.ru : l.en}
               </ToggleChip>
             ))}
           </FilterGroup>
           <FilterGroup label={isRu ? 'Тип' : 'Type'}>
-            {MEDIA_TYPES.map((m: any) => {
-              const Icon = m.icon;
-              return (
-                <ToggleChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
-                  <Icon className="h-3 w-3" />
-                  {isRu ? m.ru : m.en}
-                </ToggleChip>
-              );
-            })}
+            {MEDIA_TYPES.map((m) => (
+              <ToggleChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
+                {isRu ? m.ru : m.en}
+              </ToggleChip>
+            ))}
           </FilterGroup>
           <FilterGroup>
-            <ToggleChip active={freeOnly} onClick={() => setFreeOnly((v: any) => !v)}>
-              {isRu ? 'Бесплатно' : 'Free only'}
+            <ToggleChip active={freeOnly} onClick={() => setFreeOnly((v) => !v)}>
+              {isRu ? 'Только бесплатное' : 'Free only'}
             </ToggleChip>
-            <ToggleChip active={savedOnly} onClick={() => setSavedOnly((v: any) => !v)}>
-              <Bookmark className="h-3 w-3" />
+            <ToggleChip active={savedOnly} onClick={() => setSavedOnly((v) => !v)}>
               {isRu ? 'Сохранённое' : 'Saved'}
-              {savedIds.size > 0 && (
-                <span className="ml-1 rounded bg-paper px-1 font-mono text-[9px] tabular-nums text-muted">
-                  {savedIds.size}
-                </span>
-              )}
+              {savedIds.size > 0 && ` (${savedIds.size})`}
             </ToggleChip>
           </FilterGroup>
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-muted-2">
+          <span className="ml-auto text-[13px] text-muted">
             {filteredCount} / {totalCount}
           </span>
         </div>
@@ -386,6 +386,10 @@ export default function KnowledgePage() {
           open={filterSheetOpen}
           onOpenChange={setFilterSheetOpen}
           title={isRu ? 'Фильтры' : 'Filters'}
+          description={isRu
+            ? 'Сузь список по уровню, языку и типу материала.'
+            : 'Narrow the list by level, language and media type.'}
+          closeLabel={isRu ? 'Закрыть' : 'Close'}
           footer={
             <FilterSheet.Footer
               onApply={() => setFilterSheetOpen(false)}
@@ -397,42 +401,33 @@ export default function KnowledgePage() {
         >
           <div className="space-y-5 pt-1">
             <SheetGroup label={isRu ? 'Уровень' : 'Level'}>
-              {LEVELS.map((l: any) => (
+              {LEVELS.map((l) => (
                 <SheetChip key={l.key} active={level === l.key} onClick={() => setLevel(l.key)}>
                   {isRu ? l.ru : l.en}
                 </SheetChip>
               ))}
             </SheetGroup>
-            <SheetGroup label={isRu ? 'Язык' : 'Lang'}>
-              {LANGS.map((l: any) => (
+            <SheetGroup label={isRu ? 'Язык' : 'Language'}>
+              {LANGS.map((l) => (
                 <SheetChip key={l.key} active={langFilter === l.key} onClick={() => setLangFilter(l.key)}>
                   {isRu ? l.ru : l.en}
                 </SheetChip>
               ))}
             </SheetGroup>
             <SheetGroup label={isRu ? 'Тип' : 'Type'}>
-              {MEDIA_TYPES.map((m: any) => {
-                const Icon = m.icon;
-                return (
-                  <SheetChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
-                    <Icon className="h-3.5 w-3.5" />
-                    {isRu ? m.ru : m.en}
-                  </SheetChip>
-                );
-              })}
+              {MEDIA_TYPES.map((m) => (
+                <SheetChip key={m.key} active={media === m.key} onClick={() => setMedia(m.key)}>
+                  {isRu ? m.ru : m.en}
+                </SheetChip>
+              ))}
             </SheetGroup>
             <SheetGroup>
-              <SheetChip active={freeOnly} onClick={() => setFreeOnly((v: any) => !v)}>
+              <SheetChip active={freeOnly} onClick={() => setFreeOnly((v) => !v)}>
                 {isRu ? 'Только бесплатное' : 'Free only'}
               </SheetChip>
-              <SheetChip active={savedOnly} onClick={() => setSavedOnly((v: any) => !v)}>
-                <Bookmark className="h-3.5 w-3.5" />
+              <SheetChip active={savedOnly} onClick={() => setSavedOnly((v) => !v)}>
                 {isRu ? 'Сохранённое' : 'Saved'}
-                {savedIds.size > 0 && (
-                  <span className="ml-1 rounded bg-paper-2/40 px-1 font-mono text-[10px] tabular-nums">
-                    {savedIds.size}
-                  </span>
-                )}
+                {savedIds.size > 0 && ` (${savedIds.size})`}
               </SheetChip>
             </SheetGroup>
           </div>
@@ -441,34 +436,30 @@ export default function KnowledgePage() {
         {/* Results */}
         {filteredCount === 0 ? (
           <EmptyState isRu={isRu} onReset={() => {
-            setCategory('all'); setLevel('all'); setLangFilter('all');
-            setMedia('all'); setFreeOnly(false); setSavedOnly(false); setQuery('');
+            setCategory('all'); setQuery('');
+            clearAllFilters();
           }} />
         ) : (
           <div className="space-y-10">
             {grouped.map(({ category: catKey, items }) => {
-              const meta = categories.find((c: any) => c.key === catKey);
+              const meta = categories.find((c) => c.key === catKey);
               const Icon = CATEGORY_ICONS[catKey] || FileText;
               return (
                 <section key={catKey}>
-                  <div className="mb-3 flex items-baseline justify-between gap-3 border-b border-rule pb-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-brand" aria-hidden />
-                      <h2 className="font-display text-lg font-medium text-ink">
-                        {isRu ? meta?.title_ru : meta?.title_en}
-                      </h2>
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                        {items.length}
-                      </span>
-                    </div>
+                  <div className="mb-3 flex items-baseline justify-between gap-3 border-b border-rule/12 pb-2">
+                    <h2 className="flex items-center gap-2 font-display text-lg font-medium text-ink">
+                      <Icon className="h-4 w-4 text-muted" aria-hidden />
+                      {isRu ? meta?.title_ru : meta?.title_en}
+                      <span className="text-[13px] font-normal text-muted">{items.length}</span>
+                    </h2>
                     {meta?.subtitle_en && (
-                      <span className="hidden truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted sm:inline">
+                      <span className="hidden truncate text-[13px] text-muted sm:inline">
                         {isRu ? meta.subtitle_ru : meta.subtitle_en}
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {items.map((r: any) => (
+                    {items.map((r) => (
                       <ResourceCard
                         key={r.id}
                         resource={r}
@@ -488,69 +479,84 @@ export default function KnowledgePage() {
         )}
       </div>
 
-      <VideoPlayer resource={playing} isRu={isRu} onOpenChange={handleClosePlayer} />
+      <VideoPlayer
+        resource={playing}
+        isRu={isRu}
+        onOpenChange={(open: boolean) => { if (!open) setPlaying(null); }}
+      />
     </div>
   );
 }
 
-function CategoryChip({ active, onClick, label, count, Icon }: any) {
+interface CategoryChipProps {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}
+
+function CategoryChip({ active, onClick, label, count }: CategoryChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-200',
+        'inline-flex min-h-[36px] shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors',
         active
-          ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.18)]'
-          : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
+          ? 'border-ink bg-ink text-paper'
+          : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
       )}
     >
-      <Icon className="h-3 w-3" aria-hidden />
       <span>{label}</span>
-      <span className={cn(
-        'ml-1 rounded-full px-1.5 font-mono text-[9px] tabular-nums',
-        active ? 'bg-paper/20 text-paper' : 'bg-rule/8 text-muted-2',
-      )}>{count}</span>
+      <span className={cn('tabular-nums', active ? 'text-paper/70' : 'text-muted-2')}>
+        {count}
+      </span>
     </button>
   );
 }
 
-function FilterGroup({ label, children }: any) {
+interface FilterGroupProps {
+  label?: string;
+  children: ReactNode;
+}
+
+function FilterGroup({ label, children }: FilterGroupProps) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {label && <span className="text-muted-2">{label}</span>}
+      {label && <span className="eyebrow mr-0.5">{label}</span>}
       {children}
     </div>
   );
 }
 
-// Bottom-sheet variants — bigger touch targets, sans-mono labels for the
-// scaled-up mobile layout.
-function SheetGroup({ label, children }: any) {
+// Bottom-sheet variants — same controls at thumb-sized touch targets.
+function SheetGroup({ label, children }: FilterGroupProps) {
   return (
     <div>
-      {label && (
-        <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-          {label}
-        </div>
-      )}
+      {label && <div className="eyebrow mb-2">{label}</div>}
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }
 
-function SheetChip({ active, onClick, children }: any) {
+interface ChipProps {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}
+
+function SheetChip({ active, onClick, children }: ChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 py-2 font-display text-[13px] font-medium transition-all active:scale-95',
+        'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-medium transition-transform active:scale-95',
         active
           ? 'border-ink bg-ink text-paper'
-          : 'border-rule/15 bg-paper-2 text-ink-2',
+          : 'border-rule/12 bg-paper-2 text-ink-2',
       )}
     >
       {children}
@@ -558,17 +564,17 @@ function SheetChip({ active, onClick, children }: any) {
   );
 }
 
-function ToggleChip({ active, onClick, children }: any) {
+function ToggleChip({ active, onClick, children }: ChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex min-h-[34px] items-center gap-1 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-all duration-200',
+        'inline-flex min-h-[32px] items-center gap-1 rounded-full border px-3 py-1 text-[13px] transition-colors',
         active
           ? 'border-ink bg-ink text-paper'
-          : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
+          : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
       )}
     >
       {children}
@@ -576,59 +582,78 @@ function ToggleChip({ active, onClick, children }: any) {
   );
 }
 
-function RecentChip({ resource, isRu, onClick }: any) {
+interface RecentChipProps {
+  resource: Resource;
+  isRu: boolean;
+  onClick: () => void;
+}
+
+function RecentChip({ resource, isRu, onClick }: RecentChipProps) {
   const coverId = resolveCoverVideoId(resource);
-  const thumb = coverId ? thumbnailUrl({ videoId: coverId, playlistId: null },'mq') : null;
+  const thumb = coverId ? thumbnailUrl({ videoId: coverId, playlistId: null }, 'mq') : null;
   const title = isRu ? (resource.title_ru || resource.title_en) : resource.title_en;
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex w-48 shrink-0 flex-col overflow-hidden rounded-md border border-rule/15 bg-paper-2 text-left shadow-codex-sm transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-codex"
+      className="codex-card group flex w-48 shrink-0 flex-col overflow-hidden text-left"
     >
       <div className="relative aspect-video bg-ink">
         {thumb ? (
-          <img src={thumb} alt="" loading="lazy" className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
+          <img src={thumb} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center text-paper">
-            <PlayCircle className="h-8 w-8" />
+            <PlayCircle className="h-8 w-8" aria-hidden />
           </div>
         )}
-        <span className="absolute inset-0 flex items-center justify-center bg-ink/30 opacity-0 transition-opacity group-hover:opacity-100">
-          <Play className="h-7 w-7 text-paper" />
+        <span className="absolute inset-0 flex items-center justify-center bg-ink/0 transition-colors group-hover:bg-ink/35">
+          <Play className="h-7 w-7 text-paper opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
         </span>
       </div>
       <div className="px-2.5 py-2">
-        <div className="line-clamp-2 font-display text-[12px] font-medium leading-tight text-ink">
+        <div className="line-clamp-2 text-[13px] font-medium leading-tight text-ink">
           {title}
         </div>
         {resource.source && (
-          <div className="mt-0.5 truncate font-mono text-[9px] uppercase tracking-wider text-muted-2">
-            {resource.source}
-          </div>
+          <div className="mt-0.5 truncate text-[12px] text-muted">{resource.source}</div>
         )}
       </div>
     </button>
   );
 }
 
-function ResourceCard({ resource: r, isRu, saved, visited, onToggleSave, onPlay, onOpenExternal }: any) {
+interface ResourceCardProps {
+  resource: Resource;
+  isRu: boolean;
+  saved: boolean;
+  visited: boolean;
+  onToggleSave: () => void;
+  onPlay: () => void;
+  onOpenExternal: () => void;
+}
+
+function ResourceCard({
+  resource: r, isRu, saved, visited, onToggleSave, onPlay, onOpenExternal,
+}: ResourceCardProps) {
   const title = isRu ? (r.title_ru || r.title_en) : r.title_en;
   const description = isRu ? (r.description_ru || r.description_en) : r.description_en;
-  const levelTone = LEVEL_TONE[r.level] || 'neutral';
-  const langTone = LANG_TONE[r.lang] || 'ghost';
   const playable = isPlayable(r) ? resolvePlayable(r) : null;
   const coverId = playable ? resolveCoverVideoId(r) : null;
-  const thumb = coverId ? thumbnailUrl({ videoId: coverId, playlistId: null },'hq') : null;
+  const thumb = coverId ? thumbnailUrl({ videoId: coverId, playlistId: null }, 'hq') : null;
+  const mediaLabel = MEDIA_LABEL[r.media_type || ''];
+
+  // One muted line instead of a row of chips — source, level, language,
+  // length and (when it isn't obvious) the media type.
+  const meta = [
+    r.source,
+    r.level && LEVEL_LABEL[r.level],
+    r.lang?.toUpperCase(),
+    r.duration,
+    mediaLabel && (isRu ? mediaLabel.ru : mediaLabel.en),
+  ].filter(Boolean).join(' · ');
 
   return (
-    <article
-      className={cn(
-        'group relative flex flex-col rounded-md border border-rule/15 bg-paper-2 shadow-codex-sm transition-all',
-        'hover:-translate-x-px hover:-translate-y-px hover:shadow-codex',
-        'overflow-hidden',
-      )}
-    >
+    <article className="codex-card flex flex-col overflow-hidden">
       {/* Thumbnail (only for playable) */}
       {playable && (
         <button
@@ -642,116 +667,84 @@ function ResourceCard({ resource: r, isRu, saved, visited, onToggleSave, onPlay,
               src={thumb}
               alt=""
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-[1.02]"
-              onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+              className="h-full w-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-paper">
-              {r.media_type === 'playlist' ? <ListVideo className="h-12 w-12" /> : <PlayCircle className="h-12 w-12" />}
+              {r.media_type === 'playlist'
+                ? <ListVideo className="h-12 w-12" aria-hidden />
+                : <PlayCircle className="h-12 w-12" aria-hidden />}
             </div>
           )}
-          <span className="absolute inset-0 flex items-center justify-center bg-ink/0 transition-colors group-hover/thumb:bg-ink/40">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-paper bg-ink/70 text-paper opacity-90 transition-all group-hover/thumb:scale-110">
-              <Play className="h-5 w-5 translate-x-px" />
+          <span className="absolute inset-0 flex items-center justify-center bg-ink/0 transition-colors group-hover/thumb:bg-ink/35">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink/70 text-paper">
+              <Play className="h-5 w-5 translate-x-px" aria-hidden />
             </span>
           </span>
-          {r.media_type === 'playlist' && (
-            <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded border border-paper/40 bg-ink/70 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-paper">
-              <ListVideo className="h-2.5 w-2.5" /> {isRu ? 'Плейлист' : 'Playlist'}
-            </span>
-          )}
         </button>
       )}
 
       <div className="flex flex-1 flex-col p-4">
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          {r.official && (
-            <Pill tone="brand" size="xs">
-              <BadgeCheck className="h-2.5 w-2.5" /> {isRu ? 'Официально' : 'Official'}
-            </Pill>
-          )}
-          <Pill tone={levelTone} size="xs">{r.level}</Pill>
-          <Pill tone={langTone} size="xs">{r.lang.toUpperCase()}</Pill>
-          {r.media_type === 'channel' && (
-            <Pill tone="ghost" size="xs">
-              <Tv className="h-2.5 w-2.5" /> {isRu ? 'Канал' : 'Channel'}
-            </Pill>
-          )}
-          {r.duration && (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-              · {r.duration}
-            </span>
-          )}
-          {!r.free && (
-            <Pill tone="amber" size="xs">$</Pill>
+        <div className="flex items-start gap-3">
+          {playable ? (
+            <button
+              type="button"
+              onClick={onPlay}
+              className="group/title flex-1 text-left"
+            >
+              <h3 className="font-display text-base font-medium leading-snug text-ink group-hover/title:text-brand">
+                {title}
+              </h3>
+            </button>
+          ) : (
+            <a
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onOpenExternal}
+              className="group/link flex flex-1 items-start gap-1.5"
+            >
+              <h3 className="flex-1 font-display text-base font-medium leading-snug text-ink group-hover/link:text-brand">
+                {title}
+              </h3>
+              <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted transition-colors group-hover/link:text-brand" aria-hidden />
+            </a>
           )}
           <button
             type="button"
             onClick={onToggleSave}
             aria-pressed={saved}
-            aria-label={saved ? (isRu ? 'Убрать из сохранённого' : 'Unsave') : (isRu ? 'Сохранить' : 'Save')}
+            aria-label={saved
+              ? (isRu ? 'Убрать из сохранённого' : 'Remove from saved')
+              : (isRu ? 'Сохранить' : 'Save')}
             className={cn(
-              'ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md border transition-colors',
-              saved
-                ? 'border-ink bg-ink text-paper'
-                : 'border-rule/15 bg-paper-2 text-muted hover:border-rule/15 hover:text-ink',
+              'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors',
+              saved ? 'bg-ink text-paper' : 'text-muted hover:bg-rule/8 hover:text-ink',
             )}
           >
-            {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+            {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
           </button>
         </div>
 
-        {playable ? (
-          <button
-            type="button"
-            onClick={onPlay}
-            className="group/title flex items-start gap-1.5 text-left"
-          >
-            <h3 className="flex-1 font-display text-base font-medium leading-snug text-ink group-hover/title:text-brand">
-              {title}
-            </h3>
-            <Play className="mt-1 h-3.5 w-3.5 text-muted transition-colors group-hover/title:text-brand" aria-hidden />
-          </button>
-        ) : (
-          <a
-            href={r.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onOpenExternal}
-            className="group/link flex items-start gap-1.5"
-          >
-            <h3 className="flex-1 font-display text-base font-medium leading-snug text-ink group-hover/link:text-brand">
-              {title}
-            </h3>
-            <ExternalLink className="mt-1 h-3.5 w-3.5 text-muted transition-colors group-hover/link:text-brand" aria-hidden />
-          </a>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
+          {r.official && (
+            <Pill tone="brand" size="xs">{isRu ? 'Официально' : 'Official'}</Pill>
+          )}
+          {r.free === false && (
+            <Pill tone="amber" size="xs">{isRu ? 'Платно' : 'Paid'}</Pill>
+          )}
+          {meta && <span>{meta}</span>}
+        </div>
+
+        {description && (
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-2">{description}</p>
         )}
 
-        {r.source && (
-          <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-2">
-            {r.source}
-          </div>
-        )}
-        {description && (
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
-            {description}
-          </p>
-        )}
-        {r.topics?.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1">
-            {r.topics.map((t: any) => (
-              <span
-                key={t}
-                className="inline-flex items-center rounded border border-rule px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-2"
-              >
-                #{t}
-              </span>
-            ))}
-          </div>
-        )}
-        {visited && (
-          <div className="mt-3 inline-flex items-center gap-1 self-start font-mono text-[9px] uppercase tracking-wider text-mint">
-            <CircleDot className="h-2.5 w-2.5" /> {isRu ? 'открыто' : 'visited'}
+        {(r.topics?.length || visited) && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-2">
+            {r.topics?.map((t) => <span key={t}>#{t}</span>)}
+            {visited && <span className="text-mint">{isRu ? 'открыто' : 'opened'}</span>}
           </div>
         )}
       </div>
@@ -759,16 +752,21 @@ function ResourceCard({ resource: r, isRu, saved, visited, onToggleSave, onPlay,
   );
 }
 
-function EmptyState({ isRu, onReset }: any) {
+interface EmptyStateProps {
+  isRu: boolean;
+  onReset: () => void;
+}
+
+function EmptyState({ isRu, onReset }: EmptyStateProps) {
   return (
-    <div className="rounded-md border border-dashed border-rule/15 bg-paper-2 p-10 text-center">
+    <div className="rounded-lg border border-dashed border-rule/20 bg-paper-2 p-10 text-center">
       <p className="font-display text-xl font-medium text-ink">
         {isRu ? 'Ничего не найдено' : 'No matches'}
       </p>
       <p className="mt-2 text-sm text-muted">
         {isRu
-          ? 'Сбрось фильтры или попробуй другой запрос — может, материала по этому скоупу пока нет.'
-          : 'Reset filters or try a different query — might not be anything in this scope yet.'}
+          ? 'Сбрось фильтры или попробуй другой запрос — по этому скоупу материала пока может не быть.'
+          : 'Reset the filters or try another query — there may be nothing in this scope yet.'}
       </p>
       <Button variant="codex" size="sm" className="mt-5" onClick={onReset}>
         {isRu ? 'Сбросить фильтры' : 'Reset filters'}

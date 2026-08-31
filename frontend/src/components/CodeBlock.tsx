@@ -6,17 +6,33 @@ import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
-export default function CodeBlock({ code, language = 'dart', className }: any) {
-  const theme = usePrefs((s: any) => s.theme);
+export interface CodeBlockProps {
+  code: string;
+  language?: string;
+  className?: string;
+}
+
+/** Shared shape for the two header actions — grotesk, sentence case, quiet. */
+const ACTION =
+  'inline-flex min-h-[36px] items-center gap-1.5 rounded px-2 text-[12px] font-medium ' +
+  'transition-colors sm:h-7 sm:min-h-0';
+
+/**
+ * A code figure. It reads as an inset cut into the page — a hairline and a
+ * faint ink wash, no shadow and no floating "window" chrome — because a
+ * snippet inside an answer is part of the same sheet, not a card on top of it.
+ */
+export default function CodeBlock({ code, language = 'dart', className }: CodeBlockProps) {
+  const theme = usePrefs((s) => s.theme);
   const { lang } = useLang();
-  const [html, setHtml] = useState<any>(null);
+  const [html, setHtml] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const cancelled = useRef(false);
 
   useEffect(() => {
     cancelled.current = false;
     highlightCode(code, language, theme === 'dark')
-      .then((h: any) => { if (!cancelled.current) setHtml(h); })
+      .then((h) => { if (!cancelled.current) setHtml(h); })
       .catch(() => { if (!cancelled.current) setHtml(null); });
     return () => { cancelled.current = true; };
   }, [code, language, theme]);
@@ -27,7 +43,7 @@ export default function CodeBlock({ code, language = 'dart', className }: any) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* ignore */
+      /* clipboard blocked — the code is still selectable */
     }
   };
 
@@ -43,7 +59,7 @@ export default function CodeBlock({ code, language = 'dart', className }: any) {
           : 'Code copied — paste into DartPad',
       );
     } catch {
-      toast.message(lang === 'ru' ? 'Открываем DartPad…' : 'Opening DartPad…');
+      toast.message(lang === 'ru' ? 'Открываем DartPad' : 'Opening DartPad');
     }
     window.open('https://dartpad.dev/', '_blank', 'noopener,noreferrer');
   };
@@ -53,52 +69,52 @@ export default function CodeBlock({ code, language = 'dart', className }: any) {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-2xl border border-rule/8 bg-paper-2',
-        'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
+        'overflow-hidden rounded-md border border-rule/12 bg-rule/4 print:bg-transparent',
         className,
       )}
     >
-      {/* Atlas code header — three-dot 'window' on left + actions on right */}
-      <div className="flex items-center justify-between gap-2 border-b border-rule/8 bg-rule/[0.02] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="flex gap-1" aria-hidden>
-            <span className="h-2 w-2 rounded-full bg-coral/60" />
-            <span className="h-2 w-2 rounded-full bg-amber/60" />
-            <span className="h-2 w-2 rounded-full bg-mint/60" />
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-2">
-            {language}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-2 border-b border-rule/8 px-3 py-1">
+        {/* Mono earns its place here: the language is ID-like data. */}
+        <span className="font-mono text-[11px] text-muted">{language}</span>
+        <div className="flex items-center gap-1 print:hidden">
           {isDart && (
             <button
               type="button"
               onClick={openInDartPad}
-              aria-label={lang === 'ru' ? 'Открыть в DartPad' : 'Open in DartPad'}
-              title={lang === 'ru' ? 'Скопировать и открыть DartPad' : 'Copy + open DartPad'}
-              className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1.5 font-mono text-[11px] uppercase text-brand transition-colors hover:bg-brand/10 sm:min-h-0 sm:h-6 sm:py-0 sm:text-[10px] sm:px-2"
+              title={lang === 'ru' ? 'Скопировать и открыть DartPad' : 'Copy and open DartPad'}
+              className={cn(ACTION, 'text-brand hover:bg-brand/8')}
             >
-              <Play className="h-3 w-3" />
+              <Play className="h-3 w-3" aria-hidden />
               DartPad
             </button>
           )}
           <button
             type="button"
             onClick={copy}
-            aria-label="Copy code"
-            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2.5 py-1.5 font-mono text-[11px] uppercase text-muted transition-colors hover:bg-rule/8 hover:text-ink sm:min-h-0 sm:h-6 sm:py-0 sm:text-[10px] sm:px-2"
+            className={cn(ACTION, 'text-muted hover:bg-rule/8 hover:text-ink')}
           >
-            {copied ? <Check className="h-3 w-3 text-mint" /> : <Copy className="h-3 w-3" />}
-            {copied ? (lang === 'ru' ? 'Скоп.' : 'Copied') : (lang === 'ru' ? 'Копир.' : 'Copy')}
+            {copied
+              ? <Check className="h-3 w-3 text-mint" aria-hidden />
+              : <Copy className="h-3 w-3" aria-hidden />}
+            {copied
+              ? (lang === 'ru' ? 'Скопировано' : 'Copied')
+              : (lang === 'ru' ? 'Копировать' : 'Copy')}
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto text-[13px] leading-relaxed [&_pre]:!bg-transparent [&_pre]:p-3 sm:text-sm sm:[&_pre]:p-4">
+      {/* Shiki writes its token colours as inline styles, so print has to win
+          with `!important` or a dark-theme snippet prints near-white on white. */}
+      <div
+        className={cn(
+          'overflow-x-auto font-mono text-[13px] leading-[1.65]',
+          '[&_pre]:!bg-transparent [&_pre]:p-3 sm:[&_pre]:p-4',
+          'print:[&_pre]:!text-ink print:[&_span]:!text-ink',
+        )}
+      >
         {html ? (
           <div dangerouslySetInnerHTML={{ __html: html }} />
         ) : (
-          <pre className="font-mono p-3 sm:p-4">{code}</pre>
+          <pre className="p-3 sm:p-4">{code}</pre>
         )}
       </div>
     </div>

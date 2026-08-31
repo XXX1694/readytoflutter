@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { UserPlus, Eye, EyeOff, ArrowLeft, Lock, AtSign, User, Cloud, Check } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../store/auth';
 import {
@@ -11,23 +11,26 @@ import {
   readLocalProgress,
   clearLocalProgress,
   serializeLocalProgress,
+  type BulkProgressItem,
 } from '../api/api';
 import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
-import { useSignupCopy } from '../i18n/signupPage';
-import { Button, Eyebrow } from '../ui/index';
-import { cn } from '../lib/cn';
+import { useSignupCopy, type SignupCopy } from '../i18n/signupPage';
+import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
 
 const schema = z.object({
-  name: z.string().trim().max(80).optional().or(z.literal('').transform(() => undefined)),
+  name: z.string().trim().max(80).optional().or(z.literal('').transform((): undefined => undefined)),
   email: z.string().trim().email({ message: 'invalid_email' }),
   password: z.string().min(8, { message: 'password_too_short' }).max(200),
 });
 
+type FieldName = 'email' | 'password';
+type FormErrors = Partial<Record<FieldName | 'form', string>>;
+
 export default function SignupPage() {
   const navigate = useNavigate();
-  const setSession = useAuth((s: any) => s.setSession);
-  const markSynced = useAuth((s: any) => s.markSynced);
+  const setSession = useAuth((s) => s.setSession);
+  const markSynced = useAuth((s) => s.markSynced);
   const qc = useQueryClient();
   const { lang } = useLang();
   const isRu = lang === 'ru';
@@ -35,25 +38,27 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState('form'); // 'form' | 'sync'
-  const [syncSummary, setSyncSummary] = useState<any>(null);
+  // Set once the account exists and there is local progress worth importing —
+  // its presence is what swaps the form out for the import step.
+  const [pendingImport, setPendingImport] = useState<BulkProgressItem[] | null>(null);
 
   const T = useSignupCopy(lang);
-  const errLabel = (key: any) => (key ? T.errors[key] || key : null);
+  const errLabel = (key: string | undefined): string | null =>
+    (key ? T.errors[key as keyof SignupCopy['errors']] ?? T.errors.unknown_error : null);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (submitting) return;
     setErrors({});
 
     const parsed = schema.safeParse({ name, email, password });
     if (!parsed.success) {
-      const next = {};
+      const next: FormErrors = {};
       for (const issue of parsed.error.issues) {
-        next[issue.path[0]] = issue.message;
+        const field = issue.path[0];
+        if (field === 'email' || field === 'password') next[field] = issue.message;
       }
       setErrors(next);
       return;
@@ -66,32 +71,31 @@ export default function SignupPage() {
       identify(String(user.id), { email: user.email });
       track('signup', { method: 'email' });
       qc.invalidateQueries();
-      // Inspect localStorage progress for the optional import step
+      // Offer the optional import step only when this browser holds progress.
       const localItems = serializeLocalProgress(readLocalProgress());
       if (localItems.length > 0) {
-        setSyncSummary({ count: localItems.length, items: localItems, user });
-        setStep('sync');
+        setPendingImport(localItems);
       } else {
-        toast.success(isRu ? `Привет, ${user.name || user.email}!` : `Welcome aboard, ${user.name || user.email}`);
+        toast.success(isRu ? `Привет, ${user.name || user.email}` : `Welcome aboard, ${user.name || user.email}`);
         navigate('/', { replace: true });
       }
-    } catch (err: any) {
-      const apiErr = err?.response?.data?.error;
-      const code = err?.response?.status;
+    } catch (err) {
+      const code = (err as { response?: { status?: number } })?.response?.status;
+      const apiErr = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       if (code === 409) setErrors({ form: 'email_taken' });
       else if (code === 429) setErrors({ form: 'rate_limited' });
-      else if (apiErr?.toLowerCase?.().includes('password')) setErrors({ password: 'password_too_short' });
-      else setErrors({ form: apiErr || 'unknown_error' });
+      else if (apiErr?.toLowerCase().includes('password')) setErrors({ password: 'password_too_short' });
+      else setErrors({ form: apiErr ?? 'unknown_error' });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleImport = async () => {
-    if (!syncSummary) return;
+    if (!pendingImport) return;
     setSubmitting(true);
     try {
-      const result = await bulkSyncProgress(syncSummary.items);
+      const result = await bulkSyncProgress(pendingImport);
       clearLocalProgress();
       markSynced();
       qc.invalidateQueries();
@@ -99,202 +103,118 @@ export default function SignupPage() {
         ? `Импортировано ${result.imported} карточек`
         : `Imported ${result.imported} cards`);
     } catch {
-      toast.error(isRu ? 'Не удалось импортировать прогресс' : 'Import failed');
+      toast.error(isRu
+        ? 'Не удалось импортировать прогресс. Он остался в этом браузере — попробуй позже.'
+        : 'Could not import your progress. It is still in this browser — try again later.');
     } finally {
       setSubmitting(false);
       navigate('/', { replace: true });
     }
   };
 
-  const handleSkip = () => navigate('/', { replace: true });
-
-  if (step === 'sync' && syncSummary) {
+  if (pendingImport) {
     return (
-      <div className="bg-page flex min-h-full items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-md border border-rule/15 bg-paper-2 p-6 shadow-codex sm:p-8">
-          <Eyebrow accent="brand">
-            <Cloud className="mr-1 inline h-3 w-3" />
-            {T.syncEyebrow}
-          </Eyebrow>
-          <h1 className="mt-3 font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
-            {T.syncTitle(syncSummary.count)}
-          </h1>
-          <p className="mt-2 text-sm text-ink-2">{T.syncSubtitle}</p>
+      <AuthShell>
+        <Eyebrow>{T.syncEyebrow}</Eyebrow>
+        <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
+          {T.syncTitle(pendingImport.length)}
+        </h1>
+        <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.syncSubtitle}</p>
 
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="brand"
-              size="md"
-              className="flex-1"
-              onClick={handleImport}
-              disabled={submitting}
-            >
-              <Check className="h-4 w-4" />
-              {submitting ? T.syncing : T.syncConfirm}
-            </Button>
-            <Button variant="ghost" size="md" className="flex-1" onClick={handleSkip} disabled={submitting}>
-              {T.syncSkip}
-            </Button>
-          </div>
-
-          <p className="mt-4 text-center font-mono text-[10px] uppercase tracking-wider text-muted-2">
-            {T.syncNote}
-          </p>
+        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+          <Button variant="codex" className="flex-1" onClick={handleImport} disabled={submitting}>
+            {submitting ? T.syncing : T.syncConfirm}
+          </Button>
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={() => navigate('/', { replace: true })}
+            disabled={submitting}
+          >
+            {T.syncSkip}
+          </Button>
         </div>
-      </div>
+
+        <p className="mt-5 text-[13px] text-muted-2">{T.syncNote}</p>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-ink"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          {T.back}
+    <AuthShell>
+      <Link
+        to="/"
+        className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {T.back}
+      </Link>
+
+      <Eyebrow>{T.eyebrow}</Eyebrow>
+      <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
+        <span className="marker decoration-clone">{T.title}</span>
+      </h1>
+      <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.subtitle}</p>
+
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
+        <TextField
+          label={`${T.name} · ${T.optional}`}
+          autoComplete="name"
+          autoCapitalize="words"
+          value={name}
+          onChange={setName}
+          placeholder={T.namePh}
+        />
+
+        <TextField
+          label={T.email}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          value={email}
+          onChange={setEmail}
+          placeholder="you@example.com"
+          error={errLabel(errors.email)}
+        />
+
+        <PasswordField
+          label={T.password}
+          autoComplete="new-password"
+          value={password}
+          onChange={setPassword}
+          placeholder={T.passwordPh}
+          hint={T.passwordHint}
+          error={errLabel(errors.password)}
+          showLabel={T.showPwd}
+          hideLabel={T.hidePwd}
+        />
+
+        {errors.form && (
+          <p role="alert" className="rounded-md border border-coral/30 bg-coral/8 px-3 py-2 text-[13px] text-coral">
+            {errLabel(errors.form)}
+          </p>
+        )}
+
+        <Button type="submit" variant="codex" className="w-full" disabled={submitting}>
+          {submitting ? T.submitting : T.submit}
+        </Button>
+      </form>
+
+      <p className="mt-8 border-t border-rule/12 pt-5 text-sm text-muted">
+        {T.haveAccount}{' '}
+        <Link to="/login" className="font-medium text-brand underline-offset-4 hover:underline">
+          {T.toLogin}
         </Link>
+      </p>
+    </AuthShell>
+  );
+}
 
-        <div className="rounded-md border border-rule/15 bg-paper-2 p-6 shadow-codex sm:p-8">
-          <Eyebrow accent="brand">
-            <UserPlus className="mr-1 inline h-3 w-3" />
-            {T.eyebrow}
-          </Eyebrow>
-          <h1 className="mt-3 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-4xl">
-            {T.title}
-          </h1>
-          <p className="mt-2 text-sm text-ink-2">{T.subtitle}</p>
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-            <Field label={T.name} icon={<User className="h-3.5 w-3.5" />} optional={T.optional}>
-              <input
-                type="text"
-                autoComplete="name"
-                autoCapitalize="words"
-                value={name}
-                onChange={(e: any) => setName(e.target.value)}
-                onFocus={(e: any) => {
-                  setTimeout(() => {
-                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-                    catch { /* older Safari */ }
-                  }, 250);
-                }}
-                placeholder={T.namePh}
-                className={inputClass(false)}
-              />
-            </Field>
-
-            <Field label={T.email} icon={<AtSign className="h-3.5 w-3.5" />} error={errLabel(errors.email)}>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                autoCorrect="off"
-                spellCheck={false}
-                autoCapitalize="none"
-                value={email}
-                onChange={(e: any) => setEmail(e.target.value)}
-                onFocus={(e: any) => {
-                  setTimeout(() => {
-                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-                    catch { /* older Safari */ }
-                  }, 250);
-                }}
-                placeholder="you@example.com"
-                className={inputClass(errors.email)}
-              />
-            </Field>
-
-            <Field
-              label={T.password}
-              icon={<Lock className="h-3.5 w-3.5" />}
-              error={errLabel(errors.password)}
-              hint={T.passwordHint}
-              trailing={(
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((v: any) => !v)}
-                  className="font-mono text-[10px] uppercase tracking-wider text-muted hover:text-ink"
-                  aria-label={showPwd ? T.hidePwd : T.showPwd}
-                >
-                  {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                </button>
-              )}
-            >
-              <input
-                type={showPwd ? 'text' : 'password'}
-                autoComplete="new-password"
-                autoCorrect="off"
-                spellCheck={false}
-                autoCapitalize="off"
-                value={password}
-                onChange={(e: any) => setPassword(e.target.value)}
-                onFocus={(e: any) => {
-                  setTimeout(() => {
-                    try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-                    catch { /* older Safari */ }
-                  }, 250);
-                }}
-                placeholder={T.passwordPh}
-                className={inputClass(errors.password)}
-              />
-            </Field>
-
-            {errors.form && (
-              <div className="rounded-md border border-coral/40 bg-coral/10 px-3 py-2 text-xs text-[rgb(var(--coral))]">
-                {errLabel(errors.form)}
-              </div>
-            )}
-
-            <Button type="submit" variant="brand" size="md" className="w-full" disabled={submitting}>
-              <UserPlus className="h-4 w-4" />
-              {submitting ? T.submitting : T.submit}
-            </Button>
-          </form>
-
-          <div className="mt-6 border-t border-rule pt-5 text-center font-mono text-[11px] uppercase tracking-wider text-muted">
-            {T.haveAccount}{' '}
-            <Link to="/login" className="text-brand hover:text-brand-ink">
-              {T.toLogin}
-            </Link>
-          </div>
-        </div>
-      </div>
+function AuthShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="bg-page flex min-h-full items-center justify-center px-4 py-14">
+      <div className="w-full max-w-md">{children}</div>
     </div>
   );
 }
-
-function Field({ label, icon, error, hint, trailing, optional, children }: any) {
-  return (
-    <label className="block">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-          {icon}
-          {label}
-          {optional && <span className="ml-1 normal-case tracking-normal text-muted-2">· {optional}</span>}
-        </span>
-        {trailing}
-      </div>
-      {children}
-      {hint && !error && (
-        <span className="mt-1 block font-mono text-[10px] uppercase tracking-wider text-muted-2">
-          {hint}
-        </span>
-      )}
-      {error && (
-        <span className="mt-1 block font-mono text-[10px] uppercase tracking-wider text-[rgb(var(--coral))]">
-          {error}
-        </span>
-      )}
-    </label>
-  );
-}
-
-const inputClass = (hasErr: any) => cn(
-  'w-full rounded-xl border bg-paper-2/60 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted-2 outline-none transition-all duration-200',
-  hasErr
-    ? 'border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20'
-    : 'border-rule/12 focus:border-brand/40 focus:bg-paper-2 focus:ring-2 focus:ring-brand/20',
-);
-

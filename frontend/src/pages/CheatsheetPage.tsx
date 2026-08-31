@@ -6,8 +6,10 @@ import { useTopic } from '../lib/queries';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { FullPageLoader } from '../ui/index';
+import { Button, FullPageLoader } from '../ui/index';
+import { cn } from '../lib/cn';
 import { extractHint, shortenCode } from '../lib/hint';
+import type { Difficulty, Question } from '../types/domain';
 
 /**
  * Cheatsheet — a compressed, glanceable reference for a topic. Shows every
@@ -38,7 +40,7 @@ export default function CheatsheetPage() {
 
   const items = useMemo(() => {
     if (!topic?.questions) return [];
-    return topic.questions.map((q: any) => ({
+    return topic.questions.map((q: Question) => ({
       id: q.id,
       question: questionText(q),
       hint: extractHint(answerText(q)),
@@ -55,7 +57,7 @@ export default function CheatsheetPage() {
       '',
       topicDesc(topic),
       '',
-      ...items.map((it: any, i: any) => {
+      ...items.map((it, i) => {
         const parts = [
           `### ${String(i + 1).padStart(2, '0')}. ${it.question}`,
           '',
@@ -91,98 +93,90 @@ export default function CheatsheetPage() {
   });
   const levelT = t[topic.level];
 
-  const diffTone = {
+  const diffTone: Record<Difficulty, string> = {
     easy: 'text-mint',
     medium: 'text-[rgb(var(--amber))]',
-    hard: 'text-[rgb(var(--coral))]',
+    hard: 'text-coral',
   };
 
   return (
-    <div className="print-view bg-paper text-ink">
-      {/* On-screen toolbar — hidden in print */}
-      <div className="print-hide sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-rule bg-paper px-4 py-3 sm:px-6">
+    <div className="bg-paper text-ink">
+      {/* On-screen toolbar. `print:hidden` rather than a `.print-hide` class:
+          that class was never defined in index.css, so the toolbar used to
+          print at the top of page one. */}
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-rule/12 bg-paper px-4 py-3 print:hidden sm:px-6">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-            Cheatsheet
-          </span>
+          <span className="eyebrow">{lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}</span>
           <span className="text-sm text-ink-2">{topicTitle(topic)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-rule/25 hover:text-ink hover:shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.08)]"
-          >
-            {copied ? <Check className="h-3 w-3 text-mint" /> : <ClipboardCopy className="h-3 w-3" />}
+          <Button variant="outline" size="sm" onClick={handleCopy}>
+            {copied
+              ? <Check className="h-3.5 w-3.5 text-mint" aria-hidden />
+              : <ClipboardCopy className="h-3.5 w-3.5" aria-hidden />}
             {copied
               ? (lang === 'ru' ? 'Скопировано' : 'Copied')
-              : (lang === 'ru' ? 'Копия Markdown' : 'Copy Markdown')}
-          </button>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-rule/25 hover:shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.08)]"
-          >
-            <Printer className="h-3 w-3" />
+              : (lang === 'ru' ? 'Копировать Markdown' : 'Copy Markdown')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="h-3.5 w-3.5" aria-hidden />
             {lang === 'ru' ? 'Печать' : 'Print'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/topic/${slug}`)}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
-          >
-            <ArrowLeft className="h-3 w-3" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/topic/${slug}`)}>
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             {lang === 'ru' ? 'Назад' : 'Back'}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Cheatsheet body — 2-col grid on screen + print */}
       <article className="mx-auto max-w-[920px] px-5 py-6 sm:px-7 sm:py-8">
         {/* Cover */}
-        <header className="mb-5 border-b-2 border-rule/15 pb-3">
-          <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-            <span>Onsite · Cheatsheet</span>
+        <header className="mb-5 border-b border-rule/25 pb-3">
+          <div className="flex items-baseline justify-between text-[12px] text-muted">
+            <span>Onsite · {lang === 'ru' ? 'шпаргалка' : 'cheatsheet'}</span>
             <span>{today}</span>
           </div>
-          <h1 className="mt-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
+          <h1 className="mt-2 font-display text-2xl leading-tight text-ink sm:text-3xl">
             {topicTitle(topic)}
           </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-ink-2">{topicDesc(topic)}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted">
+          <p className="mt-1 max-w-2xl font-serif text-[14px] leading-[1.6] text-ink-2">
+            {topicDesc(topic)}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-muted">
             <span>{levelT.label}</span>
-            <span>·</span>
+            <span aria-hidden>·</span>
             <span>{items.length} {lang === 'ru' ? 'тезисов' : 'items'}</span>
-            <span>·</span>
-            <span className="text-coral">{lang === 'ru' ? 'короткая выжимка — для скима' : 'compressed — skim-ready'}</span>
+            <span aria-hidden>·</span>
+            <span>{lang === 'ru' ? 'короткая выжимка для скима' : 'compressed for a skim'}</span>
           </div>
         </header>
 
-        {/* Items grid */}
-        <ol className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2 cheatsheet-grid">
-          {items.map((it: any, i: any) => (
+        {/* Items grid — two columns on paper as well as on screen. */}
+        <ol className="grid grid-cols-1 gap-x-5 gap-y-3 print:grid-cols-2 sm:grid-cols-2">
+          {items.map((it, i) => (
             <li
               key={it.id}
-              className="cheatsheet-item break-inside-avoid rounded border border-rule bg-paper-2 p-3"
+              className="break-inside-avoid rounded border border-rule/12 bg-paper-2 p-3 print:bg-transparent"
             >
               <div className="flex items-baseline gap-2">
-                <span className="font-mono text-[11px] tabular-nums text-brand">
+                <span className="font-mono text-[11px] tabular-nums text-muted">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <h2 className="font-display text-[13.5px] font-semibold leading-snug tracking-tight text-ink">
+                <h2 className="font-display text-[13.5px] font-semibold leading-snug text-ink">
                   {it.question}
                 </h2>
               </div>
-              <div className="ml-7 mt-0.5 flex items-center gap-2 font-mono text-[9px] uppercase tracking-wider text-muted">
-                <span className={diffTone[it.difficulty] || 'text-muted'}>
-                  {{ easy: t.easy, medium: t.medium, hard: t.hard }[it.difficulty] || it.difficulty}
-                </span>
+              <div className={cn('ml-7 mt-0.5 text-[11px]', diffTone[it.difficulty] || 'text-muted')}>
+                {{ easy: t.easy, medium: t.medium, hard: t.hard }[it.difficulty] || it.difficulty}
               </div>
-              <p className="mt-1.5 ml-7 text-[12px] leading-[1.55] text-ink-2">
+              {/* The hint is the one thing on this sheet that gets read rather
+                  than scanned, so it takes the reading serif. */}
+              <p className="ml-7 mt-1.5 font-serif text-[13px] leading-[1.55] text-ink-2">
                 {it.hint}
               </p>
               {it.code && (
-                <pre className="mt-1.5 ml-7 overflow-hidden rounded border border-rule bg-paper p-1.5 font-mono text-[10px] leading-[1.4] text-ink whitespace-pre-wrap">
+                <pre className="ml-7 mt-1.5 overflow-hidden whitespace-pre-wrap rounded border border-rule/12 bg-rule/4 p-1.5 font-mono text-[10.5px] leading-[1.45] text-ink print:bg-transparent">
                   <code>{it.code}</code>
                 </pre>
               )}
@@ -190,8 +184,8 @@ export default function CheatsheetPage() {
           ))}
         </ol>
 
-        <footer className="mt-6 border-t border-rule pt-2 text-center font-mono text-[9px] uppercase tracking-wider text-muted-2">
-          Onsite · {topicTitle(topic)} · cheatsheet · {today}
+        <footer className="mt-6 border-t border-rule/12 pt-2 text-center text-[11px] text-muted-2">
+          Onsite · {topicTitle(topic)} · {today}
         </footer>
       </article>
     </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Command, Brain } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import { useTopics, useStats, useResetProgress, useQuestions } from '../lib/queries';
 import { getCardState } from '../lib/srs';
 import { useLang } from '../i18n/LangContext';
@@ -17,18 +17,44 @@ import PlatformFilter from '../components/PlatformFilter';
 import { filterTopicsByPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
+import type { Level, Topic, Question } from '../types/domain';
+import type { LandingConfig } from '../i18n/landings';
+
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const modKey = isMac ? '⌘' : 'Ctrl';
 
-const LEVELS = ['junior', 'mid', 'senior'];
+const LEVELS: Level[] = ['junior', 'mid', 'senior'];
 
-export default function HomePage({ landing = null }: any) {
+/**
+ * Cards this topic has waiting in the SRS queue. Lives at module scope so the
+ * clock read stays out of the render body.
+ */
+function countDueByTopic(questions: Question[], now: number = Date.now()): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const q of questions) {
+    const s = getCardState(q.id);
+    if (s.reps > 0 && s.dueAt <= now) {
+      map.set(q.topic_id, (map.get(q.topic_id) || 0) + 1);
+    }
+  }
+  return map;
+}
+
+export interface HomePageProps {
+  /**
+   * Set on the per-platform SEO routes (/flutter, /ios, /android, /kmp),
+   * which render this same dashboard under different hero copy and meta.
+   */
+  landing?: LandingConfig | null;
+}
+
+export default function HomePage({ landing = null }: HomePageProps) {
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
-  const setCommandOpen = usePrefs((s: any) => s.setCommandOpen);
-  const platform = usePrefs((s: any) => s.platform);
-  const setPlatform = usePrefs((s: any) => s.setPlatform);
+  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
+  const platform = usePrefs((s) => s.platform);
+  const setPlatform = usePrefs((s) => s.setPlatform);
   const navigate = useNavigate();
 
   // Landing-page mode: when this HomePage is rendered as /flutter, /ios, etc.
@@ -56,18 +82,10 @@ export default function HomePage({ landing = null }: any) {
   // Per-topic SRS due counts — computed once and passed into each TopicTile so
   // the dashboard can surface "you have N cards waiting in this topic" without
   // each tile re-walking the SRS map.
-  const dueByTopic = useMemo(() => {
-    const map = new Map();
-    const now = Date.now();
-    const questions = questionsQ.data ?? [];
-    for (const q of questions) {
-      const s = getCardState(q.id);
-      if (s.reps > 0 && s.dueAt <= now) {
-        map.set(q.topic_id, (map.get(q.topic_id) || 0) + 1);
-      }
-    }
-    return map;
-  }, [questionsQ.data]);
+  const dueByTopic = useMemo(
+    () => countDueByTopic(questionsQ.data ?? []),
+    [questionsQ.data],
+  );
 
   // Apply the persisted platform filter; computed before early returns so
   // hooks order stays stable across render branches.
@@ -93,9 +111,8 @@ export default function HomePage({ landing = null }: any) {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="flex max-w-md flex-col items-center gap-4 text-center">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-coral">Error</span>
-          <p className="font-display text-2xl text-ink">{t.failedLoadTopics}</p>
-          <Button variant="codex" onClick={() => topicsQ.refetch()}>{t.tryAgain}</Button>
+          <p className="font-display text-2xl font-semibold text-ink">{t.failedLoadTopics}</p>
+          <Button variant="brand" onClick={() => topicsQ.refetch()}>{t.tryAgain}</Button>
         </div>
       </div>
     );
@@ -111,113 +128,112 @@ export default function HomePage({ landing = null }: any) {
   return (
     <div className="bg-page">
       <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-        {/* HERO — oversized gradient title, single brand-glow CTA. On
-            mobile the type ramps down a step (display-xs) so a 320px
-            iPhone SE viewport doesn't overflow, and vertical rhythm is
-            tightened to give the dashboard a "above the fold" feel. */}
+        {/* HERO — the two lines of the headline are separated by ink weight,
+            not by a gradient fill; the type does the work. */}
         <section className="mb-7 sm:mb-14">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted backdrop-blur sm:mb-5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-mint aurora-pulse" />
-            {landingCopy?.eyebrow ?? (lang === 'ru' ? 'Подготовка · Mobile' : 'Interview prep · Mobile')}
-          </div>
-          <h1 className="font-display text-display-xs font-semibold leading-[1.04] tracking-tightest sm:text-display-md sm:leading-[1.02] lg:text-display-lg xl:text-display-xl">
+          <Eyebrow>
+            {landingCopy?.eyebrow ?? (lang === 'ru' ? 'Подготовка к мобильному собесу' : 'Mobile interview prep')}
+          </Eyebrow>
+          <h1 className="mt-3 font-display text-display-xs font-semibold leading-[1.04] tracking-tightest sm:text-display-md sm:leading-[1.02] lg:text-display-lg">
             {landingCopy ? (
               <>
-                <span className="text-ink">{landingCopy.title[0]}</span>
+                <span className="text-muted">{landingCopy.title[0]}</span>
                 <br />
-                <span className="text-gradient-brand">{landingCopy.title[1]}</span>
+                <span className="text-ink">{landingCopy.title[1]}</span>
               </>
             ) : lang === 'ru' ? (
               <>
-                <span className="text-ink">Готов к</span>
+                <span className="text-muted">Готов к</span>
                 <br />
-                <span className="text-gradient-brand">собеседованию.</span>
+                <span className="text-ink">собеседованию.</span>
               </>
             ) : (
               <>
-                <span className="text-ink">Ready for the</span>
+                <span className="text-muted">Ready for the</span>
                 <br />
-                <span className="text-gradient-brand">interview.</span>
+                <span className="text-ink">interview.</span>
               </>
             )}
           </h1>
-          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-2 sm:mt-6 sm:text-lg">
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-2 sm:mt-6 sm:text-[17px]">
             {landingCopy?.desc ?? t.heroDesc}
           </p>
 
-          {/* Factual metric strip — concrete content scope replaces the
-              fake-social-proof "trusted by N devs" line. Numbers come from
-              the live topics/questions data so they never drift from the
-              seed. */}
-          <dl className="mt-5 flex flex-wrap items-baseline gap-x-5 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-muted sm:mt-7 sm:gap-x-7">
-            <div className="flex items-baseline gap-1.5">
+          {/* Scope of the catalogue — concrete content facts, read from the
+              live data so they never drift from the seed. */}
+          <dl className="mt-5 flex flex-wrap items-baseline gap-x-6 gap-y-2 text-[14px] text-muted sm:mt-7">
+            <div>
               <dt className="sr-only">{lang === 'ru' ? 'Темы' : 'Topics'}</dt>
-              <dd className="text-base font-semibold tabular-nums text-ink sm:text-lg">{totalTopics || 53}</dd>
-              <span>{lang === 'ru' ? 'тем' : 'topics'}</span>
+              <dd className="flex items-baseline gap-1.5">
+                <span className="num text-[17px] text-ink">{totalTopics || 53}</span>
+                <span>{lang === 'ru' ? 'тем' : 'topics'}</span>
+              </dd>
             </div>
-            <div className="flex items-baseline gap-1.5">
+            <div>
               <dt className="sr-only">{lang === 'ru' ? 'Вопросы' : 'Questions'}</dt>
-              <dd className="text-base font-semibold tabular-nums text-ink sm:text-lg">{total || 392}</dd>
-              <span>{lang === 'ru' ? 'вопросов' : 'questions'}</span>
+              <dd className="flex items-baseline gap-1.5">
+                <span className="num text-[17px] text-ink">{total || 392}</span>
+                <span>{lang === 'ru' ? 'вопросов' : 'questions'}</span>
+              </dd>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <dd className="text-base font-semibold tabular-nums text-ink sm:text-lg">4</dd>
-              <span>{lang === 'ru' ? 'стека · Flutter · iOS · Android · KMP' : 'stacks · Flutter · iOS · Android · KMP'}</span>
+            <div>
+              <dt className="sr-only">{lang === 'ru' ? 'Стеки' : 'Stacks'}</dt>
+              <dd className="flex items-baseline gap-1.5">
+                <span className="num text-[17px] text-ink">4</span>
+                <span>{lang === 'ru' ? 'стека · Flutter · iOS · Android · KMP' : 'stacks · Flutter · iOS · Android · KMP'}</span>
+              </dd>
             </div>
           </dl>
 
           {/* Single primary CTA — Mock and Knowledge live in the sidebar /
               bottom-nav, so the hero stays focused on the one action that
-              actually moves SRS forward. Cmd+K hint surfaces the palette
-              for power users without competing for the eye on mobile. */}
+              actually moves SRS forward. */}
           <div className="mt-5 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <Button
               variant="brand"
               size="lg"
-              className="w-full sm:w-auto sm:size-md"
+              className="w-full sm:w-auto"
               onClick={() => navigate('/study')}
             >
-              <Brain className="h-4 w-4" />
+              <Brain className="h-4 w-4" aria-hidden />
               {lang === 'ru' ? 'Начать сессию' : 'Start a session'}
-              <kbd className="ml-1 hidden rounded border border-white/30 px-1.5 py-0.5 font-mono text-[10px] sm:inline">{modKey}S</kbd>
+              <kbd className="ml-1 hidden rounded border border-paper/40 px-1.5 py-0.5 font-mono text-[11px] sm:inline">{modKey}S</kbd>
             </Button>
             <button
               type="button"
               onClick={() => setCommandOpen(true)}
-              className="hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink sm:inline-flex"
+              className="hidden items-center gap-2 text-[13px] text-muted hover:text-ink sm:inline-flex"
             >
-              <Command className="h-3.5 w-3.5" aria-hidden />
               <span>{t.searchOpenHint}</span>
-              <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px]">{modKey}K</kbd>
+              <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[11px]">{modKey}K</kbd>
             </button>
           </div>
         </section>
 
-        {/* TODAY'S PLAN — hoisted above stats so the very next thing users
+        {/* TODAY'S PLAN — hoisted above the tally so the very next thing users
             see after the hero is "what should I do right now?". */}
         <section className="mb-6 sm:mb-10">
           <TodayPlan />
         </section>
 
-        {/* STATS */}
+        {/* PROGRESS — a ruled band of figures, not a rack of KPI cards. The
+            completed count carries its denominator so it reads as the tally
+            it is; nothing here is coloured, because none of it is an action. */}
         <section className="mb-7 sm:mb-12">
-          <Eyebrow className="mb-3 sm:mb-4">
-            {lang === 'ru' ? 'Прогресс' : 'Progress'}
-          </Eyebrow>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
-            <StatTile label={t.totalQuestions} value={total} accent="ink" />
-            <StatTile label={t.completed} value={completed} accent="mint" />
-            <StatTile label={t.inProgress} value={inProgress} accent="amber" />
-            <StatTile label={t.completion} value={pct} suffix="%" accent="brand" />
+          <Eyebrow className="mb-3">{lang === 'ru' ? 'Прогресс' : 'Progress'}</Eyebrow>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-6 border-y border-rule/12 py-5 sm:grid-cols-3 sm:gap-x-8 sm:py-6">
+            <StatTile label={t.completed} value={completed} of={total} />
+            <StatTile label={t.inProgress} value={inProgress} />
+            <StatTile label={t.completion} value={pct} suffix="%" />
           </div>
         </section>
 
         {/* ACTIVITY */}
         <section className="mb-8 sm:mb-16">
-          <Eyebrow className="mb-3 sm:mb-4">
+          <Eyebrow className="mb-3">
             {lang === 'ru' ? 'Активность · 14 недель' : 'Activity · last 14 weeks'}
           </Eyebrow>
-          <div className="rounded-md border border-rule/15 bg-paper-2 p-3 shadow-codex-sm sm:p-6">
+          <div className="codex-card p-4 sm:p-6">
             <ActivityHeatmap weeks={14} />
           </div>
         </section>
@@ -231,37 +247,32 @@ export default function HomePage({ landing = null }: any) {
         {/* LEVELS */}
         <section id="levels">
           {topics.length === 0 && (
-            <div className="rounded-md border border-dashed border-rule/30 bg-paper-2/50 p-8 text-center">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-                {t.platformEmpty}
-              </p>
+            <div className="codex-card flex flex-col items-start gap-3 p-6 sm:items-center sm:text-center">
+              <p className="text-[15px] text-ink-2">{t.platformEmpty}</p>
+              <Button variant="outline" size="sm" onClick={() => setPlatform('all')}>
+                {lang === 'ru' ? 'Показать все стеки' : 'Show every stack'}
+              </Button>
             </div>
           )}
-          {LEVELS.map((level: any, idx: any) => {
-            const items = topics.filter((tp: any) => tp.level === level);
+          {LEVELS.map((level) => {
+            const items = topics.filter((tp: Topic) => tp.level === level);
             if (!items.length) return null;
             const levelT = t[level];
             return (
               <div key={level} className="mb-9 sm:mb-16">
-                <header className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-rule/15 pb-3 sm:mb-5">
-                  <div>
-                    <Eyebrow accent="brand" className="mb-2">
-                      {levelT.short}
-                    </Eyebrow>
-                    <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-4xl">
-                      {levelT.label}
-                    </h2>
-                    <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
-                      {levelT.desc} · {t.topicCount(items.length)}
-                    </p>
-                  </div>
+                <header className="mb-4 border-b border-rule/12 pb-3 sm:mb-5">
+                  <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+                    {levelT.label}
+                  </h2>
+                  <p className="mt-1 text-[14px] text-muted">
+                    {levelT.desc} · {t.topicCount(items.length)}
+                  </p>
                 </header>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                  {items.map((topic: any) => (
+                  {items.map((topic: Topic) => (
                     <TopicTile
                       key={topic.id}
                       topic={topic}
-                      level={level}
                       t={t}
                       topicTitle={topicTitle}
                       topicDesc={topicDesc}
@@ -276,7 +287,7 @@ export default function HomePage({ landing = null }: any) {
 
         {/* RESET */}
         {completed > 0 && (
-          <div className="mt-8 flex justify-end border-t border-rule pt-6">
+          <div className="mt-8 flex justify-end border-t border-rule/12 pt-6">
             <Button
               variant="ghost"
               size="sm"
@@ -304,59 +315,54 @@ function DashboardSkeleton() {
           <Skeleton className="mt-5 h-5 w-full max-w-2xl" />
           <Skeleton className="mt-2 h-5 w-1/2 max-w-xl" />
           <div className="mt-6 flex flex-wrap gap-3">
-            <Skeleton className="h-10 w-44 rounded-md" />
-            <Skeleton className="h-10 w-52 rounded-md" />
+            <Skeleton className="h-12 w-44 rounded-lg" />
           </div>
-        </section>
-
-        {/* Stat tiles */}
-        <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {Array.from({ length: 4 }).map((_: any, i: any) => (
-            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="mt-3 h-8 w-12" />
-            </div>
-          ))}
         </section>
 
         {/* TodayPlan */}
         <section className="mb-8">
-          <div className="rounded-md border border-rule/15 bg-paper-2/80 p-6 shadow-codex">
+          <div className="codex-card p-6">
             <Skeleton className="h-3 w-28" />
             <Skeleton className="mt-3 h-8 w-2/3 max-w-md" />
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Skeleton className="h-5 w-20 rounded-full" />
-              <Skeleton className="h-5 w-24 rounded-full" />
-              <Skeleton className="h-5 w-16 rounded-full" />
-            </div>
-            <Skeleton className="mt-5 h-10 w-48 rounded-md" />
+            <Skeleton className="mt-3 h-4 w-1/2 max-w-sm" />
+            <Skeleton className="mt-5 h-10 w-48 rounded-lg" />
           </div>
+        </section>
+
+        {/* Progress band */}
+        <section className="mb-12 grid grid-cols-2 gap-x-6 gap-y-6 border-y border-rule/12 py-6 sm:grid-cols-3 sm:gap-x-8">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="mt-2.5 h-3 w-20" />
+            </div>
+          ))}
         </section>
 
         {/* Activity */}
         <section className="mb-12">
           <Skeleton className="mb-4 h-3 w-44" />
-          <div className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
+          <div className="codex-card p-5">
             <div className="flex flex-wrap gap-1">
-              {Array.from({ length: 14 * 7 }).map((_: any, i: any) => (
-                <Skeleton key={i} className="h-3 w-3 rounded-[3px]" />
+              {Array.from({ length: 14 * 7 }).map((_, i) => (
+                <Skeleton key={i} className="h-3 w-3 rounded-sm" />
               ))}
             </div>
           </div>
         </section>
 
         {/* Topic grid */}
-        {[1, 2, 3].map((row: any) => (
+        {[1, 2, 3].map((row) => (
           <section key={row} className="mb-12">
-            <Skeleton className="mb-3 h-3 w-24" />
             <Skeleton className="mb-2 h-8 w-56" />
+            <Skeleton className="mb-5 h-3 w-40" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 4 }).map((_: any, i: any) => (
-                <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
-                  <Skeleton className="h-9 w-9 rounded-md" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="codex-card p-4">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
                   <Skeleton className="mt-3 h-5 w-3/4" />
                   <Skeleton className="mt-2 h-4 w-1/2" />
-                  <Skeleton className="mt-3 h-2 w-full" />
+                  <Skeleton className="mt-3 h-4 w-16" />
                 </div>
               ))}
             </div>

@@ -7,19 +7,27 @@ import QuestionCard from '../components/QuestionCard';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Skeleton } from '../ui/index';
+import { Button, Eyebrow, Skeleton } from '../ui/index';
 import { cn } from '../lib/cn';
 import { useAdmin, applyDiff } from '../store/admin';
 import PlatformFilter from '../components/PlatformFilter';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet';
-import { usePrefs } from '../store/prefs';
+import { usePrefs, type SearchFacets } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 
-const FACETS = {
+type FacetKey = keyof SearchFacets;
+
+// Values mirror the Level / Difficulty / ProgressStatus unions in
+// types/domain; held as plain strings so one loop can render all three groups.
+const FACETS: Record<FacetKey, string[]> = {
   level: ['junior', 'mid', 'senior'],
   difficulty: ['easy', 'medium', 'hard'],
   status: ['not_started', 'in_progress', 'completed'],
 };
+
+const FACET_KEYS = Object.keys(FACETS) as FacetKey[];
+
+const NO_FACETS: SearchFacets = { level: null, difficulty: null, status: null };
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,21 +39,21 @@ export default function SearchPage() {
   const initialQuery = searchParams.get('q') || '';
   const [input, setInput] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery);
-  const [facets, setFacets] = useState({ level: null, difficulty: null, status: null });
+  const [facets, setFacets] = useState<SearchFacets>(NO_FACETS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  const inputRef = useRef(null);
-  const debounceTimer = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: rawQuestions = [], isLoading } = useQuestions();
   const { data: allTopics = [] } = useTopics();
-  const platform = usePrefs((s: any) => s.platform);
+  const platform = usePrefs((s) => s.platform);
 
   // Layer admin edits/adds/deletes onto the server data so newly-authored
   // questions appear in search without requiring a backend round-trip.
-  const edits = useAdmin((s: any) => s.edits);
-  const adds = useAdmin((s: any) => s.adds);
-  const deletes = useAdmin((s: any) => s.deletes);
+  const edits = useAdmin((s) => s.edits);
+  const adds = useAdmin((s) => s.adds);
+  const deletes = useAdmin((s) => s.deletes);
   const questions = useMemo(() => {
     const merged = applyDiff(rawQuestions, { edits, adds, deletes });
     return filterQuestionsByPlatform(merged, allTopics, platform);
@@ -61,7 +69,9 @@ export default function SearchPage() {
       else params.delete('q');
       setSearchParams(params, { replace: true });
     }, 200);
-    return () => clearTimeout(debounceTimer.current);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input]);
 
@@ -80,11 +90,11 @@ export default function SearchPage() {
       },
     });
     ms.addAll(
-      questions.map((q: any) => ({
+      questions.map((q) => ({
         id: q.id,
         q: questionText(q) || '',
         a: answerText(q) || '',
-        topic: topicTitle({ id: q.topic_id, title: q.topic_title } as any) || q.topic_title || '',
+        topic: topicTitle({ id: q.topic_id, title: q.topic_title || '' }) || q.topic_title || '',
         tags: q.tags || '',
       })),
     );
@@ -93,37 +103,35 @@ export default function SearchPage() {
 
   // Run query and apply facets
   const results = useMemo(() => {
-    let pool;
+    let pool = questions;
     if (query.trim()) {
       const hits = index.search(query.trim());
-      const order = new Map(hits.map((h: any, i: any) => [h.id, i]));
-      pool = questions.filter((q: any) => order.has(q.id))
-                      .sort((a: any, b: any) => order.get(a.id) - order.get(b.id));
-    } else {
-      pool = questions;
+      const order = new Map<number, number>(
+        hits.map((h, i): [number, number] => [h.id as number, i]),
+      );
+      pool = questions.filter((q) => order.has(q.id))
+                      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
     }
-    return pool.filter((q: any) => {
+    return pool.filter((q) => {
       if (facets.level && q.level !== facets.level) return false;
       if (facets.difficulty && q.difficulty !== facets.difficulty) return false;
-      if (facets.status) {
-        const s = q.status || 'not_started';
-        if (s !== facets.status) return false;
-      }
+      if (facets.status && (q.status || 'not_started') !== facets.status) return false;
       return true;
     });
   }, [query, facets, index, questions]);
 
-  const setFacet = (key: any, value: any) =>
-    setFacets((f: any) => ({ ...f, [key]: f[key] === value ? null : value }));
-  const clearFacets = () => setFacets({ level: null, difficulty: null, status: null });
-  const hasFacets = facets.level || facets.difficulty || facets.status;
+  const setFacet = (key: FacetKey, value: string): void =>
+    setFacets((f) => ({ ...f, [key]: f[key] === value ? null : value }) as SearchFacets);
+  const clearFacets = (): void => setFacets(NO_FACETS);
+  const hasFacets = Boolean(facets.level || facets.difficulty || facets.status);
 
   // Focus shortcut: '/' focuses search
   useEffect(() => {
-    const onKey = (e: any) => {
+    const onKey = (e: KeyboardEvent): void => {
       if (e.key === '/' && !e.metaKey && !e.ctrlKey) {
-        const tag = (e.target.tagName || '').toLowerCase();
-        if (['input', 'textarea'].includes(tag) || e.target.isContentEditable) return;
+        const target = e.target as HTMLElement | null;
+        const tag = (target?.tagName || '').toLowerCase();
+        if (['input', 'textarea'].includes(tag) || target?.isContentEditable) return;
         e.preventDefault();
         inputRef.current?.focus();
       }
@@ -133,27 +141,29 @@ export default function SearchPage() {
   }, []);
 
   const labelFor = useCallback(
-    (key: any, value: any) => {
-      if (key === 'level') return { junior: t.juniorOption, mid: t.midOption, senior: t.seniorOption }[value];
-      if (key === 'difficulty') return { easy: t.easy, medium: t.medium, hard: t.hard }[value];
-      if (key === 'status') return { not_started: t.filterTodo, in_progress: t.filterInProgress, completed: t.filterDone }[value];
-      return value;
+    (key: FacetKey, value: string): string => {
+      if (key === 'level') return { junior: t.juniorOption, mid: t.midOption, senior: t.seniorOption }[value] || value;
+      if (key === 'difficulty') return { easy: t.easy, medium: t.medium, hard: t.hard }[value] || value;
+      return { not_started: t.filterTodo, in_progress: t.filterInProgress, completed: t.filterDone }[value] || value;
     },
     [t],
   );
 
-  const groupHeading = useMemo(() => {
-    return {
-      level: t.filterByLevel,
-      difficulty: t.filterByDifficulty,
-      status: t.markAs.replace(':', ''),
-    };
-  }, [t]);
+  // Short labels: the chips beneath already say what they filter, so
+  // "Filter by level" would be the same word twice in a row.
+  const groupHeading: Record<FacetKey, string> = useMemo(
+    () => ({
+      level: lang === 'ru' ? 'Уровень' : 'Level',
+      difficulty: lang === 'ru' ? 'Сложность' : 'Difficulty',
+      status: lang === 'ru' ? 'Статус' : 'Status',
+    }),
+    [lang],
+  );
 
-  if (isLoading) return <SearchSkeleton lang={lang} />;
+  if (isLoading) return <SearchSkeleton />;
 
   // Active facet count drives the badge on the mobile filters trigger.
-  const facetCount = ['level', 'difficulty', 'status'].filter((k: any) => facets[k]).length;
+  const facetCount = FACET_KEYS.filter((k) => facets[k]).length;
 
   return (
     <div className="bg-page">
@@ -169,16 +179,13 @@ export default function SearchPage() {
           {t.backToDashboard}
         </Button>
 
-        <header className="mb-6 border-b border-rule/15 pb-5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-            00 / {lang === 'ru' ? 'Поиск' : 'Search'}
-          </span>
-          <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+        <header className="mb-6 border-b border-rule/12 pb-5">
+          <Eyebrow>{lang === 'ru' ? 'Поиск' : 'Search'}</Eyebrow>
+          <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
             {t.searchHeading.replace(':', '')}
           </h1>
 
-          {/* Search input */}
-          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-rule/12 bg-paper-2/60 px-4 transition-all duration-200 focus-within:border-brand/40 focus-within:bg-paper-2 focus-within:ring-2 focus-within:ring-brand/15">
+          <div className="mt-5 flex items-center gap-2 rounded-lg border border-rule/12 bg-paper-2 px-4 transition-colors duration-150 focus-within:border-rule/30">
             <SearchIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
             <input
               ref={inputRef}
@@ -189,10 +196,11 @@ export default function SearchPage() {
               spellCheck={false}
               autoCapitalize="off"
               value={input}
-              onChange={(e: any) => setInput(e.target.value)}
-              onFocus={(e: any) => {
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={(e) => {
+                const el = e.target;
                 setTimeout(() => {
-                  try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
                   catch { /* older Safari */ }
                 }, 250);
               }}
@@ -207,10 +215,10 @@ export default function SearchPage() {
                 aria-label={lang === 'ru' ? 'Очистить' : 'Clear'}
                 className="text-muted hover:text-ink"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden />
               </button>
             )}
-            <kbd className="hidden rounded-md border border-rule/15 bg-paper-2 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-2 sm:inline-block">
+            <kbd className="hidden rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[11px] text-muted-2 sm:inline-block">
               /
             </kbd>
           </div>
@@ -225,33 +233,28 @@ export default function SearchPage() {
         {/* Facets — mobile shows a single Filters trigger that opens a
             bottom-sheet with the same controls. Desktop keeps the inline
             stack so the full surface is visible at once. */}
-        <div className="mb-5 sm:hidden">
-          <div className="flex items-center gap-2">
-            <FilterSheetTrigger
-              onClick={() => setFilterSheetOpen(true)}
-              count={facetCount}
-              label={lang === 'ru' ? 'Фильтры' : 'Filters'}
-            />
-            {hasFacets && (
-              <button
-                type="button"
-                onClick={clearFacets}
-                className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-coral active:underline"
-              >
-                <X className="h-3 w-3" />
-                {lang === 'ru' ? 'Сброс' : 'Clear'}
-              </button>
-            )}
-          </div>
+        <div className="mb-5 flex items-center gap-3 sm:hidden">
+          <FilterSheetTrigger
+            onClick={() => setFilterSheetOpen(true)}
+            count={facetCount}
+            label={lang === 'ru' ? 'Фильтры' : 'Filters'}
+          />
+          {hasFacets && (
+            <button
+              type="button"
+              onClick={clearFacets}
+              className="text-[13px] text-muted underline-offset-4 active:underline"
+            >
+              {lang === 'ru' ? 'Сбросить' : 'Clear filters'}
+            </button>
+          )}
         </div>
 
-        <div className="mb-6 hidden space-y-3 sm:block">
-          {Object.keys(FACETS).map((key: any) => (
+        <div className="mb-6 hidden space-y-2.5 sm:block">
+          {FACET_KEYS.map((key) => (
             <div key={key} className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted w-24">
-                {groupHeading[key]}
-              </span>
-              {FACETS[key].map((value: any) => {
+              <span className="w-24 shrink-0 text-[13px] text-muted">{groupHeading[key]}</span>
+              {FACETS[key].map((value: string) => {
                 const active = facets[key] === value;
                 return (
                   <button
@@ -260,10 +263,10 @@ export default function SearchPage() {
                     onClick={() => setFacet(key, value)}
                     aria-pressed={active}
                     className={cn(
-                      'inline-flex min-h-[36px] items-center rounded-full border px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
+                      'inline-flex min-h-[34px] items-center rounded-md border px-3 text-[13px] font-medium transition-colors duration-150',
                       active
-                        ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.18)]'
-                        : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
+                        ? 'border-ink bg-ink text-paper'
+                        : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
                     )}
                   >
                     {labelFor(key, value)}
@@ -276,9 +279,8 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={clearFacets}
-              className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-coral hover:underline"
+              className="text-[13px] text-muted underline-offset-4 hover:text-ink hover:underline"
             >
-              <X className="h-3 w-3" />
               {lang === 'ru' ? 'Сбросить фильтры' : 'Clear filters'}
             </button>
           )}
@@ -300,13 +302,11 @@ export default function SearchPage() {
           }
         >
           <div className="space-y-5 pt-1">
-            {Object.keys(FACETS).map((key: any) => (
+            {FACET_KEYS.map((key) => (
               <div key={key}>
-                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                  {groupHeading[key]}
-                </div>
+                <div className="mb-2 text-[13px] text-muted">{groupHeading[key]}</div>
                 <div className="flex flex-wrap gap-2">
-                  {FACETS[key].map((value: any) => {
+                  {FACETS[key].map((value: string) => {
                     const active = facets[key] === value;
                     return (
                       <button
@@ -315,10 +315,10 @@ export default function SearchPage() {
                         onClick={() => setFacet(key, value)}
                         aria-pressed={active}
                         className={cn(
-                          'inline-flex min-h-[44px] items-center rounded-full border px-4 py-2 font-display text-[13px] font-medium transition-all active:scale-95',
+                          'inline-flex min-h-[44px] items-center rounded-md border px-4 text-[14px] font-medium transition-colors duration-150',
                           active
                             ? 'border-ink bg-ink text-paper'
-                            : 'border-rule/15 bg-paper-2 text-ink-2',
+                            : 'border-rule/12 bg-paper-2 text-ink-2',
                         )}
                       >
                         {labelFor(key, value)}
@@ -332,51 +332,42 @@ export default function SearchPage() {
         </FilterSheet>
 
         {/* Results meta */}
-        <div className="mb-4 flex items-center justify-between border-b border-rule pb-3">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+        <div className="mb-4 flex items-center justify-between border-b border-rule/12 pb-3 text-[13px] text-muted">
+          <span>
             {t.resultCount(results.length)}
-            {query && (
-              <span className="ml-2 text-ink-2">
-                · "<span className="text-ink">{query}</span>"
-              </span>
-            )}
+            {query && <span className="ml-2 text-ink-2">“{query}”</span>}
           </span>
         </div>
 
         {/* Results */}
         {results.length === 0 ? (
-          <div className="relative mt-6 overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 px-6 py-16 text-center sm:py-24">
-            <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand/15 via-brand-sky/10 to-transparent blur-3xl" />
-            <div className="relative mx-auto flex flex-col items-center gap-4">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand/15 to-brand/5 ring-1 ring-brand/20">
-                <SearchIcon className="h-6 w-6 text-brand" aria-hidden />
-              </span>
-              <div className="space-y-1">
-                <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
-                  {query ? (t.noResultsFor as unknown as (q: string) => string)(query) : t.enterSearchQuery}
-                </h2>
-                <p className="mx-auto max-w-sm text-sm text-ink-2">
-                  {t.tryDifferentKeywords}
-                </p>
-              </div>
-              {!query && (
-                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                  {lang === 'ru' ? 'индексировано:' : 'indexed:'} {questions.length}
-                </p>
-              )}
+          <div className="codex-card mt-6 flex flex-col items-start gap-4 p-6 sm:items-center sm:p-12 sm:text-center">
+            <div className="space-y-2">
+              <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+                {query ? t.noResultsFor(query) : t.enterSearchQuery}
+              </h2>
+              <p className="max-w-sm text-[15px] leading-relaxed text-ink-2">
+                {query
+                  ? t.tryDifferentKeywords
+                  : (lang === 'ru'
+                      ? `В индексе ${questions.length} вопросов по выбранному стеку.`
+                      : `${questions.length} questions indexed for the stack you picked.`)}
+              </p>
             </div>
+            {hasFacets && (
+              <Button variant="outline" size="sm" onClick={clearFacets}>
+                {lang === 'ru' ? 'Сбросить фильтры' : 'Clear filters'}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {results.map((q: any, i: any) => (
+            {results.map((q, i) => (
               <div key={q.id} className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                  <span className="text-brand">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
+                <div className="flex items-center gap-1.5 px-1 text-[13px] text-muted">
                   <span>{q.topic_title}</span>
-                  <span className="text-muted-2">/</span>
-                  <span>{t[q.level]?.short || q.level}</span>
+                  <span className="text-muted-2">·</span>
+                  <span>{(q.level && t[q.level]?.short) || q.level}</span>
                 </div>
                 <QuestionCard question={q} index={i} />
               </div>
@@ -388,22 +379,22 @@ export default function SearchPage() {
   );
 }
 
-function SearchSkeleton({ lang }: any) {
+function SearchSkeleton() {
   return (
     <div className="bg-page">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
         <Skeleton className="mb-2 h-3 w-16" />
         <Skeleton className="mb-6 h-9 w-1/2 max-w-md" />
-        <Skeleton className="mb-6 h-12 w-full rounded-md" />
+        <Skeleton className="mb-6 h-12 w-full rounded-lg" />
         <div className="mb-6 flex gap-2">
-          {Array.from({ length: 6 }).map((_: any, i: any) => (
-            <Skeleton key={i} className="h-7 w-16 rounded-md" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-20 rounded-md" />
           ))}
         </div>
         <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_: any, i: any) => (
-            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="codex-card p-4">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="mt-2 h-3 w-1/2" />
             </div>

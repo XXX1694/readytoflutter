@@ -1,105 +1,126 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useNavigate, type NavigateFunction } from 'react-router-dom';
 import * as Tabs from '@radix-ui/react-tabs';
 import {
-  Shield, BarChart3, Users, Inbox, Crown, Star, FileText, ArrowLeft,
+  Shield, BarChart3, Users, Inbox, FileText, ArrowLeft,
   Loader2, Search, Check, RotateCcw, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
-import { useLang } from '../i18n/LangContext';
+import { useLang, type Lang } from '../i18n/LangContext';
 import { Button, Eyebrow, Pill } from '../ui/index';
 import {
   adminGetStats, adminListUsers, adminPatchUser,
   adminListContact, adminPatchContact,
 } from '../api/api';
 import { cn } from '../lib/cn';
+import type { AdminStats, ContactMessage, ProTier, User } from '../types/domain';
 
-const COPY = {
-  en: {
-    title: 'Admin', back: 'Back to home',
-    tabOverview: 'Overview', tabUsers: 'Users', tabInbox: 'Inbox', tabContent: 'Content',
-    notSignedIn: 'Sign in required', notSignedInSub: 'Admin requires an account.',
-    notAdmin: 'Not authorized', notAdminSub: 'Your account does not have admin access.',
-    backendDown: 'Backend unavailable',
-    overview: {
-      eyebrow: 'Snapshot',
-      users: 'Users', proUsers: 'Pro users',
-      signups24h: 'Signups · 24h', signups7d: 'Signups · 7d',
-      active7d: 'Active · 7d', active30d: 'Active · 30d',
-      totalProgress: 'Progress rows', completed: 'Completed',
-      aiGrades24h: 'AI grades · 24h', openContacts: 'Open tickets',
-      questions: 'Questions', topics: 'Topics',
-    },
-    users: {
-      eyebrow: 'Users', searchPh: 'email or name…',
-      email: 'Email', name: 'Name', joined: 'Joined', last: 'Last active', progress: 'Progress',
-      tier: 'Tier', admin: 'Admin', actions: 'Actions',
-      makeAdmin: 'Make admin', removeAdmin: 'Remove admin',
-      promotePro: 'Set Pro', promoteLifetime: 'Set Lifetime', demoteFree: 'Set Free',
-      totalLabel: (n: any) => `${n} users`,
-      loadMore: 'Load more',
-    },
-    inbox: {
-      eyebrow: 'Inbox',
-      open: 'Open', resolved: 'Resolved', all: 'All',
-      from: 'From', message: 'Message', received: 'Received',
-      markResolved: 'Mark resolved', reopen: 'Reopen',
-      empty: 'No messages here yet.',
-    },
-    content: {
-      title: 'Content authoring',
-      desc: 'In-browser question editor with localStorage diff and JSON export. Available in dev builds only.',
-      open: 'Open authoring tool',
-      devOnly: 'Dev-only',
-    },
+// /admin/users joins two aggregate columns that aren't part of the shared
+// User shape (see the query in backend/database.js).
+type AdminUserRow = User & {
+  progress_count: number;
+  last_active_at: string | null;
+};
+
+const EN = {
+  title: 'Admin', back: 'Back to home',
+  tabOverview: 'Overview', tabUsers: 'Users', tabInbox: 'Inbox', tabContent: 'Content',
+  notSignedIn: 'Sign in required', notSignedInSub: 'Admin requires an account.',
+  notAdmin: 'Not authorized', notAdminSub: 'Your account does not have admin access.',
+  backendDown: 'Backend unavailable',
+  overview: {
+    eyebrow: 'Snapshot',
+    users: 'Users', proUsers: 'Pro users',
+    signups24h: 'Signups · 24h', signups7d: 'Signups · 7d',
+    active7d: 'Active · 7d', active30d: 'Active · 30d',
+    totalProgress: 'Progress rows', completed: 'Completed',
+    aiGrades24h: 'AI grades · 24h', openContacts: 'Open tickets',
+    questions: 'Questions', topics: 'Topics',
+    failed: 'Could not load the stats.',
   },
-  ru: {
-    title: 'Админка', back: 'На главную',
-    tabOverview: 'Обзор', tabUsers: 'Пользователи', tabInbox: 'Входящие', tabContent: 'Контент',
-    notSignedIn: 'Требуется вход', notSignedInSub: 'Админка работает только с аккаунтом.',
-    notAdmin: 'Доступ запрещён', notAdminSub: 'У этого аккаунта нет прав админа.',
-    backendDown: 'Бэкенд недоступен',
-    overview: {
-      eyebrow: 'Снимок',
-      users: 'Пользователей', proUsers: 'Pro-юзеров',
-      signups24h: 'Регистрации · 24ч', signups7d: 'Регистрации · 7д',
-      active7d: 'Активны · 7д', active30d: 'Активны · 30д',
-      totalProgress: 'Записей прогресса', completed: 'Завершено',
-      aiGrades24h: 'AI-проверок · 24ч', openContacts: 'Открытых тикетов',
-      questions: 'Вопросов', topics: 'Тем',
-    },
-    users: {
-      eyebrow: 'Пользователи', searchPh: 'email или имя…',
-      email: 'Email', name: 'Имя', joined: 'Регистрация', last: 'Активность', progress: 'Прогресс',
-      tier: 'Тариф', admin: 'Админ', actions: 'Действия',
-      makeAdmin: 'Сделать админом', removeAdmin: 'Снять права',
-      promotePro: 'Pro', promoteLifetime: 'Lifetime', demoteFree: 'Free',
-      totalLabel: (n: any) => `${n} пользователей`,
-      loadMore: 'Ещё',
-    },
-    inbox: {
-      eyebrow: 'Входящие',
-      open: 'Открытые', resolved: 'Закрытые', all: 'Все',
-      from: 'От', message: 'Сообщение', received: 'Получено',
-      markResolved: 'Закрыть', reopen: 'Открыть снова',
-      empty: 'Сообщений нет.',
-    },
-    content: {
-      title: 'Редактирование контента',
-      desc: 'In-browser редактор вопросов с локальным diff и экспортом JSON. Доступен только в dev-сборке.',
-      open: 'Открыть редактор',
-      devOnly: 'Только dev',
-    },
+  users: {
+    eyebrow: 'Users', searchPh: 'email or name…',
+    email: 'Email', joined: 'Joined', last: 'Last active', progress: 'Progress',
+    tier: 'Tier', admin: 'Admin', actions: 'Actions',
+    makeAdmin: 'Make admin', removeAdmin: 'Remove admin',
+    promotePro: 'Set Pro', promoteLifetime: 'Set Lifetime', demoteFree: 'Set Free',
+    totalLabel: (n: number) => `${n} users`,
+    loadMore: 'Load more',
+    loadFailed: 'Could not load the users.',
+    updated: 'Saved', updateFailed: 'Could not save the change.',
+  },
+  inbox: {
+    eyebrow: 'Inbox',
+    open: 'Open', resolved: 'Resolved', all: 'All',
+    markResolved: 'Mark resolved', reopen: 'Reopen',
+    empty: 'No messages here yet.',
+    loadFailed: 'Could not load the inbox.',
+    updated: 'Saved', updateFailed: 'Could not save the change.',
+  },
+  content: {
+    title: 'Content authoring',
+    desc: 'In-browser question editor with a localStorage diff and JSON export. Available in dev builds only.',
+    open: 'Open authoring tool',
+    devOnly: 'Dev only',
   },
 };
 
-function fmtDate(s, locale) {
+type AdminCopy = typeof EN;
+
+const RU: AdminCopy = {
+  title: 'Админка', back: 'На главную',
+  tabOverview: 'Обзор', tabUsers: 'Пользователи', tabInbox: 'Входящие', tabContent: 'Контент',
+  notSignedIn: 'Требуется вход', notSignedInSub: 'Админка работает только с аккаунтом.',
+  notAdmin: 'Доступ запрещён', notAdminSub: 'У этого аккаунта нет прав админа.',
+  backendDown: 'Бэкенд недоступен',
+  overview: {
+    eyebrow: 'Снимок',
+    users: 'Пользователей', proUsers: 'Pro-юзеров',
+    signups24h: 'Регистрации · 24ч', signups7d: 'Регистрации · 7д',
+    active7d: 'Активны · 7д', active30d: 'Активны · 30д',
+    totalProgress: 'Записей прогресса', completed: 'Завершено',
+    aiGrades24h: 'AI-проверок · 24ч', openContacts: 'Открытых тикетов',
+    questions: 'Вопросов', topics: 'Тем',
+    failed: 'Не удалось загрузить статистику.',
+  },
+  users: {
+    eyebrow: 'Пользователи', searchPh: 'email или имя…',
+    email: 'Email', joined: 'Регистрация', last: 'Активность', progress: 'Прогресс',
+    tier: 'Тариф', admin: 'Админ', actions: 'Действия',
+    makeAdmin: 'Сделать админом', removeAdmin: 'Снять права',
+    promotePro: 'Pro', promoteLifetime: 'Lifetime', demoteFree: 'Free',
+    totalLabel: (n: number) => `${n} пользователей`,
+    loadMore: 'Ещё',
+    loadFailed: 'Не удалось загрузить пользователей.',
+    updated: 'Сохранено', updateFailed: 'Не удалось сохранить изменение.',
+  },
+  inbox: {
+    eyebrow: 'Входящие',
+    open: 'Открытые', resolved: 'Закрытые', all: 'Все',
+    markResolved: 'Закрыть', reopen: 'Открыть снова',
+    empty: 'Сообщений пока нет.',
+    loadFailed: 'Не удалось загрузить входящие.',
+    updated: 'Сохранено', updateFailed: 'Не удалось сохранить изменение.',
+  },
+  content: {
+    title: 'Редактирование контента',
+    desc: 'Редактор вопросов в браузере с локальным diff и экспортом JSON. Доступен только в dev-сборке.',
+    open: 'Открыть редактор',
+    devOnly: 'Только dev',
+  },
+};
+
+const COPY: Record<Lang, AdminCopy> = { en: EN, ru: RU };
+
+const PAGE_SIZE = 50;
+
+function fmtDate(s: string | null | undefined, locale: string): string {
   if (!s) return '—';
   return new Date(s).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function fmtRelative(s, locale) {
+function fmtRelative(s: string | null | undefined, locale: string): string {
   if (!s) return '—';
   const d = (Date.now() - new Date(s).getTime()) / 1000;
   if (d < 60) return 'now';
@@ -111,16 +132,16 @@ function fmtRelative(s, locale) {
 
 export default function AdminDashboardPage() {
   const { lang } = useLang();
-  const T = COPY[lang === 'ru' ? 'ru' : 'en'];
+  const T = COPY[lang];
   const navigate = useNavigate();
-  const user = useAuth((s: any) => s.user);
-  const token = useAuth((s: any) => s.token);
-  const backendAvailable = useAuth((s: any) => s.backendAvailable);
+  const user = useAuth((s) => s.user);
+  const token = useAuth((s) => s.token);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
 
   // Auth gates first — keep them dumb so the heavy data hooks below never
   // fire for unauthorized viewers.
   if (backendAvailable === false) {
-    return <GateMessage title={T.backendDown} sub="" navigate={navigate} backLabel={T.back} />;
+    return <GateMessage title={T.backendDown} navigate={navigate} backLabel={T.back} />;
   }
   if (!token) {
     return <GateMessage title={T.notSignedIn} sub={T.notSignedInSub} navigate={navigate} backLabel={T.back} />;
@@ -134,29 +155,21 @@ export default function AdminDashboardPage() {
       <div className="mx-auto max-w-6xl">
         <Link
           to="/"
-          className="mb-5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-ink"
+          className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-ink"
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           {T.back}
         </Link>
 
         <header className="mb-7">
-          <Eyebrow accent="brand">
-            <Shield className="mr-1 inline h-3 w-3" />
-            {T.title}
-          </Eyebrow>
-          <h1 className="mt-3 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-4xl">
+          <h1 className="font-display text-3xl font-medium leading-tight text-ink sm:text-4xl">
             {T.title}
           </h1>
-          <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
-            {user.email}
-          </p>
+          <p className="mt-1 text-sm text-muted">{user.email}</p>
         </header>
 
         <Tabs.Root defaultValue="overview">
-          <Tabs.List
-            className="mb-6 inline-flex flex-wrap items-center gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm"
-          >
+          <Tabs.List className="mb-6 inline-flex flex-wrap items-center gap-px rounded-md border border-rule/12 bg-paper-2 p-0.5">
             <TabTrigger value="overview" icon={<BarChart3 className="h-3.5 w-3.5" />}>{T.tabOverview}</TabTrigger>
             <TabTrigger value="users" icon={<Users className="h-3.5 w-3.5" />}>{T.tabUsers}</TabTrigger>
             <TabTrigger value="inbox" icon={<Inbox className="h-3.5 w-3.5" />}>{T.tabInbox}</TabTrigger>
@@ -164,7 +177,7 @@ export default function AdminDashboardPage() {
           </Tabs.List>
 
           <Tabs.Content value="overview" className="outline-none">
-            <OverviewTab T={T.overview} lang={lang} />
+            <OverviewTab T={T.overview} />
           </Tabs.Content>
           <Tabs.Content value="users" className="outline-none">
             <UsersTab T={T.users} lang={lang} self={user} />
@@ -181,12 +194,18 @@ export default function AdminDashboardPage() {
   );
 }
 
-function TabTrigger({ value, icon, children }: any) {
+interface TabTriggerProps {
+  value: string;
+  icon: ReactNode;
+  children: ReactNode;
+}
+
+function TabTrigger({ value, icon, children }: TabTriggerProps) {
   return (
     <Tabs.Trigger
       value={value}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted transition-colors',
+        'inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[13px] font-medium text-muted transition-colors',
         'data-[state=active]:bg-ink data-[state=active]:text-paper hover:text-ink',
       )}
     >
@@ -196,11 +215,18 @@ function TabTrigger({ value, icon, children }: any) {
   );
 }
 
-function GateMessage({ title, sub, navigate, backLabel }: any) {
+interface GateMessageProps {
+  title: string;
+  sub?: string;
+  navigate: NavigateFunction;
+  backLabel: string;
+}
+
+function GateMessage({ title, sub, navigate, backLabel }: GateMessageProps) {
   return (
     <div className="bg-page flex min-h-full items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <Shield className="mx-auto mb-3 h-8 w-8 text-muted" />
+        <Shield className="mx-auto mb-3 h-8 w-8 text-muted" aria-hidden />
         <h1 className="font-display text-2xl text-ink">{title}</h1>
         {sub && <p className="mt-2 text-sm text-ink-2">{sub}</p>}
         <Button variant="codex" size="md" className="mt-5" onClick={() => navigate('/')}>
@@ -214,61 +240,45 @@ function GateMessage({ title, sub, navigate, backLabel }: any) {
 
 // ── Overview ─────────────────────────────────────────────────────────────────
 
-function OverviewTab({ T, lang }: any) {
-  const [stats, setStats] = useState<any>(null);
+function OverviewTab({ T }: { T: AdminCopy['overview'] }) {
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     adminGetStats()
-      .then((d: any) => { if (alive) { setStats(d); setLoading(false); } })
-      .catch((err: any) => { if (alive) { setError(err); setLoading(false); } });
+      .then((d) => { if (alive) { setStats(d); setLoading(false); } })
+      .catch(() => { if (alive) { setFailed(true); setLoading(false); } });
     return () => { alive = false; };
   }, []);
 
-  if (loading) return <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted" />;
-  if (error || !stats) {
-    return <p className="text-sm text-[rgb(var(--coral))]">Failed to load stats</p>;
-  }
+  if (loading) return <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted" aria-hidden />;
+  if (failed || !stats) return <p className="text-sm text-coral">{T.failed}</p>;
 
-  const tiles = [
-    { label: T.users, value: stats.totalUsers, accent: 'ink' },
-    { label: T.proUsers, value: stats.proUsers, accent: 'brand' },
-    { label: T.signups24h, value: stats.signups24h, accent: 'mint' },
-    { label: T.signups7d, value: stats.signups7d, accent: 'mint' },
-    { label: T.active7d, value: stats.activeUsers7d, accent: 'amber' },
-    { label: T.active30d, value: stats.activeUsers30d, accent: 'amber' },
-    { label: T.totalProgress, value: stats.totalProgress, accent: 'ink' },
-    { label: T.completed, value: stats.completed, accent: 'mint' },
-    { label: T.aiGrades24h, value: stats.aiGrades24h, accent: 'plum' },
-    { label: T.openContacts, value: stats.openContacts, accent: 'coral' },
-    { label: T.questions, value: stats.totalQuestions, accent: 'ink' },
-    { label: T.topics, value: stats.totalTopics, accent: 'ink' },
+  const tiles: Array<{ label: string; value: number }> = [
+    { label: T.users, value: stats.totalUsers },
+    { label: T.proUsers, value: stats.proUsers },
+    { label: T.signups24h, value: stats.signups24h },
+    { label: T.signups7d, value: stats.signups7d },
+    { label: T.active7d, value: stats.activeUsers7d },
+    { label: T.active30d, value: stats.activeUsers30d },
+    { label: T.totalProgress, value: stats.totalProgress },
+    { label: T.completed, value: stats.completed },
+    { label: T.aiGrades24h, value: stats.aiGrades24h },
+    { label: T.openContacts, value: stats.openContacts },
+    { label: T.questions, value: stats.totalQuestions },
+    { label: T.topics, value: stats.totalTopics },
   ];
 
   return (
     <section>
       <Eyebrow className="mb-4">{T.eyebrow}</Eyebrow>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-        {tiles.map((t: any) => (
-          <div
-            key={t.label}
-            className="rounded-lg border border-rule/15 bg-paper-2 p-4 shadow-codex-sm"
-          >
-            <div className="font-mono text-[10px] uppercase tracking-wider text-muted">{t.label}</div>
-            <div className={cn(
-              'mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight',
-              t.accent === 'brand' && 'text-brand',
-              t.accent === 'mint' && 'text-[rgb(var(--mint))]',
-              t.accent === 'amber' && 'text-[rgb(var(--amber))]',
-              t.accent === 'coral' && 'text-[rgb(var(--coral))]',
-              t.accent === 'plum' && 'text-[rgb(var(--plum))]',
-              (t.accent === 'ink' || !t.accent) && 'text-ink',
-            )}>
-              {t.value.toLocaleString()}
-            </div>
+        {tiles.map((tile) => (
+          <div key={tile.label} className="codex-card p-4">
+            <div className="text-[13px] text-muted">{tile.label}</div>
+            <div className="num mt-2 text-3xl text-ink">{tile.value.toLocaleString()}</div>
           </div>
         ))}
       </div>
@@ -278,70 +288,91 @@ function OverviewTab({ T, lang }: any) {
 
 // ── Users ────────────────────────────────────────────────────────────────────
 
-function UsersTab({ T, lang, self }: any) {
+interface UsersTabProps {
+  T: AdminCopy['users'];
+  lang: Lang;
+  self: User;
+}
+
+function UsersTab({ T, lang, self }: UsersTabProps) {
   const [q, setQ] = useState('');
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<AdminUserRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<any>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const locale = lang === 'ru' ? 'ru-RU' : 'en-US';
 
-  const load = (reset = false) => {
+  // First page, debounced on the search box. Later pages come from `loadMore`,
+  // which appends rather than replacing.
+  useEffect(() => {
+    let alive = true;
+    const id = setTimeout(() => {
+      setLoading(true);
+      adminListUsers({ q, limit: PAGE_SIZE, offset: 0 })
+        .then(({ rows, total: count }) => {
+          if (!alive) return;
+          setItems(rows as AdminUserRow[]);
+          setTotal(count);
+        })
+        .catch(() => { if (alive) toast.error(T.loadFailed); })
+        .finally(() => { if (alive) setLoading(false); });
+    }, 250);
+    return () => { alive = false; clearTimeout(id); };
+  }, [q, T.loadFailed]);
+
+  const loadMore = () => {
     setLoading(true);
-    const off = reset ? 0 : offset;
-    adminListUsers({ q, limit: 50, offset: off })
-      .then(({ rows, total }) => {
-        setItems(reset ? rows : [...items, ...rows]);
-        setTotal(total);
-        setOffset(off + rows.length);
+    adminListUsers({ q, limit: PAGE_SIZE, offset: items.length })
+      .then(({ rows, total: count }) => {
+        setItems((prev) => [...prev, ...(rows as AdminUserRow[])]);
+        setTotal(count);
       })
-      .catch(() => toast.error('Failed to load users'))
+      .catch(() => toast.error(T.loadFailed))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(true); /* eslint-disable-next-line */ }, []);
-  useEffect(() => {
-    const id = setTimeout(() => load(true), 250);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line
-  }, [q]);
-
-  const update = async (id: any, patch: any, label: any) => {
-    setBusy(id + label);
+  const update = async (
+    id: number,
+    patch: { proTier?: ProTier; isAdmin?: boolean },
+    label: string,
+  ) => {
+    setBusy(`${id}:${label}`);
     try {
       const { user } = await adminPatchUser(id, patch);
-      setItems((prev: any) => prev.map((u: any) => (u.id === id ? { ...u, ...user } : u)));
-      toast.success('Updated');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Update failed');
+      setItems((prev) => prev.map((u) => (u.id === id ? { ...u, ...user } : u)));
+      toast.success(T.updated);
+    } catch {
+      toast.error(T.updateFailed);
     } finally {
       setBusy(null);
     }
   };
 
+  const actionClass = 'rounded border border-rule/15 px-2 py-0.5 text-[12px] text-muted transition-colors hover:border-rule/35 hover:text-ink disabled:opacity-50';
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between gap-3">
         <Eyebrow>{T.eyebrow}</Eyebrow>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-muted">{T.totalLabel(total)}</span>
+        <span className="text-[13px] text-muted">{T.totalLabel(total)}</span>
       </div>
 
-      <div className="mb-4 flex items-center gap-2 rounded-md border border-rule/15 bg-paper-2 px-3 py-2 shadow-codex-sm">
-        <Search className="h-4 w-4 text-muted" />
+      <div className="mb-4 flex items-center gap-2 rounded-md border border-rule/12 bg-paper-2 px-3 py-2">
+        <Search className="h-4 w-4 text-muted" aria-hidden />
         <input
           value={q}
-          onChange={(e: any) => setQ(e.target.value)}
+          onChange={(e) => setQ(e.target.value)}
           placeholder={T.searchPh}
-          className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
+          aria-label={T.searchPh}
+          className="w-full bg-transparent text-sm text-ink placeholder:text-muted-2 focus:outline-none"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-rule/15 bg-paper-2 shadow-codex-sm">
+      <div className="codex-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-rule/15 text-left font-mono text-[10px] uppercase tracking-wider text-muted">
+            <tr className="border-b border-rule/12 text-left text-[12px] font-medium text-muted">
               <th className="px-3 py-2">{T.email}</th>
               <th className="px-3 py-2">{T.joined}</th>
               <th className="px-3 py-2 text-right">{T.progress}</th>
@@ -352,7 +383,7 @@ function UsersTab({ T, lang, self }: any) {
             </tr>
           </thead>
           <tbody>
-            {items.map((u: any) => (
+            {items.map((u) => (
               <tr key={u.id} className="border-b border-rule/8 last:border-0">
                 <td className="px-3 py-2.5">
                   <div className="text-ink">{u.email}</div>
@@ -363,40 +394,40 @@ function UsersTab({ T, lang, self }: any) {
                 <td className="px-3 py-2.5 text-ink-2">{fmtRelative(u.last_active_at, locale)}</td>
                 <td className="px-3 py-2.5">
                   <Pill tone={u.pro_tier === 'free' ? 'ghost' : (u.pro_tier === 'lifetime' ? 'plum' : 'brand')}>
-                    {u.pro_tier === 'free' ? 'free' : (u.pro_tier === 'lifetime' ? <><Crown className="mr-1 inline h-3 w-3" />lifetime</> : <><Star className="mr-1 inline h-3 w-3" />pro</>)}
+                    {u.pro_tier}
                   </Pill>
                 </td>
                 <td className="px-3 py-2.5">
-                  {u.is_admin ? <Pill tone="amber">admin</Pill> : <span className="font-mono text-[10px] text-muted">—</span>}
+                  {u.is_admin ? <Pill tone="ink">{T.admin}</Pill> : <span className="text-muted">—</span>}
                 </td>
                 <td className="px-3 py-2.5">
                   <div className="flex flex-wrap items-center justify-end gap-1.5">
                     {u.pro_tier !== 'pro' && (
                       <button
                         onClick={() => update(u.id, { proTier: 'pro' }, 'pro')}
-                        disabled={busy === u.id + 'pro'}
-                        className="rounded border border-rule/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-brand/40 hover:text-brand disabled:opacity-50"
+                        disabled={busy === `${u.id}:pro`}
+                        className={actionClass}
                       >{T.promotePro}</button>
                     )}
                     {u.pro_tier !== 'lifetime' && (
                       <button
                         onClick={() => update(u.id, { proTier: 'lifetime' }, 'lifetime')}
-                        disabled={busy === u.id + 'lifetime'}
-                        className="rounded border border-rule/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-plum/40 hover:text-[rgb(var(--plum))] disabled:opacity-50"
+                        disabled={busy === `${u.id}:lifetime`}
+                        className={actionClass}
                       >{T.promoteLifetime}</button>
                     )}
                     {u.pro_tier !== 'free' && (
                       <button
                         onClick={() => update(u.id, { proTier: 'free' }, 'free')}
-                        disabled={busy === u.id + 'free'}
-                        className="rounded border border-rule/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-rule/40 hover:text-ink disabled:opacity-50"
+                        disabled={busy === `${u.id}:free`}
+                        className={actionClass}
                       >{T.demoteFree}</button>
                     )}
                     {u.id !== self.id && (
                       <button
-                        onClick={() => update(u.id, { isAdmin: !u.is_admin }, 'adm')}
-                        disabled={busy === u.id + 'adm'}
-                        className="rounded border border-rule/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-amber/40 hover:text-[rgb(var(--amber))] disabled:opacity-50"
+                        onClick={() => update(u.id, { isAdmin: !u.is_admin }, 'admin')}
+                        disabled={busy === `${u.id}:admin`}
+                        className={actionClass}
                       >{u.is_admin ? T.removeAdmin : T.makeAdmin}</button>
                     )}
                   </div>
@@ -407,9 +438,9 @@ function UsersTab({ T, lang, self }: any) {
         </table>
       </div>
 
-      {offset < total && (
+      {items.length < total && (
         <div className="mt-3 text-center">
-          <Button variant="ghost" size="sm" onClick={() => load(false)} disabled={loading}>
+          <Button variant="ghost" size="sm" onClick={loadMore} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {T.loadMore}
           </Button>
@@ -421,46 +452,66 @@ function UsersTab({ T, lang, self }: any) {
 
 // ── Inbox ────────────────────────────────────────────────────────────────────
 
-function InboxTab({ T, lang }: any) {
-  const [filter, setFilter] = useState('open');
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
+type InboxFilter = 'open' | 'resolved' | 'all';
+
+interface InboxTabProps {
+  T: AdminCopy['inbox'];
+  lang: Lang;
+}
+
+function InboxTab({ T, lang }: InboxTabProps) {
+  const [filter, setFilter] = useState<InboxFilter>('open');
+  const [items, setItems] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<any>(null);
+  const [busy, setBusy] = useState<number | null>(null);
   const locale = lang === 'ru' ? 'ru-RU' : 'en-US';
 
-  const load = () => {
-    setLoading(true);
-    adminListContact({ status: filter === 'all' ? null : (filter as 'open' | 'resolved'), limit: 100 })
-      .then(({ rows, total }) => { setItems(rows); setTotal(total); })
-      .catch(() => toast.error('Failed to load inbox'))
-      .finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filter]);
+  useEffect(() => {
+    let alive = true;
+    adminListContact({ status: filter === 'all' ? null : filter, limit: 100 })
+      .then(({ rows }) => { if (alive) setItems(rows); })
+      .catch(() => { if (alive) toast.error(T.loadFailed); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [filter, T.loadFailed]);
 
-  const setStatus = async (id: any, status: any) => {
+  // The spinner is raised where the interaction happens rather than inside the
+  // effect — a synchronous setState in an effect body just costs a render.
+  const changeFilter = (next: InboxFilter) => {
+    if (next === filter) return;
+    setLoading(true);
+    setFilter(next);
+  };
+
+  const setStatus = async (id: number, status: 'open' | 'resolved') => {
     setBusy(id);
     try {
       const { message } = await adminPatchContact(id, { status });
-      setItems((prev: any) => prev.map((m: any) => (m.id === id ? message : m)));
-      toast.success('Updated');
+      setItems((prev) => prev.map((m) => (m.id === id ? message : m)));
+      toast.success(T.updated);
     } catch {
-      toast.error('Update failed');
+      toast.error(T.updateFailed);
     } finally { setBusy(null); }
   };
 
+  const tabs: Array<[InboxFilter, string]> = [
+    ['open', T.open], ['resolved', T.resolved], ['all', T.all],
+  ];
+
   return (
     <section>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <Eyebrow>{T.eyebrow}</Eyebrow>
-        <div className="inline-flex gap-px rounded-md border border-rule/15 bg-paper-2 p-0.5 shadow-codex-sm">
-          {[['open', T.open], ['resolved', T.resolved], ['all', T.all]].map(([k, label]) => (
+        <div className="inline-flex gap-px rounded-md border border-rule/12 bg-paper-2 p-0.5">
+          {tabs.map(([key, label]) => (
             <button
-              key={k}
-              onClick={() => setFilter(k)}
+              key={key}
+              type="button"
+              onClick={() => changeFilter(key)}
+              aria-pressed={filter === key}
               className={cn(
-                'rounded-sm px-3 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors',
-                filter === k ? 'bg-ink text-paper' : 'text-muted hover:text-ink',
+                'rounded px-3 py-1 text-[13px] transition-colors',
+                filter === key ? 'bg-ink text-paper' : 'text-muted hover:text-ink',
               )}
             >{label}</button>
           ))}
@@ -468,48 +519,49 @@ function InboxTab({ T, lang }: any) {
       </div>
 
       {loading ? (
-        <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted" />
+        <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted" aria-hidden />
       ) : items.length === 0 ? (
-        <p className="rounded-md border border-dashed border-rule/30 bg-paper-2/40 p-8 text-center font-mono text-[11px] uppercase tracking-wider text-muted">
+        <p className="rounded-md border border-dashed border-rule/20 bg-paper-2 p-8 text-center text-sm text-muted">
           {T.empty}
         </p>
       ) : (
         <ul className="space-y-3">
-          {items.map((m: any) => (
-            <li
-              key={m.id}
-              className="rounded-lg border border-rule/15 bg-paper-2 p-4 shadow-codex-sm"
-            >
+          {items.map((m) => (
+            <li key={m.id} className="codex-card p-4">
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                <div className="flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-2">
                   <span className="text-sm font-medium text-ink">{m.name || m.email}</span>
-                  <a href={`mailto:${m.email}`} className="font-mono text-[11px] text-muted hover:text-brand">
+                  <a href={`mailto:${m.email}`} className="text-[13px] text-muted hover:text-brand">
                     {m.email}
                   </a>
-                  {m.user_id && <Pill tone="ghost">user #{m.user_id}</Pill>}
+                  {m.user_id && <span className="text-[12px] text-muted-2">user #{m.user_id}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Pill tone={m.status === 'resolved' ? 'mint' : 'amber'}>{m.status}</Pill>
-                  <span className="font-mono text-[10px] text-muted">{fmtRelative(m.created_at, locale)}</span>
+                  <Pill tone={m.status === 'resolved' ? 'mint' : 'amber'}>
+                    {m.status === 'resolved' ? T.resolved : T.open}
+                  </Pill>
+                  <span className="text-[12px] text-muted">{fmtRelative(m.created_at, locale)}</span>
                 </div>
               </div>
               <p className="whitespace-pre-wrap text-sm text-ink-2">{m.message}</p>
               <div className="mt-3 flex justify-end">
                 {m.status === 'open' ? (
                   <button
+                    type="button"
                     onClick={() => setStatus(m.id, 'resolved')}
                     disabled={busy === m.id}
-                    className="inline-flex items-center gap-1.5 rounded border border-rule/15 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted hover:border-mint/40 hover:text-[rgb(var(--mint))] disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded border border-rule/15 px-2 py-1 text-[12px] text-muted transition-colors hover:border-rule/35 hover:text-ink disabled:opacity-50"
                   >
-                    <Check className="h-3 w-3" />{T.markResolved}
+                    <Check className="h-3 w-3" aria-hidden />{T.markResolved}
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => setStatus(m.id, 'open')}
                     disabled={busy === m.id}
-                    className="inline-flex items-center gap-1.5 rounded border border-rule/15 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted hover:text-ink disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded border border-rule/15 px-2 py-1 text-[12px] text-muted transition-colors hover:border-rule/35 hover:text-ink disabled:opacity-50"
                   >
-                    <RotateCcw className="h-3 w-3" />{T.reopen}
+                    <RotateCcw className="h-3 w-3" aria-hidden />{T.reopen}
                   </button>
                 )}
               </div>
@@ -523,7 +575,7 @@ function InboxTab({ T, lang }: any) {
 
 // ── Content authoring (handoff to dev-only AdminPage) ───────────────────────
 
-function ContentTab({ T }: any) {
+function ContentTab({ T }: { T: AdminCopy['content'] }) {
   const isDev = import.meta.env.DEV;
   return (
     <section>

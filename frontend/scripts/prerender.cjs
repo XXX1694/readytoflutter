@@ -231,7 +231,7 @@ async function main() {
     const total = queue.length;
     const startedAt = Date.now();
 
-    const worker = async (workerId) => {
+    const worker = async (_workerId) => {
       const page = await browser.newPage();
       page.setDefaultNavigationTimeout(30_000);
       try {

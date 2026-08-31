@@ -1,25 +1,103 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Brain, Target } from 'lucide-react';
-import { useTopics, useQuestions, useStats } from '../lib/queries';
+import { ArrowLeft, Brain, ChevronRight } from 'lucide-react';
+import { useTopics, useQuestions } from '../lib/queries';
 import { getCardState, getSrsSummary } from '../lib/srs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Eyebrow, ProgressBar, Pill, Skeleton, TopicGlyph, levelTone } from '../ui/index';
-import { cn } from '../lib/cn';
+import { Button, Eyebrow, Skeleton } from '../ui/index';
+import StatTile from '../components/StatTile';
 import PlatformFilter from '../components/PlatformFilter';
 import { usePrefs } from '../store/prefs';
-import { filterTopicsByPlatform, filterQuestionsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/platform';
+import {
+  filterTopicsByPlatform,
+  filterQuestionsByPlatform,
+  topicPlatform,
+  PLATFORM_GROUPS,
+  type Platform,
+} from '../lib/platform';
 
-const LEVELS = ['junior', 'mid', 'senior'];
+import type { Level, Topic, Question } from '../types/domain';
+import type { Lang } from '../i18n/LangContext';
+import type { UICopy } from '../i18n/ui';
+import type { ContentHelpers } from '../i18n/content';
 
-const easeBucket = (ease: any) => {
-  if (ease >= 2.7) return { label: 'strong', tone: 'mint' };
-  if (ease >= 2.3) return { label: 'solid',  tone: 'brand' };
-  if (ease >= 1.8) return { label: 'shaky',  tone: 'amber' };
-  return { label: 'weak', tone: 'coral' };
+const LEVELS: Level[] = ['junior', 'mid', 'senior'];
+
+type EaseBucket = 'strong' | 'solid' | 'shaky' | 'weak';
+
+/**
+ * SM-2 easiness, said in words. It stays ink like everything else on this
+ * page: colour here would be a fifth hue competing with the marker, and the
+ * word already carries the whole meaning.
+ */
+const EASE_LABEL: Record<Lang, Record<EaseBucket, string>> = {
+  en: { strong: 'strong', solid: 'solid', shaky: 'shaky', weak: 'weak' },
+  ru: { strong: 'уверенно', solid: 'нормально', shaky: 'шатко', weak: 'слабо' },
 };
+
+function easeBucket(ease: number): EaseBucket {
+  if (ease >= 2.7) return 'strong';
+  if (ease >= 2.3) return 'solid';
+  if (ease >= 1.8) return 'shaky';
+  return 'weak';
+}
+
+interface TopicMastery {
+  topic: Topic;
+  total: number;
+  completed: number;
+  /** Mean SM-2 easiness over the cards you've actually seen; null if none. */
+  avgEase: number | null;
+  /** Completion percentage — the completion half of `mastery()`. */
+  pct: number;
+}
+
+interface LevelCell {
+  total: number;
+  completed: number;
+}
+
+interface StackRow {
+  group: Platform;
+  byLevel: Record<Level, LevelCell>;
+  total: number;
+  completed: number;
+}
+
+/** Roll every topic up against its questions and their SRS card state. */
+function buildTopicMastery(topics: Topic[], questions: Question[]): TopicMastery[] {
+  return topics.map((topic) => {
+    const tQuestions = questions.filter((q) => q.topic_id === topic.id);
+    let easeSum = 0;
+    let easeCount = 0;
+    let completed = 0;
+    for (const q of tQuestions) {
+      if (q.status === 'completed') completed += 1;
+      const s = getCardState(q.id);
+      if (s.reps > 0) {
+        easeSum += s.ease;
+        easeCount += 1;
+      }
+    }
+    return {
+      topic,
+      total: tQuestions.length,
+      completed,
+      avgEase: easeCount > 0 ? easeSum / easeCount : null,
+      pct: tQuestions.length > 0 ? Math.round((completed / tQuestions.length) * 100) : 0,
+    };
+  });
+}
+
+/** Blends completion with SRS ease, so a topic you ticked off but keep
+ *  failing doesn't read as mastered. */
+function mastery(row: TopicMastery): number {
+  if (!row.avgEase) return row.pct;
+  // ease 3.0 → 100, 1.3 → 0 — clamped
+  const easeScore = Math.max(0, Math.min(100, ((row.avgEase - 1.3) / (3.0 - 1.3)) * 100));
+  return Math.round(row.pct * 0.6 + easeScore * 0.4);
+}
 
 export default function StatsPage() {
   const navigate = useNavigate();
@@ -29,8 +107,7 @@ export default function StatsPage() {
 
   const topicsQ = useTopics();
   const questionsQ = useQuestions();
-  const statsQ = useStats();
-  const platform = usePrefs((s: any) => s.platform);
+  const platform = usePrefs((s) => s.platform);
 
   if (topicsQ.isLoading || questionsQ.isLoading) return <StatsSkeleton />;
 
@@ -40,85 +117,52 @@ export default function StatsPage() {
   const allQuestions = questionsQ.data ?? [];
   const topics = filterTopicsByPlatform(allTopics, platform);
   const questions = filterQuestionsByPlatform(allQuestions, allTopics, platform);
-  const stats = statsQ.data;
 
-  // Build per-topic breakdown
-  const perTopic = topics.map((topic: any) => {
-    const tQuestions = questions.filter((q: any) => q.topic_id === topic.id);
-    const completed = tQuestions.filter((q: any) => q.status === 'completed').length;
-    const inProgress = tQuestions.filter((q: any) => q.status === 'in_progress').length;
-
-    let easeSum = 0;
-    let easeCount = 0;
-    let learned = 0;
-    let dueNow = 0;
-    const now = Date.now();
-    for (const q of tQuestions) {
-      const s = getCardState(q.id);
-      if (s.reps > 0) {
-        learned += 1;
-        easeSum += s.ease;
-        easeCount += 1;
-      }
-      if (s.dueAt && s.dueAt <= now) dueNow += 1;
-    }
-    const avgEase = easeCount > 0 ? easeSum / easeCount : null;
-    return {
-      topic,
-      total: tQuestions.length,
-      completed,
-      inProgress,
-      learned,
-      dueNow,
-      avgEase,
-      pct: tQuestions.length > 0 ? Math.round((completed / tQuestions.length) * 100) : 0,
-    };
-  });
+  const perTopic = buildTopicMastery(topics, questions);
 
   // Global SRS
   const srs = getSrsSummary(questions);
 
-  // Mastery score: blends completion % and SRS ease
-  const mastery = (row: any) => {
-    const compScore = row.pct;
-    if (!row.avgEase) return compScore;
-    // ease 2.5 → 100, 1.3 → 0 — clamped
-    const easeScore = Math.max(0, Math.min(100, ((row.avgEase - 1.3) / (3.0 - 1.3)) * 100));
-    return Math.round(compScore * 0.6 + easeScore * 0.4);
-  };
-
   const overallMastery = perTopic.length
-    ? Math.round(perTopic.reduce((s: any, r: any) => s + mastery(r), 0) / perTopic.length)
+    ? Math.round(perTopic.reduce((sum, r) => sum + mastery(r), 0) / perTopic.length)
     : 0;
 
-  // Weakest topics (lowest mastery, ignoring 0%)
+  // Weakest topics (lowest mastery, ignoring empty topics)
   const weakest = [...perTopic]
-    .filter((r: any) => r.total > 0)
-    .sort((a: any, b: any) => mastery(a) - mastery(b))
+    .filter((r) => r.total > 0)
+    .sort((a, b) => mastery(a) - mastery(b))
     .slice(0, 3);
 
   // Stack × grade breakdown — only meaningful when the user is looking at
   // every platform, otherwise the row would always be a single line.
-  const stackBreakdown = platform === 'all'
-    ? PLATFORM_GROUPS.map((group: any) => {
+  const stackBreakdown: StackRow[] = platform === 'all'
+    ? PLATFORM_GROUPS.reduce<StackRow[]>((rows, group) => {
         const tIds = new Set(
-          allTopics.filter((tp: any) => topicPlatform(tp) === group.key).map((tp: any) => tp.id),
+          allTopics.filter((tp) => topicPlatform(tp) === group.key).map((tp) => tp.id),
         );
-        const groupQs = allQuestions.filter((q: any) => tIds.has(q.topic_id));
-        if (!groupQs.length) return null;
-        const byLevel = ['junior', 'mid', 'senior'].reduce((acc: any, lv: any) => {
-          const levelQs = groupQs.filter((q: any) => q.level === lv);
+        const groupQs = allQuestions.filter((q) => tIds.has(q.topic_id));
+        if (!groupQs.length) return rows;
+        const byLevel = LEVELS.reduce((acc, lv) => {
+          const levelQs = groupQs.filter((q) => q.level === lv);
           acc[lv] = {
             total: levelQs.length,
-            completed: levelQs.filter((q: any) => q.status === 'completed').length,
+            completed: levelQs.filter((q) => q.status === 'completed').length,
           };
           return acc;
-        }, {});
-        const total = groupQs.length;
-        const completed = groupQs.filter((q: any) => q.status === 'completed').length;
-        return { group, byLevel, total, completed };
-      }).filter(Boolean)
+        }, {} as Record<Level, LevelCell>);
+        rows.push({
+          group,
+          byLevel,
+          total: groupQs.length,
+          completed: groupQs.filter((q) => q.status === 'completed').length,
+        });
+        return rows;
+      }, [])
     : [];
+
+  // The marker lands on the one figure that asks for an action today.
+  const markedTile: 'overdue' | 'due' | null =
+    srs.overdue > 0 ? 'overdue' : srs.due > 0 ? 'due' : null;
 
   return (
     <div className="bg-page">
@@ -129,28 +173,25 @@ export default function StatsPage() {
           onClick={() => navigate('/')}
           className="-ml-2 mb-5 text-muted hover:text-ink"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           {t.backToDashboard}
         </Button>
 
-        {/* Header */}
-        <header className="mb-8 flex flex-col gap-3 border-b border-rule/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-8 flex flex-col gap-4 border-b border-rule/12 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Eyebrow accent="brand">
-              <TrendingUp className="mr-1 inline h-3 w-3" />
-              {lang === 'ru' ? 'Прогресс' : 'Stats'}
-            </Eyebrow>
-            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+            <Eyebrow>{lang === 'ru' ? 'Прогресс' : 'Stats'}</Eyebrow>
+            <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
               {lang === 'ru' ? 'Карта знаний' : 'Mastery map'}
             </h1>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
+            <p className="mt-2 text-[15px] text-ink-2">
+              <span className="num">{overallMastery}%</span>{' '}
               {lang === 'ru'
-                ? `${overallMastery}% средний уровень · ${srs.learned}/${srs.total} изучено · ${srs.due + srs.overdue} к разбору`
-                : `${overallMastery}% overall mastery · ${srs.learned}/${srs.total} learned · ${srs.due + srs.overdue} due`}
+                ? `в среднем по ${perTopic.length} темам`
+                : `average recall across ${perTopic.length} topics`}
             </p>
           </div>
           <Button variant="brand" size="md" onClick={() => navigate('/study')}>
-            <Brain className="h-4 w-4" />
+            <Brain className="h-4 w-4" aria-hidden />
             {lang === 'ru' ? 'Сессия SRS' : 'Study session'}
           </Button>
         </header>
@@ -161,28 +202,26 @@ export default function StatsPage() {
           <PlatformFilter />
         </div>
 
-        {/* Big number tiles */}
-        <section className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <BigTile
+        {/* The card counts, as a ruled band. */}
+        <section className="mb-10 grid grid-cols-2 gap-x-6 gap-y-6 border-y border-rule/12 py-5 sm:grid-cols-4 sm:gap-x-8 sm:py-6">
+          <StatTile
             label={lang === 'ru' ? 'Изучено' : 'Learned'}
             value={srs.learned}
-            suffix={`/ ${srs.total}`}
-            tone="mint"
+            of={srs.total}
           />
-          <BigTile
+          <StatTile
             label={lang === 'ru' ? 'Просрочено' : 'Overdue'}
             value={srs.overdue}
-            tone="coral"
+            marked={markedTile === 'overdue'}
           />
-          <BigTile
-            label={lang === 'ru' ? 'Сегодня' : 'Due today'}
+          <StatTile
+            label={lang === 'ru' ? 'К разбору сегодня' : 'Due today'}
             value={srs.due}
-            tone="amber"
+            marked={markedTile === 'due'}
           />
-          <BigTile
-            label={lang === 'ru' ? 'Новых' : 'Fresh'}
+          <StatTile
+            label={lang === 'ru' ? 'Не начато' : 'Not started'}
             value={srs.fresh}
-            tone="brand"
           />
         </section>
 
@@ -190,60 +229,47 @@ export default function StatsPage() {
             sidebar's per-platform progress already covers the answer. */}
         {stackBreakdown.length > 0 && (
           <section className="mb-10">
-            <Eyebrow className="mb-3">{t.masteryByStack}</Eyebrow>
-            <p className="mb-4 max-w-xl text-[13px] text-ink-2">{t.masteryByStackHint}</p>
-            <div className="overflow-hidden rounded-2xl border border-rule/12 bg-paper-2">
-              <table className="w-full text-left">
+            <Eyebrow className="mb-2">{t.masteryByStack}</Eyebrow>
+            <p className="mb-4 max-w-xl text-[14px] text-ink-2">{t.masteryByStackHint}</p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-left">
                 <thead>
-                  <tr className="border-b border-rule/12 bg-paper-2/60 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                    <th className="px-4 py-3">&nbsp;</th>
-                    <th className="px-3 py-3">{t.masteryColJunior}</th>
-                    <th className="px-3 py-3">{t.masteryColMid}</th>
-                    <th className="px-3 py-3">{t.masteryColSenior}</th>
-                    <th className="px-4 py-3 text-right">{t.masteryColTotal}</th>
+                  <tr className="border-b border-rule/12 text-[13px] text-muted">
+                    <th className="py-2 pr-4 font-normal">&nbsp;</th>
+                    <th className="px-3 py-2 font-normal">{t.masteryColJunior}</th>
+                    <th className="px-3 py-2 font-normal">{t.masteryColMid}</th>
+                    <th className="px-3 py-2 font-normal">{t.masteryColSenior}</th>
+                    <th className="py-2 pl-3 text-right font-normal">{t.masteryColTotal}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stackBreakdown.map((row: any) => {
+                  {stackBreakdown.map((row) => {
                     const overallPct = row.total > 0
                       ? Math.round((row.completed / row.total) * 100)
                       : 0;
                     return (
-                      <tr key={row.group.key} className="border-t border-rule/8">
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-2">
-                            <span className={cn('h-1.5 w-1.5 rounded-full', row.group.dot)} aria-hidden />
-                            <span className="font-display text-base font-medium text-ink">
-                              {t[row.group.labelKey]}
-                            </span>
-                          </span>
+                      <tr key={row.group.key} className="border-b border-rule/8 last:border-b-0">
+                        <td className="py-2.5 pr-4 font-display text-[15px] font-medium text-ink">
+                          {t[row.group.labelKey as keyof UICopy] as string}
                         </td>
-                        {['junior', 'mid', 'senior'].map((lv: any) => {
+                        {LEVELS.map((lv) => {
                           const cell = row.byLevel[lv];
                           if (!cell.total) {
-                            return (
-                              <td key={lv} className="px-3 py-3 font-mono text-[11px] text-muted-2">—</td>
-                            );
+                            return <td key={lv} className="px-3 py-2.5 text-[14px] text-muted-2">—</td>;
                           }
-                          const pct = Math.round((cell.completed / cell.total) * 100);
                           return (
-                            <td key={lv} className="px-3 py-3">
-                              <span className="font-mono text-[12px] tabular-nums text-ink">
-                                {cell.completed}/{cell.total}
-                              </span>
-                              <span className="ml-1.5 font-mono text-[10px] tabular-nums text-muted-2">
-                                · {pct}%
+                            <td key={lv} className="px-3 py-2.5">
+                              <span className="num text-[14px] text-ink-2">
+                                {cell.completed} / {cell.total}
                               </span>
                             </td>
                           );
                         })}
-                        <td className="px-4 py-3 text-right">
-                          <span className="font-mono text-[13px] tabular-nums text-ink">
-                            {row.completed}/{row.total}
+                        <td className="py-2.5 pl-3 text-right">
+                          <span className="num text-[14px] text-ink">
+                            {row.completed} / {row.total}
                           </span>
-                          <span className="ml-1.5 font-mono text-[11px] tabular-nums text-muted-2">
-                            · {overallPct}%
-                          </span>
+                          <span className="num ml-2 text-[13px] text-muted">{overallPct}%</span>
                         </td>
                       </tr>
                     );
@@ -254,74 +280,56 @@ export default function StatsPage() {
           </section>
         )}
 
-        {/* Weakest topics */}
-        {weakest.some((r: any) => mastery(r) < 80) && (
+        {/* Weakest topics — the same lines as below, just the three with the
+            least marker on them. */}
+        {weakest.some((r) => mastery(r) < 80) && (
           <section className="mb-10">
-            <Eyebrow accent="amber" className="mb-3">
-              {lang === 'ru' ? 'Слабые места' : 'Weakest topics'}
+            <Eyebrow className="mb-3">
+              {lang === 'ru' ? 'Самое слабое' : 'Weakest right now'}
             </Eyebrow>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {weakest.map((row: any) => (
-                <button
+            <div className="overflow-hidden rounded-lg border border-rule/12 bg-paper-2">
+              {weakest.map((row) => (
+                <MasteryRow
                   key={row.topic.id}
-                  type="button"
-                  onClick={() => navigate(`/topic/${row.topic.slug}`)}
-                  className="flex flex-col gap-2 rounded-2xl border border-coral/30 bg-coral/5 p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-coral/50 hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_12px_24px_-6px_rgb(var(--shadow)/0.10)]"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-display text-base font-medium text-ink line-clamp-1">
-                      {topicTitle(row.topic)}
-                    </span>
-                    <span className="font-mono text-sm tabular-nums text-coral">
-                      {mastery(row)}%
-                    </span>
-                  </div>
-                  <ProgressBar value={mastery(row)} max={100} size="xs" tone="amber" />
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted">
-                    {row.completed}/{row.total} done
-                    {row.avgEase != null && ` · ease ${row.avgEase.toFixed(2)}`}
-                  </div>
-                </button>
+                  row={row}
+                  masteryPct={mastery(row)}
+                  lang={lang}
+                  topicTitle={topicTitle}
+                  onTopic={() => navigate(`/topic/${row.topic.slug}`)}
+                  onDrill={() => navigate(`/study?topic=${row.topic.slug}`)}
+                />
               ))}
             </div>
           </section>
         )}
 
         {/* Per-level breakdown */}
-        {LEVELS.map((level: any, idx: any) => {
-          const rows = perTopic.filter((r: any) => r.topic.level === level);
+        {LEVELS.map((level) => {
+          const rows = perTopic.filter((r) => r.topic.level === level);
           if (!rows.length) return null;
           const levelT = t[level];
-          const levelMastery = Math.round(rows.reduce((s: any, r: any) => s + mastery(r), 0) / rows.length);
+          const levelMastery = Math.round(
+            rows.reduce((sum, r) => sum + mastery(r), 0) / rows.length,
+          );
           return (
             <section key={level} className="mb-10">
-              <header className="mb-4 flex items-end justify-between border-b border-rule/15 pb-2">
-                <div>
-                  <Eyebrow accent="brand" className="mb-1">
-                    {levelT.short}
-                  </Eyebrow>
-                  <h2 className="font-display text-xl font-medium tracking-tight text-ink">
-                    {levelT.label}
-                  </h2>
-                </div>
-                <div className="text-right">
-                  <div className="num text-3xl text-ink">{levelMastery}%</div>
-                  <div className="font-mono text-[10px] uppercase text-muted">
-                    {lang === 'ru' ? 'Средний' : 'Average'}
-                  </div>
-                </div>
+              <header className="mb-3 flex items-end justify-between gap-4 border-b border-rule/12 pb-2">
+                <h2 className="font-display text-xl font-semibold text-ink">{levelT.label}</h2>
+                <p className="shrink-0 text-[14px] text-muted">
+                  <span className="num text-[17px] text-ink">{levelMastery}%</span>{' '}
+                  {lang === 'ru' ? 'в среднем' : 'average'}
+                </p>
               </header>
-              <div className="space-y-2">
-                {rows.map((row: any) => (
-                  <TopicRow
+              <div className="overflow-hidden rounded-lg border border-rule/12 bg-paper-2">
+                {rows.map((row) => (
+                  <MasteryRow
                     key={row.topic.id}
                     row={row}
                     masteryPct={mastery(row)}
+                    lang={lang}
+                    topicTitle={topicTitle}
                     onTopic={() => navigate(`/topic/${row.topic.slug}`)}
                     onDrill={() => navigate(`/study?topic=${row.topic.slug}`)}
-                    lang={lang}
-                    t={t}
-                    topicTitle={topicTitle}
                   />
                 ))}
               </div>
@@ -333,66 +341,62 @@ export default function StatsPage() {
   );
 }
 
-function BigTile({ label, value, suffix, tone = 'ink' }: any) {
-  const ACCENTS = {
-    mint:  'text-mint',
-    amber: 'text-[rgb(var(--amber))]',
-    coral: 'text-coral',
-    brand: 'text-brand',
-    ink:   'text-ink',
-  };
-  return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-rule/8 bg-paper-2 p-5 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] sm:p-6">
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{label}</span>
-      <div className="flex items-baseline gap-1">
-        <span className={cn('num text-display-xs sm:text-display-sm', ACCENTS[tone])}>{value}</span>
-        {suffix && <span className="font-mono text-xs uppercase text-muted">{suffix}</span>}
-      </div>
-    </div>
-  );
+interface MasteryRowProps {
+  row: TopicMastery;
+  masteryPct: number;
+  lang: Lang;
+  topicTitle: ContentHelpers['topicTitle'];
+  onTopic: () => void;
+  onDrill: () => void;
 }
 
-function TopicRow({ row, masteryPct, onTopic, onDrill, lang, t, topicTitle }: any) {
-  const easeInfo = row.avgEase ? easeBucket(row.avgEase) : null;
+/**
+ * A topic as a line of type with a highlighter run across it as far as you
+ * have actually recalled it.
+ *
+ * This is the whole page in one element. A progress bar per row would be a
+ * chart of an abstract quantity sitting next to the name; the wash *is* the
+ * name — fifty of them stacked read as a page you have marked up, and the
+ * unmarked lines are the ones to open next. Every row is the same width, so
+ * the lengths compare honestly.
+ */
+function MasteryRow({ row, masteryPct, lang, topicTitle, onTopic, onDrill }: MasteryRowProps) {
+  const ease = row.avgEase != null ? EASE_LABEL[lang][easeBucket(row.avgEase)] : null;
+
   return (
-    <div className="group flex items-center gap-3 rounded-xl border border-rule/8 bg-paper-2 px-4 py-3 transition-all duration-200 hover:border-rule/15 hover:bg-rule/5">
-      <TopicGlyph topic={row.topic} size="sm" />
+    <div className="relative flex items-center gap-3 border-b border-rule/8 px-3 last:border-b-0">
+      <span
+        aria-hidden
+        className="absolute inset-y-2 left-0 bg-[rgb(var(--marker)/0.38)] dark:bg-[rgb(var(--marker)/0.20)]"
+        style={{ width: `${Math.max(0, Math.min(100, masteryPct))}%` }}
+      />
       <button
         type="button"
         onClick={onTopic}
-        className="min-w-0 flex-1 text-left"
+        className="relative min-w-0 flex-1 truncate py-2.5 text-left text-[15px] text-ink underline-offset-4 hover:underline"
       >
-        <div className="text-sm text-ink truncate">{topicTitle(row.topic)}</div>
-        <div className="mt-1.5 flex items-center gap-2">
-          <ProgressBar
-            value={masteryPct}
-            max={100}
-            size="xs"
-            tone={masteryPct >= 80 ? 'mint' : masteryPct >= 50 ? 'brand' : 'amber'}
-            className="max-w-[300px]"
-          />
-          <span className="font-mono text-[10px] tabular-nums text-muted shrink-0">
-            {masteryPct}%
-          </span>
-        </div>
+        {topicTitle(row.topic)}
       </button>
-      <div className="hidden flex-col items-end gap-1 sm:flex">
-        <span className="font-mono text-[10px] tabular-nums text-muted">
-          {row.completed}/{row.total}
-        </span>
-        {easeInfo && (
-          <Pill tone={easeInfo.tone as any} size="xs">
-            {easeInfo.label}
-          </Pill>
-        )}
-      </div>
+
+      {/* Fixed widths so the figures line up down the page like a ledger,
+          and so a topic with no ease reading doesn't shift its neighbours. */}
+      <span className="num relative hidden w-[4.5rem] shrink-0 text-right text-[13px] text-ink-2 sm:inline">
+        {row.completed} / {row.total}
+      </span>
+      <span className="relative hidden w-[5.5rem] shrink-0 text-right text-[13px] text-ink-2 sm:inline">
+        {ease}
+      </span>
+      <span className="num relative w-[3.25rem] shrink-0 text-right text-[15px] text-ink">
+        {masteryPct}%
+      </span>
+
       <button
         type="button"
         onClick={onDrill}
-        aria-label="Drill"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-rule/12 text-muted opacity-0 transition-all duration-200 hover:border-brand/40 hover:bg-brand/5 hover:text-brand group-hover:opacity-100"
+        aria-label={lang === 'ru' ? `Разобрать: ${topicTitle(row.topic)}` : `Drill ${topicTitle(row.topic)}`}
+        className="relative -mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-muted hover:bg-rule/8 hover:text-ink"
       >
-        <Brain className="h-4 w-4" />
+        <ChevronRight className="h-4 w-4" aria-hidden />
       </button>
     </div>
   );
@@ -403,34 +407,29 @@ function StatsSkeleton() {
     <div className="bg-page">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
-        <header className="mb-8 border-b border-rule/15 pb-6">
+        <header className="mb-8 border-b border-rule/12 pb-6">
           <Skeleton className="h-3 w-20" />
           <Skeleton className="mt-2 h-9 w-2/3" />
-          <Skeleton className="mt-1 h-3 w-1/2" />
+          <Skeleton className="mt-2 h-4 w-1/2" />
         </header>
-        <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_: any, i: any) => (
-            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-5 shadow-codex-sm">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="mt-3 h-9 w-12" />
+        <div className="mb-10 grid grid-cols-2 gap-x-6 gap-y-6 border-y border-rule/12 py-6 sm:grid-cols-4 sm:gap-x-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i}>
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="mt-2.5 h-3 w-20" />
             </div>
           ))}
         </div>
-        {[1, 2, 3].map((row: any) => (
+        {[1, 2, 3].map((row) => (
           <section key={row} className="mb-10">
-            <div className="mb-4 border-b border-rule/15 pb-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="mt-2 h-6 w-40" />
+            <div className="mb-3 border-b border-rule/12 pb-2">
+              <Skeleton className="h-6 w-40" />
             </div>
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_: any, i: any) => (
-                <div key={i} className="flex items-center gap-3 rounded-md border border-rule bg-paper-2/80 px-4 py-3">
-                  <Skeleton className="h-9 w-9 rounded-md" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-2/3" />
-                    <Skeleton className="h-2 w-1/2" />
-                  </div>
-                  <Skeleton className="h-3 w-12" />
+            <div className="divide-y divide-rule/8 rounded-lg border border-rule/12 bg-paper-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-3">
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-4 w-12" />
                 </div>
               ))}
             </div>

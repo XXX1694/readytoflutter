@@ -7,14 +7,16 @@ import { useTopic } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import QuestionCard from '../components/QuestionCard';
 import { useLang } from '../i18n/LangContext';
-import { useT } from '../i18n/ui';
+import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Pill, ProgressBar, Skeleton, Eyebrow, TopicGlyph, levelTone } from '../ui/index';
+import { Button, Pill, ProgressBar, Skeleton, TopicGlyph, levelTone } from '../ui/index';
 import { cn } from '../lib/cn';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
+import type { Question } from '../types/domain';
+import type { TopicFilter } from '../store/prefs';
 
-const FILTERS = ['all', 'not_started', 'in_progress', 'completed'];
+const FILTERS: TopicFilter[] = ['all', 'not_started', 'in_progress', 'completed'];
 
 export default function TopicPage() {
   const { slug } = useParams();
@@ -23,8 +25,8 @@ export default function TopicPage() {
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
 
-  const filter = usePrefs((s: any) => s.topicFilter);
-  const setFilter = usePrefs((s: any) => s.setTopicFilter);
+  const filter = usePrefs((s) => s.topicFilter);
+  const setFilter = usePrefs((s) => s.setTopicFilter);
 
   const { data: topic, isLoading, error } = useTopic(slug);
 
@@ -47,8 +49,8 @@ export default function TopicPage() {
 
   // Keyboard navigation: which question is "focused" + open
   const [cursor, setCursor] = useState(0);
-  const [openId, setOpenId] = useState<any>(null);
-  const refs = useRef(new Map());
+  const [openId, setOpenId] = useState<number | null>(null);
+  const refs = useRef(new Map<number, HTMLElement>());
 
   // Redirect home if topic missing
   useEffect(() => {
@@ -58,53 +60,52 @@ export default function TopicPage() {
     }
   }, [error, navigate]);
 
-  const questions = topic?.questions || [];
+  const questions = useMemo<Question[]>(() => topic?.questions || [], [topic]);
   const filtered = useMemo(() => {
-    return questions.filter((q: any) => {
+    return questions.filter((q) => {
       if (filter === 'all') return true;
       if (filter === 'not_started') return !q.status || q.status === 'not_started';
       return q.status === filter;
     });
   }, [questions, filter]);
 
-  const counts = useMemo(() => ({
+  const counts = useMemo<Record<TopicFilter, number>>(() => ({
     all: questions.length,
-    not_started: questions.filter((q: any) => !q.status || q.status === 'not_started').length,
-    in_progress: questions.filter((q: any) => q.status === 'in_progress').length,
-    completed: questions.filter((q: any) => q.status === 'completed').length,
+    not_started: questions.filter((q) => !q.status || q.status === 'not_started').length,
+    in_progress: questions.filter((q) => q.status === 'in_progress').length,
+    completed: questions.filter((q) => q.status === 'completed').length,
   }), [questions]);
 
-  // Reset cursor if filter list shrinks below it
-  useEffect(() => {
-    if (cursor >= filtered.length) setCursor(0);
-  }, [filtered.length, cursor]);
+  // Changing the filter can shrink the list out from under the cursor. Clamping
+  // during render keeps it valid without a second commit.
+  const activeCursor = cursor >= filtered.length ? 0 : cursor;
 
-  const scrollIntoView = (id: any) => {
+  const scrollIntoView = (id: number) => {
     const el = refs.current.get(id);
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
-  useHotkeys('j, ArrowDown', (e: any) => {
+  useHotkeys('j, ArrowDown', (e) => {
     e.preventDefault();
     if (!filtered.length) return;
-    const next = Math.min(cursor + 1, filtered.length - 1);
+    const next = Math.min(activeCursor + 1, filtered.length - 1);
     setCursor(next);
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
 
-  useHotkeys('k, ArrowUp', (e: any) => {
+  useHotkeys('k, ArrowUp', (e) => {
     e.preventDefault();
     if (!filtered.length) return;
-    const next = Math.max(cursor - 1, 0);
+    const next = Math.max(activeCursor - 1, 0);
     setCursor(next);
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
 
-  useHotkeys('space', (e: any) => {
+  useHotkeys('space', (e) => {
     if (!filtered.length) return;
     e.preventDefault();
-    const q = filtered[cursor];
-    setOpenId((prev: any) => (prev === q.id ? null : q.id));
+    const q = filtered[activeCursor];
+    setOpenId((prev) => (prev === q.id ? null : q.id));
   }, { preventDefault: true });
 
   if (isLoading) return <TopicSkeleton />;
@@ -112,23 +113,21 @@ export default function TopicPage() {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="flex max-w-md flex-col items-center gap-3 text-center">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-coral">404</span>
+          <span className="eyebrow text-coral">404</span>
           <p className="font-display text-2xl text-ink">{t.topicNotFound}</p>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-            {t.redirectingHome}
-          </p>
+          <p className="text-[13px] text-muted">{t.redirectingHome}</p>
         </div>
       </div>
     );
   }
 
-  const completedCount = questions.filter((q: any) => q.status === 'completed').length;
+  const completedCount = questions.filter((q) => q.status === 'completed').length;
   const pct = questions.length > 0 ? Math.round((completedCount / questions.length) * 100) : 0;
   const levelT = t[topic.level];
-  // Resolve platform metadata (label + dot) so the breadcrumb above the title
-  // tells the user "iOS · Swift · Swift Basics" without making them guess.
+  // Resolve platform metadata so the breadcrumb above the title tells the user
+  // "iOS · Swift · Swift Basics" without making them guess.
   const platformKey = topicPlatform(topic);
-  const platformMeta = PLATFORMS.find((p: any) => p.key === platformKey);
+  const platformMeta = PLATFORMS.find((p) => p.key === platformKey);
 
   return (
     <div className="bg-page">
@@ -146,34 +145,33 @@ export default function TopicPage() {
         </Button>
 
         {/* Header */}
-        <header className="mb-6 flex flex-col gap-4 border-b border-rule/15 pb-5 sm:mb-8 sm:pb-6">
+        <header className="mb-6 flex flex-col gap-4 border-b border-rule/12 pb-5 sm:mb-8 sm:pb-6">
           <div className="flex items-start gap-3 sm:gap-4">
             <TopicGlyph topic={topic} size="lg" />
             <div className="min-w-0 flex-1">
               {/* Platform breadcrumb — clickable, jumps to dashboard scoped
                   to the topic's stack. Always shows the category as a soft
                   hint between platform and title. */}
-              <div className="mb-2 flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+              <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
                 {platformMeta && (
                   <button
                     type="button"
                     onClick={() => navigate(`/?stack=${platformMeta.key}`)}
-                    className="inline-flex items-center gap-1.5 text-ink-2 hover:text-ink"
+                    className="text-ink-2 hover:text-ink"
                   >
-                    <span className={cn('h-1.5 w-1.5 rounded-full', platformMeta.dot)} aria-hidden />
-                    {t[platformMeta.labelKey]}
+                    {t[platformMeta.labelKey as keyof UICopy] as string}
                   </button>
                 )}
                 {topic.category && (
                   <>
-                    <span aria-hidden className="text-muted-2">·</span>
-                    <span className="text-muted-2">{topic.category}</span>
+                    <span aria-hidden>·</span>
+                    <span>{topic.category}</span>
                   </>
                 )}
-                <span aria-hidden className="text-muted-2">·</span>
-                <span className="text-brand">{levelT.short}</span>
+                <span aria-hidden>·</span>
+                <span>{levelT.short}</span>
               </div>
-              <h1 className="mt-1 font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:mt-2 sm:text-4xl lg:text-display-xs">
+              <h1 className="mt-1 font-display text-2xl leading-tight text-ink sm:mt-2 sm:text-display-xs">
                 {topicTitle(topic)}
               </h1>
               <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2 sm:mt-2 sm:text-base">
@@ -191,10 +189,10 @@ export default function TopicPage() {
               value={completedCount}
               max={questions.length}
               size="sm"
-              tone={pct === 100 ? 'mint' : 'gradient'}
+              tone={pct === 100 ? 'mint' : 'ink'}
               className="max-w-md"
             />
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            <span className="text-[12px] tabular-nums text-muted">
               {completedCount}/{questions.length} · {pct}%
             </span>
           </div>
@@ -288,7 +286,7 @@ export default function TopicPage() {
             chips never overflow into a second row. The strip is bled to the
             full viewport width on small screens via -mx-4 + px-4 padding. */}
         <div className="-mx-4 mb-5 flex items-center gap-2 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:mb-6 sm:flex-wrap sm:overflow-visible sm:px-0">
-          {FILTERS.map((f: any) => {
+          {FILTERS.map((f) => {
             const label = {
               all: t.filterAll,
               not_started: t.filterTodo,
@@ -300,53 +298,55 @@ export default function TopicPage() {
               <button
                 key={f}
                 type="button"
-                onClick={() => setFilter(f as any)}
+                onClick={() => setFilter(f)}
                 aria-pressed={active}
                 className={cn(
-                  'inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-200',
+                  'inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150',
                   active
-                    ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.20)]'
-                    : 'border-rule/12 bg-paper-2 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
+                    ? 'border-ink bg-ink text-paper'
+                    : 'border-rule/12 bg-paper-2 text-muted hover:border-rule/25 hover:text-ink',
                 )}
               >
                 <span>{label}</span>
-                <span className={cn('tabular-nums', active ? 'text-paper/70' : 'text-muted-2')}>
+                <span className={cn('tabular-nums', active ? 'text-paper/65' : 'text-muted-2')}>
                   {counts[f]}
                 </span>
               </button>
             );
           })}
-          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-2 sm:inline-flex">
-            <kbd className="rounded border border-rule/15 px-1 py-0.5">J</kbd>
-            <kbd className="rounded border border-rule/15 px-1 py-0.5">K</kbd>
-            <span>· nav</span>
-            <kbd className="rounded border border-rule/15 px-1 py-0.5">Space</kbd>
-            <span>· open</span>
+          <span className="ml-auto hidden items-center gap-1.5 text-[12px] text-muted-2 sm:inline-flex">
+            <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">j</kbd>
+            <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">k</kbd>
+            <span>to move</span>
+            <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">space</kbd>
+            <span>to open</span>
           </span>
         </div>
 
         {/* Questions list */}
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <span className="text-4xl" aria-hidden>🎉</span>
-              <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-                {t.noQuestionsInCategory}
-              </p>
+            <div className="flex flex-col items-center gap-4 py-16 text-center">
+              <p className="font-serif text-[17px] text-ink-2">{t.noQuestionsInCategory}</p>
+              {filter !== 'all' && (
+                <Button variant="outline" size="sm" onClick={() => setFilter('all')}>
+                  {lang === 'ru' ? 'Показать все вопросы' : 'Show all questions'}
+                </Button>
+              )}
             </div>
           ) : (
-            filtered.map((q: any, i: any) => (
+            filtered.map((q, i) => (
               <QuestionCard
                 key={q.id}
-                ref={(el: any) => {
+                ref={(el) => {
                   if (el) refs.current.set(q.id, el);
                   else refs.current.delete(q.id);
                 }}
                 question={q}
                 index={questions.indexOf(q)}
                 expanded={openId === q.id}
-                onToggleExpand={() => setOpenId((prev: any) => (prev === q.id ? null : q.id))}
-                focused={cursor === i}
+                onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
+                focused={activeCursor === i}
                 topicSlug={slug}
               />
             ))
@@ -365,21 +365,13 @@ export default function TopicPage() {
           className="fixed inset-x-0 z-30 sm:hidden"
           style={{ bottom: 'var(--bottom-nav-h, 56px)' }}
         >
-          {/* Top fade — pulls content into the shelf without a hard line. */}
-          <div
-            className="pointer-events-none absolute inset-x-0 -top-12 h-12 bg-gradient-to-t from-paper to-transparent"
-            aria-hidden
-          />
-          {/* Solid shelf — opaque paper + faint upward shadow so it reads as
-              a physical panel layered above the scroll content. */}
-          <div
-            className="bg-paper px-4 pb-2 pt-3"
-            style={{ boxShadow: '0 -1px 0 0 rgb(var(--rule) / 0.10), 0 -8px 16px -8px rgb(var(--shadow) / 0.10)' }}
-          >
+          {/* Solid shelf — opaque paper above a hairline, so it reads as a
+              sheet laid over the scrolling content rather than a glow. */}
+          <div className="border-t border-rule/12 bg-paper px-4 pb-2 pt-3">
             <Button
               variant="brand"
               size="lg"
-              className="w-full shadow-[0_8px_24px_-6px_rgb(var(--brand)/0.45)]"
+              className="w-full"
               onClick={() => navigate(`/study?topic=${topic.slug}&label=${encodeURIComponent(topicTitle(topic))}`)}
             >
               <Brain className="h-4 w-4" />
@@ -398,7 +390,7 @@ function TopicSkeleton() {
     <div className="bg-page">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Skeleton className="mb-5 h-4 w-32" />
-        <header className="mb-8 border-b border-rule/15 pb-6">
+        <header className="mb-8 border-b border-rule/12 pb-6">
           <div className="flex items-start gap-4">
             <Skeleton className="h-14 w-14 rounded-md" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -418,13 +410,13 @@ function TopicSkeleton() {
           </div>
         </header>
         <div className="mb-6 flex gap-2">
-          {Array.from({ length: 4 }).map((_: any, i: any) => (
-            <Skeleton key={i} className="h-7 w-20 rounded-md" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-20 rounded-full" />
           ))}
         </div>
         <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_: any, i: any) => (
-            <div key={i} className="rounded-md border border-rule/15 bg-paper-2/80 p-4 shadow-codex-sm">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-rule/12 bg-paper-2 p-4 shadow-codex-sm">
               <div className="flex items-start gap-3">
                 <Skeleton className="h-7 w-7 rounded-md" />
                 <div className="flex-1 space-y-2">

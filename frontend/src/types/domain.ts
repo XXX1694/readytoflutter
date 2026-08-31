@@ -131,6 +131,10 @@ export interface Resource {
   topics?: string[];
   platform?: PlatformKey;
   media_type?: string;
+  /** Human-readable, not a duration in seconds — 'ongoing', '2–3 h', '1 h'. */
+  duration?: string;
+  /** Published by the platform vendor rather than a community author. */
+  official?: boolean;
   // YouTube helpers
   video_id?: string;
   playlist_id?: string;

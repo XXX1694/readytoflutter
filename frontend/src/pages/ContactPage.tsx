@@ -1,77 +1,92 @@
-import { useState } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, Send, Check } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
-import { Button, Eyebrow } from '../ui/index';
+import { Button, Eyebrow, TextField, TextArea } from '../ui/index';
 import { submitContact } from '../api/api';
 import { track } from '../lib/analytics';
-import { cn } from '../lib/cn';
 
 const schema = z.object({
-  name: z.string().trim().max(120).optional().or(z.literal('').transform(() => undefined)),
+  name: z.string().trim().max(120).optional().or(z.literal('').transform((): undefined => undefined)),
   email: z.string().trim().email({ message: 'invalid_email' }),
   message: z.string().trim().min(10, { message: 'too_short' }).max(4000, { message: 'too_long' }),
 });
 
-const COPY = {
-  en: {
-    eyebrow: 'Contact',
-    back: 'Back to home',
-    title: 'Drop us a line',
-    subtitle: 'Bug? Feature idea? Sponsorship? Anything else? Real human reads every message.',
-    name: 'Name', namePh: 'optional',
-    email: 'Email', emailPh: 'you@example.com',
-    message: 'Message', messagePh: 'Tell us what\'s on your mind…',
-    submit: 'Send', sending: 'Sending…',
-    sentTitle: 'Got it', sentSub: 'Thanks — we\'ll get back to you within 2 business days.',
-    err: { invalid_email: 'Looks like that email is invalid.', too_short: 'Add a bit more detail.', too_long: 'Message is too long.', generic: 'Could not send. Try again.' },
+const EN = {
+  eyebrow: 'Contact',
+  back: 'Back to home',
+  title: 'Drop us a line',
+  subtitle: 'Bugs, feature ideas, partnerships — a real person reads every message.',
+  name: 'Name', namePh: 'Optional',
+  email: 'Email', emailPh: 'you@example.com',
+  message: 'Message', messagePh: 'Tell us what is on your mind…',
+  submit: 'Send message', sending: 'Sending…',
+  sentTitle: 'Message sent',
+  sentSub: 'We reply within two business days.',
+  err: {
+    invalid_email: 'That email address is not valid. Check the spelling.',
+    too_short: 'Add a bit more detail — at least 10 characters.',
+    too_long: 'That message is over 4000 characters. Trim it down.',
+    rate_limited: 'Too many messages just now. Try again in a few minutes.',
+    generic: 'Could not send your message. Try again in a moment.',
   },
-  ru: {
-    eyebrow: 'Контакты',
-    back: 'На главную',
-    title: 'Напиши нам',
-    subtitle: 'Баг? Идея? Партнёрство? Что угодно — каждое сообщение читает живой человек.',
-    name: 'Имя', namePh: 'необязательно',
-    email: 'Email', emailPh: 'you@example.com',
-    message: 'Сообщение', messagePh: 'Расскажи, что у тебя…',
-    submit: 'Отправить', sending: 'Отправляем…',
-    sentTitle: 'Принято', sentSub: 'Спасибо — ответим в течение 2 рабочих дней.',
-    err: { invalid_email: 'Невалидный email.', too_short: 'Чуть подробнее, пожалуйста.', too_long: 'Сообщение слишком длинное.', generic: 'Не удалось отправить. Попробуй ещё раз.' },
+};
+
+type Copy = typeof EN;
+type ErrorKey = keyof Copy['err'];
+type FormErrors = Partial<Record<'email' | 'message' | 'form', string>>;
+
+const RU: Copy = {
+  eyebrow: 'Контакты',
+  back: 'На главную',
+  title: 'Напиши нам',
+  subtitle: 'Баги, идеи, партнёрство — каждое сообщение читает живой человек.',
+  name: 'Имя', namePh: 'Необязательно',
+  email: 'Email', emailPh: 'you@example.com',
+  message: 'Сообщение', messagePh: 'Расскажи, что у тебя…',
+  submit: 'Отправить', sending: 'Отправляем…',
+  sentTitle: 'Сообщение отправлено',
+  sentSub: 'Отвечаем в течение двух рабочих дней.',
+  err: {
+    invalid_email: 'Некорректный email. Проверь написание.',
+    too_short: 'Добавь деталей — хотя бы 10 символов.',
+    too_long: 'Сообщение длиннее 4000 символов. Сократи его.',
+    rate_limited: 'Слишком много сообщений подряд. Попробуй через несколько минут.',
+    generic: 'Не удалось отправить сообщение. Попробуй ещё раз.',
   },
 };
 
 export default function ContactPage() {
   const { lang } = useLang();
-  const T = COPY[lang === 'ru' ? 'ru' : 'en'];
-  const user = useAuth((s: any) => s.user);
+  const T = lang === 'ru' ? RU : EN;
+  const user = useAuth((s) => s.user);
 
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
   const [message, setMessage] = useState('');
   // Honeypot — invisible field, real users leave it blank.
   const [website, setWebsite] = useState('');
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const errLabel = (key: any) => (key ? T.err[key] || T.err.generic : null);
-  const inputCls = (hasErr: any) => cn(
-    'w-full rounded-md border bg-paper px-3 py-2 text-sm text-ink shadow-codex-sm transition-colors',
-    'focus:outline-none focus:ring-2 focus:ring-brand/30',
-    hasErr ? 'border-coral/40' : 'border-rule/20 focus:border-rule/40',
-  );
+  const errLabel = (key: string | undefined): string | null =>
+    (key ? T.err[key as ErrorKey] ?? T.err.generic : null);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (submitting) return;
     setErrors({});
     const parsed = schema.safeParse({ name, email, message });
     if (!parsed.success) {
-      const next = {};
-      for (const i of parsed.error.issues) next[i.path[0]] = i.message;
+      const next: FormErrors = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if (field === 'email' || field === 'message') next[field] = issue.message;
+      }
       setErrors(next);
       return;
     }
@@ -81,11 +96,10 @@ export default function ContactPage() {
       track('contact_submitted', { authed: !!user });
       setDone(true);
       toast.success(T.sentTitle);
-    } catch (err: any) {
-      const code = err?.response?.status;
-      const msg = err?.response?.data?.error;
-      if (code === 429) setErrors({ form: 'too_long' });
-      else setErrors({ form: msg || 'generic' });
+    } catch (err) {
+      const code = (err as { response?: { status?: number } })?.response?.status;
+      const apiErr = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setErrors({ form: code === 429 ? 'rate_limited' : apiErr ?? 'generic' });
     } finally {
       setSubmitting(false);
     }
@@ -93,105 +107,98 @@ export default function ContactPage() {
 
   if (done) {
     return (
-      <div className="bg-page flex min-h-full items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-mint/15 text-[rgb(var(--mint))]">
-            <Check className="h-8 w-8" />
-          </div>
-          <h1 className="font-display text-3xl font-medium text-ink">{T.sentTitle}</h1>
-          <p className="mt-3 text-sm text-ink-2">{T.sentSub}</p>
-          <Link to="/" className="mt-6 inline-block text-sm text-brand hover:text-brand-ink">{T.back} →</Link>
-        </div>
-      </div>
+      <Shell>
+        <h1 className="font-display text-3xl font-semibold text-ink">
+          <span className="marker decoration-clone">{T.sentTitle}</span>
+        </h1>
+        <p className="mt-4 font-serif text-[17px] leading-relaxed text-ink-2">{T.sentSub}</p>
+        <Link
+          to="/"
+          className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-brand underline-offset-4 hover:underline"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {T.back}
+        </Link>
+      </Shell>
     );
   }
 
   return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Link
-          to="/"
-          className="mb-5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-ink"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          {T.back}
-        </Link>
+    <Shell>
+      <Link
+        to="/"
+        className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {T.back}
+      </Link>
 
-        <div className="rounded-md border border-rule/15 bg-paper-2 p-6 shadow-codex sm:p-8">
-          <Eyebrow accent="brand">
-            <Mail className="mr-1 inline h-3 w-3" />
-            {T.eyebrow}
-          </Eyebrow>
-          <h1 className="mt-3 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-4xl">
-            {T.title}
-          </h1>
-          <p className="mt-2 text-sm text-ink-2">{T.subtitle}</p>
+      <Eyebrow>{T.eyebrow}</Eyebrow>
+      <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">{T.title}</h1>
+      <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.subtitle}</p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-            <label className="block">
-              <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted">{T.name}</span>
-              <input
-                type="text"
-                value={name}
-                onChange={(e: any) => setName(e.target.value)}
-                placeholder={T.namePh}
-                className={inputCls(false)}
-                autoComplete="name"
-              />
-            </label>
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
+        <TextField
+          label={T.name}
+          type="text"
+          value={name}
+          onChange={setName}
+          placeholder={T.namePh}
+          autoComplete="name"
+          maxLength={120}
+        />
 
-            <label className="block">
-              <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted">{T.email}</span>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e: any) => setEmail(e.target.value)}
-                placeholder={T.emailPh}
-                className={inputCls(!!errors.email)}
-              />
-              {errors.email && <span className="mt-1 block text-xs text-[rgb(var(--coral))]">{errLabel(errors.email)}</span>}
-            </label>
+        <TextField
+          label={T.email}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={setEmail}
+          placeholder={T.emailPh}
+          error={errLabel(errors.email)}
+        />
 
-            <label className="block">
-              <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted">{T.message}</span>
-              <textarea
-                rows={6}
-                value={message}
-                onChange={(e: any) => setMessage(e.target.value)}
-                placeholder={T.messagePh}
-                className={cn(inputCls(!!errors.message), 'resize-y')}
-                maxLength={4000}
-              />
-              {errors.message && <span className="mt-1 block text-xs text-[rgb(var(--coral))]">{errLabel(errors.message)}</span>}
-            </label>
+        <TextArea
+          label={T.message}
+          rows={6}
+          value={message}
+          onChange={setMessage}
+          placeholder={T.messagePh}
+          maxLength={4000}
+          error={errLabel(errors.message)}
+        />
 
-            {/* Honeypot — hidden from real users. */}
-            <input
-              type="text"
-              tabIndex={-1}
-              aria-hidden
-              autoComplete="off"
-              value={website}
-              onChange={(e: any) => setWebsite(e.target.value)}
-              className="absolute left-[-9999px] h-0 w-0 opacity-0"
-              name="website"
-            />
+        {/* Honeypot — hidden from real users. */}
+        <input
+          type="text"
+          tabIndex={-1}
+          aria-hidden
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          className="absolute left-[-9999px] h-0 w-0 opacity-0"
+          name="website"
+        />
 
-            {errors.form && (
-              <div className="rounded-md border border-coral/40 bg-coral/10 px-3 py-2 text-xs text-[rgb(var(--coral))]">
-                {errLabel(errors.form)}
-              </div>
-            )}
+        {errors.form && (
+          <p role="alert" className="rounded-md border border-coral/30 bg-coral/8 px-3 py-2 text-[13px] text-coral">
+            {errLabel(errors.form)}
+          </p>
+        )}
 
-            <Button type="submit" variant="brand" size="md" className="w-full" disabled={submitting}>
-              <Send className="h-4 w-4" />
-              {submitting ? T.sending : T.submit}
-            </Button>
-          </form>
-        </div>
-      </div>
+        <Button type="submit" variant="codex" className="w-full" disabled={submitting}>
+          {submitting ? T.sending : T.submit}
+        </Button>
+      </form>
+    </Shell>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <div className="bg-page flex min-h-full items-center justify-center px-4 py-14">
+      <div className="w-full max-w-md">{children}</div>
     </div>
   );
 }

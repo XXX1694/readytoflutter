@@ -4,9 +4,10 @@ import { useTopic } from '../lib/queries';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { FullPageLoader } from '../ui/index';
+import { Button, FullPageLoader } from '../ui/index';
 import AnswerText from '../components/AnswerText';
 import CodeBlock from '../components/CodeBlock';
+import type { Question } from '../types/domain';
 
 /**
  * Clean printable view for a topic. The page renders ALL questions fully
@@ -64,78 +65,68 @@ export default function PrintTopicPage() {
   });
 
   return (
-    <div className="print-view bg-paper text-ink">
-      {/* On-screen toolbar — hidden in print */}
-      <div className="print-hide sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule bg-paper px-4 py-3 sm:px-6">
+    <div className="bg-paper text-ink">
+      {/* On-screen toolbar. `print:hidden` rather than a `.print-hide` class:
+          that class was never defined in index.css, so the toolbar used to
+          print at the top of page one. */}
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule/12 bg-paper px-4 py-3 print:hidden sm:px-6">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-            {lang === 'ru' ? 'Печать / PDF' : 'Print / PDF'}
-          </span>
+          <span className="eyebrow">{lang === 'ru' ? 'Печать / PDF' : 'Print / PDF'}</span>
           <span className="text-sm text-ink-2">{topicTitle(topic)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded-xl border border-rule/12 bg-paper-2 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-rule/25 hover:shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.08)]"
-          >
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
             {lang === 'ru' ? 'Печать снова' : 'Print again'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/topic/${slug}`)}
-            className="rounded-xl px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/topic/${slug}`)}>
             {lang === 'ru' ? 'Назад' : 'Back'}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Printable content */}
       <article className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-10">
         {/* Cover header */}
-        <header className="mb-6 border-b-2 border-rule/15 pb-4">
-          <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+        <header className="mb-6 border-b border-rule/25 pb-4">
+          <div className="flex items-baseline justify-between text-[12px] text-muted">
             <span>Onsite</span>
             <span>{today}</span>
           </div>
-          <h1 className="mt-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
+          <h1 className="mt-2 font-display text-2xl leading-tight text-ink sm:text-3xl">
             {topicTitle(topic)}
           </h1>
-          <p className="mt-1 text-sm text-ink-2">{topicDesc(topic)}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted">
+          <p className="mt-1 font-serif text-[15px] leading-[1.6] text-ink-2">{topicDesc(topic)}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-muted">
             <span>{levelT.label}</span>
-            <span>·</span>
+            <span aria-hidden>·</span>
             <span>{questions.length} {lang === 'ru' ? 'вопросов' : 'questions'}</span>
           </div>
         </header>
 
         {/* Questions — natural flow, no forced gaps */}
         <ol className="list-none">
-          {questions.map((q: any, i: any) => {
+          {questions.map((q: Question, i: number) => {
             const difficultyLabel = { easy: t.easy, medium: t.medium, hard: t.hard }[q.difficulty] || q.difficulty;
             return (
-              <li key={q.id} className="print-question mb-5">
+              <li key={q.id} className="mb-5 break-inside-avoid">
                 <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-sm tabular-nums text-brand">
+                  <span className="font-mono text-sm tabular-nums text-muted">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <h2 className="font-display text-base font-semibold leading-snug tracking-tight text-ink sm:text-lg">
+                  <h2 className="font-display text-base font-semibold leading-snug text-ink sm:text-lg">
                     {questionText(q)}
                   </h2>
                 </div>
-                <div className="ml-9 mt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">
-                  {difficultyLabel}
-                </div>
+                <div className="ml-9 mt-0.5 text-[12px] text-muted">{difficultyLabel}</div>
 
                 <div className="ml-9 mt-2">
-                  <AnswerText
-                    text={answerText(q)}
-                    className="answer-text text-[12.5px] leading-[1.55] text-ink-2"
-                  />
+                  {/* `.answer-text` sets 17px for on-screen reading; a revision
+                      sheet wants the same serif at a denser size, so the size
+                      (and only the size) is forced down here. */}
+                  <AnswerText text={answerText(q)} className="!text-[13.5px]" />
 
                   {q.code_example && (
-                    <div className="mt-2">
+                    <div className="mt-2 max-w-[68ch]">
                       <CodeBlock
                         code={q.code_example}
                         language={q.code_language || 'dart'}
@@ -148,7 +139,7 @@ export default function PrintTopicPage() {
           })}
         </ol>
 
-        <footer className="mt-8 border-t border-rule pt-3 text-center font-mono text-[10px] uppercase tracking-wider text-muted-2">
+        <footer className="mt-8 border-t border-rule/12 pt-3 text-center text-[11px] text-muted-2">
           Onsite · {topicTitle(topic)} · {today}
         </footer>
       </article>

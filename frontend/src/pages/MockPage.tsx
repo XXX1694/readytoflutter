@@ -1,14 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X, Play, Timer, Target, ChevronRight, RotateCcw, ArrowRight, Eye, SkipForward,
-  AlertCircle,
-} from 'lucide-react';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { ArrowRight, ChevronRight, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
-import { useLang } from '../i18n/LangContext';
-import { useT } from '../i18n/ui';
+import { useLang, type Lang } from '../i18n/LangContext';
+import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
 import PlatformFilter from '../components/PlatformFilter';
@@ -17,132 +12,140 @@ import { filterQuestionsByPlatform } from '../lib/platform';
 import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerText from '../components/AnswerText';
 import CodeBlock from '../components/CodeBlock';
-import AnswerGrader, { useAiHealth } from '../components/AnswerGrader';
+import AnswerGrader, {
+  SelfGrade, useAiHealth, type SelfGradeOption,
+} from '../components/AnswerGrader';
+import {
+  useQuestionSession, countOutcomes, type Outcome, type OutcomeCounts,
+} from '../lib/useQuestionSession';
 import { cn } from '../lib/cn';
 import { track } from '../lib/analytics';
 
+import type { Level, Question, Topic } from '../types/domain';
+
+/** Stable empty defaults, so the pool memo isn't invalidated every render. */
+const NO_QUESTIONS: Question[] = [];
+const NO_TOPICS: Topic[] = [];
+
+type LevelScope = 'all' | Level;
+
+interface MockConfig {
+  level: LevelScope;
+  count: number;
+  timer: number;
+  topic: string | null;
+  ids: number[] | null;
+}
+
 const COUNT_OPTIONS = [5, 10, 15, 20];
-const TIMER_OPTIONS = [
-  { key: 0, labelEn: 'Off', labelRu: 'Нет' },
-  { key: 180, labelEn: '3 min', labelRu: '3 мин' },
-  { key: 300, labelEn: '5 min', labelRu: '5 мин' },
-];
-const LEVELS = [
-  { key: 'all', labelEn: 'Mixed', labelRu: 'Все' },
-  { key: 'junior', labelEn: 'Junior' },
-  { key: 'mid', labelEn: 'Mid' },
-  { key: 'senior', labelEn: 'Senior' },
+
+const LEVEL_OPTIONS: readonly LevelScope[] = ['all', 'junior', 'mid', 'senior'];
+const isLevelScope = (value: string | null): value is LevelScope =>
+  value !== null && (LEVEL_OPTIONS as readonly string[]).includes(value);
+
+const levelLabel = (level: LevelScope, lang: Lang): string => {
+  if (level !== 'all') return { junior: 'Junior', mid: 'Mid', senior: 'Senior' }[level];
+  return lang === 'ru' ? 'Все' : 'Mixed';
+};
+
+const timerOptions = (lang: Lang): Array<{ seconds: number; label: string }> => [
+  { seconds: 0, label: lang === 'ru' ? 'Без таймера' : 'No timer' },
+  { seconds: 180, label: lang === 'ru' ? '3 мин' : '3 min' },
+  { seconds: 300, label: lang === 'ru' ? '5 мин' : '5 min' },
 ];
 
-const RATINGS = [
-  { key: 'again', tone: 'coral',  hotkey: '1', labelEn: 'Bombed', labelRu: 'Провалил' },
-  { key: 'hard',  tone: 'amber',  hotkey: '2', labelEn: 'Rough',  labelRu: 'С трудом' },
-  { key: 'good',  tone: 'brand',  hotkey: '3', labelEn: 'Solid',  labelRu: 'Уверенно' },
-  { key: 'easy',  tone: 'mint',   hotkey: '4', labelEn: 'Nailed', labelRu: 'Идеально' },
+/** Interview wording — you are grading a performance, not scheduling a card. */
+const grades = (lang: Lang): SelfGradeOption[] => [
+  { rating: 'again', label: lang === 'ru' ? 'Провалил' : 'Bombed' },
+  { rating: 'hard', label: lang === 'ru' ? 'С трудом' : 'Rough' },
+  { rating: 'good', label: lang === 'ru' ? 'Уверенно' : 'Solid' },
+  { rating: 'easy', label: lang === 'ru' ? 'Идеально' : 'Nailed' },
 ];
 
-const shuffle = (arr: any) => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i -= 1) {
+const OUTCOME_TONE = {
+  easy: 'mint',
+  good: 'mint',
+  hard: 'amber',
+  again: 'coral',
+  skipped: 'neutral',
+} as const;
+
+const outcomeLabel = (outcome: Outcome, lang: Lang): string => ({
+  again: lang === 'ru' ? 'провалил' : 'bombed',
+  hard: lang === 'ru' ? 'с трудом' : 'rough',
+  good: lang === 'ru' ? 'уверенно' : 'solid',
+  easy: lang === 'ru' ? 'идеально' : 'nailed',
+  skipped: lang === 'ru' ? 'пропуск' : 'skipped',
+}[outcome]);
+
+const shuffle = <T,>(items: T[]): T[] => {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    [out[i], out[j]] = [out[j], out[i]];
   }
-  return a;
+  return out;
+};
+
+const clock = (seconds: number): string => {
+  // Clamped: the tick lags a fresh start by up to a second, and a negative
+  // clock reads as broken.
+  const s = Math.max(0, seconds);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
 export default function MockPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialLevel = searchParams.get('level') || 'all';
-  const initialTopic = searchParams.get('topic');
+  const initialLevel = searchParams.get('level');
   const initialIds = searchParams.get('ids');
 
   const { lang } = useLang();
+  const ru = lang === 'ru';
   const t = useT(lang);
   const { questionText, answerText } = useContent(lang);
-  const { data: allQuestions = [], isLoading } = useQuestions();
-  const { data: allTopics = [] } = useTopics();
-  const platform = usePrefs((s: any) => s.platform);
-  // Honor the persisted stack so a user prepping for iOS doesn't get Flutter
-  // questions in their mock interview. Direct deep-links via `?ids=` bypass
-  // this — those callers already curated their set.
-  const questions = useMemo(
-    () => filterQuestionsByPlatform(allQuestions, allTopics, platform),
-    [allQuestions, allTopics, platform],
-  );
-  // Warm the AI-health probe as soon as the page mounts. Without this the
-  // first /api/ai/grade call would race the /api/ai/health response and
-  // the AnswerGrader would render `null` for a beat after Reveal.
+  const { data: allQuestions = NO_QUESTIONS, isLoading } = useQuestions();
+  const { data: allTopics = NO_TOPICS } = useTopics();
+  const platform = usePrefs((s) => s.platform);
+  // Warm the AI-health probe on mount, so the first grade after a reveal
+  // doesn't race the /api/ai/health response.
   useAiHealth();
 
-  const [phase, setPhase] = useState('setup'); // setup | running | review | done
-  const [config, setConfig] = useState({
-    level: initialLevel,
+  const [config, setConfig] = useState<MockConfig>({
+    level: isLevelScope(initialLevel) ? initialLevel : 'all',
     count: 10,
     timer: 0,
-    topic: initialTopic,
+    topic: searchParams.get('topic'),
     ids: initialIds ? initialIds.split(',').map(Number).filter(Boolean) : null,
   });
-  const [queue, setQueue] = useState([]);
-  const [cursor, setCursor] = useState(0);
-  const [answers, setAnswers] = useState<any>({}); // { id: { text, rating, elapsed } }
-  const [revealed, setRevealed] = useState(false);
-  const [perQuestionStart, setPerQuestionStart] = useState(0);
-  const [sessionStart, setSessionStart] = useState(0);
-  const [now, setNow] = useState(Date.now());
-  const textareaRef = useRef(null);
+  const [started, setStarted] = useState(false);
+  const [queue, setQueue] = useState<Question[]>([]);
+  const [questionStartedAt, setQuestionStartedAt] = useState(0);
+  const [sessionStartedAt, setSessionStartedAt] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
-  // Tick clock every second while a session is active. We display seconds,
-  // so a 250ms tick was wasted work.
-  useEffect(() => {
-    if (phase !== 'running' && phase !== 'review') return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [phase]);
-
-  // Mock completion analytics — fires once per session when phase flips to
-  // 'done'. Aggregates ratings so we can see drop-offs and average time
-  // without exporting every per-question event.
-  const completedMockRef = useRef(false);
-  useEffect(() => {
-    if (phase === 'done' && !completedMockRef.current) {
-      completedMockRef.current = true;
-      const total = queue.length;
-      const elapsedSec = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
-      const breakdown = Object.values(answers).reduce<Record<string, number>>(
-        (acc, a: any) => {
-          if (a?.rating) acc[a.rating] = (acc[a.rating] || 0) + 1;
-          return acc;
-        },
-        {},
-      );
-      track('mock_complete', { total, elapsed_sec: elapsedSec, ...breakdown });
+  // ── Build the queue ──────────────────────────────────────────────────────
+  // Honour the persisted stack so someone prepping for iOS isn't handed
+  // Flutter questions. A `?ids=` deep-link bypasses it — that caller already
+  // curated the set.
+  const available = useMemo(() => {
+    if (config.ids?.length) {
+      const wanted = new Set(config.ids);
+      return allQuestions.filter((q) => wanted.has(q.id));
     }
-    if (phase !== 'done') completedMockRef.current = false;
-  }, [phase, queue.length, sessionStart, answers]);
+    let pool = filterQuestionsByPlatform(allQuestions, allTopics, platform);
+    if (config.topic) pool = pool.filter((q) => q.topic_slug === config.topic);
+    if (config.level !== 'all') pool = pool.filter((q) => q.level === config.level);
+    return pool;
+  }, [allQuestions, allTopics, platform, config]);
 
   const start = () => {
-    // Deep-link by id bypasses the platform filter — the caller already
-    // curated the set (e.g. "drill these 5 bookmarks"). Otherwise scope to
-    // the active platform.
-    let pool;
-    if (config.ids?.length) {
-      const idSet = new Set(config.ids);
-      pool = allQuestions.filter((q: any) => idSet.has(q.id));
-    } else {
-      pool = questions;
-      if (config.topic) pool = pool.filter((q: any) => q.topic_slug === config.topic);
-      if (config.level !== 'all') pool = pool.filter((q: any) => q.level === config.level);
-    }
-    if (pool.length === 0) return;
-    const picked = shuffle(pool).slice(0, config.count);
+    if (available.length === 0) return;
+    const picked = shuffle(available).slice(0, config.count);
     setQueue(picked);
-    setCursor(0);
-    setAnswers({});
-    setRevealed(false);
-    setPerQuestionStart(Date.now());
-    setSessionStart(Date.now());
-    setPhase('running');
+    setQuestionStartedAt(Date.now());
+    setSessionStartedAt(Date.now());
+    setStarted(true);
     track('mock_session_start', {
       count: picked.length,
       level: config.level,
@@ -151,119 +154,73 @@ export default function MockPage() {
     });
   };
 
-  const current = queue[cursor];
+  // ── Run the session ──────────────────────────────────────────────────────
+  const onQuestionSec = questionStartedAt
+    ? Math.max(0, Math.floor((now - questionStartedAt) / 1000))
+    : 0;
+  const timedOut = config.timer > 0 && onQuestionSec >= config.timer;
 
-  // Timer auto-reveal
+  const session = useQuestionSession<Question>({
+    queue,
+    revealHotkey: 'mod+enter',
+    // The per-question timer running out shows the answer, exactly as if the
+    // user had asked for it — the grade hotkeys have to work from there too.
+    autoRevealed: timedOut,
+    onAdvance: () => setQuestionStartedAt(Date.now()),
+    onExit: () => {
+      if (!started) navigate(-1);
+      else if (window.confirm(ru ? 'Закончить сессию?' : 'End the session?')) navigate('/');
+    },
+  });
+  const { current, revealed, draft, draftRef } = session;
+  const counts = useMemo(() => countOutcomes(session.outcomes), [session.outcomes]);
+
+  // One tick a second: seconds are the smallest unit shown anywhere here.
   useEffect(() => {
-    if (phase !== 'running' || config.timer === 0 || !current) return;
-    const elapsed = Math.floor((now - perQuestionStart) / 1000);
-    if (elapsed >= config.timer && !revealed) {
-      setRevealed(true);
+    if (!started || session.finished) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [started, session.finished]);
+
+  const completedRef = useRef(false);
+  useEffect(() => {
+    if (!session.finished) {
+      completedRef.current = false;
+      return;
     }
-  }, [now, phase, config.timer, perQuestionStart, revealed, current]);
-
-  const reveal = () => setRevealed(true);
-
-  const rate = (rating: any) => {
-    if (!current) return;
-    const elapsed = Math.floor((Date.now() - perQuestionStart) / 1000);
-    const text = answers[current.id]?.text || '';
-    setAnswers((prev: any) => ({
-      ...prev,
-      [current.id]: { text, rating, elapsed },
-    }));
-    if (cursor + 1 >= queue.length) {
-      setPhase('done');
-    } else {
-      setCursor((c: any) => c + 1);
-      setRevealed(false);
-      setPerQuestionStart(Date.now());
-      // Focus textarea on next question
-      setTimeout(() => textareaRef.current?.focus(), 50);
-    }
-  };
-
-  const skip = () => {
-    if (!current) return;
-    setAnswers((prev: any) => ({
-      ...prev,
-      [current.id]: { text: prev[current.id]?.text || '', rating: 'skipped', elapsed: 0 },
-    }));
-    if (cursor + 1 >= queue.length) {
-      setPhase('done');
-    } else {
-      setCursor((c: any) => c + 1);
-      setRevealed(false);
-      setPerQuestionStart(Date.now());
-    }
-  };
-
-  const updateAnswer = (text: any) => {
-    if (!current) return;
-    setAnswers((prev: any) => ({
-      ...prev,
-      [current.id]: { ...prev[current.id], text },
-    }));
-  };
-
-  const appendVoice = (chunk: any) => {
-    if (!current) return;
-    setAnswers((prev: any) => {
-      const existing = prev[current.id]?.text || '';
-      const sep = existing && !/\s$/.test(existing) ? ' ' : '';
-      return {
-        ...prev,
-        [current.id]: { ...prev[current.id], text: existing + sep + chunk },
-      };
+    if (completedRef.current) return;
+    completedRef.current = true;
+    track('mock_complete', {
+      total: queue.length,
+      elapsed_sec: sessionStartedAt ? Math.floor((Date.now() - sessionStartedAt) / 1000) : 0,
+      ...counts,
     });
-  };
-
-  // Hotkeys
-  useHotkeys('mod+enter', (e: any) => {
-    if (phase !== 'running' || !current) return;
-    e.preventDefault();
-    if (!revealed) reveal();
-  }, { enableOnFormTags: true }, [phase, current, revealed]);
-  useHotkeys('1', () => revealed && rate('again'), { enableOnFormTags: false }, [revealed, current]);
-  useHotkeys('2', () => revealed && rate('hard'),  { enableOnFormTags: false }, [revealed, current]);
-  useHotkeys('3', () => revealed && rate('good'),  { enableOnFormTags: false }, [revealed, current]);
-  useHotkeys('4', () => revealed && rate('easy'),  { enableOnFormTags: false }, [revealed, current]);
-  useHotkeys('escape', () => {
-    if (phase === 'setup') navigate(-1);
-    else if (window.confirm(lang === 'ru' ? 'Закончить сессию?' : 'End session?')) navigate('/');
-  }, [phase]);
+  }, [session.finished, queue.length, sessionStartedAt, counts]);
 
   if (isLoading) return <FullPageLoader />;
 
-  if (phase === 'setup') {
-    let available;
-    if (config.ids?.length) {
-      const idSet = new Set(config.ids);
-      available = allQuestions.filter((q: any) => idSet.has(q.id));
-    } else {
-      available = questions;
-      if (config.topic) available = available.filter((q: any) => q.topic_slug === config.topic);
-      if (config.level !== 'all') available = available.filter((q: any) => q.level === config.level);
-    }
+  if (!started) {
     return (
-      <SetupScreen
+      <Setup
         config={config}
-        onConfigChange={setConfig}
+        onChange={setConfig}
         onStart={start}
         onCancel={() => navigate(-1)}
-        availableCount={available.length}
+        available={available.length}
         lang={lang}
         showPlatformFilter={!config.ids?.length}
       />
     );
   }
 
-  if (phase === 'done') {
+  if (session.finished) {
     return (
-      <DoneScreen
+      <Recap
         queue={queue}
-        answers={answers}
-        sessionStart={sessionStart}
+        drafts={session.drafts}
+        outcomes={session.outcomes}
+        counts={counts}
+        startedAt={sessionStartedAt}
         lang={lang}
         t={t}
         questionText={questionText}
@@ -274,281 +231,265 @@ export default function MockPage() {
     );
   }
 
-  if (!current) {
-    return null;
-  }
+  if (!current) return null;
 
-  const elapsedSec = Math.floor((now - perQuestionStart) / 1000);
-  const sessionElapsedSec = Math.floor((now - sessionStart) / 1000);
-  const timerLeft = config.timer > 0 ? Math.max(0, config.timer - elapsedSec) : null;
+  const timeLeft = config.timer > 0 ? Math.max(0, config.timer - onQuestionSec) : null;
   const difficultyLabel = { easy: t.easy, medium: t.medium, hard: t.hard }[current.difficulty];
-  const userText = answers[current.id]?.text || '';
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1400px] flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {/* Top bar */}
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-rule/15 pb-4">
-          <div className="flex items-center gap-3">
-            <Target className="h-5 w-5 text-brand" aria-hidden />
-            <span className="font-display text-xl font-medium text-ink">
-              {lang === 'ru' ? 'Mock Interview' : 'Mock Interview'}
-            </span>
-            <Pill tone="ghost" size="xs">
-              {String(cursor + 1).padStart(2, '0')} / {String(queue.length).padStart(2, '0')}
-            </Pill>
-          </div>
-          <div className="flex items-center gap-3">
-            <ClockBadge label={lang === 'ru' ? 'Сессия' : 'Total'} seconds={sessionElapsedSec} tone="ink" />
-            {timerLeft !== null && (
-              <ClockBadge
-                label={lang === 'ru' ? 'Осталось' : 'Left'}
-                seconds={timerLeft}
-                tone={timerLeft < 30 ? 'coral' : timerLeft < 60 ? 'amber' : 'brand'}
-                pulse={timerLeft < 30}
-              />
+      <div className="mx-auto max-w-5xl px-4 pb-20 pt-4 sm:px-6 sm:pt-10 lg:px-8">
+        {/* Title and close are hidden under sm: the mobile header carries
+            both for this route. */}
+        <header className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
+            {ru ? 'Мок-интервью' : 'Mock interview'}
+          </h1>
+          <span className="num text-[13px] text-muted">
+            {session.index + 1}/{queue.length}
+          </span>
+          <div className="ml-auto flex items-center gap-4">
+            <Clock label={ru ? 'Всего' : 'Total'} seconds={Math.floor((now - sessionStartedAt) / 1000)} />
+            {timeLeft !== null && (
+              <Clock label={ru ? 'Осталось' : 'Left'} seconds={timeLeft} urgent={timeLeft < 30} />
             )}
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')} aria-label="End">
-              <X className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden sm:inline-flex"
+              onClick={() => navigate('/')}
+            >
+              <X className="h-4 w-4" aria-hidden />
+              <span className="sr-only">{ru ? 'Закрыть' : 'Close'}</span>
             </Button>
           </div>
         </header>
 
-        {/* Progress */}
-        <ProgressBar value={cursor} max={queue.length} size="sm" tone="gradient" className="mb-6" />
+        <ProgressBar
+          value={session.index}
+          max={queue.length}
+          size="xs"
+          tone="ink"
+          className="mb-9"
+          label={ru ? 'Прогресс сессии' : 'Session progress'}
+        />
 
-        {/* Question */}
-        <section className="mb-5 rounded-md border border-rule/15 bg-paper-2 p-5 shadow-codex sm:p-7">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Pill tone={difficultyTone[current.difficulty] || 'neutral'} size="xs">
-              {difficultyLabel}
-            </Pill>
-            <Pill tone="ghost" size="xs">{current.topic_title}</Pill>
-            <Pill tone="ghost" size="xs">{t[current.level]?.short}</Pill>
-          </div>
-          <p className="font-display text-2xl font-medium leading-tight tracking-tight text-ink sm:text-3xl">
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Pill tone={difficultyTone[current.difficulty]} size="xs">{difficultyLabel}</Pill>
+          <span className="eyebrow">
+            {current.topic_title}
+            {current.level && ` · ${t[current.level].short}`}
+          </span>
+        </div>
+
+        <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[32px]">
+          <span
+            className={cn(
+              'marker [box-decoration-break:clone] [-webkit-box-decoration-break:clone]',
+              'transition-[background-size] duration-500 ease-out motion-reduce:transition-none',
+              revealed ? 'bg-[length:100%_0.72em]' : 'bg-[length:0%_0.72em]',
+            )}
+          >
             {questionText(current)}
-          </p>
-        </section>
+          </span>
+        </h2>
 
-        {/* Answer textarea (always present until revealed) */}
         {!revealed && (
-          <section className="mb-5">
-            <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-              <span>{lang === 'ru' ? 'Твой ответ' : 'Your answer'}</span>
-              <span className="h-px flex-1 bg-rule" />
-              <VoiceInputButton lang={lang} onAppend={appendVoice} size="xs" />
-            </div>
+          <div className="mt-8">
+            <label htmlFor="attempt" className="eyebrow mb-2 block">
+              {ru ? 'Отвечай так, как сказал бы вслух' : 'Answer the way you would say it out loud'}
+            </label>
             <textarea
-              ref={textareaRef}
-              value={userText}
-              onChange={(e: any) => updateAnswer(e.target.value)}
-              onFocus={(e: any) => {
-                setTimeout(() => {
-                  try { e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-                  catch { /* older Safari */ }
-                }, 250);
-              }}
-              placeholder={lang === 'ru' ? 'Печатай — на собеседовании ты будешь говорить, а тут думаешь пальцами…' : 'Type — at the real interview you would speak, here you think out loud…'}
+              id="attempt"
+              ref={draftRef}
+              value={draft}
+              onChange={(e) => session.setDraft(e.target.value)}
               rows={8}
               autoFocus
               autoCorrect="off"
               spellCheck={false}
               autoCapitalize="off"
-              className="w-full resize-y rounded-md border border-rule/15 bg-paper-2 px-4 py-3 text-base text-ink placeholder:text-muted-2 outline-none shadow-codex-sm focus:shadow-codex"
+              className="w-full resize-y rounded-lg border border-rule/12 bg-paper-2 px-4 py-3 font-serif text-[17px] leading-relaxed text-ink outline-none placeholder:text-muted-2"
             />
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                {userText.length} chars · <kbd className="rounded border border-rule/15 px-1.5 py-0.5">⌘↵</kbd> {lang === 'ru' ? 'показать ответ' : 'reveal answer'}
-              </span>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="xs" />
+                <span className="num text-[11px] text-muted-2">
+                  {draft.length}
+                  {ru ? ' знаков' : ' chars'}
+                </span>
+              </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={skip}>
-                  <SkipForward className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Пропустить' : 'Skip'}
+                <Button variant="ghost" size="sm" onClick={session.skip}>
+                  {ru ? 'Пропустить' : 'Skip'}
                 </Button>
-                <Button variant="brand" size="sm" onClick={reveal}>
-                  <Eye className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Показать ответ' : 'Reveal answer'}
+                <Button variant="brand" size="sm" onClick={session.reveal}>
+                  {ru ? 'Показать ответ' : 'Show answer'}
                 </Button>
               </div>
             </div>
-          </section>
+          </div>
         )}
 
-        {/* Side-by-side review.
-            Mobile: reference first (the user wants the answer immediately), then
-            their own attempt for comparison. Desktop: side-by-side, your-answer
-            on the left, reference on the right (Western reading order). */}
         {revealed && (
-          <>
-            {/* AI grader sits ABOVE the side-by-side compare — that's the
-                first thing the user sees after Reveal, no scrolling needed.
-                Logical flow: AI feedback → visual compare → self-rate. */}
+          <div className="mt-8">
+            {/* Feedback first, then the side-by-side, then the self-grade —
+                the same order the round uses, so the muscle memory carries. */}
             <AnswerGrader
               key={current.id}
               questionId={current.id}
-              userAnswer={userText}
+              userAnswer={draft}
               lang={lang}
             />
 
-            <section className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-              <div className="order-2 rounded-md border border-rule/15 bg-paper p-4 lg:order-1">
-                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                  {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
-                </div>
-                <div className="answer-text whitespace-pre-wrap text-sm leading-relaxed text-ink-2">
-                  {userText || (
-                    <span className="italic text-muted-2">
-                      {lang === 'ru' ? '— пусто —' : '— empty —'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="order-1 rounded-md border border-rule/15 bg-paper-2 p-4 shadow-codex-sm lg:order-2">
-                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-                  {lang === 'ru' ? 'Эталонный ответ' : 'Reference'}
-                </div>
-                <AnswerText
-                  text={answerText(current)}
-                  className="answer-text text-sm leading-relaxed text-ink-2"
-                />
-                {current.code_example && (
-                  <div className="mt-3">
-                    <CodeBlock
-                      code={current.code_example}
-                      language={current.code_language || 'dart'}
-                    />
-                  </div>
-                )}
-              </div>
-            </section>
+            <Compare
+              draft={draft}
+              question={current}
+              answerText={answerText}
+              lang={lang}
+            />
 
-            <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {RATINGS.map((r: any) => (
-                <button
-                  key={r.key}
-                  type="button"
-                  onClick={() => rate(r.key)}
-                  className={cn(
-                    'group flex flex-col items-center gap-1 rounded-md border border-rule/15 bg-paper-2 px-3 py-3 shadow-codex-sm transition-all',
-                    'hover:-translate-x-px hover:-translate-y-px hover:shadow-codex',
-                    r.tone === 'coral' && 'hover:bg-coral/15',
-                    r.tone === 'amber' && 'hover:bg-amber/15',
-                    r.tone === 'brand' && 'hover:bg-brand/15',
-                    r.tone === 'mint' && 'hover:bg-mint/15',
-                  )}
-                >
-                  <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">
-                    {r.hotkey}
-                  </kbd>
-                  <span className="font-display text-base font-medium text-ink">
-                    {lang === 'ru' ? r.labelRu : r.labelEn}
-                  </span>
-                </button>
-              ))}
-            </section>
-          </>
+            <div className="mt-10 border-t border-rule/12 pt-5">
+              <p className="eyebrow mb-2">{ru ? 'Как прошло?' : 'How did that go?'}</p>
+              <SelfGrade options={grades(lang)} onGrade={session.grade} />
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount, lang, showPlatformFilter }: any) {
-  const update = (patch: any) => onConfigChange({ ...config, ...patch });
-  const insufficient = availableCount === 0;
-  const realCount = Math.min(config.count, availableCount);
+function Clock({ label, seconds, urgent }: { label: string; seconds: number; urgent?: boolean }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 text-[12px]">
+      <span className="text-muted">{label}</span>
+      <span className={cn('font-mono tabular-nums', urgent ? 'text-coral' : 'text-ink')}>
+        {clock(seconds)}
+      </span>
+    </span>
+  );
+}
+
+interface CompareProps {
+  draft: string;
+  question: Question;
+  answerText: (question: Question) => string;
+  lang: Lang;
+}
+
+/** The user's attempt beside the reference. Mobile puts the reference first —
+    that is what you want to see the second you stop writing. */
+function Compare({ draft, question, answerText, lang }: CompareProps) {
+  const ru = lang === 'ru';
+  return (
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+      <section className="order-2 lg:order-1">
+        <div className="eyebrow mb-2">{ru ? 'Ты написал' : 'What you wrote'}</div>
+        {draft.trim() ? (
+          <p className="answer-text">{draft}</p>
+        ) : (
+          <p className="text-sm italic text-muted-2">{ru ? 'Ничего' : 'Nothing written'}</p>
+        )}
+      </section>
+      <section className="order-1 lg:order-2 lg:border-l lg:border-rule/12 lg:pl-10">
+        <div className="eyebrow mb-2">{ru ? 'Эталон' : 'Reference'}</div>
+        <AnswerText text={answerText(question)} />
+        {question.code_example && (
+          <div className="mt-4">
+            <CodeBlock code={question.code_example} language={question.code_language || 'dart'} />
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* ── Setup ──────────────────────────────────────────────────────────────── */
+
+interface SetupProps {
+  config: MockConfig;
+  onChange: (config: MockConfig) => void;
+  onStart: () => void;
+  onCancel: () => void;
+  available: number;
+  lang: Lang;
+  showPlatformFilter: boolean;
+}
+
+function Setup({
+  config, onChange, onStart, onCancel, available, lang, showPlatformFilter,
+}: SetupProps) {
+  const ru = lang === 'ru';
+  const update = (patch: Partial<MockConfig>) => onChange({ ...config, ...patch });
+  const empty = available === 0;
 
   return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-10">
-      <div className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 p-8 shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_24px_64px_-12px_rgb(var(--shadow)/0.16)] sm:p-12">
-        {/* Aurora glows behind the form */}
-        <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand/20 via-brand-sky/10 to-transparent blur-3xl" />
-        <span aria-hidden className="pointer-events-none absolute -left-20 -bottom-20 h-60 w-60 rounded-full bg-gradient-to-tr from-mint/15 via-brand/8 to-transparent blur-3xl" />
-
-        <div className="relative mb-2 inline-flex items-center gap-2 rounded-full border border-rule/12 bg-paper-2/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-brand backdrop-blur">
-          <Target className="h-3 w-3" /> Mock Interview · Setup
-        </div>
-        <h1 className="relative mt-3 font-display text-display-xs font-semibold leading-tight tracking-tightest text-ink sm:text-display-sm">
-          {lang === 'ru' ? (
-            <>Симулятор <span className="text-gradient-brand">собеседования</span>.</>
-          ) : (
-            <>Interview <span className="text-gradient-brand">simulator</span>.</>
-          )}
+    <div className="bg-page min-h-full">
+      <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
+        <h1 className="font-display text-display-xs font-semibold text-ink">
+          {ru ? 'Мок-интервью' : 'Mock interview'}
         </h1>
-        <p className="relative mt-3 max-w-xl text-sm leading-relaxed text-ink-2">
-          {lang === 'ru'
-            ? 'Случайная подборка вопросов, таймер и self-grade. Чем чаще проходишь — тем спокойнее на реальном собесе.'
-            : 'Randomized set, optional timer, self-grade. The more you run it, the cooler you get on the real one.'}
+        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-2">
+          {ru
+            ? 'Случайный набор вопросов, таймер по желанию и честная самооценка. Чем чаще проходишь, тем спокойнее на настоящем собеседовании.'
+            : 'A random set, an optional timer, an honest self-grade. The more of these you run, the calmer the real one gets.'}
         </p>
 
-        <div className="relative mt-8 space-y-7">
+        <div className="mt-10 space-y-8">
           {showPlatformFilter && (
-            <Field label={lang === 'ru' ? 'Стек' : 'Stack'}>
+            <Field label={ru ? 'Стек' : 'Stack'}>
               <PlatformFilter hideLabel />
             </Field>
           )}
 
-          <Field label={lang === 'ru' ? 'Уровень' : 'Level'}>
-            <div className="flex flex-wrap gap-2">
-              {LEVELS.map((l: any) => (
-                <ToggleChip
-                  key={l.key}
-                  active={config.level === l.key}
-                  onClick={() => update({ level: l.key })}
-                >
-                  {lang === 'ru' ? (l.labelRu || l.labelEn) : l.labelEn}
-                </ToggleChip>
-              ))}
-            </div>
+          <Field label={ru ? 'Уровень' : 'Level'}>
+            {LEVEL_OPTIONS.map((level) => (
+              <Chip
+                key={level}
+                active={config.level === level}
+                onClick={() => update({ level })}
+              >
+                {levelLabel(level, lang)}
+              </Chip>
+            ))}
           </Field>
 
-          <Field label={lang === 'ru' ? 'Кол-во вопросов' : 'Questions'}>
-            <div className="flex flex-wrap gap-2">
-              {COUNT_OPTIONS.map((c: any) => (
-                <ToggleChip
-                  key={c}
-                  active={config.count === c}
-                  onClick={() => update({ count: c })}
-                >
-                  {c}
-                </ToggleChip>
-              ))}
-            </div>
+          <Field label={ru ? 'Сколько вопросов' : 'How many questions'}>
+            {COUNT_OPTIONS.map((count) => (
+              <Chip key={count} active={config.count === count} onClick={() => update({ count })}>
+                {count}
+              </Chip>
+            ))}
           </Field>
 
-          <Field label={lang === 'ru' ? 'Таймер на вопрос' : 'Per-question timer'}>
-            <div className="flex flex-wrap gap-2">
-              {TIMER_OPTIONS.map((tm: any) => (
-                <ToggleChip
-                  key={tm.key}
-                  active={config.timer === tm.key}
-                  onClick={() => update({ timer: tm.key })}
-                >
-                  {lang === 'ru' ? (tm.labelRu || tm.labelEn) : tm.labelEn}
-                </ToggleChip>
-              ))}
-            </div>
+          <Field label={ru ? 'Таймер на вопрос' : 'Timer per question'}>
+            {timerOptions(lang).map((option) => (
+              <Chip
+                key={option.seconds}
+                active={config.timer === option.seconds}
+                onClick={() => update({ timer: option.seconds })}
+              >
+                {option.label}
+              </Chip>
+            ))}
           </Field>
         </div>
 
-        <div className="relative mt-8 flex flex-col gap-3 border-t border-rule/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          {insufficient ? (
-            <span className="inline-flex items-center gap-2 rounded-md border border-coral/30 bg-coral/8 px-3 py-1.5 text-sm text-coral">
-              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
-              {lang === 'ru'
-                ? 'Нет вопросов под эти настройки. Смягчи фильтры.'
-                : 'No questions match these filters. Loosen them.'}
-            </span>
-          ) : (
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
-              {lang === 'ru'
-                ? `Будет ${realCount} вопросов из ${availableCount}`
-                : `${realCount} of ${availableCount} available`}
-            </span>
-          )}
+        <div className="mt-10 flex flex-col gap-3 border-t border-rule/12 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className={cn('text-[13px]', empty ? 'text-coral' : 'text-muted')}>
+            {empty
+              ? (ru
+                  ? 'Под эти фильтры вопросов нет. Смягчи их.'
+                  : 'No questions match these filters. Loosen one.')
+              : (ru
+                  ? `${Math.min(config.count, available)} из ${available} доступных`
+                  : `${Math.min(config.count, available)} of ${available} available`)}
+          </p>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onCancel}>{lang === 'ru' ? 'Отмена' : 'Cancel'}</Button>
-            <Button variant="brand" disabled={insufficient} onClick={onStart}>
-              <Play className="h-4 w-4" /> {lang === 'ru' ? 'Начать' : 'Start'}
+            <Button variant="ghost" onClick={onCancel}>{ru ? 'Отмена' : 'Cancel'}</Button>
+            <Button variant="brand" disabled={empty} onClick={onStart}>
+              {ru ? 'Начать' : 'Start'}
             </Button>
           </div>
         </div>
@@ -557,26 +498,32 @@ function SetupScreen({ config, onConfigChange, onStart, onCancel, availableCount
   );
 }
 
-function Field({ label, children }: any) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{label}</div>
-      {children}
+      <div className="eyebrow mb-2.5">{label}</div>
+      <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }
 
-function ToggleChip({ active, onClick, children }: any) {
+interface ChipProps {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}
+
+function Chip({ active, onClick, children }: ChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex min-h-[40px] items-center rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-wider transition-all duration-200',
+        'inline-flex min-h-[40px] items-center rounded-lg border px-4 text-[14px] transition-colors duration-150',
         active
-          ? 'border-ink bg-ink text-paper shadow-[0_2px_4px_-1px_rgb(var(--shadow)/0.20)]'
-          : 'border-rule/12 bg-paper-2/60 text-muted hover:border-rule/25 hover:text-ink hover:bg-rule/5',
+          ? 'border-ink bg-ink text-paper'
+          : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
       )}
     >
       {children}
@@ -584,139 +531,118 @@ function ToggleChip({ active, onClick, children }: any) {
   );
 }
 
-function ClockBadge({ label, seconds, tone = 'ink', pulse }: any) {
-  const TONE = {
-    ink: 'border-rule/15 text-ink',
-    brand: 'border-brand text-brand',
-    amber: 'border-[rgb(var(--amber))] text-[rgb(var(--amber))]',
-    coral: 'border-coral text-[rgb(var(--coral))]',
-  };
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return (
-    <div className={cn(
-      'inline-flex items-center gap-1.5 rounded-md border bg-paper-2 px-2.5 py-1 font-mono text-xs tabular-nums shadow-codex-sm',
-      TONE[tone],
-      pulse && 'animate-pulse',
-    )}>
-      <Timer className="h-3 w-3" aria-hidden />
-      <span className="text-[10px] uppercase opacity-60">{label}</span>
-      <span>{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}</span>
-    </div>
-  );
+/* ── Recap ──────────────────────────────────────────────────────────────── */
+
+interface RecapProps {
+  queue: Question[];
+  drafts: Readonly<Record<number, string>>;
+  outcomes: Readonly<Record<number, Outcome>>;
+  counts: OutcomeCounts;
+  startedAt: number;
+  lang: Lang;
+  t: UICopy;
+  questionText: (question: Question) => string;
+  answerText: (question: Question) => string;
+  onAgain: () => void;
+  onHome: () => void;
 }
 
-function DoneScreen({ queue, answers, sessionStart, lang, t, questionText, answerText, onAgain, onHome }: any) {
-  const totalSec = Math.floor((Date.now() - sessionStart) / 1000);
-  const buckets = { again: 0, hard: 0, good: 0, easy: 0, skipped: 0 };
-  for (const q of queue) {
-    const a = answers[q.id];
-    const r = a?.rating || 'skipped';
-    buckets[r] = (buckets[r] || 0) + 1;
-  }
-  const score = (buckets.good + buckets.easy * 1.5) / queue.length;
-  const scorePct = Math.round((score / 1.5) * 100);
+function Recap({
+  queue, drafts, outcomes, counts, startedAt, lang, t, questionText, answerText, onAgain, onHome,
+}: RecapProps) {
+  const ru = lang === 'ru';
+  // Frozen at mount: a recap that ticks upward while you read it is noise.
+  const [totalSec] = useState(() => Math.floor((Date.now() - startedAt) / 1000));
+  const scorePct = Math.round(((counts.good + counts.easy * 1.5) / queue.length / 1.5) * 100);
+
+  const buckets = [
+    { key: 'easy', label: ru ? 'Идеально' : 'Nailed', ink: 'text-mint' },
+    { key: 'good', label: ru ? 'Уверенно' : 'Solid', ink: 'text-mint' },
+    { key: 'hard', label: ru ? 'С трудом' : 'Rough', ink: 'text-[rgb(var(--amber))]' },
+    { key: 'again', label: ru ? 'Провалил' : 'Bombed', ink: 'text-coral' },
+    { key: 'skipped', label: ru ? 'Пропущено' : 'Skipped', ink: 'text-muted' },
+  ] as const;
 
   return (
     <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <header className="mb-8 border-b border-rule/15 pb-6">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">
-            Mock Interview · {lang === 'ru' ? 'Итоги' : 'Recap'}
-          </span>
-          <h1 className="mt-3 font-display text-display-sm font-medium leading-tight tracking-tightest text-ink sm:text-display-md">
-            {scorePct >= 80 ? (lang === 'ru' ? 'Огонь.' : 'Strong.') :
-             scorePct >= 50 ? (lang === 'ru' ? 'Достойно.' : 'Solid base.') :
-             (lang === 'ru' ? 'Есть что подтянуть.' : 'Room to grow.')}
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <header className="border-b border-rule/12 pb-7">
+          <div className="eyebrow">{ru ? 'Мок-интервью · итоги' : 'Mock interview · recap'}</div>
+          <h1 className="mt-3 font-display text-display-xs font-semibold text-ink sm:text-display-sm">
+            {scorePct >= 80
+              ? (ru ? 'Сильно.' : 'Strong.')
+              : scorePct >= 50
+              ? (ru ? 'Хорошая база.' : 'Solid base.')
+              : (ru ? 'Есть что подтянуть.' : 'Room to grow.')}
           </h1>
-          <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-muted">
-            {queue.length} {lang === 'ru' ? 'вопросов' : 'questions'} · {Math.floor(totalSec / 60)}m {totalSec % 60}s · {scorePct}% score
+          <p className="num mt-2 text-[13px] font-normal text-muted">
+            {queue.length} {ru ? 'вопросов' : 'questions'} · {clock(totalSec)} · {scorePct}%
           </p>
         </header>
 
-        <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {[
-            { key: 'easy',    label: lang === 'ru' ? 'Идеально' : 'Nailed', accent: 'text-mint',                     dot: 'bg-mint',                     glow: 'from-mint/[0.10] to-transparent' },
-            { key: 'good',    label: lang === 'ru' ? 'Уверенно' : 'Solid',  accent: 'text-brand',                    dot: 'bg-brand',                    glow: 'from-brand/[0.10] to-transparent' },
-            { key: 'hard',    label: lang === 'ru' ? 'С трудом' : 'Rough',  accent: 'text-[rgb(var(--amber))]',      dot: 'bg-[rgb(var(--amber))]',      glow: 'from-amber/[0.10] to-transparent' },
-            { key: 'again',   label: lang === 'ru' ? 'Провалил' : 'Bombed', accent: 'text-coral',                    dot: 'bg-coral',                    glow: 'from-coral/[0.10] to-transparent' },
-            { key: 'skipped', label: lang === 'ru' ? 'Скип' : 'Skipped',    accent: 'text-muted',                    dot: 'bg-muted',                    glow: 'from-muted/[0.06] to-transparent' },
-          ].map((b: any) => (
-            <div
-              key={b.key}
-              className="group relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-rule/8 bg-paper-2 p-5 shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)] transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <span aria-hidden className={cn('pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100', b.glow)} />
-              <div className="relative flex items-center justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{b.label}</span>
-                <span className={cn('h-1.5 w-1.5 rounded-full', b.dot)} aria-hidden />
-              </div>
-              <div className={cn('num relative text-display-xs sm:text-display-sm', b.accent)}>{buckets[b.key] || 0}</div>
+        <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-rule/12 bg-rule/10 sm:grid-cols-5">
+          {buckets.map((bucket) => (
+            <div key={bucket.key} className="flex flex-col gap-1 bg-paper-2 px-4 py-5">
+              <dd className={cn('num text-3xl', bucket.ink)}>{counts[bucket.key]}</dd>
+              <dt className="text-[12px] text-muted">{bucket.label}</dt>
             </div>
           ))}
-        </section>
+        </dl>
 
-        <section className="mb-8">
-          <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-            {lang === 'ru' ? 'По вопросам' : 'Per question'}
-          </div>
-          <div className="space-y-2">
-            {queue.map((q: any, i: any) => {
-              const a = answers[q.id];
-              const r = a?.rating || 'skipped';
-              const tone = r === 'easy' ? 'mint' : r === 'good' ? 'brand' : r === 'hard' ? 'amber' : r === 'again' ? 'coral' : 'ghost';
-              return (
-                <details key={q.id} className="group rounded-md border border-rule bg-paper-2 px-4 py-3">
-                  <summary className="flex cursor-pointer items-center gap-3 list-none">
-                    <span className="font-mono text-[11px] tabular-nums text-brand">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <span className="flex-1 truncate text-sm text-ink-2">{questionText(q)}</span>
-                    <Pill tone={tone} size="xs">
-                      {r === 'skipped' ? (lang === 'ru' ? 'скип' : 'skip') : r}
-                    </Pill>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted transition-transform group-open:rotate-90" />
-                  </summary>
-                  <div className="mt-3 grid grid-cols-1 gap-3 border-t border-rule pt-3 lg:grid-cols-2">
-                    <div className="rounded border border-rule bg-paper p-3">
-                      <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-muted">
-                        {lang === 'ru' ? 'Твой ответ' : 'Your answer'}
-                      </div>
-                      <div className="whitespace-pre-wrap text-xs text-ink-2">
-                        {a?.text || (
-                          <span className="italic text-muted-2">
-                            {lang === 'ru' ? '— пусто —' : '— empty —'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="rounded border border-rule bg-paper p-3">
-                      <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-brand">
-                        {lang === 'ru' ? 'Эталон' : 'Reference'}
-                      </div>
-                      <AnswerText text={answerText(q)} className="text-xs text-ink-2" />
-                      {q.code_example && (
-                        <div className="mt-2">
-                          <CodeBlock
-                            code={q.code_example}
-                            language={q.code_language || 'dart'}
-                          />
-                        </div>
-                      )}
-                    </div>
+        <div className="eyebrow mb-3 mt-10">{ru ? 'По вопросам' : 'Question by question'}</div>
+        <div className="divide-y divide-rule/12 border-y border-rule/12">
+          {queue.map((question, i) => (
+            <details key={question.id} className="group py-3">
+              <summary className="flex cursor-pointer list-none items-center gap-3">
+                <span className="num w-6 shrink-0 text-[13px] text-muted-2">{i + 1}</span>
+                <span className="flex-1 truncate text-sm text-ink-2">
+                  {questionText(question)}
+                </span>
+                <Pill tone={OUTCOME_TONE[outcomes[question.id]]} size="xs">
+                  {outcomeLabel(outcomes[question.id], lang)}
+                </Pill>
+                <ChevronRight
+                  className="h-3.5 w-3.5 shrink-0 text-muted transition-transform group-open:rotate-90"
+                  aria-hidden
+                />
+              </summary>
+              <div className="mt-4 grid grid-cols-1 gap-6 pl-9 lg:grid-cols-2">
+                <div>
+                  <div className="eyebrow mb-1.5">{ru ? 'Ты написал' : 'What you wrote'}</div>
+                  {drafts[question.id]?.trim() ? (
+                    <p className="answer-text">{drafts[question.id]}</p>
+                  ) : (
+                    <p className="text-sm italic text-muted-2">{ru ? 'Ничего' : 'Nothing written'}</p>
+                  )}
+                </div>
+                <div>
+                  <div className="eyebrow mb-1.5">
+                    {ru ? 'Эталон' : 'Reference'}
+                    {' · '}
+                    {{ easy: t.easy, medium: t.medium, hard: t.hard }[question.difficulty]}
                   </div>
-                </details>
-              );
-            })}
-          </div>
-        </section>
+                  <AnswerText text={answerText(question)} />
+                  {question.code_example && (
+                    <div className="mt-3">
+                      <CodeBlock
+                        code={question.code_example}
+                        language={question.code_language || 'dart'}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </details>
+          ))}
+        </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="mt-10 flex flex-col gap-2 sm:flex-row">
           <Button variant="brand" className="flex-1" onClick={onAgain}>
-            <RotateCcw className="h-4 w-4" /> {lang === 'ru' ? 'Ещё подход' : 'Run again'}
+            {ru ? 'Ещё подход' : 'Run it again'}
           </Button>
-          <Button variant="codex" className="flex-1" onClick={onHome}>
-            <ArrowRight className="h-4 w-4" /> Dashboard
+          <Button variant="outline" className="flex-1" onClick={onHome}>
+            <ArrowRight className="h-4 w-4" aria-hidden />
+            Dashboard
           </Button>
         </div>
       </div>

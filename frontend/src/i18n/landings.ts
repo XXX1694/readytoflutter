@@ -12,7 +12,10 @@ import type { PlatformKey } from '../types/domain.ts';
 
 export interface LandingCopy {
   eyebrow: string;
-  title: [string, string]; // [first line plain, second line gradient]
+  // [first line, emphasised second line]. The second line used to be
+  // rendered with a clipped indigo→violet gradient; emphasis is now
+  // carried by the marker (see DESIGN.md).
+  title: [string, string];
   desc: string;
   docTitle: string;
   metaDesc: string;

@@ -20,13 +20,11 @@ export default function NotFoundPage() {
     <div className="bg-page">
       <div className="mx-auto max-w-[1400px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="max-w-xl">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-            404
-          </span>
-          <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
+          <p className="font-mono text-[13px] text-muted">404</p>
+          <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
             {isRu ? 'Такой страницы нет' : 'No such page'}
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
+          <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">
             {isRu
               ? 'Ссылка битая или устарела. Вернись на главную или найди вопрос через поиск.'
               : 'The link is broken or out of date. Head back to the dashboard, or find the question through search.'}

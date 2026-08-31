@@ -1,97 +1,113 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Sparkles, Zap, Star, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
-import { Button, Eyebrow, Pill } from '../ui/index';
+import { Button, buttonVariants, Eyebrow } from '../ui/index';
 import { billingHealth, billingCheckout, billingPortal } from '../api/api';
 import { track } from '../lib/analytics';
 import { cn } from '../lib/cn';
 
-const COPY = {
-  en: {
-    eyebrow: 'Pricing',
-    back: 'Back to home',
-    title: 'Pay if it pays you back.',
-    subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading and deeper analytics — useful when interview week is 3 days out.',
-    free: 'Free', pro: 'Pro',
-    perMonth: '/ month', billed: 'Billed monthly. Cancel anytime.',
-    freeFeatures: [
-      'All 53 topics, 392 curated questions',
-      'SRS scheduling & active recall mode',
-      'Mock interviews with self-grade',
-      'Cheatsheets, bookmarks, EN / RU',
-      '10 AI-grade reviews per day',
-    ],
-    proFeatures: [
-      'Everything in Free, plus:',
-      'Unlimited AI-grade with follow-up questions',
-      'Priority feedback when you email us',
-      'Deeper stats: weak-topic radar, mastery curve',
-      'Early access to new question packs',
-    ],
-    ctaFreeAuth: 'You\'re on Free', ctaFreeAnon: 'Start free',
-    ctaProUpgrade: 'Upgrade to Pro', ctaProActive: 'Manage subscription',
-    ctaProSoon: 'Coming soon', ctaProSignup: 'Create an account',
-    ctaProAuthLogin: 'Sign in to upgrade',
-    note: 'Pro is for solo learners. Need team plans? Hit ',
-    noteLink: 'contact',
-    proBadge: 'Most popular',
-    activeBadge: 'Active',
-  },
-  ru: {
-    eyebrow: 'Цены',
-    back: 'На главную',
-    title: 'Платишь, если окупается.',
-    subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку и глубже статистику — пригодится, когда интервью через 3 дня.',
-    free: 'Бесплатно', pro: 'Pro',
-    perMonth: '/ месяц', billed: 'Ежемесячно. Отмена в любой момент.',
-    freeFeatures: [
-      'Все 53 темы, 392 кураторских вопроса',
-      'SRS-планирование + активное припоминание',
-      'Mock-интервью с self-grade',
-      'Шпаргалки, закладки, EN / RU',
-      '10 AI-проверок в день',
-    ],
-    proFeatures: [
-      'Всё из Free, плюс:',
-      'Безлимитная AI-проверка с follow-up вопросами',
-      'Приоритетный ответ на email',
-      'Глубже статистика: радар слабых тем, mastery curve',
-      'Ранний доступ к новым пакам вопросов',
-    ],
-    ctaFreeAuth: 'У тебя Free', ctaFreeAnon: 'Начать бесплатно',
-    ctaProUpgrade: 'Подключить Pro', ctaProActive: 'Управлять подпиской',
-    ctaProSoon: 'Скоро', ctaProSignup: 'Создать аккаунт',
-    ctaProAuthLogin: 'Войти, чтобы оформить',
-    note: 'Pro — для одного человека. Нужен team-план? Пиши в ',
-    noteLink: 'контактах',
-    proBadge: 'Популярно',
-    activeBadge: 'Активно',
-  },
+const EN = {
+  eyebrow: 'Pricing',
+  back: 'Back to home',
+  title: 'Pay if it pays you back.',
+  subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading and deeper analytics — the part that earns its keep when interview week is three days out.',
+  free: 'Free',
+  pro: 'Pro',
+  perMonth: 'per month',
+  billed: 'Billed monthly. Cancel anytime.',
+  currentPlan: 'Your plan',
+  freeFeatures: [
+    'All 53 topics, 392 curated questions',
+    'SRS scheduling and active recall',
+    'Mock interviews with self-grading',
+    'Cheatsheets, bookmarks, English and Russian',
+    '10 AI-graded answers per day',
+  ],
+  proLede: 'Everything in free, plus',
+  proFeatures: [
+    'Unlimited AI grading, with follow-up questions',
+    'Priority replies when you email us',
+    'Deeper stats: weak-topic radar and mastery curve',
+    'Early access to new question packs',
+  ],
+  ctaFreeAnon: 'Start free',
+  ctaProUpgrade: 'Upgrade to Pro',
+  ctaProActive: 'Manage subscription',
+  ctaProSoon: 'Not available yet',
+  ctaProSignup: 'Create an account',
+  note: 'Pro covers one person. For a team plan, ',
+  noteLink: 'get in touch',
+  errCheckoutOff: 'Checkout is not switched on yet. Try again later.',
+  errCheckout: 'Could not open checkout. Try again in a moment.',
+  errPortal: 'Could not open the billing portal. Try again in a moment.',
 };
 
-// Display price. Wired to your Stripe Price; the number on this card is
+type Copy = typeof EN;
+
+const RU: Copy = {
+  eyebrow: 'Цены',
+  back: 'На главную',
+  title: 'Платишь, если окупается.',
+  subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку и глубокую статистику — то, что окупается, когда интервью через три дня.',
+  free: 'Бесплатно',
+  pro: 'Pro',
+  perMonth: 'в месяц',
+  billed: 'Списание раз в месяц. Отмена в любой момент.',
+  currentPlan: 'Твой план',
+  freeFeatures: [
+    'Все 53 темы, 392 кураторских вопроса',
+    'SRS-планирование и активное припоминание',
+    'Mock-интервью с самопроверкой',
+    'Шпаргалки, закладки, английский и русский',
+    '10 AI-проверок в день',
+  ],
+  proLede: 'Всё из Free, плюс',
+  proFeatures: [
+    'Безлимитная AI-проверка с уточняющими вопросами',
+    'Приоритетный ответ на письма',
+    'Глубокая статистика: радар слабых тем и кривая освоения',
+    'Ранний доступ к новым пакам вопросов',
+  ],
+  ctaFreeAnon: 'Начать бесплатно',
+  ctaProUpgrade: 'Подключить Pro',
+  ctaProActive: 'Управлять подпиской',
+  ctaProSoon: 'Пока недоступно',
+  ctaProSignup: 'Создать аккаунт',
+  note: 'Pro рассчитан на одного человека. Для команды ',
+  noteLink: 'напиши нам',
+  errCheckoutOff: 'Оплата ещё не подключена. Попробуй позже.',
+  errCheckout: 'Не удалось открыть оплату. Попробуй ещё раз.',
+  errPortal: 'Не удалось открыть портал оплаты. Попробуй ещё раз.',
+};
+
+// Display price. Wired to your Stripe Price; the number on this page is
 // purely cosmetic — what users actually pay is whatever the linked
 // `STRIPE_PRICE_ID` says. Keep them in sync when you change the plan.
 const PRICE_USD = 9;
 
 export default function PricingPage() {
   const { lang } = useLang();
-  const T = COPY[lang === 'ru' ? 'ru' : 'en'];
+  const T = lang === 'ru' ? RU : EN;
   const navigate = useNavigate();
-  const user = useAuth((s: any) => s.user);
-  const token = useAuth((s: any) => s.token);
-  const backendAvailable = useAuth((s: any) => s.backendAvailable);
-  const isPro = user && user.pro_tier && user.pro_tier !== 'free';
+  const user = useAuth((s) => s.user);
+  const token = useAuth((s) => s.token);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
+  const isPro = !!user && !!user.pro_tier && user.pro_tier !== 'free';
 
-  const [billing, setBilling] = useState<{ enabled: boolean; reason?: string | null }>({ enabled: false, reason: 'loading' });
+  // Stays false until the probe answers, so the upgrade CTA never offers a
+  // checkout the backend cannot open. `billingHealth` resolves to disabled
+  // rather than rejecting, so there is nothing to catch here.
+  const [billingEnabled, setBillingEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (backendAvailable === false) { setBilling({ enabled: false, reason: 'no_backend' }); return; }
-    billingHealth().then(setBilling).catch(() => setBilling({ enabled: false, reason: 'unreachable' }));
+    if (backendAvailable === false) return;
+    let live = true;
+    billingHealth().then((health) => { if (live) setBillingEnabled(health.enabled); });
+    return () => { live = false; };
   }, [backendAvailable]);
 
   const startUpgrade = async () => {
@@ -106,9 +122,9 @@ export default function PricingPage() {
       const { url } = await billingCheckout();
       if (url) window.location.href = url;
       else throw new Error('no url');
-    } catch (err: any) {
-      const code = err?.response?.status;
-      toast.error(code === 503 ? (lang === 'ru' ? 'Биллинг ещё не подключён' : 'Billing not configured') : (lang === 'ru' ? 'Не удалось открыть оплату' : 'Could not open checkout'));
+    } catch (err) {
+      const code = (err as { response?: { status?: number } })?.response?.status;
+      toast.error(code === 503 ? T.errCheckoutOff : T.errCheckout);
       setBusy(false);
     }
   };
@@ -120,138 +136,129 @@ export default function PricingPage() {
       const { url } = await billingPortal();
       if (url) window.location.href = url;
     } catch {
-      toast.error(lang === 'ru' ? 'Не удалось открыть портал' : 'Could not open portal');
+      toast.error(T.errPortal);
       setBusy(false);
     }
   };
 
-  // Pick the right CTA for the Pro card based on auth + billing state.
-  let proCta = null;
+  // Pick the right CTA for the Pro plan based on auth + billing state.
+  let proCta: ReactNode;
   if (isPro) {
     proCta = (
-      <Button variant="codex" size="md" className="w-full" onClick={openPortal} disabled={busy}>
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+      <Button variant="outline" className="w-full" onClick={openPortal} disabled={busy}>
+        {busy && <Loader2 className="h-4 w-4 animate-spin" />}
         {T.ctaProActive}
       </Button>
     );
-  } else if (!billing.enabled) {
-    proCta = (
-      <Button variant="codex" size="md" className="w-full" disabled>
-        {T.ctaProSoon}
-      </Button>
-    );
+  } else if (!billingEnabled) {
+    proCta = <Button variant="outline" className="w-full" disabled>{T.ctaProSoon}</Button>;
   } else if (!token) {
-    proCta = (
-      <Button variant="brand" size="md" className="w-full" onClick={startUpgrade}>
-        <Sparkles className="h-4 w-4" />
-        {T.ctaProSignup}
-      </Button>
-    );
+    proCta = <Button variant="codex" className="w-full" onClick={startUpgrade}>{T.ctaProSignup}</Button>;
   } else {
     proCta = (
-      <Button variant="brand" size="md" className="w-full" onClick={startUpgrade} disabled={busy}>
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+      <Button variant="codex" className="w-full" onClick={startUpgrade} disabled={busy}>
+        {busy && <Loader2 className="h-4 w-4 animate-spin" />}
         {T.ctaProUpgrade}
       </Button>
     );
   }
 
   return (
-    <div className="bg-page min-h-full px-4 py-12 sm:py-16">
-      <div className="mx-auto max-w-5xl">
+    <div className="bg-page min-h-full px-4 py-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-3xl">
         <Link
           to="/"
-          className="mb-6 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-ink"
+          className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           {T.back}
         </Link>
 
-        <header className="mb-10 sm:mb-14">
-          <Eyebrow accent="brand">
-            <Star className="mr-1 inline h-3 w-3" />
-            {T.eyebrow}
-          </Eyebrow>
-          <h1 className="mt-3 font-display text-3xl font-medium leading-tight tracking-tight text-ink sm:text-5xl">
+        <header className="mb-12">
+          <Eyebrow>{T.eyebrow}</Eyebrow>
+          <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-5xl">
             {T.title}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm text-ink-2 sm:text-base">{T.subtitle}</p>
+          <p className="mt-4 max-w-2xl font-serif text-[17px] leading-relaxed text-ink-2">
+            {T.subtitle}
+          </p>
         </header>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-          {/* Free */}
-          <section
-            className={cn(
-              'relative flex flex-col rounded-2xl border bg-paper-2 p-6 shadow-codex-sm sm:p-8',
-              isPro ? 'border-rule/12' : 'border-rule/20',
+        <div className="border-b border-rule/12">
+          <Plan
+            name={T.free}
+            price="$0"
+            period={T.perMonth}
+            features={T.freeFeatures}
+            currentLabel={token && !isPro ? T.currentPlan : null}
+            cta={token ? null : (
+              <Link to="/signup" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
+                {T.ctaFreeAnon}
+              </Link>
             )}
-          >
-            <header className="mb-5">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{T.free}</div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-display text-4xl font-medium tracking-tight text-ink">$0</span>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-muted">{T.perMonth}</span>
-              </div>
-            </header>
-            <ul className="mb-6 space-y-2.5 text-sm text-ink-2">
-              {T.freeFeatures.map((f: any) => (
-                <li key={f} className="flex gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-mint" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto">
-              {token ? (
-                <Button variant="ghost" size="md" className="w-full" disabled>
-                  {T.ctaFreeAuth}
-                </Button>
-              ) : (
-                <Link to="/signup" className="block">
-                  <Button variant="codex" size="md" className="w-full">{T.ctaFreeAnon}</Button>
-                </Link>
-              )}
-            </div>
-          </section>
-
-          {/* Pro */}
-          <section
-            className={cn(
-              'relative flex flex-col rounded-2xl border-2 p-6 shadow-codex sm:p-8',
-              'border-brand/40 bg-gradient-to-b from-brand/5 to-transparent',
-            )}
-          >
-            <div className="absolute -top-3 left-6">
-              <Pill tone="brand">
-                <Zap className="mr-1 inline h-3 w-3" />
-                {isPro ? T.activeBadge : T.proBadge}
-              </Pill>
-            </div>
-            <header className="mb-5 mt-1">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-brand">{T.pro}</div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-display text-4xl font-medium tracking-tight text-ink">${PRICE_USD}</span>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-muted">{T.perMonth}</span>
-              </div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-2">{T.billed}</div>
-            </header>
-            <ul className="mb-6 space-y-2.5 text-sm text-ink-2">
-              {T.proFeatures.map((f: any, i: any) => (
-                <li key={f} className="flex gap-2">
-                  <Check className={cn('mt-0.5 h-4 w-4 shrink-0', i === 0 ? 'text-muted' : 'text-brand')} />
-                  <span className={i === 0 ? 'font-medium text-ink' : ''}>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto">{proCta}</div>
-          </section>
+          />
+          <Plan
+            name={T.pro}
+            price={`$${PRICE_USD}`}
+            period={T.perMonth}
+            note={T.billed}
+            lede={T.proLede}
+            features={T.proFeatures}
+            currentLabel={isPro ? T.currentPlan : null}
+            marked
+            cta={proCta}
+          />
         </div>
 
-        <p className="mt-8 text-center font-mono text-[11px] uppercase tracking-wider text-muted">
+        <p className="mt-8 text-sm text-muted">
           {T.note}
-          <Link to="/contact" className="text-brand hover:text-brand-ink">{T.noteLink}</Link>.
+          <Link to="/contact" className="font-medium text-brand underline-offset-4 hover:underline">
+            {T.noteLink}
+          </Link>.
         </p>
       </div>
     </div>
+  );
+}
+
+interface PlanProps {
+  name: string;
+  price: string;
+  period: string;
+  features: string[];
+  /** Shown under the plan name when this is the plan the reader is already on. */
+  currentLabel?: string | null;
+  note?: string;
+  lede?: string;
+  /** Lays the citron marker behind the price — the one accent on this page. */
+  marked?: boolean;
+  cta: ReactNode;
+}
+
+function Plan({ name, price, period, features, currentLabel, note, lede, marked, cta }: PlanProps) {
+  return (
+    <section className="grid gap-4 border-t border-rule/12 py-8 sm:grid-cols-[9rem_1fr] sm:gap-8">
+      <div>
+        <h2 className="font-display text-lg font-semibold text-ink">{name}</h2>
+        {currentLabel && <p className="mt-1 text-[13px] text-muted">{currentLabel}</p>}
+      </div>
+
+      <div>
+        <p className="flex items-baseline gap-2">
+          <span className={cn('num text-4xl text-ink', marked && 'marker')}>{price}</span>
+          <span className="text-sm text-muted">{period}</span>
+        </p>
+        {note && <p className="mt-2 text-[13px] text-muted">{note}</p>}
+        {lede && <p className="mt-6 text-sm font-medium text-ink">{lede}</p>}
+
+        <ul className="mt-4 divide-y divide-rule/8 border-t border-rule/8">
+          {features.map((feature) => (
+            <li key={feature} className="py-2.5 text-[15px] text-ink-2">{feature}</li>
+          ))}
+        </ul>
+
+        {cta && <div className="mt-6 sm:max-w-[15rem]">{cta}</div>}
+      </div>
+    </section>
   );
 }

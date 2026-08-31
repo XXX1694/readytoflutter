@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookmarkX, Bookmark, Brain, Target, Star, ArrowRight } from 'lucide-react';
+import { ArrowLeft, BookmarkX, Brain, Target } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import { useBookmarkIds } from '../lib/useBookmark';
 import { clearAllBookmarks } from '../lib/bookmarks';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
-import { Button, Skeleton } from '../ui/index';
+import { Button, Eyebrow, Skeleton } from '../ui/index';
 import QuestionCard from '../components/QuestionCard';
 import PlatformFilter from '../components/PlatformFilter';
 import { usePrefs } from '../store/prefs';
@@ -19,11 +19,11 @@ export default function BookmarksPage() {
   const { data: questions = [], isLoading } = useQuestions();
   const { data: topics = [] } = useTopics();
   const ids = useBookmarkIds();
-  const platform = usePrefs((s: any) => s.platform);
+  const platform = usePrefs((s) => s.platform);
 
   const bookmarked = useMemo(() => {
     const set = new Set(ids);
-    const own = questions.filter((q: any) => set.has(q.id));
+    const own = questions.filter((q) => set.has(q.id));
     return filterQuestionsByPlatform(own, topics, platform);
   }, [questions, topics, ids, platform]);
 
@@ -36,8 +36,8 @@ export default function BookmarksPage() {
           <Skeleton className="mb-1 h-9 w-2/3" />
           <Skeleton className="mb-6 h-3 w-1/3" />
           <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_: any, i: any) => (
-              <Skeleton key={i} className="h-20 rounded-md" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-lg" />
             ))}
           </div>
         </div>
@@ -54,20 +54,21 @@ export default function BookmarksPage() {
           onClick={() => navigate('/')}
           className="-ml-2 mb-5 text-muted hover:text-ink"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           {t.backToDashboard}
         </Button>
 
-        <header className="mb-6 flex flex-col gap-3 border-b border-rule/15 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-6 flex flex-col gap-4 border-b border-rule/12 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[rgb(var(--amber))]">
-              ★ {lang === 'ru' ? 'Избранное' : 'Bookmarks'}
-            </span>
-            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
-              {lang === 'ru' ? 'Tough ones' : 'Tough ones'}
+            <Eyebrow>{lang === 'ru' ? 'Закладки' : 'Bookmarks'}</Eyebrow>
+            {/* The RU branch used to render the English string too — both
+                arms of the ternary read 'Tough ones'. */}
+            <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
+              {lang === 'ru' ? 'Сложные вопросы' : 'Tough ones'}
             </h1>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted">
-              {bookmarked.length} {lang === 'ru' ? 'отмечено' : 'flagged'}
+            <p className="mt-2 text-[15px] text-ink-2">
+              <span className="num">{bookmarked.length}</span>{' '}
+              {lang === 'ru' ? 'отмечено' : 'flagged for another pass'}
             </p>
           </div>
           {bookmarked.length > 0 && (
@@ -76,23 +77,23 @@ export default function BookmarksPage() {
                 variant="brand"
                 size="sm"
                 onClick={() => {
-                  const ids = bookmarked.map((q: any) => q.id).join(',');
-                  navigate(`/study?ids=${ids}&label=${encodeURIComponent(lang === 'ru' ? 'Закладки' : 'Bookmarks')}`);
+                  const drillIds = bookmarked.map((q) => q.id).join(',');
+                  navigate(`/study?ids=${drillIds}&label=${encodeURIComponent(lang === 'ru' ? 'Закладки' : 'Bookmarks')}`);
                 }}
               >
-                <Brain className="h-3.5 w-3.5" />
+                <Brain className="h-3.5 w-3.5" aria-hidden />
                 {lang === 'ru' ? 'Повторить закладки' : 'Drill bookmarks'}
               </Button>
               <Button
-                variant="codex"
+                variant="outline"
                 size="sm"
                 onClick={() => {
-                  const ids = bookmarked.map((q: any) => q.id).join(',');
-                  navigate(`/mock?ids=${ids}`);
+                  const mockIds = bookmarked.map((q) => q.id).join(',');
+                  navigate(`/mock?ids=${mockIds}`);
                 }}
               >
-                <Target className="h-3.5 w-3.5" />
-                {lang === 'ru' ? 'Mock' : 'Mock'}
+                <Target className="h-3.5 w-3.5" aria-hidden />
+                Mock
               </Button>
               <Button
                 variant="ghost"
@@ -102,7 +103,7 @@ export default function BookmarksPage() {
                 }}
                 className="text-muted hover:text-coral"
               >
-                <BookmarkX className="h-3.5 w-3.5" />
+                <BookmarkX className="h-3.5 w-3.5" aria-hidden />
                 {lang === 'ru' ? 'Очистить' : 'Clear'}
               </Button>
             </div>
@@ -115,34 +116,24 @@ export default function BookmarksPage() {
         </div>
 
         {bookmarked.length === 0 ? (
-          <div className="relative mt-10 overflow-hidden rounded-3xl border border-rule/8 bg-paper-2 px-6 py-16 text-center sm:py-24">
-            {/* Aurora glow behind the empty card */}
-            <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-amber/15 via-brand/10 to-transparent blur-3xl" />
-            <span aria-hidden className="pointer-events-none absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-brand-sky/15 via-mint/8 to-transparent blur-3xl" />
-
-            <div className="relative mx-auto flex flex-col items-center gap-4">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber/20 to-amber/5 ring-1 ring-amber/30">
-                <Star className="h-6 w-6 text-[rgb(var(--amber))]" aria-hidden />
-              </span>
-            <div className="space-y-1">
-              <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
-                {lang === 'ru' ? 'Список «добить» пуст' : 'Your tough list is empty'}
+          <div className="codex-card mt-8 flex flex-col items-start gap-4 p-6 sm:items-center sm:p-10 sm:text-center">
+            <div className="space-y-2">
+              <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+                {lang === 'ru' ? 'Собери список на добивку' : 'Start a list worth coming back to'}
               </h2>
-              <p className="mx-auto max-w-sm text-sm text-ink-2">
+              <p className="max-w-sm text-[15px] leading-relaxed text-ink-2">
                 {lang === 'ru'
-                  ? 'Жми ★ на любой карточке вопроса — сюда соберётся всё, что хочешь добить перед собесом.'
-                  : 'Tap ★ on any question — anything you want to drill before the interview lands here.'}
+                  ? 'Открой тему и добавь в закладки вопросы, которые хочешь прогнать перед собесом — они соберутся здесь.'
+                  : 'Open a topic and bookmark the questions you want to run through before the interview. They collect here.'}
               </p>
             </div>
-              <Button variant="brand" size="md" onClick={() => navigate('/')}>
-                <ArrowRight className="h-4 w-4" />
-                {lang === 'ru' ? 'Перейти к темам' : 'Browse topics'}
-              </Button>
-            </div>
+            <Button variant="brand" size="md" onClick={() => navigate('/')}>
+              {lang === 'ru' ? 'Перейти к темам' : 'Browse topics'}
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            {bookmarked.map((q: any, i: any) => (
+            {bookmarked.map((q, i) => (
               <QuestionCard key={q.id} question={q} index={i} />
             ))}
           </div>

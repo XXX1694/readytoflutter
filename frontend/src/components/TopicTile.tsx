@@ -1,96 +1,71 @@
 import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Flame } from 'lucide-react';
-import { ProgressBar, TopicGlyph } from '../ui/index';
+import { TopicGlyph } from '../ui/index';
+import { useLang } from '../i18n/LangContext';
 import { cn } from '../lib/cn';
 
-const LEVEL_DOT = {
-  junior: 'bg-brand',
-  mid: 'bg-plum',
-  senior: 'bg-mint',
-};
+import type { Topic } from '../types/domain';
+import type { UICopy } from '../i18n/ui';
+import type { ContentHelpers } from '../i18n/content';
 
-function TopicTile({ topic, level, t, topicTitle, topicDesc, dueCount = 0 }: any) {
+export interface TopicTileProps {
+  topic: Topic;
+  t: UICopy;
+  topicTitle: ContentHelpers['topicTitle'];
+  topicDesc: ContentHelpers['topicDesc'];
+  /** SRS cards waiting in this topic. */
+  dueCount?: number;
+}
+
+/**
+ * One topic in the catalogue grid.
+ *
+ * Progress is a tally, not a bar: fifty progress bars in a grid is the shape
+ * of a monitoring console, and `7 / 12` is both smaller and more precise than
+ * a 4px sliver. A finished topic turns its count mint — the semantic "right" —
+ * and a topic with cards waiting gets the marker, because that is the one
+ * thing on the tile you can act on today.
+ */
+function TopicTile({ topic, t, topicTitle, topicDesc, dueCount = 0 }: TopicTileProps) {
   const navigate = useNavigate();
-  const pct = topic.question_count > 0
-    ? Math.round((topic.completed_count / topic.question_count) * 100)
-    : 0;
-  const completedAll = pct === 100;
+  const { lang } = useLang();
+  const total = topic.question_count || 0;
+  const done = topic.completed_count || 0;
+  const completedAll = total > 0 && done === total;
   const hasDue = dueCount > 0;
+  const dueLabel = lang === 'ru' ? 'к разбору' : 'due';
 
   return (
     <button
       type="button"
       onClick={() => navigate(`/topic/${topic.slug}`)}
-      aria-label={`${topicTitle(topic)} — ${topic.question_count}${hasDue ? ` · ${dueCount} due` : ''}`}
+      aria-label={`${topicTitle(topic)} — ${done}/${total} ${t.completedOf}${hasDue ? `, ${dueCount} ${dueLabel}` : ''}`}
       className={cn(
-        'group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-paper-2 p-5 text-left',
-        'shadow-[0_1px_2px_0_rgb(var(--shadow)/0.04),0_4px_16px_-4px_rgb(var(--shadow)/0.06)]',
-        // Was `transition-all` — narrowing the property list keeps the GPU
-        // composite layer cheap when 50+ tiles render at once.
-        'transition-[transform,box-shadow,border-color] duration-300 ease-out',
-        'hover:-translate-y-0.5 hover:shadow-[0_2px_4px_0_rgb(var(--shadow)/0.06),0_16px_40px_-8px_rgb(var(--shadow)/0.12)]',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
-        hasDue ? 'border-[rgb(var(--amber))]/30 hover:border-[rgb(var(--amber))]/50' : 'border-rule/8 hover:border-rule/20',
+        'codex-card flex flex-col gap-2.5 p-4 text-left',
+        hasDue && 'border-[rgb(var(--marker)/0.55)] hover:border-[rgb(var(--marker)/0.75)]',
       )}
     >
-      {/* Aurora wash that fades in on hover — gives the card "ambient lighting".
-          Desktop-only: tap on iOS Safari sticks :hover, so the wash would
-          stay painted over the card on mobile. Hide the layer outright there. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0 hidden bg-gradient-to-br from-brand/0 via-transparent to-brand-sky/0 opacity-0 transition-opacity duration-500 sm:block group-hover:opacity-100 group-hover:from-brand/[0.06] group-hover:to-brand-sky/[0.04]"
-      />
-
-      {/* Pending-review accent stripe — only when SRS has due cards here. */}
-      {hasDue && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[rgb(var(--amber))] to-transparent"
-        />
-      )}
-
-      <div className="relative flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <TopicGlyph topic={topic} size="md" />
-        <div className="flex items-center gap-1.5">
-          {hasDue && (
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-[rgb(var(--amber))]/12 px-2 py-0.5 font-mono text-[10px] uppercase tabular-nums tracking-wider text-[rgb(var(--amber))]">
-              <Flame className="h-2.5 w-2.5" aria-hidden />
-              {dueCount}
-            </span>
-          )}
-          <span className={cn('h-1.5 w-1.5 rounded-full', LEVEL_DOT[level])} aria-hidden />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-            {topic.question_count}
-            <span className="ml-0.5 text-muted-2">Q</span>
+        {hasDue && (
+          <span className="marker shrink-0 text-[13px] text-ink">
+            <span className="num">{dueCount}</span> {dueLabel}
           </span>
-        </div>
+        )}
       </div>
 
-      <h3 className="relative font-display text-[17px] font-semibold leading-tight tracking-tight text-ink line-clamp-2">
+      <h3 className="font-display text-[17px] font-semibold leading-tight text-ink line-clamp-2">
         {topicTitle(topic)}
       </h3>
-      <p className="relative text-[12.5px] leading-snug text-muted line-clamp-2">{topicDesc(topic)}</p>
+      <p className="text-[13px] leading-snug text-muted line-clamp-2">{topicDesc(topic)}</p>
 
-      <div className="relative mt-auto flex items-center gap-2 pt-1">
-        <ProgressBar
-          value={topic.completed_count || 0}
-          max={topic.question_count || 0}
-          size="xs"
-          tone={completedAll ? 'mint' : 'brand'}
-        />
-        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted">
-          {topic.completed_count || 0}/{topic.question_count || 0}
+      <div className="mt-auto flex items-baseline gap-1.5 pt-1">
+        <span className={cn('num text-[15px]', completedAll ? 'text-mint' : 'text-ink')}>
+          {done}
         </span>
+        <span className="num text-[13px] text-muted">/ {total}</span>
+        <span className="text-[13px] text-muted">{t.completedOf}</span>
       </div>
-
-      {/* Hover arrow — slides in from off-corner */}
-      {!hasDue && (
-        <ArrowUpRight
-          className="absolute right-4 top-4 h-4 w-4 -translate-y-1 translate-x-1 text-brand opacity-0 transition-[transform,opacity] duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100"
-          aria-hidden
-        />
-      )}
     </button>
   );
 }
