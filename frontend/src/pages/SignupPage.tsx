@@ -16,7 +16,9 @@ import {
 import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useSignupCopy, type SignupCopy } from '../i18n/signupPage';
+import { useRecoveryCopy } from '../i18n/ui';
 import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
+import { RecoveryCodePanel } from './ResetPasswordPage';
 
 const schema = z.object({
   name: z.string().trim().max(80).optional().or(z.literal('').transform((): undefined => undefined)),
@@ -43,8 +45,14 @@ export default function SignupPage() {
   // Set once the account exists and there is local progress worth importing —
   // its presence is what swaps the form out for the import step.
   const [pendingImport, setPendingImport] = useState<BulkProgressItem[] | null>(null);
+  // The recovery code, which the register response carries exactly once. It
+  // takes over the screen ahead of the import step: the account is already
+  // created, so the only thing that can still be lost here is the code.
+  const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState('');
 
   const T = useSignupCopy(lang);
+  const R = useRecoveryCopy(lang);
   const errLabel = (key: string | undefined): string | null =>
     (key ? T.errors[key as keyof SignupCopy['errors']] ?? T.errors.unknown_error : null);
 
@@ -69,17 +77,27 @@ export default function SignupPage() {
     // "the form was good and the server still said no" rather than typos.
     track('signup_start', { method: 'email', named: Boolean(parsed.data.name) });
     try {
-      const { user, token } = await authRegister(parsed.data.email, parsed.data.password, parsed.data.name || null);
+      const { user, token, recoveryCode } = await authRegister(
+        parsed.data.email,
+        parsed.data.password,
+        parsed.data.name || null,
+      );
       setSession(token, user);
       identify(String(user.id), { email: user.email });
       track('signup', { method: 'email' });
       qc.invalidateQueries();
       // Offer the optional import step only when this browser holds progress.
       const localItems = serializeLocalProgress(readLocalProgress());
-      if (localItems.length > 0) {
-        setPendingImport(localItems);
-      } else {
-        toast.success(isRu ? `Привет, ${user.name || user.email}` : `Welcome aboard, ${user.name || user.email}`);
+      const nextImport = localItems.length > 0 ? localItems : null;
+      setPendingImport(nextImport);
+      const welcome = isRu
+        ? `Привет, ${user.name || user.email}`
+        : `Welcome aboard, ${user.name || user.email}`;
+      setGreeting(welcome);
+      if (recoveryCode) {
+        setIssuedCode(recoveryCode);
+      } else if (!nextImport) {
+        toast.success(welcome);
         navigate('/', { replace: true });
       }
     } catch (err) {
@@ -114,6 +132,34 @@ export default function SignupPage() {
       navigate('/', { replace: true });
     }
   };
+
+  // Only reachable from the acknowledgement button on the code panel.
+  const finishRecovery = () => {
+    setIssuedCode(null);
+    if (pendingImport) return; // the import step renders next
+    toast.success(greeting);
+    navigate('/', { replace: true });
+  };
+
+  if (issuedCode) {
+    return (
+      <AuthShell>
+        <Eyebrow>{R.panelEyebrow}</Eyebrow>
+        <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
+          <span className="marker decoration-clone">{R.panelTitle}</span>
+        </h1>
+
+        <div className="mt-6">
+          <RecoveryCodePanel
+            code={issuedCode}
+            T={R}
+            ctaLabel={R.continue}
+            onAcknowledge={finishRecovery}
+          />
+        </div>
+      </AuthShell>
+    );
+  }
 
   if (pendingImport) {
     return (

@@ -9,6 +9,7 @@ import { FullPageLoader } from './ui/index';
 import { useAuth } from './store/auth';
 import { apiBaseUrl } from './api/api';
 import { prefetchIdle } from './lib/prefetch';
+import { reportState } from './lib/push';
 import { initAnalytics, pageview, identify } from './lib/analytics';
 import { LANDINGS } from './i18n/landings';
 import './store/prefs'; // side-effect: hydrate theme before paint
@@ -47,6 +48,7 @@ const CheatsheetPage = lazy(() => import('./pages/CheatsheetPage'));
 const RoundPage = lazy(() => import('./pages/RoundPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
@@ -71,6 +73,12 @@ export default function App() {
     // a page refresh / new tab without an extra login.
     const { user } = useAuth.getState();
     if (user?.id) identify(String(user.id), { email: user.email });
+    // Refresh the server's view of what is due. Catches someone who abandoned
+    // a session mid-way — the ratings are already in localStorage but the
+    // completion effect never ran — and keeps a rare studier from crossing the
+    // server's staleness cutoff and quietly losing their reminders. Self-guards
+    // on signed-out / no permission / no subscription and never throws.
+    void reportState();
   }, []);
 
   return (
@@ -226,6 +234,14 @@ export default function App() {
                   element={
                     <Suspense fallback={<FullPageLoader />}>
                       <SignupPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="reset"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <ResetPasswordPage />
                     </Suspense>
                   }
                 />

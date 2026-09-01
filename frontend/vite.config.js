@@ -206,6 +206,18 @@ export default defineConfig({
       },
     },
   },
+  // `vite preview` is the only local way to exercise the service worker —
+  // devOptions.enabled is false, so `npm run dev` has no worker at all — and
+  // without this it served the built app with no backend behind it, silently
+  // dropping into the anonymous static-data fallback. Mirrors the dev proxy.
+  preview: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

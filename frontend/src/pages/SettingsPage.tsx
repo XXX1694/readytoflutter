@@ -7,10 +7,14 @@ import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../store/auth';
 import {
   authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
+  authRegenerateRecoveryCode,
 } from '../api/api';
 import { useLang, type Lang } from '../i18n/LangContext';
+import { useRecoveryCopy, type RecoveryErrorKey } from '../i18n/ui';
 import { usePrefs, type Theme } from '../store/prefs';
 import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
+import PushReminders from '../components/PushReminders';
+import { RecoveryCodePanel } from './ResetPasswordPage';
 import { cn } from '../lib/cn';
 import type { User } from '../types/domain';
 
@@ -75,14 +79,20 @@ export default function SettingsPage() {
 
           <Tabs.Content value="preferences">
             <PreferencesSection T={T} />
+            {/* Renders nothing at all unless the browser supports push, the
+                server has VAPID keys, and the reader is signed in. Sits with
+                theme and language because a reminder is a preference, not a
+                credential. */}
+            <PushReminders lang={lang} />
           </Tabs.Content>
 
           <Tabs.Content value="profile">
             <ProfileSection user={user} token={token} T={T} />
           </Tabs.Content>
 
-          <Tabs.Content value="security">
+          <Tabs.Content value="security" className="space-y-6">
             <SecuritySection T={T} />
+            <RecoveryCodeSection T={T} user={user} token={token} />
           </Tabs.Content>
 
           <Tabs.Content value="account" className="space-y-6">
@@ -281,6 +291,85 @@ function SecuritySection({ T }: { T: Copy }) {
           {saving ? T.saving : T.changePassword}
         </Button>
       </form>
+    </Section>
+  );
+}
+
+// ── Security (recovery code) ───────────────────────────────────────────────
+// There is no reset email, so this code is the whole of account recovery.
+// Accounts made before the feature shipped have none — `has_recovery_code`
+// is what tells them so.
+function RecoveryCodeSection({ T, user, token }: { T: Copy; user: User; token: string }) {
+  const { lang } = useLang();
+  const R = useRecoveryCopy(lang);
+  const setSession = useAuth((s) => s.setSession);
+
+  const [password, setPassword] = useState('');
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<RecoveryErrorKey | null>(null);
+  // Present only between "generated" and "I have saved it".
+  const [issued, setIssued] = useState<string | null>(null);
+
+  const hasCode = user.has_recovery_code === 1;
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (working || !password) return;
+    setError(null);
+    setWorking(true);
+    try {
+      const { recoveryCode } = await authRegenerateRecoveryCode(password);
+      setIssued(recoveryCode);
+      setPassword('');
+      // The flag drives this section's own copy, so it has to move now
+      // rather than waiting for the next /auth/me.
+      setSession(token, { ...user, has_recovery_code: 1 });
+    } catch (err) {
+      const status = httpStatus(err);
+      setError(status === 401 ? 'wrong_password' : status === 429 ? 'rate_limited' : 'unknown_error');
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  return (
+    <Section title={R.settingsTitle} subtitle={R.settingsSubtitle}>
+      {issued ? (
+        <RecoveryCodePanel
+          code={issued}
+          T={R}
+          ctaLabel={R.done}
+          onAcknowledge={() => setIssued(null)}
+        />
+      ) : (
+        <form onSubmit={submit} className="space-y-5" noValidate>
+          <div>
+            <p className="text-sm font-medium text-ink">{hasCode ? R.statusHas : R.statusNone}</p>
+            <p className="mt-1 text-[13px] text-muted">
+              {hasCode ? R.replaceWarning : R.generateNote}
+            </p>
+          </div>
+
+          <PasswordField
+            label={R.currentPassword}
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+            showLabel={T.showPwd}
+            hideLabel={T.hidePwd}
+          />
+
+          {error && (
+            <p role="alert" className="rounded-md border border-coral/30 bg-coral/8 px-3 py-2 text-[13px] text-coral">
+              {R.errors[error]}
+            </p>
+          )}
+
+          <Button type="submit" variant="outline" disabled={working || !password}>
+            {working ? R.generating : hasCode ? R.replaceCta : R.generateCta}
+          </Button>
+        </form>
+      )}
     </Section>
   );
 }

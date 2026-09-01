@@ -305,3 +305,146 @@ export const UI = {
 export type UICopy = typeof UI.en;
 
 export const useT = (lang: 'en' | 'ru'): UICopy => (UI[lang] || UI.en) as UICopy;
+
+// ── Account recovery ────────────────────────────────────────────────────────
+// There is no email provider, so "forgot password" is a single-use recovery
+// code. The same words appear on three screens — signup, /reset and Settings →
+// Security — so they live in one dictionary rather than three page dicts.
+
+const RECOVERY_EN = {
+  // The "save this code" panel. Shared verbatim by all three call sites,
+  // because the promise it makes (shown once, never again) is the same one.
+  panelEyebrow: 'Recovery code',
+  panelTitle: 'Save this code',
+  panelBody:
+    'This code is the only way back into your account if you forget your password. '
+    + 'It is shown once and cannot be shown again — the server keeps only a hash of it. '
+    + 'Put it somewhere you will still have in a year: a password manager, or paper.',
+  copy: 'Copy code',
+  copied: 'Copied',
+  ack: 'I have saved this code',
+  panelFooter: 'If you lose it, sign in and generate a new one under Settings → Security.',
+  continue: 'Continue',
+  toSignIn: 'Go to sign in',
+  done: 'Done',
+
+  // LoginPage — the one quiet way into the reset flow.
+  forgotLead: 'Forgot your password?',
+  forgotLink: 'Use your recovery code',
+
+  // ResetPasswordPage
+  resetEyebrow: 'Account recovery',
+  resetTitle: 'Reset your password',
+  resetSubtitle:
+    'Enter the recovery code you saved when you created the account. '
+    + 'You set a new password here, then sign in with it.',
+  resetEmail: 'Email',
+  resetCode: 'Recovery code',
+  resetCodePh: 'XXXXX-XXXXX-XXXXX-XXXXX',
+  resetCodeHint: 'Case, spaces and dashes do not matter. Paste it however you saved it.',
+  resetNewPassword: 'New password',
+  resetNewPasswordHint: 'At least 8 characters',
+  showPwd: 'Show password',
+  hidePwd: 'Hide password',
+  resetSubmit: 'Set new password',
+  resetSubmitting: 'Setting password…',
+  resetBack: 'Back to sign in',
+  resetNoCode: 'No code saved? An account without one cannot be recovered — sign in and generate one under Settings → Security.',
+  resetDoneEyebrow: 'Password changed',
+  resetDoneTitle: 'Your new password is set',
+  resetDoneBody: 'The code you just used is spent. Here is its replacement — save this one the same way.',
+
+  // SettingsPage → Security
+  settingsTitle: 'Recovery code',
+  settingsSubtitle: 'The way back into your account if you forget your password. There is no reset email.',
+  statusHas: 'This account has a recovery code.',
+  statusNone: 'This account has no recovery code yet.',
+  generateNote: 'Generate one now and save it. Without a code, a forgotten password locks you out for good.',
+  replaceWarning: 'Generating a new code invalidates the current one straight away. Do this if you no longer have the old one.',
+  currentPassword: 'Current password',
+  generateCta: 'Generate code',
+  replaceCta: 'Replace code',
+  generating: 'Generating…',
+
+  errors: {
+    invalid_email: 'That email address is not valid. Check the spelling.',
+    code_required: 'Enter your recovery code.',
+    password_too_short: 'Use at least 8 characters.',
+    // The server answers a wrong code and an unknown address identically, on
+    // purpose. Saying anything sharper here would leak whether an account
+    // exists, so this is the server's own sentence and nothing more.
+    invalid: 'That email and recovery code do not match.',
+    password_equals_email: 'Your password cannot be your email address. Pick something else.',
+    wrong_password: 'That current password is wrong. Try again.',
+    rate_limited: 'Too many attempts. Try again in a few minutes.',
+    unknown_error: 'Something went wrong. Try again in a moment.',
+  },
+};
+
+export type RecoveryCopy = typeof RECOVERY_EN;
+export type RecoveryErrorKey = keyof RecoveryCopy['errors'];
+
+const RECOVERY_RU: RecoveryCopy = {
+  panelEyebrow: 'Код восстановления',
+  panelTitle: 'Сохрани этот код',
+  panelBody:
+    'Этот код — единственный способ вернуться в аккаунт, если забудешь пароль. '
+    + 'Он показывается один раз и повторно показан не будет: на сервере остаётся только его хеш. '
+    + 'Положи его туда, где он будет и через год: в менеджер паролей или на бумагу.',
+  copy: 'Скопировать код',
+  copied: 'Скопировано',
+  ack: 'Я сохранил этот код',
+  panelFooter: 'Если потеряешь — войди в аккаунт и создай новый в разделе «Настройки → Безопасность».',
+  continue: 'Продолжить',
+  toSignIn: 'Перейти ко входу',
+  done: 'Готово',
+
+  forgotLead: 'Забыл пароль?',
+  forgotLink: 'Войти по коду восстановления',
+
+  resetEyebrow: 'Восстановление доступа',
+  resetTitle: 'Сброс пароля',
+  resetSubtitle:
+    'Введи код восстановления, который сохранил при регистрации. '
+    + 'Здесь задашь новый пароль, потом войдёшь с ним.',
+  resetEmail: 'Email',
+  resetCode: 'Код восстановления',
+  resetCodePh: 'XXXXX-XXXXX-XXXXX-XXXXX',
+  resetCodeHint: 'Регистр, пробелы и дефисы не важны. Вставь так, как сохранил.',
+  resetNewPassword: 'Новый пароль',
+  resetNewPasswordHint: 'Минимум 8 символов',
+  showPwd: 'Показать пароль',
+  hidePwd: 'Скрыть пароль',
+  resetSubmit: 'Задать новый пароль',
+  resetSubmitting: 'Сохраняю пароль…',
+  resetBack: 'Назад ко входу',
+  resetNoCode: 'Кода нет? Аккаунт без кода восстановить нельзя — войди и создай код в разделе «Настройки → Безопасность».',
+  resetDoneEyebrow: 'Пароль изменён',
+  resetDoneTitle: 'Новый пароль сохранён',
+  resetDoneBody: 'Код, который ты только что ввёл, использован. Вот его замена — сохрани её так же.',
+
+  settingsTitle: 'Код восстановления',
+  settingsSubtitle: 'Способ вернуться в аккаунт, если забудешь пароль. Письма для сброса тут нет.',
+  statusHas: 'У этого аккаунта есть код восстановления.',
+  statusNone: 'У этого аккаунта пока нет кода восстановления.',
+  generateNote: 'Создай код и сохрани его. Без кода забытый пароль закроет доступ навсегда.',
+  replaceWarning: 'Новый код сразу отменяет текущий. Делай это, если старого кода у тебя больше нет.',
+  currentPassword: 'Текущий пароль',
+  generateCta: 'Создать код',
+  replaceCta: 'Заменить код',
+  generating: 'Создаю…',
+
+  errors: {
+    invalid_email: 'Некорректный email. Проверь написание.',
+    code_required: 'Введи код восстановления.',
+    password_too_short: 'Нужно минимум 8 символов.',
+    invalid: 'Email и код восстановления не совпадают.',
+    password_equals_email: 'Пароль не может совпадать с email. Придумай другой.',
+    wrong_password: 'Текущий пароль неверный. Попробуй ещё раз.',
+    rate_limited: 'Слишком много попыток. Попробуй через несколько минут.',
+    unknown_error: 'Что-то пошло не так. Попробуй ещё раз.',
+  },
+};
+
+export const useRecoveryCopy = (lang: 'en' | 'ru'): RecoveryCopy =>
+  (lang === 'ru' ? RECOVERY_RU : RECOVERY_EN);

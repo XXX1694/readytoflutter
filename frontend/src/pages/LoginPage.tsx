@@ -15,6 +15,7 @@ import {
 import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useLoginCopy, type LoginCopy } from '../i18n/loginPage';
+import { useRecoveryCopy } from '../i18n/ui';
 import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
 
 const schema = z.object({
@@ -31,7 +32,7 @@ type FormErrors = Partial<Record<FieldName | 'form', string>>;
 function safeRedirect(target: unknown): string {
   if (typeof target !== 'string') return '/';
   if (!target.startsWith('/') || target.startsWith('//')) return '/';
-  if (/^\/(login|signup)(\/|$)/.test(target)) return '/';
+  if (/^\/(login|signup|reset)(\/|$)/.test(target)) return '/';
   return target;
 }
 
@@ -50,6 +51,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const T = useLoginCopy(lang);
+  const R = useRecoveryCopy(lang);
   const errLabel = (key: string | undefined): string | null =>
     (key ? T.errors[key as keyof LoginCopy['errors']] ?? T.errors.unknown_error : null);
 
@@ -163,6 +165,13 @@ export default function LoginPage() {
             {submitting ? T.submitting : T.submit}
           </Button>
         </form>
+
+        <p className="mt-4 text-[13px] text-muted">
+          {R.forgotLead}{' '}
+          <Link to="/reset" className="text-brand underline-offset-4 hover:underline">
+            {R.forgotLink}
+          </Link>
+        </p>
 
         <p className="mt-8 border-t border-rule/12 pt-5 text-sm text-muted">
           {T.noAccount}{' '}
