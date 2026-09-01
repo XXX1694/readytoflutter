@@ -13,7 +13,11 @@ const EN = {
   eyebrow: 'Pricing',
   back: 'Back to home',
   title: 'Pay if it pays you back.',
-  subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading and deeper analytics — the part that earns its keep when interview week is three days out.',
+  subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading — the part that earns its keep when interview week is three days out.',
+  // Shown instead of the above while Pro is withdrawn.
+  titleFree: 'All of it, free.',
+  subtitleFree: 'There is no paid plan at the moment. Every topic, every question, spaced repetition, mock interviews and the cheatsheets are yours for nothing, with no account required.',
+  aiNote: 'AI answer-grading is capped per day. That is a cost limit, not a paywall — the grading runs against a paid model and the cap keeps it affordable to leave switched on for everyone.',
   free: 'Free',
   pro: 'Pro',
   perMonth: 'per month',
@@ -27,18 +31,20 @@ const EN = {
     '10 AI-graded answers per day',
   ],
   proLede: 'Everything in free, plus',
+  // Only what actually exists. This list previously advertised deeper stats
+  // and early access to question packs; neither was ever built, and StatsPage
+  // has no tier check at all. Follow-up questions moved out because the AI
+  // grader returns one to everybody.
   proFeatures: [
-    'Unlimited AI grading, with follow-up questions',
+    'Unlimited AI grading',
     'Priority replies when you email us',
-    'Deeper stats: weak-topic radar and mastery curve',
-    'Early access to new question packs',
   ],
   ctaFreeAnon: 'Start free',
   ctaProUpgrade: 'Upgrade to Pro',
   ctaProActive: 'Manage subscription',
   ctaProSoon: 'Not available yet',
   ctaProSignup: 'Create an account',
-  note: 'Pro covers one person. For a team plan, ',
+  note: 'Questions, or want a team plan? ',
   noteLink: 'get in touch',
   errCheckoutOff: 'Checkout is not switched on yet. Try again later.',
   errCheckout: 'Could not open checkout. Try again in a moment.',
@@ -51,7 +57,10 @@ const RU: Copy = {
   eyebrow: 'Цены',
   back: 'На главную',
   title: 'Платишь, если окупается.',
-  subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку и глубокую статистику — то, что окупается, когда интервью через три дня.',
+  subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку — то, что окупается, когда интервью через три дня.',
+  titleFree: 'Всё бесплатно.',
+  subtitleFree: 'Платного тарифа сейчас нет. Все темы и вопросы, интервальное повторение, mock-интервью и шпаргалки доступны бесплатно и без аккаунта.',
+  aiNote: 'У AI-проверки ответов есть дневной лимит. Это ограничение по стоимости, а не пейволл: проверка идёт через платную модель, и лимит позволяет держать её включённой для всех.',
   free: 'Бесплатно',
   pro: 'Pro',
   perMonth: 'в месяц',
@@ -66,17 +75,15 @@ const RU: Copy = {
   ],
   proLede: 'Всё из Free, плюс',
   proFeatures: [
-    'Безлимитная AI-проверка с уточняющими вопросами',
+    'Безлимитная AI-проверка',
     'Приоритетный ответ на письма',
-    'Глубокая статистика: радар слабых тем и кривая освоения',
-    'Ранний доступ к новым пакам вопросов',
   ],
   ctaFreeAnon: 'Начать бесплатно',
   ctaProUpgrade: 'Подключить Pro',
   ctaProActive: 'Управлять подпиской',
   ctaProSoon: 'Пока недоступно',
   ctaProSignup: 'Создать аккаунт',
-  note: 'Pro рассчитан на одного человека. Для команды ',
+  note: 'Вопросы или нужен командный тариф? ',
   noteLink: 'напиши нам',
   errCheckoutOff: 'Оплата ещё не подключена. Попробуй позже.',
   errCheckout: 'Не удалось открыть оплату. Попробуй ещё раз.',
@@ -165,6 +172,11 @@ export default function PricingPage() {
     );
   }
 
+  // Pro is withdrawn until it has something to sell (BILLING_ENABLED on the
+  // server). An existing subscriber still sees their plan and the portal —
+  // hiding it would leave them no way to cancel.
+  const showPro = billingEnabled || isPro;
+
   return (
     <div className="bg-page min-h-full px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
@@ -179,18 +191,20 @@ export default function PricingPage() {
         <header className="mb-12">
           <Eyebrow>{T.eyebrow}</Eyebrow>
           <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-5xl">
-            {T.title}
+            {showPro ? T.title : T.titleFree}
           </h1>
           <p className="mt-4 max-w-2xl font-serif text-[17px] leading-relaxed text-ink-2">
-            {T.subtitle}
+            {showPro ? T.subtitle : T.subtitleFree}
           </p>
         </header>
 
         <div className="border-b border-rule/12">
+          {/* "per month" only earns its place beside a price it contrasts
+              with; with no Pro column it is boilerplate. */}
           <Plan
             name={T.free}
             price="$0"
-            period={T.perMonth}
+            period={showPro ? T.perMonth : ''}
             features={T.freeFeatures}
             currentLabel={token && !isPro ? T.currentPlan : null}
             cta={token ? null : (
@@ -199,18 +213,24 @@ export default function PricingPage() {
               </Link>
             )}
           />
-          <Plan
-            name={T.pro}
-            price={`$${PRICE_USD}`}
-            period={T.perMonth}
-            note={T.billed}
-            lede={T.proLede}
-            features={T.proFeatures}
-            currentLabel={isPro ? T.currentPlan : null}
-            marked
-            cta={proCta}
-          />
+          {showPro && (
+            <Plan
+              name={T.pro}
+              price={`$${PRICE_USD}`}
+              period={T.perMonth}
+              note={T.billed}
+              lede={T.proLede}
+              features={T.proFeatures}
+              currentLabel={isPro ? T.currentPlan : null}
+              marked
+              cta={proCta}
+            />
+          )}
         </div>
+
+        {!showPro && (
+          <p className="mt-8 max-w-2xl text-sm leading-relaxed text-muted">{T.aiNote}</p>
+        )}
 
         <p className="mt-8 text-sm text-muted">
           {T.note}

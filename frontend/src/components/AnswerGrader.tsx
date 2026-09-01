@@ -281,8 +281,13 @@ export default function AnswerGrader({ questionId, userAnswer, lang }: AnswerGra
 }
 
 /**
- * Shown when /api/ai/grade returns 402. Anonymous visitors are asked to sign
- * up; signed-in free users are pointed at Pro.
+ * Shown when /api/ai/grade returns 402.
+ *
+ * Pro is withdrawn (see BILLING_ENABLED), so this no longer offers an upgrade
+ * — the daily cap is a cost limit on a paid model, not a paywall, and saying
+ * otherwise would sell something that isn't for sale. A guest is still told
+ * that signing in raises the allowance, because that part is true. **If Pro
+ * comes back, this copy has to come back with it.**
  */
 function PaywallPanel({ info, lang }: { info: PaywallInfo; lang: Lang }) {
   const ru = lang === 'ru';
@@ -292,11 +297,11 @@ function PaywallPanel({ info, lang }: { info: PaywallInfo; lang: Lang }) {
     : (ru ? 'Дневной лимит Free исчерпан' : 'Free plan limit reached for today');
   const body = isAnon
     ? (ru
-        ? 'Зарегистрируйся — проверок в день станет больше. Pro снимает лимит совсем.'
-        : 'Sign up for a bigger daily allowance, or go Pro and the limit goes away.')
+        ? 'Зарегистрируйся — проверок в день станет больше. Остальное в приложении и так бесплатно.'
+        : 'Sign in for a bigger daily allowance. Everything else in the app is free either way.')
     : (ru
-        ? `Использовано ${info.used} из ${info.cap}. Pro — без лимита и с follow-up вопросами.`
-        : `${info.used} of ${info.cap} used. Pro is unlimited, with follow-up questions.`);
+        ? `Использовано ${info.used} из ${info.cap} за сегодня. Лимит обновится завтра.`
+        : `${info.used} of ${info.cap} used today. Your allowance resets tomorrow.`);
 
   return (
     <section className="mb-5 rounded-lg border border-amber/25 bg-amber/6 p-4 sm:p-5">
@@ -305,18 +310,16 @@ function PaywallPanel({ info, lang }: { info: PaywallInfo; lang: Lang }) {
           <p className="font-display text-[15px] font-medium text-ink">{title}</p>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{body}</p>
         </div>
-        {/* Without these, paywall_hit is a dead end: you learn people hit the
-            wall but never whether the wall sends anyone anywhere. */}
-        <div className="flex shrink-0 items-center gap-2">
-          {isAnon && (
+        {/* Signing up is the only thing this wall can honestly offer, and it
+            keeps paywall_hit from being a dead end — you still learn whether
+            hitting the cap converts anyone. */}
+        {isAnon && (
+          <div className="shrink-0">
             <Link to="/signup" onClick={() => track('upgrade_click', { from: 'paywall', cta: 'signup', tier: info.tier ?? null })}>
               <Button variant="outline" size="sm">{ru ? 'Зарегистрироваться' : 'Sign up'}</Button>
             </Link>
-          )}
-          <Link to="/pricing" onClick={() => track('upgrade_click', { from: 'paywall', cta: 'pricing', tier: info.tier ?? null })}>
-            <Button variant="brand" size="sm">{ru ? 'Открыть Pro' : 'See Pro'}</Button>
-          </Link>
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );
