@@ -115,28 +115,48 @@ export default function StudyPage() {
   const { current, revealed, total, draftRef } = session;
   const counts = useMemo(() => countOutcomes(session.outcomes), [session.outcomes]);
 
+  // What the queue was narrowed to, as a stable machine value. The on-screen
+  // `scopeText` is localized ("Bookmarks" / "Закладки") and would split one
+  // funnel across two labels, so it never goes into a payload.
+  const scopeKind = idsScope ? 'ids' : topicScope ? 'topic' : levelScope ? 'level' : 'today';
+
   // Session lifecycle analytics. Refs keep the calls idempotent across the
   // re-renders a single session goes through.
   const startedRef = useRef(false);
   const completedRef = useRef(false);
+  const startedAtRef = useRef(0);
   useEffect(() => {
     if (total > 0 && !startedRef.current) {
       startedRef.current = true;
       completedRef.current = false;
+      startedAtRef.current = Date.now();
       track('study_session_start', {
         count: total,
-        scope: hasScope ? scopeText : 'today',
+        scope: scopeKind,
+        topic: topicScope,
+        level: levelScope,
         recall: recallMode,
       });
     }
-  }, [total, hasScope, scopeText, recallMode]);
+  }, [total, scopeKind, topicScope, levelScope, recallMode]);
   useEffect(() => {
     if (session.finished && !completedRef.current) {
       completedRef.current = true;
       startedRef.current = false;
-      track('study_session_complete', { total, ...counts });
+      // Carries its own scope + duration so "how do sessions on topic X go?"
+      // is one query, not a join against study_session_start.
+      track('study_session_complete', {
+        total,
+        ...counts,
+        scope: scopeKind,
+        topic: topicScope,
+        recall: recallMode,
+        elapsed_sec: startedAtRef.current
+          ? Math.round((Date.now() - startedAtRef.current) / 1000)
+          : 0,
+      });
     }
-  }, [session.finished, total, counts]);
+  }, [session.finished, total, counts, scopeKind, topicScope, recallMode]);
 
   if (isLoading) return <FullPageLoader />;
 

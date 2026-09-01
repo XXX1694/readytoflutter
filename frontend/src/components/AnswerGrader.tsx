@@ -196,7 +196,7 @@ export default function AnswerGrader({ questionId, userAnswer, lang }: AnswerGra
     if (tooShort || state.status === 'loading') return;
     const reqId = ++reqIdRef.current;
     setState({ status: 'loading' });
-    track('ai_grade_used', { questionId, length: trimmed.length, lang });
+    track('ai_grade_used', { question_id: questionId, length: trimmed.length, lang });
     try {
       const data = await aiGradeAnswer({ questionId, userAnswer: trimmed, lang });
       if (reqId !== reqIdRef.current) return; // user moved on
@@ -207,7 +207,15 @@ export default function AnswerGrader({ questionId, userAnswer, lang }: AnswerGra
       if (status === 402 && body.code === 'paywall_required') {
         // Daily quota is up. Keep the details so the panel can offer the right
         // upgrade path instead of a generic error.
-        track('paywall_hit', { reason: body.reason, tier: body.tier });
+        // `used`/`cap` say *which* ceiling was hit and how big it was — without
+        // them the event can't tell an anon 3/day from a free 10/day.
+        track('paywall_hit', {
+          limit: 'ai_grade_daily',
+          reason: body.reason ?? null,
+          tier: body.tier ?? null,
+          used: body.used ?? null,
+          cap: body.cap ?? null,
+        });
         setState({ status: 'paywall', info: body });
         return;
       }
@@ -297,13 +305,15 @@ function PaywallPanel({ info, lang }: { info: PaywallInfo; lang: Lang }) {
           <p className="font-display text-[15px] font-medium text-ink">{title}</p>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{body}</p>
         </div>
+        {/* Without these, paywall_hit is a dead end: you learn people hit the
+            wall but never whether the wall sends anyone anywhere. */}
         <div className="flex shrink-0 items-center gap-2">
           {isAnon && (
-            <Link to="/signup">
+            <Link to="/signup" onClick={() => track('upgrade_click', { from: 'paywall', cta: 'signup', tier: info.tier ?? null })}>
               <Button variant="outline" size="sm">{ru ? 'Зарегистрироваться' : 'Sign up'}</Button>
             </Link>
           )}
-          <Link to="/pricing">
+          <Link to="/pricing" onClick={() => track('upgrade_click', { from: 'paywall', cta: 'pricing', tier: info.tier ?? null })}>
             <Button variant="brand" size="sm">{ru ? 'Открыть Pro' : 'See Pro'}</Button>
           </Link>
         </div>

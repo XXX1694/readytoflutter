@@ -7,6 +7,7 @@ import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { Button, Eyebrow } from '../ui/index';
+import { track } from '../lib/analytics';
 import type { PlatformKey } from '../types/domain';
 
 // One-time onboarding gate. Independent from the welcome tour gate so that
@@ -45,6 +46,9 @@ export default function StackPickerDialog() {
   };
 
   const choose = (key: PlatformKey) => {
+    // The first question the app asks, and the one that decides which half of
+    // the catalogue matters to this person. Nothing else reports the mix.
+    track('stack_selected', { stack: key, source: 'onboarding' });
     setPlatform(key);
     persist();
     setOpen(false);

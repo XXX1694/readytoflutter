@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Brain, Target, Printer, FileText, MessagesSquare } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTopic } from '../lib/queries';
@@ -13,14 +13,25 @@ import { Button, Pill, ProgressBar, Skeleton, TopicGlyph, levelTone } from '../u
 import { cn } from '../lib/cn';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
+import { track } from '../lib/analytics';
 import type { Question } from '../types/domain';
 import type { TopicFilter } from '../store/prefs';
 
 const FILTERS: TopicFilter[] = ['all', 'not_started', 'in_progress', 'completed'];
 
+/**
+ * Last `topic_opened` we sent, as history-entry + slug. Module scope on
+ * purpose: a per-mount ref cannot dedupe this, because a lazy route mounts
+ * twice under StrictMode and gets a fresh ref each time. Keyed on
+ * `location.key` so coming back to the same topic later is a new entry and
+ * counts as a new open, which is what it is.
+ */
+let lastOpened: string | null = null;
+
 export default function TopicPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
@@ -51,6 +62,22 @@ export default function TopicPage() {
   const [cursor, setCursor] = useState(0);
   const [openId, setOpenId] = useState<number | null>(null);
   const refs = useRef(new Map<number, HTMLElement>());
+
+  // Opening a topic is the step between "landed on the dashboard" and "started
+  // a session" — without it the funnel has nothing to explain a drop-off with.
+  useEffect(() => {
+    if (!topic) return;
+    const openKey = `${location.key}:${topic.slug}`;
+    if (lastOpened === openKey) return;
+    lastOpened = openKey;
+    track('topic_opened', {
+      slug: topic.slug,
+      level: topic.level,
+      platform: topicPlatform(topic),
+      questions: topic.questions?.length ?? 0,
+      completed: topic.questions?.filter((q) => q.status === 'completed').length ?? 0,
+    });
+  }, [topic, location.key]);
 
   // Redirect home if topic missing
   useEffect(() => {

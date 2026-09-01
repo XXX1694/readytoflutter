@@ -65,6 +65,9 @@ export default function SignupPage() {
     }
 
     setSubmitting(true);
+    // Fired after client-side validation passes, so signup_start → signup is
+    // "the form was good and the server still said no" rather than typos.
+    track('signup_start', { method: 'email', named: Boolean(parsed.data.name) });
     try {
       const { user, token } = await authRegister(parsed.data.email, parsed.data.password, parsed.data.name || null);
       setSession(token, user);

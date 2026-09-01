@@ -14,6 +14,7 @@ import PlatformFilter from '../components/PlatformFilter';
 import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet';
 import { usePrefs, type SearchFacets } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
+import { track } from '../lib/analytics';
 
 type FacetKey = keyof SearchFacets;
 
@@ -28,6 +29,14 @@ const FACETS: Record<FacetKey, string[]> = {
 const FACET_KEYS = Object.keys(FACETS) as FacetKey[];
 
 const NO_FACETS: SearchFacets = { level: null, difficulty: null, status: null };
+
+/**
+ * Last query we reported. Module scope rather than a ref because StrictMode
+ * remounts this route in dev and hands the remount a fresh ref, which would
+ * report the same search twice. Holding only the most recent query means a
+ * genuine re-search of an earlier term still counts.
+ */
+let lastSearch: string | null = null;
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -119,6 +128,18 @@ export default function SearchPage() {
       return true;
     });
   }, [query, facets, index, questions]);
+
+  // What people look for, and what came back empty. The zero-result queries
+  // are the content backlog — that is the whole reason this event exists.
+  // Keyed on the debounced `query` so it is one event per search, not one per
+  // keystroke, and not a re-fire every time a facet moves the count.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2 || lastSearch === q) return;
+    lastSearch = q;
+    track('search', { query: q.slice(0, 80), results: results.length, platform });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   const setFacet = (key: FacetKey, value: string): void =>
     setFacets((f) => ({ ...f, [key]: f[key] === value ? null : value }) as SearchFacets);

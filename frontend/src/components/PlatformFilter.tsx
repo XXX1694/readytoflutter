@@ -4,6 +4,8 @@ import { usePrefs } from '../store/prefs';
 import { PLATFORMS } from '../lib/platform';
 import { Eyebrow } from '../ui/index';
 import { cn } from '../lib/cn';
+import { track } from '../lib/analytics';
+import type { PlatformKey } from '../types/domain';
 
 export interface PlatformFilterProps {
   className?: string;
@@ -19,6 +21,13 @@ export default function PlatformFilter({ className, hideLabel = false }: Platfor
   const t = useT(lang);
   const platform = usePrefs((s) => s.platform);
   const setPlatform = usePrefs((s) => s.setPlatform);
+
+  // Same question as the onboarding picker, asked later — `source` keeps the
+  // two apart. Re-picking the active stack is a no-op, so it sends nothing.
+  const choose = (key: PlatformKey) => {
+    if (key !== platform) track('stack_selected', { stack: key, source: 'filter' });
+    setPlatform(key);
+  };
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
@@ -38,7 +47,7 @@ export default function PlatformFilter({ className, hideLabel = false }: Platfor
               key={p.key}
               type="button"
               aria-pressed={active}
-              onClick={() => setPlatform(p.key)}
+              onClick={() => choose(p.key)}
               className={cn(
                 'inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors',
                 active

@@ -17,6 +17,7 @@ import { cn } from '../lib/cn';
 import { useBookmark } from '../lib/useBookmark';
 import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts';
 import { extractHint } from '../lib/hint';
+import { track } from '../lib/analytics';
 import type { ProgressStatus, Question } from '../types/domain';
 
 const STATUS_META: Record<ProgressStatus, { icon: LucideIcon; accent: string }> = {
@@ -71,7 +72,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
   const t = useT(lang);
   const { questionText, answerText } = useContent(lang);
   const update = useUpdateProgress();
-  const [bookmarked, toggleBookmarked] = useBookmark(question.id);
+  const [bookmarked, toggleBookmark] = useBookmark(question.id);
   const recallMode = usePrefs((s) => s.recallMode);
   const reducedMotion = useReducedMotion();
 
@@ -98,13 +99,49 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
   const hintText = useMemo(() => extractHint(fullAnswer), [fullAnswer]);
   const hasHint = Boolean(hintText) && hintText.length < fullAnswer.trim().length - 4;
 
+  // Reading an answer is the thing this product is for, and on the browse
+  // surfaces (topic / search / bookmarks) nothing was measuring it. `recall`
+  // separates a deliberate reveal from simply opening a card, and `after_hint`
+  // says whether the hint ladder is doing any work.
+  const trackReveal = useCallback(
+    (afterHint: boolean, recall: boolean) => {
+      track('answer_revealed', {
+        question_id: question.id,
+        topic: effectiveTopicSlug ?? null,
+        difficulty: question.difficulty,
+        recall,
+        after_hint: afterHint,
+      });
+    },
+    [question.id, question.difficulty, effectiveTopicSlug],
+  );
+
   // The reveal is the product's one signature gesture, so it gets exactly one
   // motion: a citron marker wash lies over the answer and is pulled off to the
   // right, leaving clean ink behind. Skipped entirely under reduced motion.
   const showAnswer = useCallback(() => {
+    trackReveal(reveal === 'hint', true);
     setReveal('full');
     setSweeping(!reducedMotion);
-  }, [reducedMotion]);
+  }, [reducedMotion, reveal, trackReveal]);
+
+  // Outside recall mode, opening the card *is* the reveal — there is no second
+  // step to hang the event on.
+  const handleToggle = () => {
+    if (!open && !recallMode) trackReveal(false, false);
+    toggleOpen();
+  };
+
+  // A bookmark is the plainest "I'll come back to this" signal the app has —
+  // it feeds a whole page and a study scope, so what earns one is worth knowing.
+  const toggleBookmarked = () => {
+    const on = toggleBookmark();
+    track('bookmark_toggled', {
+      question_id: question.id,
+      topic: effectiveTopicSlug ?? null,
+      on,
+    });
+  };
 
   // Subscribe once to the TTS singleton so we can light up the button when
   // *this* card is the one currently being read.
@@ -162,7 +199,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
       {/* Header — clickable to toggle */}
       <button
         type="button"
-        onClick={toggleOpen}
+        onClick={handleToggle}
         aria-expanded={open}
         className="flex w-full items-start gap-3 p-4 text-left sm:gap-4 sm:p-5"
       >

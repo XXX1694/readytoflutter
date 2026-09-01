@@ -112,13 +112,15 @@ export default function PricingPage() {
 
   const startUpgrade = async () => {
     if (busy) return;
+    // Tracked before the auth branch: a signed-out click is intent too, and it
+    // used to be dropped because the event sat below this early return.
+    track('upgrade_click', { from: 'pricing', authed: Boolean(token) });
     if (!token) {
       navigate(`/signup?next=${encodeURIComponent('/pricing')}`);
       return;
     }
     setBusy(true);
     try {
-      track('upgrade_click', { from: 'pricing' });
       const { url } = await billingCheckout();
       if (url) window.location.href = url;
       else throw new Error('no url');
