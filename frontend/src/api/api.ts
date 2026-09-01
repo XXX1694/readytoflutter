@@ -398,6 +398,13 @@ export const resetProgress = (): Promise<{ success: boolean }> =>
 export interface AuthResponse {
   user: User;
   token: string;
+  /**
+   * Present only on the register response. This is the single moment the
+   * recovery code exists outside the user's own notes — the server keeps only
+   * a bcrypt hash of it — so the caller must make them save it before
+   * navigating away. It is never returned again.
+   */
+  recoveryCode?: string;
 }
 
 export const authRegister = (email: string, password: string, name: string | null): Promise<AuthResponse> =>
@@ -426,6 +433,102 @@ export const authChangeEmail = (
   newEmail: string,
 ): Promise<AuthResponse> =>
   api.put<AuthResponse>('/auth/email', { currentPassword, newEmail }).then((r) => r.data);
+
+// ── Push reminders ──────────────────────────────────────────────────────────
+// Spaced repetition only works if the learner comes back on the day a card is
+// due. The server cannot compute that — SM-2 state lives in this browser's
+// localStorage — so the client reports its own due snapshot and the server
+// schedules from it. See backend/push.js.
+
+export interface PushDevice {
+  id: number;
+  created_at: string;
+  last_seen_at: string | null;
+  last_notified_at: string | null;
+}
+
+export interface PushHealth {
+  enabled: boolean;
+  reason: string | null;
+  /** Required as `applicationServerKey`; without it the browser cannot subscribe. */
+  publicKey: string | null;
+  sendHourLocal: number;
+  quietHourLocal: number;
+  staleDays: number;
+  /** Only present for a signed-in caller. */
+  devices?: PushDevice[];
+}
+
+/** The browser's PushSubscription, narrowed to what the server stores. */
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+/**
+ * The client's view of what is due. `nextDueAt` is ISO 8601 — the SRS store
+ * keeps `dueAt` as epoch milliseconds, so convert with `new Date(ms).toISOString()`.
+ * It is what lets the job stay quiet until there is something to say.
+ */
+export interface PushStateReport {
+  dueCount: number;
+  nextDueAt?: string | null;
+  tzOffsetMinutes?: number;
+}
+
+export const pushHealth = (): Promise<PushHealth> =>
+  api.get<PushHealth>('/push/health').then((r) => r.data)
+    .catch(() => ({
+      enabled: false, reason: 'unreachable', publicKey: null,
+      sendHourLocal: 9, quietHourLocal: 22, staleDays: 30,
+    }));
+
+export const pushSubscribe = (
+  subscription: PushSubscriptionPayload,
+  state: PushStateReport,
+): Promise<{ ok: boolean; device: { id: number; created_at: string } }> =>
+  api.post('/push/subscribe', { subscription, ...state }).then((r) => r.data);
+
+/**
+ * A full snapshot, not a patch — omitting `nextDueAt` clears the stored value.
+ * Always send the complete picture.
+ */
+export const pushReportState = (
+  endpoint: string,
+  state: PushStateReport,
+): Promise<{ ok: boolean }> =>
+  api.post<{ ok: boolean }>('/push/state', { endpoint, ...state }).then((r) => r.data);
+
+export const pushUnsubscribe = (endpoint: string): Promise<{ ok: boolean; removed: boolean }> =>
+  api.post<{ ok: boolean; removed: boolean }>('/push/unsubscribe', { endpoint }).then((r) => r.data);
+
+export const pushSendTest = (): Promise<{ ok: boolean; sent: number; gone: number; failed: number }> =>
+  api.post('/push/test', {}).then((r) => r.data);
+
+// ── Account recovery ────────────────────────────────────────────────────────
+// There is no email provider, so "forgot password" is a single-use code. See
+// the block comment in backend/auth.js for the reasoning.
+
+/** Replaces the live code with a new one. Gated by the current password. */
+export const authRegenerateRecoveryCode = (
+  currentPassword: string,
+): Promise<{ recoveryCode: string }> =>
+  api.post<{ recoveryCode: string }>('/auth/recovery/regenerate', { currentPassword })
+    .then((r) => r.data);
+
+/**
+ * Sets a new password from a recovery code. Deliberately does NOT return a
+ * session — the caller sends the user to sign in. `recoveryCode` in the reply
+ * is the *replacement*: the one just used is spent, and this is the only time
+ * the new one is shown.
+ */
+export const authResetWithRecoveryCode = (
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<{ ok: boolean; recoveryCode: string }> =>
+  api.post<{ ok: boolean; recoveryCode: string }>('/auth/recovery/reset', { email, code, newPassword })
+    .then((r) => r.data);
 
 export const authDeleteAccount = (): Promise<{ ok: boolean }> =>
   api.delete<{ ok: boolean }>('/auth/me').then((r) => r.data);

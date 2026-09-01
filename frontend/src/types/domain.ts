@@ -61,6 +61,12 @@ export interface User {
   created_at: string;
   updated_at: string;
   is_admin: 0 | 1;
+  /**
+   * Whether the account has a live recovery code. Accounts created before the
+   * feature existed have none and Settings prompts them to make one. The flag
+   * itself is not a secret — it tells the owner nothing they don't know.
+   */
+  has_recovery_code?: 0 | 1;
   pro_tier: ProTier;
   pro_expires_at: string | null;
   // Stripe IDs are stripped from sanitizeUser server-side.
