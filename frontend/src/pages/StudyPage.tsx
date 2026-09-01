@@ -19,6 +19,7 @@ import { useQuestionSession, countOutcomes, type OutcomeCounts } from '../lib/us
 import { cn } from '../lib/cn';
 import { tapMedium } from '../lib/haptics';
 import { track } from '../lib/analytics';
+import { reportState } from '../lib/push';
 
 import type { Level, Question, Topic } from '../types/domain';
 
@@ -155,6 +156,14 @@ export default function StudyPage() {
           ? Math.round((Date.now() - startedAtRef.current) / 1000)
           : 0,
       });
+      // Finishing a session is the only moment the due snapshot actually
+      // changes, and the server schedules reminders from what we report — it
+      // cannot compute due dates itself, since SM-2 state lives in this
+      // browser. Deliberately not next to rateCard: that runs per card, and
+      // twenty snapshots a session would burn the server's rate limit.
+      // reportState() self-guards on signed-out / no permission / no
+      // subscription and never throws, so it needs no await or catch.
+      void reportState();
     }
   }, [session.finished, total, counts, scopeKind, topicScope, recallMode]);
 

@@ -12,6 +12,8 @@
  *   resetAll()            — wipes all SRS state
  *   pickDueQueue(items)   — given an array of questions returns a study queue:
  *                           overdue first, then fresh cards (never seen)
+ *   getDueSnapshot()      — { dueCount, nextDueAt } over the whole stored map,
+ *                           for the push-reminder state report
  */
 
 import type { CardState, Rating, Question } from '../types/domain.ts';
@@ -187,4 +189,39 @@ export function getSrsSummary<T extends Pick<Question, 'id'>>(
     }
   }
   return { due, overdue, learned, fresh, total: items.length };
+}
+
+export interface DueSnapshot {
+  /** Cards whose `dueAt` has passed — `due + overdue` in getSrsSummary's terms. */
+  dueCount: number;
+  /** Earliest `dueAt` still in the future, epoch ms. `null` when nothing is scheduled. */
+  nextDueAt: number | null;
+}
+
+/**
+ * What this browser owes, over the WHOLE stored card map rather than a pool of
+ * questions. Push reminders are the caller: `getSrsSummary` needs the question
+ * list, which is fetched asynchronously, and a snapshot taken before that
+ * resolves would report an empty queue — and the server treats a report as a
+ * full snapshot, so that would clear a perfectly good one. Reading localStorage
+ * directly can't produce a false empty.
+ *
+ * The tradeoff is the mirror image: a card left over from a question that has
+ * since left the catalogue still counts here, so the count can run slightly
+ * ahead of what the study queue can actually show.
+ *
+ * `dueAt <= 0` is the never-scheduled sentinel from `freshCard()`, not a card
+ * that came due in 1970 — it is skipped on both counts.
+ */
+export function getDueSnapshot(now: number = Date.now()): DueSnapshot {
+  const map = read();
+  let dueCount = 0;
+  let nextDueAt: number | null = null;
+  for (const s of Object.values(map)) {
+    const dueAt = s?.dueAt;
+    if (typeof dueAt !== 'number' || !Number.isFinite(dueAt) || dueAt <= 0) continue;
+    if (dueAt <= now) dueCount += 1;
+    else if (nextDueAt === null || dueAt < nextDueAt) nextDueAt = dueAt;
+  }
+  return { dueCount, nextDueAt };
 }

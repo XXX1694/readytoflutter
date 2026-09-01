@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getCardState,
   rateCard,
@@ -6,6 +6,7 @@ import {
   resetAll,
   pickDueQueue,
   getSrsSummary,
+  getDueSnapshot,
 } from './srs';
 
 describe('srs.getCardState', () => {
@@ -108,5 +109,59 @@ describe('srs.reset helpers', () => {
     resetAll();
     expect(getCardState(1).reps).toBe(0);
     expect(getCardState(2).reps).toBe(0);
+  });
+});
+
+describe('srs.getDueSnapshot', () => {
+  // The block above ends on resetAll(), but these assert exact counts over the
+  // WHOLE stored map rather than a pool, so leftovers from a reordered run
+  // would be invisible. Wipe explicitly.
+  beforeEach(() => resetAll());
+
+  it('reports nothing when no card has ever been rated', () => {
+    expect(getDueSnapshot()).toEqual({ dueCount: 0, nextDueAt: null });
+  });
+
+  it('counts every card whose dueAt has passed', () => {
+    const now = Date.UTC(2026, 2, 10);
+    rateCard(1, 'good', now - 3 * 24 * 60 * 60 * 1000); // due 2 days ago
+    rateCard(2, 'good', now - 25 * 60 * 60 * 1000);     // due an hour ago
+    rateCard(3, 'good', now);                            // due tomorrow
+    expect(getDueSnapshot(now).dueCount).toBe(2);
+  });
+
+  it('nextDueAt is the earliest card still in the future', () => {
+    const now = Date.UTC(2026, 2, 10);
+    const day = 24 * 60 * 60 * 1000;
+    rateCard(1, 'easy', now); // +3 days
+    rateCard(2, 'good', now); // +1 day  ← the earliest
+    const snap = getDueSnapshot(now);
+    expect(snap.dueCount).toBe(0);
+    expect(snap.nextDueAt).toBe(now + day);
+  });
+
+  it('nextDueAt is null when everything is already due', () => {
+    const now = Date.UTC(2026, 2, 10);
+    rateCard(1, 'good', now - 5 * 24 * 60 * 60 * 1000);
+    expect(getDueSnapshot(now)).toEqual({ dueCount: 1, nextDueAt: null });
+  });
+
+  it('ignores the never-scheduled sentinel rather than treating it as due', () => {
+    // dueAt 0 is what freshCard() returns; a stored 0 means "no schedule",
+    // not "came due in 1970".
+    localStorage.setItem(
+      'rtf:srs:v1',
+      JSON.stringify({ 9: { ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 } }),
+    );
+    expect(getDueSnapshot()).toEqual({ dueCount: 0, nextDueAt: null });
+  });
+
+  it('survives a corrupt entry without throwing', () => {
+    const now = Date.UTC(2026, 2, 10);
+    localStorage.setItem(
+      'rtf:srs:v1',
+      JSON.stringify({ 1: null, 2: { dueAt: 'soon' }, 3: { dueAt: now - 1 } }),
+    );
+    expect(getDueSnapshot(now)).toEqual({ dueCount: 1, nextDueAt: null });
   });
 });
