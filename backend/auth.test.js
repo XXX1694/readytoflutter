@@ -1,6 +1,7 @@
 'use strict';
 
-// Tests for backend/auth.js — the register / login / change-password routes.
+// Tests for backend/auth.js — the register / login / change-password routes
+// and the single-use account-recovery codes.
 //
 // These are the boundaries where a regression either locks a real user out or
 // lets someone else in, and neither shows up in the UI until it is too late.
@@ -29,6 +30,7 @@ process.env.JWT_SECRET = 'test-secret-for-auth-tests-only-not-a-real-secret';
 delete process.env.ADMIN_BOOTSTRAP_EMAIL;
 
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const db = require('./database');
 const auth = require('./auth');
 
@@ -83,7 +85,7 @@ const call = async (method, route, { body, token, ip } = {}) => {
 let emailSeq = 0;
 const uniqueEmail = () => `auth-${Date.now()}-${emailSeq++}@example.test`;
 
-// Register a user and return { email, password, token, user }.
+// Register a user and return { email, password, token, user, recoveryCode }.
 const register = async (overrides = {}) => {
   const email = overrides.email || uniqueEmail();
   const password = overrides.password || 'correct-horse-battery';
@@ -91,7 +93,13 @@ const register = async (overrides = {}) => {
     body: { email, password, name: overrides.name ?? null },
   });
   assert.equal(res.status, 201, `fixture registration failed: ${res.raw}`);
-  return { email, password, token: res.body.token, user: res.body.user };
+  return {
+    email,
+    password,
+    token: res.body.token,
+    user: res.body.user,
+    recoveryCode: res.body.recoveryCode,
+  };
 };
 
 // ── Register validation ──────────────────────────────────────────────────────
@@ -327,6 +335,321 @@ test('a new password must clear the same strength bar as registration', async ()
 
   const stillWorks = await call('POST', '/api/auth/login', { body: { email, password } });
   assert.equal(stillWorks.status, 200, 'no rejected change may have been partially applied');
+});
+
+// ── Account recovery ─────────────────────────────────────────────────────────
+//
+// There is no email provider, so "forgot password" is a single-use code handed
+// out once at registration — the 2FA-backup-code model. Two things have to hold
+// at the same time: the code must be usable by a human reading it off paper,
+// and it must never turn the reset form into an "is this address registered?"
+// oracle. Every test below names the failure it prevents.
+
+// Crockford base32: four groups of five, and no I, L, O or U anywhere.
+const RECOVERY_CODE_RE = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{5}(?:-[0-9ABCDEFGHJKMNPQRSTVWXYZ]{5}){3}$/;
+
+// The one message every reset failure must return, verbatim.
+const RESET_FAILURE = 'That email and recovery code do not match.';
+
+// A syntactically perfect code that no account was ever issued. Collides with a
+// real one at 2^-100, which is the point of the 100-bit code.
+const WRONG_CODE = 'ABCDE-FGHJK-MNPQR-STVWX';
+
+const resetPassword = (body) => call('POST', '/api/auth/recovery/reset', { body });
+const loginAs = (email, password) => call('POST', '/api/auth/login', { body: { email, password } });
+
+test('register issues a recovery code in the documented shape and alphabet', async () => {
+  // A generator that drifts — wrong length, or an alphabet that lets I/L/O/U
+  // back in — mints codes users mistype and can then never redeem.
+  const res = await call('POST', '/api/auth/register', {
+    body: { email: uniqueEmail(), password: 'correct-horse-battery', name: null },
+  });
+
+  assert.equal(res.status, 201);
+  assert.match(res.body.recoveryCode, RECOVERY_CODE_RE);
+  assert.equal(res.body.recoveryCode.replace(/-/g, '').length, 20, '20 chars x 5 bits = 100 bits');
+  assert.doesNotMatch(res.body.recoveryCode, /[ILOU]/, 'Crockford base32 omits I, L, O and U');
+});
+
+test('the recovery code is unique per account, not a constant', async () => {
+  // A stubbed or seeded generator would hand every account the same key.
+  const a = await register();
+  const b = await register();
+
+  assert.notEqual(a.recoveryCode, b.recoveryCode);
+});
+
+test('register advertises the recovery code without ever leaking its hash', async () => {
+  // has_recovery_code tells the owner only what they already know; the bcrypt
+  // hash is a second password and must never cross the wire.
+  const res = await call('POST', '/api/auth/register', {
+    body: { email: uniqueEmail(), password: 'correct-horse-battery', name: null },
+  });
+
+  assert.equal(res.status, 201);
+  assert.equal(res.body.user.has_recovery_code, 1);
+  assert.equal(res.body.user.recovery_code_hash, undefined);
+  assert.equal(res.body.user.recovery_code_set_at, undefined);
+  assert.ok(!res.raw.includes('recovery_code_hash'), `hash leaked in register body: ${res.raw}`);
+
+  const me = await call('GET', '/api/auth/me', { token: res.body.token });
+  assert.equal(me.body.user.has_recovery_code, 1);
+  assert.ok(!me.raw.includes('recovery_code_hash'), `hash leaked in /auth/me: ${me.raw}`);
+});
+
+test('redeeming a recovery code actually replaces the password', async () => {
+  // {ok: true} on its own proves nothing — the point of the flow is that the
+  // old password stops working and the chosen one starts.
+  const { email, password, recoveryCode } = await register();
+  const newPassword = 'recovered-into-a-new-password';
+
+  const res = await resetPassword({ email, code: recoveryCode, newPassword });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.ok, true);
+
+  assert.equal((await loginAs(email, password)).status, 401, 'the replaced password must stop working');
+  assert.equal((await loginAs(email, newPassword)).status, 200);
+});
+
+test('a reset does not sign the user in', async () => {
+  // Holding a code proves you can set a password, not that you are already
+  // logged in — a code that minted a session would be a bearer credential.
+  const { email, recoveryCode } = await register();
+
+  const res = await resetPassword({ email, code: recoveryCode, newPassword: 'another-fresh-password' });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.token, undefined);
+  assert.equal(res.body.user, undefined);
+});
+
+test('a spent recovery code cannot be replayed', async () => {
+  // Anyone who saw the code once — a screenshot, a shoulder — would otherwise
+  // hold a permanent way back into the account.
+  const { email, recoveryCode } = await register();
+  const firstPassword = 'first-recovered-password';
+
+  assert.equal((await resetPassword({ email, code: recoveryCode, newPassword: firstPassword })).status, 200);
+
+  const replay = await resetPassword({ email, code: recoveryCode, newPassword: 'attacker-chosen-password' });
+  assert.equal(replay.status, 401);
+  assert.equal(replay.body.error, RESET_FAILURE);
+
+  assert.equal((await loginAs(email, firstPassword)).status, 200, 'the replay must not have changed anything');
+});
+
+test('the replacement code handed back by a reset is itself redeemable', async () => {
+  // Burning the code without issuing a live replacement would leave the
+  // account with no way back after a single recovery.
+  const { email, recoveryCode } = await register();
+
+  const first = await resetPassword({ email, code: recoveryCode, newPassword: 'first-recovered-password' });
+  assert.equal(first.status, 200);
+  assert.match(first.body.recoveryCode, RECOVERY_CODE_RE);
+  assert.notEqual(first.body.recoveryCode, recoveryCode);
+
+  const second = await resetPassword({
+    email,
+    code: first.body.recoveryCode,
+    newPassword: 'second-recovered-password',
+  });
+  assert.equal(second.status, 200);
+  assert.equal((await loginAs(email, 'second-recovered-password')).status, 200);
+});
+
+test('a code typed back in lower case with spaces instead of dashes still redeems', async () => {
+  // This is how it comes back off a sticky note. Case-sensitive or
+  // dash-sensitive matching locks out the users who did everything right.
+  const { email, recoveryCode } = await register();
+  const typed = `  ${recoveryCode.replace(/-/g, '  ').toLowerCase()}  `;
+
+  assert.equal((await resetPassword({ email, code: typed, newPassword: 'typed-it-back-by-hand' })).status, 200);
+  assert.equal((await loginAs(email, 'typed-it-back-by-hand')).status, 200);
+});
+
+test('the O/0 and I/L/1 glyph confusions are folded away before comparison', async () => {
+  // Planted rather than generated: the alphabet deliberately never emits I, L
+  // or O, so installing a known hash is the only way to exercise every fold in
+  // one code. The stored value is a hash of the *normalised* code, exactly as
+  // issueRecoveryCode writes it.
+  const { email } = await register();
+  const user = db.getUserByEmail(email);
+  db.setRecoveryCode(user.id, bcrypt.hashSync('0110123456ABCDEFGHJK', 10));
+
+  // Written out by a human: O for 0, I and L (both cases) for 1, spaces for
+  // dashes, and the letters in lower case.
+  const typed = 'oIlOL 23456 abcde fghjk';
+
+  assert.equal((await resetPassword({ email, code: typed, newPassword: 'read-off-a-sticky-note' })).status, 200);
+  assert.equal((await loginAs(email, 'read-off-a-sticky-note')).status, 200);
+});
+
+test('an unknown address and a wrong code are indistinguishable from outside', async () => {
+  // Different wording, or a different status, turns the reset form into an
+  // account-enumeration oracle for the whole user base.
+  //
+  // The route also compares against a dummy hash when there is no user, so the
+  // two paths should cost the same. We assert shape, not timing: a wall-clock
+  // bound would be flaky on a loaded CI box. See the note in the report — the
+  // dummy hash is currently malformed, so the timing equalisation does not in
+  // fact hold, and asserting it here would only pin the defect in place.
+  const { email } = await register();
+
+  const unknown = await resetPassword({
+    email: uniqueEmail(),
+    code: WRONG_CODE,
+    newPassword: 'some-new-password',
+  });
+  const wrongCode = await resetPassword({ email, code: WRONG_CODE, newPassword: 'some-new-password' });
+
+  assert.equal(unknown.status, 401);
+  assert.equal(wrongCode.status, unknown.status);
+  assert.equal(unknown.raw, wrongCode.raw, 'the body must not distinguish the two failures');
+  assert.equal(unknown.body.error, RESET_FAILURE);
+});
+
+test('a wrong code changes nothing and does not burn the real one', async () => {
+  const { email, password, recoveryCode } = await register();
+
+  assert.equal((await resetPassword({ email, code: WRONG_CODE, newPassword: 'attacker-chosen-password' })).status, 401);
+
+  assert.equal((await loginAs(email, password)).status, 200, 'the password must be untouched');
+  assert.equal((await loginAs(email, 'attacker-chosen-password')).status, 401);
+  assert.equal(
+    (await resetPassword({ email, code: recoveryCode, newPassword: 'the-owner-recovers-later' })).status,
+    200,
+    'a failed guess must not invalidate the live code',
+  );
+});
+
+test('a reset password must clear the same bar as registration', async () => {
+  // Recovery is the one path where the password is chosen without proving the
+  // old one; if it skipped passwordSchema the account could be downgraded to
+  // eight spaces by anyone holding the code.
+  const { email, password, recoveryCode } = await register();
+
+  const short = await resetPassword({ email, code: recoveryCode, newPassword: 'short7!' });
+  assert.equal(short.status, 400);
+  assert.match(short.body.error, /at least 8 characters/i);
+
+  const blank = await resetPassword({ email, code: recoveryCode, newPassword: '            ' });
+  assert.equal(blank.status, 400);
+  assert.match(blank.body.error, /at least 8 characters/i);
+
+  const asEmail = await resetPassword({ email, code: recoveryCode, newPassword: email });
+  assert.equal(asEmail.status, 400);
+  assert.match(asEmail.body.error, /cannot equal email/i);
+
+  assert.equal((await loginAs(email, password)).status, 200, 'no rejected reset may be partially applied');
+  assert.equal(
+    (await resetPassword({ email, code: recoveryCode, newPassword: 'finally-a-good-password' })).status,
+    200,
+    'a rejected password must not have consumed the code',
+  );
+});
+
+test('regenerating a recovery code requires a session', async () => {
+  const { email, recoveryCode } = await register();
+
+  const res = await call('POST', '/api/auth/recovery/regenerate', {
+    body: { currentPassword: 'correct-horse-battery' },
+  });
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.recoveryCode, undefined);
+  assert.equal(
+    (await resetPassword({ email, code: recoveryCode, newPassword: 'the-owners-code-survived' })).status,
+    200,
+    'an anonymous regenerate must not rotate anything',
+  );
+});
+
+test('regenerating a recovery code requires the current password', async () => {
+  // Otherwise a borrowed session quietly mints itself a permanent way back in,
+  // long after the token expires.
+  const { email, token, recoveryCode } = await register();
+
+  const res = await call('POST', '/api/auth/recovery/regenerate', {
+    token,
+    body: { currentPassword: 'not-my-password' },
+  });
+
+  assert.equal(res.status, 401);
+  assert.match(res.body.error, /current password is incorrect/i);
+  assert.equal(res.body.recoveryCode, undefined);
+  assert.equal(
+    (await resetPassword({ email, code: recoveryCode, newPassword: 'the-old-code-survived' })).status,
+    200,
+    'a refused regenerate must not invalidate the live code',
+  );
+});
+
+test('regenerating invalidates the previous code and issues a working replacement', async () => {
+  // The reason to regenerate is that the old code leaked; if it kept working
+  // the button would be theatre.
+  const { email, password, token, recoveryCode } = await register();
+
+  const regen = await call('POST', '/api/auth/recovery/regenerate', {
+    token,
+    body: { currentPassword: password },
+  });
+  assert.equal(regen.status, 200);
+  assert.match(regen.body.recoveryCode, RECOVERY_CODE_RE);
+  assert.notEqual(regen.body.recoveryCode, recoveryCode);
+  assert.ok(!regen.raw.includes('recovery_code_hash'), `hash leaked in regenerate body: ${regen.raw}`);
+
+  const stale = await resetPassword({ email, code: recoveryCode, newPassword: 'should-never-apply' });
+  assert.equal(stale.status, 401);
+  assert.equal(stale.body.error, RESET_FAILURE);
+  assert.equal((await loginAs(email, password)).status, 200, 'the stale code must have changed nothing');
+
+  assert.equal(
+    (await resetPassword({ email, code: regen.body.recoveryCode, newPassword: 'regenerated-and-redeemed' })).status,
+    200,
+  );
+  assert.equal((await loginAs(email, 'regenerated-and-redeemed')).status, 200);
+});
+
+test('an account predating recovery codes cannot reset, and fails identically', async () => {
+  // createUser leaves recovery_code_hash NULL, exactly like every row written
+  // before the migration. A NULL hash must not be treated as "matches
+  // anything", and must not announce itself as a different kind of failure.
+  const email = uniqueEmail();
+  const password = 'legacy-account-password';
+  const legacy = db.createUser({ email, passwordHash: bcrypt.hashSync(password, 10), name: null });
+  assert.equal(legacy.recovery_code_hash, null, 'fixture must have no recovery code');
+
+  const res = await resetPassword({ email, code: WRONG_CODE, newPassword: 'a-brand-new-password' });
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error, RESET_FAILURE);
+  assert.equal((await loginAs(email, password)).status, 200, 'the legacy password must be untouched');
+  assert.equal((await loginAs(email, 'a-brand-new-password')).status, 401);
+});
+
+test('a legacy account reports has_recovery_code 0 and can adopt one', async () => {
+  // The flag is how Settings knows to prompt; if it read 1 for a NULL hash the
+  // user would never be offered a code they do not have.
+  const email = uniqueEmail();
+  const password = 'legacy-account-password';
+  db.createUser({ email, passwordHash: bcrypt.hashSync(password, 10), name: null });
+
+  const session = await loginAs(email, password);
+  assert.equal(session.status, 200);
+  assert.equal(session.body.user.has_recovery_code, 0);
+
+  const regen = await call('POST', '/api/auth/recovery/regenerate', {
+    token: session.body.token,
+    body: { currentPassword: password },
+  });
+  assert.equal(regen.status, 200);
+
+  const me = await call('GET', '/api/auth/me', { token: session.body.token });
+  assert.equal(me.body.user.has_recovery_code, 1);
+  assert.equal(
+    (await resetPassword({ email, code: regen.body.recoveryCode, newPassword: 'adopted-a-recovery-code' })).status,
+    200,
+  );
 });
 
 // ── Change email ─────────────────────────────────────────────────────────────
