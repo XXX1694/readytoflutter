@@ -1,9 +1,10 @@
 # Marginalia — the Onsite design system
 
 The premise: **this is a book you study from, not a dashboard you monitor.**
-Warm paper, warm near-black ink, and exactly one accent — a citron highlighter
-that only ever appears as a wash *behind* ink, the way a real marker works.
-Everything else is carried by type and spacing.
+The page is an annotated book: black ink, a yellow highlighter, a blue pen.
+The marker is the accent and only ever appears as a wash *behind* ink, the way
+a real highlighter works; the blue is reserved for things you can act on —
+links and level chips. Everything else is carried by type and spacing.
 
 Tokens live in `src/index.css`; Tailwind maps them in `tailwind.config.js`.
 Always use the token classes (`text-ink`, `bg-paper-2`, `border-rule/12`).
@@ -24,7 +25,8 @@ Headings get weight and size, not letterspacing.
 
 `--ink` `--ink-2` `--ink-3` `--muted` text · `--paper` page · `--paper-2` sheet ·
 `--rule` hairlines (always through an alpha) · `--brand` petrol navy, the
-interactive colour · `--marker` citron, the accent · `--mint` `--amber`
+the pen, for links and interactive text · `--marker` highlighter yellow, the
+accent · `--mint` `--amber`
 `--coral` `--plum` semantic only (right / partial / wrong / fourth category).
 
 The marker is applied with the `.marker` class on an inline element. It is

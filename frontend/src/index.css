@@ -36,15 +36,18 @@
     --muted:        107 104  94;   /* #6B685E — 4.9:1 on paper */
     --muted-2:      110 106  95;   /* #6E6A5F — 4.6:1, still body-safe */
 
-    /* The one accent. Never a text colour, never a fill for large areas —
-       it is a marker stroke laid behind ink. See .marker below. */
-    --marker:       205 232  74;   /* #CDE84A citron */
+    /* The metaphor is an annotated book: black ink, a yellow highlighter and
+       a blue pen. The marker is the accent — never a text colour, never a
+       fill for large areas, only a stroke laid behind ink. See .marker.
+       The previous citron (#CDE84A) read as a sickly wash rather than a
+       highlighter; a saturated warm yellow is what the gesture looks like. */
+    --marker:       255 214  64;   /* #FFD640 highlighter yellow */
 
-    /* Interactive: petrol navy. Sober, high contrast, and the complement of
-       the citron — which is why the two can share a page without fighting. */
-    --brand:         34  56  79;   /* #22384F — 10.5:1 on paper */
-    --brand-ink:     25  42  60;   /* #192A3C pressed */
-    --brand-sky:     58  92 124;   /* #3A5C7C secondary */
+    /* Interactive: the blue pen. The previous petrol (#22384F) was so close
+       to ink that nothing on the page read as a colour at all. */
+    --brand:         27  79 138;   /* #1B4F8A — 7.9:1 on paper */
+    --brand-ink:     21  62 110;   /* #153E6E pressed */
+    --brand-sky:     58 111 168;   /* #3A6FA8 secondary */
 
     /* Semantics, mixed toward the ink so they read as annotations rather
        than status lights. */
@@ -76,11 +79,11 @@
     --muted:        158 154 143;   /* #9E9A8F — 6.2:1 on the sheet */
     --muted-2:      136 132 122;   /* #88847A — 4.6:1 on the sheet */
 
-    --marker:       176 202  62;   /* #B0CA3E — dimmer citron, same job */
+    --marker:       201 162  39;   /* #C9A227 — the same marker, burnt down */
 
-    --brand:        126 165 200;   /* #7EA5C8 petrol, inverted for dark */
-    --brand-ink:    160 192 220;
-    --brand-sky:    100 138 172;
+    --brand:        126 169 220;   /* #7EA9DC the pen, inverted for dark */
+    --brand-ink:    160 192 235;
+    --brand-sky:    110 158 214;
 
     --mint:         111 191 149;   /* #6FBF95 */
     --amber:        224 177  92;   /* #E0B15C */
@@ -157,7 +160,7 @@
   h1, h2, h3, h4 { letter-spacing: -0.012em; font-weight: 600; }
   h1 { letter-spacing: -0.018em; font-weight: 600; }
 
-  ::selection { background: rgb(var(--marker) / 0.55); color: rgb(var(--ink)); }
+  ::selection { background: rgb(var(--marker) / 0.50); color: rgb(var(--ink)); }
 
   /* Sleeker scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -198,8 +201,8 @@
     background-image: linear-gradient(
       to right,
       rgb(var(--marker) / 0) 0%,
-      rgb(var(--marker) / 0.62) 1.5%,
-      rgb(var(--marker) / 0.62) 98%,
+      rgb(var(--marker) / 0.55) 1.5%,
+      rgb(var(--marker) / 0.55) 98%,
       rgb(var(--marker) / 0) 100%
     );
     background-repeat: no-repeat;
@@ -211,8 +214,8 @@
     background-image: linear-gradient(
       to right,
       rgb(var(--marker) / 0) 0%,
-      rgb(var(--marker) / 0.28) 1.5%,
-      rgb(var(--marker) / 0.28) 98%,
+      rgb(var(--marker) / 0.30) 1.5%,
+      rgb(var(--marker) / 0.30) 98%,
       rgb(var(--marker) / 0) 100%
     );
   }

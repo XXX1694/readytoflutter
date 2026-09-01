@@ -137,19 +137,19 @@ export default function HomePage({ landing = null }: HomePageProps) {
           <h1 className="mt-3 font-display text-display-xs font-semibold leading-[1.04] tracking-tightest sm:text-display-md sm:leading-[1.02] lg:text-display-lg">
             {landingCopy ? (
               <>
-                <span className="text-muted">{landingCopy.title[0]}</span>
+                <span className="text-ink">{landingCopy.title[0]}</span>
                 <br />
                 <span className="text-ink">{landingCopy.title[1]}</span>
               </>
             ) : lang === 'ru' ? (
               <>
-                <span className="text-muted">Готов к</span>
+                <span className="text-ink">Готов к</span>
                 <br />
                 <span className="text-ink">собеседованию.</span>
               </>
             ) : (
               <>
-                <span className="text-muted">Ready for the</span>
+                <span className="text-ink">Ready for the</span>
                 <br />
                 <span className="text-ink">interview.</span>
               </>
