@@ -113,7 +113,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Bump the cache size cap so Shiki's WASM bundle doesn't blow it.
+        // Our own push + notificationclick handlers. generateSW writes the
+        // service worker, so importScripts is the only way to add code to it.
+        // push-sw.js is copied verbatim from public/ and lands beside sw.js,
+        // so the relative path resolves under any base path.
+        //
+        // It deliberately stays inside globPatterns below: precaching it is
+        // what gives it a revision hash inside sw.js, and that hash changing
+        // is what makes the browser notice a worker update. Excluding it
+        // would pin every user to the handlers they first installed.
+        importScripts: ['push-sw.js'],
+        // Bump the cache size cap so a large grammar can't blow it.
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         // Precache the entire build output, including images, fonts and the
         // generated PWA bitmap assets so the app cold-boots offline.
