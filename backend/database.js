@@ -175,6 +175,36 @@ function init() {
       created_at TEXT NOT NULL
     );
 
+    -- Web Push subscriptions, one row per browser (see push.js).
+    --
+    -- endpoint is UNIQUE because it identifies the browser, not the session:
+    -- re-subscribing the same device must upsert this row rather than pile up
+    -- duplicates that would each get their own copy of every notification.
+    --
+    -- due_count / next_due_at / state_reported_at are the browser's own SRS
+    -- snapshot, reported by the client — SM-2 state lives in localStorage, so
+    -- the server cannot compute it. Stored per-subscription rather than
+    -- per-user because localStorage is per-browser, exactly like the
+    -- subscription itself.
+    --
+    -- last_notified_at is the once-per-day guard. It is in SQLite and not in
+    -- process memory specifically so a restart cannot re-send today's push.
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      tz_offset_minutes INTEGER NOT NULL DEFAULT 0,
+      due_count INTEGER NOT NULL DEFAULT 0,
+      next_due_at TEXT,
+      state_reported_at TEXT,
+      last_notified_at TEXT,
+      created_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_topics_level ON topics(level);
     CREATE INDEX IF NOT EXISTS idx_topics_order ON topics(order_index);
     CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic_id);
@@ -186,6 +216,8 @@ function init() {
     CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_ai_grade_user_time ON ai_grade_log(user_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_ai_grade_ip_time ON ai_grade_log(ip, created_at);
+    CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_push_subs_reported ON push_subscriptions(state_reported_at);
   `);
 
   sqlite.exec(`
@@ -638,6 +670,10 @@ function updateUserEmail(id, email) {
 function deleteUser(id) {
   // Progress rows cascade on FK ON DELETE CASCADE.
   sqlite.prepare('DELETE FROM progress WHERE user_id = ?').run(Number(id));
+  // Push subscriptions cascade the same way; deleted explicitly for the same
+  // reason progress is — a leftover row would keep pushing to a device whose
+  // account no longer exists.
+  sqlite.prepare('DELETE FROM push_subscriptions WHERE user_id = ?').run(Number(id));
   sqlite.prepare('DELETE FROM users WHERE id = ?').run(Number(id));
 }
 
@@ -830,6 +866,165 @@ function aiGradeCountLast24h({ userId = null, ip = null }) {
   return 0;
 }
 
+// ── Push subscriptions ───────────────────────────────────────────────────────
+// Consumed by push.js. The endpoint is the natural key (it identifies a
+// browser), so every write is keyed on it rather than on a client-supplied id.
+
+/**
+ * Insert or update the row for one browser.
+ *
+ * ON CONFLICT(endpoint) also reassigns user_id: a push endpoint belongs to the
+ * browser, so when a second account signs in on a shared machine the row must
+ * follow the new owner. Without that the previous account keeps receiving
+ * notifications on a device it no longer controls.
+ *
+ * dueCount/nextDueAt are optional. state_reported_at is only stamped when a
+ * count actually arrives — push.js refuses to send daily reminders to a device
+ * that has never reported its SRS state, since there is no evidence anything
+ * is due there.
+ */
+function upsertPushSubscription({
+  userId, endpoint, p256dh, auth, tzOffsetMinutes = 0, dueCount, nextDueAt = null,
+}) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('upsertPushSubscription requires a real user id');
+  const now = new Date().toISOString();
+  const hasState = Number.isInteger(dueCount);
+
+  // The snapshot columns are only touched when the client actually sent a
+  // count. A service worker re-subscribing without one (it may not have the
+  // question list to hand) must not silently wipe the last known due state —
+  // that would leave state_reported_at saying "we have a snapshot" next to a
+  // snapshot of zero, and the device would stop being reminded.
+  const assignments = [
+    'user_id = excluded.user_id',
+    'p256dh = excluded.p256dh',
+    'auth = excluded.auth',
+    'tz_offset_minutes = excluded.tz_offset_minutes',
+    'last_seen_at = excluded.last_seen_at',
+  ];
+  if (hasState) {
+    assignments.push(
+      'due_count = excluded.due_count',
+      'next_due_at = excluded.next_due_at',
+      'state_reported_at = excluded.state_reported_at',
+    );
+  }
+
+  sqlite
+    .prepare(`
+      INSERT INTO push_subscriptions (
+        user_id, endpoint, p256dh, auth, tz_offset_minutes,
+        due_count, next_due_at, state_reported_at, created_at, last_seen_at
+      )
+      VALUES (
+        @user_id, @endpoint, @p256dh, @auth, @tz_offset_minutes,
+        @due_count, @next_due_at, @state_reported_at, @now, @now
+      )
+      ON CONFLICT(endpoint) DO UPDATE SET ${assignments.join(', ')}
+    `)
+    .run({
+      user_id: uid,
+      endpoint: String(endpoint),
+      p256dh: String(p256dh),
+      auth: String(auth),
+      tz_offset_minutes: Number(tzOffsetMinutes) || 0,
+      due_count: hasState ? dueCount : 0,
+      next_due_at: hasState ? nextDueAt : null,
+      state_reported_at: hasState ? now : null,
+      now,
+    });
+
+  return getPushSubscriptionByEndpoint(endpoint);
+}
+
+function getPushSubscriptionByEndpoint(endpoint) {
+  return sqlite
+    .prepare('SELECT * FROM push_subscriptions WHERE endpoint = ?')
+    .get(String(endpoint));
+}
+
+function listPushSubscriptionsForUser(userId) {
+  return sqlite
+    .prepare('SELECT * FROM push_subscriptions WHERE user_id = ? ORDER BY id')
+    .all(Number(userId) || 0);
+}
+
+/**
+ * Refresh a browser's SRS snapshot. Scoped to the owning user so that holding
+ * someone else's endpoint doesn't let you rewrite their reminder state.
+ * Returns false when the endpoint isn't this user's.
+ */
+function updatePushSubscriptionState({ userId, endpoint, dueCount, nextDueAt = null, tzOffsetMinutes }) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('updatePushSubscriptionState requires a real user id');
+  const now = new Date().toISOString();
+  const fields = [
+    'due_count = @due_count',
+    'next_due_at = @next_due_at',
+    'state_reported_at = @now',
+    'last_seen_at = @now',
+  ];
+  const params = {
+    user_id: uid,
+    endpoint: String(endpoint),
+    due_count: Number(dueCount) || 0,
+    next_due_at: nextDueAt || null,
+    now,
+  };
+  // Only overwrite the offset when the client sent one — a sync that omits it
+  // must not silently reset the device to UTC.
+  if (Number.isInteger(tzOffsetMinutes)) {
+    fields.push('tz_offset_minutes = @tz_offset_minutes');
+    params.tz_offset_minutes = tzOffsetMinutes;
+  }
+  const info = sqlite
+    .prepare(`UPDATE push_subscriptions SET ${fields.join(', ')} WHERE user_id = @user_id AND endpoint = @endpoint`)
+    .run(params);
+  return info.changes > 0;
+}
+
+function deletePushSubscription(userId, endpoint) {
+  const info = sqlite
+    .prepare('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?')
+    .run(Number(userId) || 0, String(endpoint));
+  return info.changes > 0;
+}
+
+// Used by the delivery path when a push service answers 404/410 — the
+// subscription is gone at the vendor, so it goes here too. Not user-scoped:
+// the vendor's verdict is authoritative regardless of who owns the row.
+function deletePushSubscriptionById(id) {
+  const info = sqlite.prepare('DELETE FROM push_subscriptions WHERE id = ?').run(Number(id));
+  return info.changes > 0;
+}
+
+/**
+ * Candidates for the daily reminder job: every device that has reported its
+ * SRS state at least once and recently enough to still be trusted.
+ *
+ * Quiet-hours and once-per-day filtering deliberately happen in push.js, not
+ * here — they need per-row local-time arithmetic that SQLite would express
+ * far less legibly than JavaScript, and the candidate set is small.
+ */
+function listPushSubscriptionsForReminder({ reportedSince }) {
+  return sqlite
+    .prepare(`
+      SELECT id, user_id, endpoint, p256dh, auth, tz_offset_minutes,
+             due_count, next_due_at, state_reported_at, last_notified_at
+      FROM push_subscriptions
+      WHERE state_reported_at IS NOT NULL AND state_reported_at >= @reportedSince
+      ORDER BY id
+    `)
+    .all({ reportedSince });
+}
+
+function markPushNotified(id, at) {
+  sqlite
+    .prepare('UPDATE push_subscriptions SET last_notified_at = ? WHERE id = ?')
+    .run(at || new Date().toISOString(), Number(id));
+}
+
 // ── Lifecycle ───────────────────────────────────────────────────────────────
 
 function questionExists(questionId) {
@@ -899,4 +1094,12 @@ module.exports = {
   recentContactsByIp,
   logAiGrade,
   aiGradeCountLast24h,
+  upsertPushSubscription,
+  getPushSubscriptionByEndpoint,
+  listPushSubscriptionsForUser,
+  updatePushSubscriptionState,
+  deletePushSubscription,
+  deletePushSubscriptionById,
+  listPushSubscriptionsForReminder,
+  markPushNotified,
 };

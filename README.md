@@ -89,6 +89,7 @@ onsite/
 │   ├── server.js           Маршруты, helmet, rate-limit, CORS
 │   ├── auth.js             bcrypt + JWT, zod-валидация, middleware
 │   ├── database.js         Схема, миграции, прогресс per-user
+│   ├── push.js             Web Push: подписки, дневная джоба, VAPID
 │   └── data/
 │       ├── interview.db    SQLite (gitignored, на Render — disk)
 │       ├── .jwt-secret     Авто-сгенерированный dev-секрет (gitignored)
@@ -134,10 +135,20 @@ onsite/
 | `STRIPE_PRICE_ID` | для биллинга | ID Subscription Price (price_...) |
 | `STRIPE_WEBHOOK_SECRET` | для биллинга | Подпись webhook-а (whsec_...) |
 | `BILLING_SUCCESS_URL` / `BILLING_CANCEL_URL` | для биллинга | Куда возвращать после Stripe Checkout |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | для push | Пара ключей VAPID. Без них `/api/push/*` отвечает 503 |
+| `VAPID_SUBJECT` | — | `mailto:` или `https://` контакт для push-сервисов. По умолчанию `mailto:admin@example.com` |
+| `PUSH_SEND_HOUR` / `PUSH_QUIET_HOUR` | — | Окно доставки в **локальном** времени устройства. По умолчанию `9` и `22` |
+| `PUSH_DAILY_JOB` | — | `off` — выключить внутренний таймер и дёргать джобу внешним cron'ом |
+| `PUSH_CRON_SECRET` | для cron | Секрет для `POST /api/push/run-daily` (заголовок `X-Cron-Secret`) |
 
 Сгенерировать секрет:
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+Сгенерировать пару VAPID (один раз на деплой — ротация отписывает все устройства):
+```bash
+cd backend && node -e "console.log(require('web-push').generateVAPIDKeys())"
 ```
 
 ### Frontend (`frontend/.env`)
@@ -146,8 +157,9 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 |---|---|
 | `VITE_API_BASE_URL` | URL бэкенда. Пустая → `/api` через Vite-proxy на :3001. В prod — полный URL Render-сервиса. |
 | `VITE_BASE_PATH` | Базовый путь, если деплой не в root. Авто-выводится из `GITHUB_REPOSITORY` в CI. |
-| `VITE_POSTHOG_KEY` | Опциональный ключ PostHog. Без ключа `lib/analytics.js` no-op'ит — события логятся только в dev-консоль. |
-| `VITE_PLAUSIBLE_DOMAIN` | Альтернатива PostHog. Домен сайта, зарегистрированный в Plausible. |
+| `VITE_POSTHOG_KEY` | Опциональный ключ PostHog. **Без ключа аналитика выключена** — SDK не грузится, запросов нет, события только логятся в dev-консоль. С ключом включаются все события из `AnalyticsEvent` в `lib/analytics.ts`. Do Not Track уважается. |
+| `VITE_POSTHOG_HOST` | Хост PostHog. По умолчанию `https://us.i.posthog.com`; для EU-облака или self-hosted — свой. |
+| `VITE_PLAUSIBLE_DOMAIN` | Альтернатива PostHog. Домен сайта, зарегистрированный в Plausible. Игнорируется, если задан `VITE_POSTHOG_KEY`. |
 
 ---
 
@@ -242,6 +254,69 @@ api.js → tryRemote(remote, fallback)
 
 ---
 
+## Push-напоминания (Web Push)
+
+Spaced repetition работает, только если пользователь возвращается в день,
+когда карточка повторяется. Напоминания сделаны на **Web Push с собственными
+VAPID-ключами** — так проект сохраняет свойство «никаких сторонних сервисов»
+(email потребовал бы Resend/SES). Сервер обращается напрямую к push-эндпоинту
+браузера; единственная новая зависимость — библиотека `web-push`, которая
+подписывает запрос. Фронт уже PWA с service worker'ом, канал доставки есть.
+
+Backend: [`backend/push.js`](backend/push.js) + таблица `push_subscriptions`.
+Без `VAPID_*` фича выключается целиком: `/api/push/health` отдаёт
+`{ enabled: false, reason }`, остальные роуты — 503. Ровно как `ai.js` без
+`ANTHROPIC_API_KEY`.
+
+**Откуда сервер знает, что карточка due.** Ниоткуда — и это честный ответ.
+SM-2 состояние живёт в localStorage (`frontend/src/lib/srs.ts`, ключ
+`rtf:srs:v1`), сервер хранит только `progress` (status + notes + updated_at) и
+из него посчитать «сколько карточек сегодня» невозможно: интервал зависит от
+`ease`/`reps`, которых у сервера нет. Поэтому **снимок присылает клиент** — при
+подписке и при каждом синке (`POST /api/push/state`) он отдаёт `dueCount` и
+`nextDueAt` из `getSrsSummary()`. Снимок хранится на строке подписки, а не
+пользователя: подписка привязана к браузеру, localStorage — тоже, связь
+один-к-одному.
+
+Trade-off: снимок устаревает, если пользователь занимался там, где сервер об
+этом не услышал. Направление безопасное — карточка остаётся due, пока её не
+повторят, а повторение означает открытие приложения, то есть синк. `nextDueAt`
+закрывает основной случай: «сейчас ничего, следующая в T» позволяет джобе
+проснуться в T без нового синка. Устройство, которое ни разу не прислало
+состояние, дневных напоминаний не получает вовсе; снимок старше 30 дней
+перестаёт их порождать.
+
+**Планировщик.** Один `setInterval` на 15 минут, без зависимостей. Защиты:
+- **раз в сутки** — `last_notified_at` в SQLite, сравнение по **локальной** дате
+  устройства. Лежит в базе, а не в памяти, поэтому рестарт процесса не шлёт
+  сегодняшний пуш повторно;
+- **тихие часы** — каждая подписка хранит `getTimezoneOffset()` браузера, так
+  что «09:00» — это 09:00 у пользователя, а не 09:00 UTC. Timezone-базы не
+  нужно;
+- **без наложений** — флаг `running`, тики не пересекаются.
+
+`404`/`410` от push-сервиса означает мёртвую подписку — строка удаляется сразу.
+Любая другая ошибка логируется и не роняет ни джобу, ни запрос.
+
+Вместо внутреннего таймера можно поставить внешний cron:
+```bash
+PUSH_DAILY_JOB=off   # выключить таймер
+curl -fsS -X POST https://<api>/api/push/run-daily -H "X-Cron-Secret: $PUSH_CRON_SECRET"
+```
+Обе точки входа используют одну и ту же защиту в SQLite, так что запускать их
+одновременно безопасно.
+
+| Endpoint | Auth | Что делает |
+|---|---|---|
+| `GET /api/push/health` | опц. | `enabled`, `publicKey`, окно доставки; со входом — список устройств |
+| `POST /api/push/subscribe` | JWT | Upsert подписки по `endpoint` (уникальный) |
+| `POST /api/push/state` | JWT | Обновить `dueCount` / `nextDueAt` для устройства |
+| `POST /api/push/unsubscribe` | JWT | Удалить подписку (работает даже когда push выключен) |
+| `POST /api/push/test` | JWT | Тестовое уведомление на все устройства аккаунта |
+| `POST /api/push/run-daily` | admin / `X-Cron-Secret` | Прогнать дневную джобу вручную |
+
+---
+
 ## Фичи UX, на которые я тратил время
 
 - **Active recall** — глобальный режим (Cmd+K), Study получает `gist`-textarea, QuestionCard прячет ответ за hint-ladder с blur-peek.
@@ -265,7 +340,7 @@ api.js → tryRemote(remote, fallback)
 - [ ] OAuth (Google) для гладкого онбординга
 - [ ] Daily goal + smart resume
 - [ ] AI-tutor (BYOK через Anthropic API) — кнопка «объясни проще»
-- [ ] Push-уведомления для daily reminders (PWA Push API)
+- [x] ~~Push-уведомления для daily reminders (PWA Push API)~~ — backend готов (`backend/push.js`), осталась UI-часть: подписка в Settings + `push` handler в service worker
 - [ ] Pomodoro timer в сайдбаре
 - [ ] Notes hub — поиск + экспорт всех заметок в .md
 - [ ] Achievement-милстоуны (first 7-day streak и т.д.)

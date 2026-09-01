@@ -8,6 +8,7 @@ const ai = require('./ai');
 const admin = require('./admin');
 const contact = require('./contact');
 const billing = require('./billing');
+const push = require('./push');
 const { LIMITS } = require('./config');
 
 db.init();
@@ -112,6 +113,11 @@ auth.attach(app);
 // endpoint reports `enabled: false` and the frontend hides the UI.
 ai.attach(app);
 
+// ── Web Push (daily SRS reminders) ──────────────────────────────────────────
+// Same degradation as the AI grader: always mounted, /api/push/health reports
+// `enabled: false` without VAPID keys and every other route answers 503.
+push.attach(app);
+
 // ── Public contact form + admin inbox (auth-gated) ──────────────────────────
 contact.attach(app);
 admin.attach(app);
@@ -197,11 +203,21 @@ app.use((err, req, res, _next) => {
 const server = app.listen(PORT, () => {
   const stats = db.getStats();
   const jwtExpiry = process.env.JWT_EXPIRES_IN || '7d';
+  // Start the reminder timer only once the server is actually up — and only
+  // here, never from push.attach(), so importing the module in a test cannot
+  // leave a live interval behind.
+  const pushState = push.pushState();
+  const scheduled = pushState.enabled && push.startScheduler();
   console.log(`\n🚀 Server running at http://localhost:${PORT}`);
   console.log(`📚 Loaded ${stats.totalQuestions} questions from SQLite`);
   console.log(`🔐 Auth ready (JWT, ${jwtExpiry} expiry)`);
   console.log(`🛡  Hardening: helmet${IS_PROD ? ' + HSTS' : ''}, rate-limit, CORS=${FRONTEND_ORIGIN || '*'}`);
-  console.log(`🤖 AI grader: ${process.env.ANTHROPIC_API_KEY ? 'enabled (Haiku 4.5)' : 'disabled (set ANTHROPIC_API_KEY to enable)'}\n`);
+  console.log(`🤖 AI grader: ${process.env.ANTHROPIC_API_KEY ? 'enabled (Haiku 4.5)' : 'disabled (set ANTHROPIC_API_KEY to enable)'}`);
+  console.log(
+    `🔔 Web Push: ${pushState.enabled
+      ? `enabled (daily job ${scheduled ? 'running in-process' : 'off — drive POST /api/push/run-daily from cron'})`
+      : `disabled (${pushState.reason})`}\n`,
+  );
 });
 
 // Graceful shutdown — flush WAL, close SQLite cleanly, give in-flight
@@ -212,6 +228,9 @@ function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`\n[server] ${signal} received, draining...`);
+  // Stop the reminder timer first — a tick that started mid-drain would write
+  // to SQLite after db.close().
+  push.stopScheduler();
   const force = setTimeout(() => {
     console.warn('[server] forced exit after 10s drain');
     db.close();
