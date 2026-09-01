@@ -87,7 +87,53 @@ const sanitizeUser = (user) => {
     ...rest,
     is_admin: rest.is_admin ? 1 : 0,
     pro_tier: rest.pro_tier || 'free',
+    // Accounts created before recovery codes existed have none. The flag lets
+    // Settings prompt for one; it tells the owner nothing they don't know.
+    has_recovery_code: rest.recovery_code_hash ? 1 : 0,
+    recovery_code_hash: undefined,
+    recovery_code_set_at: undefined,
   };
+};
+
+// ── Account recovery ─────────────────────────────────────────────────────────
+//
+// There is no email provider in this project by design, so "forgot password"
+// cannot send a link. Instead each account gets a single-use recovery code —
+// the same idea as 2FA backup codes: shown once, stored only as a bcrypt hash,
+// and replaced the moment it is used.
+//
+// Crockford base32 omits I, L, O and U, so a code survives being written on
+// paper and typed back without the 1/l/I and 0/O confusions.
+const RECOVERY_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const RECOVERY_GROUPS = 4;
+const RECOVERY_GROUP_LEN = 5; // 20 chars x 5 bits = 100 bits of entropy
+
+const generateRecoveryCode = () => {
+  const total = RECOVERY_GROUPS * RECOVERY_GROUP_LEN;
+  // 32 divides 256 exactly, so `byte % 32` is unbiased — no rejection needed.
+  const bytes = crypto.randomBytes(total);
+  const chars = Array.from(bytes, (b) => RECOVERY_ALPHABET[b % 32]);
+  return Array.from({ length: RECOVERY_GROUPS }, (_, i) =>
+    chars.slice(i * RECOVERY_GROUP_LEN, (i + 1) * RECOVERY_GROUP_LEN).join(''),
+  ).join('-');
+};
+
+// Accept what a human would actually type back: any spacing or dashes, either
+// case, and the letters Crockford treats as digits.
+const normalizeRecoveryCode = (input) =>
+  String(input || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .replace(/[IL]/g, '1')
+    .replace(/O/g, '0');
+
+// Issue a fresh code, persist its hash, and hand the plaintext back — this is
+// the only moment it exists anywhere outside the user's own notes.
+const issueRecoveryCode = async (userId) => {
+  const code = generateRecoveryCode();
+  const hash = await bcrypt.hash(normalizeRecoveryCode(code), BCRYPT_ROUNDS);
+  db.setRecoveryCode(userId, hash);
+  return code;
 };
 
 const signToken = (user) =>
@@ -177,7 +223,14 @@ function attach(app) {
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = db.createUser({ email, passwordHash, name });
     const token = signToken(user);
-    return res.status(201).json({ user: sanitizeUser(user), token });
+    // The only response that ever carries a recovery code in the clear. The
+    // client is responsible for making the user save it before moving on.
+    const recoveryCode = await issueRecoveryCode(user.id);
+    return res.status(201).json({
+      user: { ...sanitizeUser(user), has_recovery_code: 1 },
+      token,
+      recoveryCode,
+    });
   });
 
   app.post('/api/auth/login', authLimiter, async (req, res) => {
@@ -243,6 +296,56 @@ function attach(app) {
     const newHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_ROUNDS);
     db.updateUserPassword(req.user.id, newHash);
     res.json({ ok: true });
+  });
+
+  // Issue a replacement recovery code. Gated by the current password so a
+  // borrowed session can't quietly mint itself a permanent way back in.
+  app.post('/api/auth/recovery/regenerate', authLimiter, requireAuth, async (req, res) => {
+    const parsed = z.object({ currentPassword: z.string().min(1) }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Current password is required' });
+    const fullUser = db.getUserById(req.user.id);
+    const ok = await bcrypt.compare(parsed.data.currentPassword, fullUser.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
+    const recoveryCode = await issueRecoveryCode(fullUser.id);
+    res.json({ recoveryCode });
+  });
+
+  // Reset a password using the recovery code. Deliberately does NOT sign the
+  // user in: they prove they hold the code, set a password, then log in with
+  // it like anyone else.
+  const recoveryResetSchema = z.object({
+    email: emailSchema,
+    code: z.string().min(1, { message: 'Recovery code is required' }),
+    newPassword: passwordSchema,
+  });
+  app.post('/api/auth/recovery/reset', authLimiter, async (req, res) => {
+    const parsed = recoveryResetSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Invalid input' });
+    }
+    const { email, code, newPassword } = parsed.data;
+    const user = db.getUserByEmail(email);
+
+    // Same shape of work whether or not the account exists or has a code, so
+    // response timing doesn't answer "is this address registered?".
+    const storedHash = user?.recovery_code_hash
+      || '$2a$11$abcdefghijklmnopqrstuv.abcdefghijklmnopqrstuvwxy123456';
+    const codeOk = await bcrypt.compare(normalizeRecoveryCode(code), storedHash);
+
+    // One message for every failure — a wrong address and a wrong code are
+    // indistinguishable from outside.
+    const INVALID = { error: 'That email and recovery code do not match.' };
+    if (!user || !user.recovery_code_hash || !codeOk) return res.status(401).json(INVALID);
+
+    if (newPassword.toLowerCase() === user.email.toLowerCase()) {
+      return res.status(400).json({ error: 'Password cannot equal email' });
+    }
+    const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    db.updateUserPassword(user.id, newHash);
+    // Single use: the code that just worked is spent, and its replacement is
+    // handed over in the same response.
+    const recoveryCode = await issueRecoveryCode(user.id);
+    res.json({ ok: true, recoveryCode });
   });
 
   // Change email — also gated by current password. Re-issues the JWT so the

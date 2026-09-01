@@ -197,6 +197,7 @@ function init() {
 
   migrateProgressToUserScoped();
   migrateUsersBilling();
+  migrateUsersRecovery();
   seedIfEmpty();
   bootstrapAdminFromEnv();
   runOnce('remove_general_questions', removeGeneralQuestions);
@@ -222,6 +223,34 @@ function migrateUsersBilling() {
       sqlite.exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
     }
   }
+}
+
+// Idempotent: extends `users` with the account-recovery columns. The code
+// itself is never stored — only a bcrypt hash of it, exactly like a password,
+// because a stored recovery code is a second password sitting in the clear.
+function migrateUsersRecovery() {
+  const cols = sqlite.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+  const adds = [
+    ['recovery_code_hash', 'TEXT'],
+    ['recovery_code_set_at', 'TEXT'],
+  ];
+  for (const [name, type] of adds) {
+    if (!cols.includes(name)) {
+      sqlite.exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
+    }
+  }
+}
+
+/**
+ * Store a new recovery-code hash, replacing any previous one. Codes are
+ * single-use: consuming one immediately issues its replacement, so there is
+ * never more than one live code per account.
+ */
+function setRecoveryCode(userId, hash) {
+  const now = new Date().toISOString();
+  sqlite
+    .prepare('UPDATE users SET recovery_code_hash = ?, recovery_code_set_at = ?, updated_at = ? WHERE id = ?')
+    .run(hash, now, now, userId);
 }
 
 // Promote a single email to admin on boot when ADMIN_BOOTSTRAP_EMAIL is set.
@@ -854,6 +883,7 @@ module.exports = {
   getUserById,
   updateUserName,
   updateUserPassword,
+  setRecoveryCode,
   updateUserEmail,
   deleteUser,
   setUserAdmin,
