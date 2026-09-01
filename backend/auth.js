@@ -104,6 +104,17 @@ const sanitizeUser = (user) => {
 //
 // Crockford base32 omits I, L, O and U, so a code survives being written on
 // paper and typed back without the 1/l/I and 0/O confusions.
+// Compared against when there is no user (or no stored recovery code) so an
+// absent account costs the same ~100 ms of KDF work as a present one.
+//
+// This MUST be a real, well-formed hash. The literal that used to sit inline
+// here had 54 characters after the `$2a$11$` prefix instead of 53, which
+// bcryptjs rejects by returning false immediately — 0.0 ms against a genuine
+// hash's ~106 ms. That turned both /login and the recovery reset into working
+// account-enumeration oracles, measurable straight over the network. Hashing a
+// throwaway string at boot removes the chance of writing a malformed one.
+const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS);
+
 const RECOVERY_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const RECOVERY_GROUPS = 4;
 const RECOVERY_GROUP_LEN = 5; // 20 chars x 5 bits = 100 bits of entropy
@@ -244,7 +255,7 @@ function attach(app) {
     const user = db.getUserByEmail(email);
     if (!user) {
       // Constant-time-ish: still hash a dummy password so timing leaks are minimal.
-      await bcrypt.compare(password, '$2a$11$abcdefghijklmnopqrstuv.abcdefghijklmnopqrstuvwxy123456');
+      await bcrypt.compare(password, DUMMY_HASH);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     const ok = await bcrypt.compare(password, user.password_hash);
@@ -329,7 +340,7 @@ function attach(app) {
     // Same shape of work whether or not the account exists or has a code, so
     // response timing doesn't answer "is this address registered?".
     const storedHash = user?.recovery_code_hash
-      || '$2a$11$abcdefghijklmnopqrstuv.abcdefghijklmnopqrstuvwxy123456';
+      || DUMMY_HASH;
     const codeOk = await bcrypt.compare(normalizeRecoveryCode(code), storedHash);
 
     // One message for every failure — a wrong address and a wrong code are
