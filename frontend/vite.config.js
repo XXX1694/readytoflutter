@@ -160,10 +160,25 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Hand-rolled chunking: keep the Shiki + WASM payload separate from
-        // the main bundle so the dashboard's first paint isn't blocked by it.
+        // Hand-rolled chunking: keep the Shiki payload separate from the main
+        // bundle so the dashboard's first paint isn't blocked by it.
         manualChunks: (id) => {
-          if (id.includes('shiki') || id.includes('@shikijs')) return 'shiki';
+          // Grammars are deliberately NOT forced into the shared chunk —
+          // highlighter.ts imports each one dynamically, so leaving them to
+          // Rollup gives one chunk per language and a Dart question downloads
+          // only the Dart grammar. Lumping them together here would undo that.
+          if (id.includes('@shikijs/langs')) return;
+          // Shiki core + the JS regex engine (and the oniguruma-to-es / regex
+          // transpiler it depends on) are shared by every snippet, so they
+          // belong in one chunk rather than duplicated per grammar.
+          if (
+            id.includes('shiki')
+            || id.includes('@shikijs')
+            || id.includes('oniguruma-to-es')
+            || id.includes('regex-recursion')
+            || id.includes('regex-utilities')
+            || /node_modules\/regex\//.test(id)
+          ) return 'shiki';
           if (id.includes('framer-motion')) return 'motion';
           if (id.includes('@radix-ui')) return 'radix';
           if (id.includes('@tanstack')) return 'tanstack';
