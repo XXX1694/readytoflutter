@@ -26,6 +26,18 @@ const express = require('express');
 const db = require('./database');
 const auth = require('./auth');
 
+// Master switch for *selling*. Pro is not on sale right now: the only thing
+// it genuinely unlocked was unlimited AI grading, and two of the four things
+// the pricing page advertised were never built. Rather than rip the Stripe
+// integration out and have to reconstruct it later, the offer is switched off
+// and the plumbing left intact — set BILLING_ENABLED=true to sell again.
+//
+// Note what this does NOT disable: the customer portal and the webhook stay
+// live unconditionally. Anyone who already holds a subscription must still be
+// able to manage and cancel it, and Stripe must still be able to reconcile
+// their tier. Turning those off would strand a paying customer.
+const BILLING_ENABLED = process.env.BILLING_ENABLED === 'true';
+
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -43,13 +55,20 @@ function attach(app) {
   // not configured — never echoes the secret itself.
   app.get('/api/billing/health', (_req, res) => {
     let reason = null;
-    if (!StripeCtor) reason = 'sdk_missing';
+    if (!BILLING_ENABLED) reason = 'not_selling';
+    else if (!StripeCtor) reason = 'sdk_missing';
     else if (!STRIPE_SECRET_KEY) reason = 'key_missing';
     else if (!STRIPE_PRICE_ID) reason = 'price_missing';
     res.json({ enabled: reason === null, reason });
   });
 
   app.post('/api/billing/checkout', auth.requireAuth, async (req, res) => {
+    // Refuse before touching Stripe, even if keys are present — the UI hides
+    // the button, and this makes it impossible to charge anyone by calling the
+    // endpoint directly.
+    if (!BILLING_ENABLED) {
+      return res.status(503).json({ error: 'Pro is not on sale right now', code: 'not_selling' });
+    }
     const stripe = buildClient();
     if (!stripe || !STRIPE_PRICE_ID) {
       return res.status(503).json({ error: 'Billing not configured', code: 'billing_unavailable' });
