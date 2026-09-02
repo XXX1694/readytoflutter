@@ -203,7 +203,11 @@ describe('tryRemote — static-data fallback when the backend is unreachable', (
 
     const topics = await api.getTopics();
 
-    expect(fetchMock).toHaveBeenCalledWith('/seed/static-data.json');
+    // The path carries the build's base — `/readytoflutter/` in GitHub
+    // Actions, `/` locally — so read it from the same place the module does
+    // rather than hard-coding the local form (which is what made this test
+    // green on a laptop and red in CI).
+    expect(fetchMock).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}seed/static-data.json`);
     // Sorted by order_index — Streams (1) before Dart Basics (2).
     expect(topics.map((t) => t.slug)).toEqual(['streams', 'dart-basics']);
     expect(topics.find((t) => t.id === 1)).toMatchObject({ question_count: 2, completed_count: 1 });
