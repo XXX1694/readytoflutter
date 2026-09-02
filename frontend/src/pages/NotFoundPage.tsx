@@ -18,7 +18,7 @@ export default function NotFoundPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+      <div className="w-full px-4 py-16 sm:px-6 sm:py-24 lg:px-8 2xl:px-12">
         <div className="max-w-xl">
           <p className="font-mono text-[13px] text-muted">404</p>
           <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">

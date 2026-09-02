@@ -210,7 +210,7 @@ export default function SearchPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
+      <div className="w-full px-4 py-4 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
         {/* Back row — desktop only, mobile uses header arrow. */}
         <Button
           variant="ghost"
@@ -441,7 +441,7 @@ export default function SearchPage() {
 function SearchSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="w-full px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
         <Skeleton className="mb-5 h-4 w-32" />
         <Skeleton className="mb-2 h-3 w-16" />
         <Skeleton className="mb-6 h-9 w-1/2 max-w-md" />

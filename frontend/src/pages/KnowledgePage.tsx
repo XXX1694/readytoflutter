@@ -225,7 +225,7 @@ export default function KnowledgePage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 sm:py-10 lg:px-8">
+      <div className="w-full px-4 py-4 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
         <Button
           variant="ghost"
           size="sm"
@@ -458,7 +458,7 @@ export default function KnowledgePage() {
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {items.map((r) => (
                       <ResourceCard
                         key={r.id}

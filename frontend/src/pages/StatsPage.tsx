@@ -166,7 +166,7 @@ export default function StatsPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="w-full px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
         <Button
           variant="ghost"
           size="sm"
@@ -405,7 +405,7 @@ function MasteryRow({ row, masteryPct, lang, topicTitle, onTopic, onDrill }: Mas
 function StatsSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="w-full px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
         <Skeleton className="mb-5 h-4 w-32" />
         <header className="mb-8 border-b border-rule/12 pb-6">
           <Skeleton className="h-3 w-20" />

@@ -158,7 +158,7 @@ export default function TopicPage() {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-4 pb-36 sm:px-6 sm:py-10 sm:pb-10 lg:px-8 lg:pb-12">
+      <div className="w-full px-4 py-4 pb-36 sm:px-6 sm:py-10 sm:pb-10 lg:px-8 2xl:px-12 lg:pb-12">
         {/* Breadcrumb — desktop only. On mobile the back arrow lives in the
             header chrome so this row would just waste vertical space. */}
         <Button
@@ -415,7 +415,7 @@ export default function TopicPage() {
 function TopicSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <div className="w-full px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
         <Skeleton className="mb-5 h-4 w-32" />
         <header className="mb-8 border-b border-rule/12 pb-6">
           <div className="flex items-start gap-4">

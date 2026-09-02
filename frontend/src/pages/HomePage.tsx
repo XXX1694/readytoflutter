@@ -127,7 +127,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
 
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <div className="w-full px-4 py-5 sm:px-6 sm:py-10 lg:px-8 2xl:px-12 lg:py-12">
         {/* HERO — the two lines of the headline are separated by ink weight,
             not by a gradient fill; the type does the work. */}
         <section className="mb-7 sm:mb-14">
@@ -268,7 +268,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
                     {levelT.desc} · {t.topicCount(items.length)}
                   </p>
                 </header>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {items.map((topic: Topic) => (
                     <TopicTile
                       key={topic.id}
@@ -306,7 +306,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
 function DashboardSkeleton() {
   return (
     <div className="bg-page">
-      <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <div className="w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:px-12 lg:py-12">
         {/* Hero */}
         <section className="mb-10 sm:mb-14">
           <Skeleton className="h-3 w-40" />
@@ -356,7 +356,7 @@ function DashboardSkeleton() {
           <section key={row} className="mb-12">
             <Skeleton className="mb-2 h-8 w-56" />
             <Skeleton className="mb-5 h-3 w-40" />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="codex-card p-4">
                   <Skeleton className="h-10 w-10 rounded-lg" />
