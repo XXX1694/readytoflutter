@@ -44,7 +44,14 @@ if (typeof window !== 'undefined' && onGithubPages && !import.meta.env.VITE_API_
     + 'Auth/sync will be unavailable; the app stays functional in anonymous mode.',
   );
 }
-const api: AxiosInstance = axios.create({ baseURL: apiBaseUrl });
+// The timeout is what makes tryRemote's fallback reachable: a backend that
+// accepts the connection and never answers (captive portal, dead proxy, hung
+// dyno) otherwise pins a write in flight forever, with the status control
+// disabled and nothing saved anywhere. Long enough to ride out a cold start.
+const REQUEST_TIMEOUT_MS = 15_000;
+// A model call takes as long as it takes.
+const AI_TIMEOUT_MS = 60_000;
+const api: AxiosInstance = axios.create({ baseURL: apiBaseUrl, timeout: REQUEST_TIMEOUT_MS });
 
 // Attach the auth token (if any) to every outgoing request. Reading from the
 // store on each request keeps things in sync after login/logout without
@@ -57,18 +64,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 → clear local session AND drop the TanStack Query cache so stale
-// auth-scoped data doesn't keep rendering. Fallbacks below then take over
-// for any caller that depends on progress reads.
+// The API layer sits outside React, so the two toasts it raises read the
+// saved language directly instead of going through LangContext.
+const isRu = (): boolean =>
+  typeof localStorage !== 'undefined' && localStorage.getItem('lang') === 'ru';
+
+// 401 → clear local session AND reset the TanStack Query cache so stale
+// auth-scoped data doesn't keep rendering. `resetQueries` (not `clear`) keeps
+// the mounted observers attached and refetches them, so the page that was on
+// screen re-renders from the fallbacks instead of going blank. Fallbacks below
+// then take over for any caller that depends on progress reads.
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     if (err?.response?.status === 401) {
       const { token, clearSession } = useAuth.getState();
       if (token) {
-        queryClient.clear();
         clearSession();
-        toast.message('Session expired', { description: 'Please sign in again.' });
+        void queryClient.resetQueries();
+        toast.message(
+          isRu() ? 'Сессия истекла' : 'Session expired',
+          { description: isRu() ? 'Войди снова.' : 'Please sign in again.' },
+        );
       }
     }
     return Promise.reject(err);
@@ -346,8 +363,10 @@ const tryRemote = async <T>(
     // server.
     if (opts.notifyOnWrite && useAuth.getState().token && (Date.now() - lastOfflineToastAt) > 30_000) {
       lastOfflineToastAt = Date.now();
-      toast.message('Saved locally', {
-        description: 'Backend unreachable — your progress will sync once you reconnect.',
+      toast.message(isRu() ? 'Сохранено локально' : 'Saved locally', {
+        description: isRu()
+          ? 'Сервер недоступен. Прогресс синхронизируется, когда связь вернётся.'
+          : 'Backend unreachable. Your progress will sync once you reconnect.',
       });
     }
     return fallbackFn();
@@ -619,7 +638,7 @@ export interface AiGradeResponse {
 }
 
 export const aiGradeAnswer = ({ questionId, userAnswer, lang }: AiGradeArgs): Promise<AiGradeResponse> =>
-  api.post<AiGradeResponse>('/ai/grade', { questionId, userAnswer, lang }).then((r) => r.data);
+  api.post<AiGradeResponse>('/ai/grade', { questionId, userAnswer, lang }, { timeout: AI_TIMEOUT_MS }).then((r) => r.data);
 
 export interface AiDraftArgs {
   prompt: string;
@@ -629,7 +648,7 @@ export interface AiDraftArgs {
 }
 
 export const aiDraftQuestion = (args: AiDraftArgs): Promise<{ draft: unknown; usage?: unknown }> =>
-  api.post<{ draft: unknown; usage?: unknown }>('/ai/draft-question', args).then((r) => r.data);
+  api.post<{ draft: unknown; usage?: unknown }>('/ai/draft-question', args, { timeout: AI_TIMEOUT_MS }).then((r) => r.data);
 
 // ── Contact form ────────────────────────────────────────────────────────────
 export interface ContactArgs {

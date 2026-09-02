@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronDown, PenLine, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
-import { pickDueQueue, rateCard, getCardState } from '../lib/srs';
+import { pickDueQueue, rateCard, getCardState, previewInterval } from '../lib/srs';
+import { goBack } from '../lib/navigation';
 import { buildPlan } from '../lib/plan';
 import { filterTopicsByPlatform } from '../lib/platform';
 import { usePrefs } from '../store/prefs';
@@ -19,7 +20,7 @@ import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerGrader, {
   SelfGrade, useAiHealth, type SelfGradeOption,
 } from '../components/AnswerGrader';
-import { useQuestionSession, countOutcomes, type OutcomeCounts } from '../lib/useQuestionSession';
+import { useQuestionSession, countOutcomes, RATING_ORDER, type OutcomeCounts } from '../lib/useQuestionSession';
 import { cn } from '../lib/cn';
 import { tapMedium } from '../lib/haptics';
 import { track } from '../lib/analytics';
@@ -43,13 +44,14 @@ const LEVELS: readonly string[] = ['junior', 'mid', 'senior'];
 const isLevel = (value: string | null): value is Level =>
   value !== null && LEVELS.includes(value);
 
-/** The intervals are what makes this grade meaningful, so each one shows its. */
-const grades = (c: SessionCopy): SelfGradeOption[] => [
-  { rating: 'again', label: c.grades.again, hint: c.gradeHints.again },
-  { rating: 'hard', label: c.grades.hard, hint: c.gradeHints.hard },
-  { rating: 'good', label: c.grades.good, hint: c.gradeHints.good },
-  { rating: 'easy', label: c.grades.easy, hint: c.gradeHints.easy },
-];
+/** The interval is what makes a grade meaningful, so each button shows the
+    one the scheduler would actually set for this card. */
+const grades = (c: SessionCopy, questionId: number): SelfGradeOption[] =>
+  RATING_ORDER.map((rating) => ({
+    rating,
+    label: c.grades[rating],
+    hint: c.intervalHint(previewInterval(questionId, rating)),
+  }));
 
 export default function StudyPage() {
   const navigate = useNavigate();
@@ -77,10 +79,13 @@ export default function StudyPage() {
   // ── Build the queue ──────────────────────────────────────────────────────
   const pool = useMemo(() => {
     // Explicit `?ids=` deep-links bypass the platform filter — the caller
-    // already curated the set.
+    // already curated the set, and its order (a rung's nodes, the saved
+    // list) is the order to run it in.
     if (idsScope) {
-      const wanted = new Set(idsScope.split(',').map(Number).filter(Boolean));
-      return allQuestions.filter((q) => wanted.has(q.id));
+      const byId = new Map(allQuestions.map((q) => [q.id, q]));
+      return idsScope.split(',')
+        .map((id) => byId.get(Number(id)))
+        .filter((q): q is Question => Boolean(q));
     }
     const scoped = filterQuestionsByPlatform(allQuestions, allTopics, platform);
     return scoped.filter((q) => {
@@ -101,10 +106,14 @@ export default function StudyPage() {
   // than in an effect keeps it out of a second render pass, and keeps the SRS
   // read to exactly one per pool — a `useMemo` could re-run it mid-session and
   // reshuffle the cards under the user.
+  // A curated `?ids=` list runs whole: the roadmap's "practice this level"
+  // and the saved list are finite already, and the due-queue's cap on fresh
+  // cards silently cut a 21-question level down to ten.
   // Without a scope this is the tab bar's Start: open with today's plan (the
   // exact set the Today card names), and let "One more set" draw from the
   // whole stack afterwards.
   const firstQueue = (): Question[] => {
+    if (idsScope) return pool;
     if (hasScope) return pickDueQueue(pool, QUEUE_SIZE);
     const plan = buildPlan(pool, filterTopicsByPlatform(allTopics, platform));
     if (plan.ids.length === 0) return pickDueQueue(pool, QUEUE_SIZE);
@@ -123,7 +132,7 @@ export default function StudyPage() {
     queue,
     revealHotkey: 'space',
     draftLimit: GIST_LIMIT,
-    onExit: () => navigate(-1),
+    onExit: () => goBack(navigate),
     onGrade: (question, rating) => {
       tapMedium();
       rateCard(question.id, rating);
@@ -206,12 +215,16 @@ export default function StudyPage() {
   }
 
   if (session.finished) {
+    // A curated list runs again as it is; an open scope draws the next set,
+    // and offers nothing when every card has just been scheduled away —
+    // "One more set" leading to "All caught up" is a dead end.
+    const nextSet = idsScope ? queue : pickDueQueue(pool, QUEUE_SIZE);
     return (
       <Recap
         counts={counts}
         meta={c.cardsReviewed(total)}
         c={c}
-        onAgain={() => setQueue(pickDueQueue(pool, QUEUE_SIZE))}
+        onAgain={nextSet.length === 0 ? undefined : () => (idsScope ? session.restart() : setQueue(nextSet))}
         onClose={() => navigate('/')}
       />
     );
@@ -259,7 +272,7 @@ export default function StudyPage() {
             variant="ghost"
             size="icon"
             className="hidden sm:inline-flex"
-            onClick={() => navigate(-1)}
+            onClick={() => goBack(navigate)}
           >
             <X className="h-4 w-4" aria-hidden />
             <span className="sr-only">{c.close}</span>
@@ -375,7 +388,7 @@ export default function StudyPage() {
 
           <div className="mt-10 border-t border-rule/12 pt-5">
             <p className="eyebrow mb-2">{c.howDidThatGo}</p>
-            <SelfGrade options={grades(c)} onGrade={session.grade} />
+            <SelfGrade options={grades(c, current.id)} onGrade={session.grade} />
           </div>
         </div>
       )}
@@ -409,7 +422,8 @@ interface RecapProps {
   counts: OutcomeCounts;
   meta: string;
   c: SessionCopy;
-  onAgain: () => void;
+  /** Omitted when there is no next set to offer. */
+  onAgain?: () => void;
   onClose: () => void;
 }
 
@@ -424,10 +438,12 @@ function Recap({ counts, meta, c, onAgain, onClose }: RecapProps) {
         <RecapCounts counts={counts} c={c} className="mt-7" />
 
         <div className="mt-7 flex flex-col gap-2 sm:flex-row">
-          <Button variant="brand" className="flex-1" onClick={onAgain}>
-            {c.again}
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={onClose}>
+          {onAgain && (
+            <Button variant="brand" className="flex-1" onClick={onAgain}>
+              {c.again}
+            </Button>
+          )}
+          <Button variant={onAgain ? 'outline' : 'brand'} className="flex-1" onClick={onClose}>
             <ArrowRight className="h-4 w-4" aria-hidden />
             {c.dashboard}
           </Button>

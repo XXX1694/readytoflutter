@@ -30,6 +30,14 @@ const progressOn = (offsets: number[]): ProgressMap =>
     offsets.map((n, i) => [String(i + 1), { status: 'completed', updated_at: daysAgo(n) }]),
   ) as ProgressMap;
 
+describe('buildDayMap', () => {
+  it('counts a rated card as a study day even with no progress marked', () => {
+    const map = buildDayMap({}, [Date.now()]);
+    expect(map.size).toBe(1);
+    expect(computeStreaks(map).current).toBe(1);
+  });
+});
+
 describe('computeStreaks', () => {
   it('reports the longest run of consecutive days', () => {
     const streaks = computeStreaks(buildDayMap(progressOn([10, 9, 8, 6])));

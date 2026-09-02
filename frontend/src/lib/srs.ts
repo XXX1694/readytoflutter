@@ -8,6 +8,8 @@
  *   getCardState(id)      — reads (or returns a fresh card state)
  *   rateCard(id, rating)  — applies SM-2 with rating in {again,hard,good,easy}
  *                           and returns the new state
+ *   previewInterval(id, rating) — the interval rateCard would schedule, in days
+ *   getReviewTimes()      — every card's last-rated timestamp, for the activity log
  *   resetCard(id)         — wipes one card
  *   resetAll()            — wipes all SRS state
  *   pickDueQueue(items)   — given an array of questions returns a study queue:
@@ -62,16 +64,9 @@ export function getCardState(id: number | string): CardState {
   return map[String(id)] || freshCard();
 }
 
-export function rateCard(
-  id: number | string,
-  rating: Rating,
-  now: number = Date.now(),
-): CardState {
-  const map = read();
-  const prev = map[String(id)] || freshCard();
+/** One SM-2 step: where a rating moves `prev`, before anything is stored. */
+function step(prev: CardState, rating: Rating): Pick<CardState, 'ease' | 'interval' | 'reps'> {
   const r = RATINGS[rating];
-  if (!r) return prev;
-
   let { ease, interval, reps } = prev;
 
   // SM-2 ease adjustment
@@ -86,18 +81,44 @@ export function rateCard(
     else interval = Math.max(1, Math.round(interval * ease));
     reps += 1;
   }
+  return { ease, interval, reps };
+}
 
+export function rateCard(
+  id: number | string,
+  rating: Rating,
+  now: number = Date.now(),
+): CardState {
+  const map = read();
+  const prev = map[String(id)] || freshCard();
+  if (!RATINGS[rating]) return prev;
+
+  const scheduled = step(prev, rating);
   const next: CardState = {
-    ease,
-    interval,
-    reps,
-    dueAt: now + interval * DAY,
+    ...scheduled,
+    dueAt: now + scheduled.interval * DAY,
     lastAt: now,
   };
 
   map[String(id)] = next;
   write(map);
   return next;
+}
+
+/**
+ * The interval, in days, that `rateCard(id, rating)` would schedule right now.
+ * The grade buttons show it, so the promise on the button is the one the
+ * scheduler keeps: a fresh card's "Good" is tomorrow, not in six days.
+ */
+export function previewInterval(id: number | string, rating: Rating): number {
+  return step(getCardState(id), rating).interval;
+}
+
+/** When each card was last rated (epoch ms), never-rated cards excluded. */
+export function getReviewTimes(): number[] {
+  return Object.values(read())
+    .map((s) => s?.lastAt)
+    .filter((t): t is number => typeof t === 'number' && t > 0);
 }
 
 export function resetCard(id: number | string): void {

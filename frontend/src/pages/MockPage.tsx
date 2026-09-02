@@ -21,6 +21,7 @@ import AnswerGrader, {
 import {
   useQuestionSession, countOutcomes, type Outcome, type OutcomeCounts,
 } from '../lib/useQuestionSession';
+import { goBack } from '../lib/navigation';
 import { cn } from '../lib/cn';
 import { track } from '../lib/analytics';
 
@@ -161,12 +162,24 @@ export default function MockPage() {
     autoRevealed: timedOut,
     onAdvance: () => setQuestionStartedAt(Date.now()),
     onExit: () => {
-      if (!started) navigate(-1);
+      if (!started) goBack(navigate);
       else if (window.confirm(c.endConfirm)) navigate('/');
     },
   });
   const { current, revealed, draft, draftRef } = session;
   const counts = useMemo(() => countOutcomes(session.outcomes), [session.outcomes]);
+
+  // Nothing about a running timed session is persisted, so a reload or a
+  // closed tab throws away every answer and the clock. The browser asks first.
+  useEffect(() => {
+    if (!started || session.finished) return;
+    const guard = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', guard);
+    return () => window.removeEventListener('beforeunload', guard);
+  }, [started, session.finished]);
 
   // One tick a second: seconds are the smallest unit shown anywhere here.
   useEffect(() => {

@@ -51,7 +51,7 @@ export interface QuestionSessionOptions<T extends SessionItem> {
    *  - `mod+enter` reveals, and works from inside the draft box.
    */
   revealHotkey: 'space' | 'mod+enter';
-  /** Escape. */
+  /** Escape — from the draft box too, which in the mock and the round has focus the whole time. */
   onExit: () => void;
   /** Reveals the answer without user input — the mock's per-question timer. */
   autoRevealed?: boolean;
@@ -208,7 +208,7 @@ export function useQuestionSession<T extends SessionItem>({
     [revealed, grade],
   );
 
-  useHotkeys('escape', onExit, [onExit]);
+  useHotkeys('escape', onExit, { enableOnFormTags: ['textarea'] }, [onExit]);
 
   return {
     index,

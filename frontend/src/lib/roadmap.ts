@@ -31,11 +31,16 @@ export function isRoadmapTrack(key: PlatformKey | null | undefined): key is Road
 
 /**
  * Which track to show: the one last chosen on the roadmap page, else the
- * global stack filter when it names a track, else Flutter.
+ * global stack filter when it names a track, else Flutter for "everything"
+ * (the first track is as good a default as any when no stack was excluded).
+ * Null for Cross-platform and Mobile: they have no roadmap of their own, and
+ * Today showing another stack's standing as the user's would be a lie. The
+ * roadmap page, which has track chips in view, falls back to Flutter itself.
  */
-export function pickTrack(roadmapTrack: RoadmapTrackKey | null, platform: PlatformKey): RoadmapTrackKey {
+export function pickTrack(roadmapTrack: RoadmapTrackKey | null, platform: PlatformKey): RoadmapTrackKey | null {
   if (roadmapTrack) return roadmapTrack;
-  return isRoadmapTrack(platform) ? platform : 'flutter';
+  if (isRoadmapTrack(platform)) return platform;
+  return platform === 'all' ? 'flutter' : null;
 }
 
 export interface ResolvedNode {

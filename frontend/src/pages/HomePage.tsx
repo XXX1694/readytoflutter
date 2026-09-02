@@ -85,11 +85,12 @@ export default function HomePage({ landing = null }: HomePageProps) {
   const questions = questionsQ.data ?? NO_QUESTIONS;
 
   // Where you stand: the rung you last passed and the one to work on next, on
-  // the track the header's stack control points at.
+  // the track the header's stack control points at. No track (Cross-platform,
+  // Mobile, everything) means no orientation line rather than Flutter's.
   const trackKey = pickTrack(roadmapTrack, platform);
   const trackMeta = PLATFORMS.find((p) => p.key === trackKey);
   const rungs = useMemo(
-    () => (roadmapQ.data ? resolveTrack(roadmapQ.data, trackKey, topics, questions, lang) : []),
+    () => (roadmapQ.data && trackKey ? resolveTrack(roadmapQ.data, trackKey, topics, questions, lang) : []),
     [roadmapQ.data, trackKey, topics, questions, lang],
   );
   const standing = useMemo(() => computeStanding(rungs), [rungs]);
@@ -134,7 +135,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
       to="/roadmap"
       className="rounded-sm text-[15px] leading-relaxed text-ink-2 transition-colors hover:text-ink"
     >
-      <span className="font-medium text-ink">{c.trackLine(trackMeta ? copy(t, trackMeta.labelKey) : trackKey)}</span>
+      <span className="font-medium text-ink">{c.trackLine(trackMeta ? copy(t, trackMeta.labelKey) : trackKey ?? '')}</span>
       <span aria-hidden className="text-muted-2"> · </span>
       {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
       <span aria-hidden className="text-muted-2"> · </span>

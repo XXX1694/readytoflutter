@@ -23,7 +23,7 @@ const en = {
 
   // Activity
   activity: (weeks: number) => `Activity · last ${weeks} weeks`,
-  activityHint: 'One square per day, counting every question you marked.',
+  activityHint: 'One square per day, counting every question you marked or reviewed.',
 
   // Short lists
   needsReview: 'Needs review',
@@ -51,7 +51,7 @@ const ru: typeof en = {
   days: 'дн.',
 
   activity: (weeks) => `Активность · последние ${weeks} ${ruPlural(weeks, 'неделя', 'недели', 'недель')}`,
-  activityHint: 'Один квадрат — один день, считаем каждый отмеченный вопрос.',
+  activityHint: 'Один квадрат — один день, считаем каждый отмеченный или повторённый вопрос.',
 
   needsReview: 'Нужно повторить',
   needsReviewHint: 'Начато, но пора повторить или пройдено меньше 80%.',

@@ -57,18 +57,17 @@ export default function RoundPage() {
 
   // ── Run the session ──────────────────────────────────────────────────────
   const toTopic = () => navigate(`/topic/${slug}`);
-  // Escape leaves straight away once the round is over, and asks first while
-  // one is still running. Read through a ref so the handler doesn't close over
-  // the session object it is being passed to.
+  // Escape and the X leave straight away once the round is over, and ask
+  // first while one is still running. Read through a ref so the handler
+  // doesn't close over the session object it is being passed to.
   const finishedRef = useRef(false);
+  const leave = () => {
+    if (finishedRef.current || window.confirm(c.endConfirm)) toTopic();
+  };
   const session = useQuestionSession<Question>({
     queue: chain,
     revealHotkey: 'mod+enter',
-    onExit: () => {
-      if (finishedRef.current || window.confirm(c.endConfirm)) {
-        toTopic();
-      }
-    },
+    onExit: leave,
   });
   const { current, revealed, draft, draftRef, outcomes, finished } = session;
   const counts = useMemo(() => countOutcomes(outcomes), [outcomes]);
@@ -137,7 +136,7 @@ export default function RoundPage() {
             variant="ghost"
             size="icon"
             className="ml-auto hidden sm:inline-flex"
-            onClick={toTopic}
+            onClick={leave}
           >
             <X className="h-4 w-4" aria-hidden />
             <span className="sr-only">{c.close}</span>

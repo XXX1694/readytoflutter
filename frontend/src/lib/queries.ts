@@ -105,14 +105,16 @@ export function useUpdateProgress() {
     },
     onSettled: (_data, _err, { topicSlug }: UpdateProgressVars) => {
       // Re-sync from source. When we know the slug, only the affected topic
-      // refetches — the topics-list / questions-list updates the next time
-      // they become active, courtesy of staleTime expiry.
+      // refetches. The questions list is invalidated either way: Progress,
+      // Roadmap, Today and Saved all read it, and leaving it "fresh" for the
+      // rest of its staleTime showed a completed question as not started for
+      // a full minute after the click.
       if (topicSlug) {
         qc.invalidateQueries({ queryKey: queryKeys.topic(topicSlug) });
       } else {
         qc.invalidateQueries({ queryKey: ['topic'] });
-        qc.invalidateQueries({ queryKey: ['questions'] });
       }
+      qc.invalidateQueries({ queryKey: ['questions'] });
       qc.invalidateQueries({ queryKey: ['stats'] });
       // Mark the topic-list stale without forcing a refetch — counters update
       // on next visit to dashboard rather than firing a request per click.

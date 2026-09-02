@@ -1,12 +1,16 @@
 /**
  * Read raw progress from localStorage (where the static-fallback API stores it)
- * and derive activity stats: per-day counts, current streak, longest streak.
+ * plus the SRS review log, and derive activity stats: per-day counts, current
+ * streak, longest streak.
  *
- * The shape stored is: { [questionId]: { status, notes, updated_at } }.
- * Only entries with a real `updated_at` count toward activity.
+ * The progress shape stored is: { [questionId]: { status, notes, updated_at } }.
+ * Only entries with a real `updated_at` count toward activity. A study session
+ * writes SRS state, not progress, so its cards count through their `lastAt`
+ * — otherwise a full session left the streak at zero.
  */
 
 import type { ProgressStatus } from '../types/domain';
+import { getReviewTimes } from './srs';
 
 interface ProgressRecord {
   status?: ProgressStatus;
@@ -66,18 +70,23 @@ export function readProgress(): ProgressMap {
 }
 
 /**
- * Build a map { 'YYYY-MM-DD': count } of progress events. Counts every status
- * change, not just completions, so even partial study sessions show up.
+ * Build a map { 'YYYY-MM-DD': count } of activity events: every status change
+ * (not just completions) and every card rated in a session.
  */
-export function buildDayMap(progress: ProgressMap = readProgress()): Map<string, number> {
+export function buildDayMap(
+  progress: ProgressMap = readProgress(),
+  reviews: number[] = getReviewTimes(),
+): Map<string, number> {
   const map = new Map<string, number>();
-  Object.values(progress).forEach((p) => {
-    if (!p?.updated_at) return;
-    const d = new Date(p.updated_at);
+  const bump = (d: Date): void => {
     if (Number.isNaN(d.getTime())) return;
     const key = ymd(startOfDay(d));
     map.set(key, (map.get(key) || 0) + 1);
+  };
+  Object.values(progress).forEach((p) => {
+    if (p?.updated_at) bump(new Date(p.updated_at));
   });
+  reviews.forEach((t) => bump(new Date(t)));
   return map;
 }
 

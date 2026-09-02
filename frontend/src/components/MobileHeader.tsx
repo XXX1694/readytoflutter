@@ -10,6 +10,7 @@ import { useScrollDirection } from '../lib/useScrollDirection';
 import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
 import { FOCUS_ROUTES, routeAt, routeLabel } from '../lib/routes';
+import { goBack } from '../lib/navigation';
 
 /**
  * Native-style mobile header. Visible under the `lg` breakpoint, fixed to
@@ -21,7 +22,7 @@ import { FOCUS_ROUTES, routeAt, routeLabel } from '../lib/routes';
  *
  * - Home → the wordmark sits in the leading slot; there is no drawer to open.
  * - Anywhere else → back arrow (history.back). Falls back to `/` when there
- *   is no prior entry (deep link / first visit).
+ *   is no prior in-app entry (deep link / first visit).
  * - The right action is `Search` everywhere; on focus-flow routes (session,
  *   timed, follow-ups, login, signup) the X close swaps in instead.
  */
@@ -82,8 +83,7 @@ export default function MobileHeader() {
 
   const onBack = () => {
     tapLight();
-    if (window.history.length > 1) navigate(-1);
-    else navigate('/');
+    goBack(navigate);
   };
   const onSearch = () => { tapLight(); setCommandOpen(true); };
   const onClose = () => { tapLight(); navigate('/'); };

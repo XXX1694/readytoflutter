@@ -45,7 +45,7 @@ const en = {
   // ── The one grade scale ─────────────────────────────────────────────────
   grades: { again: 'Again', hard: 'Hard', good: 'Good', easy: 'Easy' },
   /** What each grade schedules — the reason the scale is worth reading. */
-  gradeHints: { again: '< 1d', hard: '~1d', good: '~6d', easy: '~14d' },
+  intervalHint: (days: number) => `${days}d`,
   skippedLabel: 'Skipped',
   skippedShort: 'skipped',
 
@@ -123,7 +123,7 @@ const ru: typeof en = {
   endConfirm: 'Закончить сессию?',
 
   grades: { again: 'Снова', hard: 'Тяжело', good: 'Хорошо', easy: 'Легко' },
-  gradeHints: { again: '< 1д', hard: '~1д', good: '~6д', easy: '~14д' },
+  intervalHint: (days) => `${days}д`,
   skippedLabel: 'Пропущено',
   skippedShort: 'пропуск',
 

@@ -59,7 +59,8 @@ export default function RoadmapPage() {
   const platform = usePrefs((s) => s.platform);
   const roadmapTrack = usePrefs((s) => s.roadmapTrack);
   const setRoadmapTrack = usePrefs((s) => s.setRoadmapTrack);
-  const trackKey = pickTrack(roadmapTrack, platform);
+  // The chips below make the choice visible, so a default is honest here.
+  const trackKey = pickTrack(roadmapTrack, platform) ?? 'flutter';
   const trackMeta = PLATFORMS.find((p) => p.key === trackKey);
   const trackLabel = trackMeta ? copy(t, trackMeta.labelKey) : trackKey;
 

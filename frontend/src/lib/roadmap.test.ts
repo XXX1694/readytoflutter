@@ -141,7 +141,8 @@ describe('pickTrack', () => {
     expect(pickTrack('android', 'ios')).toBe('android');
     expect(pickTrack(null, 'ios')).toBe('ios');
     expect(pickTrack(null, 'all')).toBe('flutter');
-    expect(pickTrack(null, 'mobile')).toBe('flutter');
+    expect(pickTrack(null, 'mobile')).toBeNull();
+    expect(pickTrack(null, 'cross')).toBeNull();
   });
 });
 
