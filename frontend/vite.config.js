@@ -12,19 +12,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // `prompt` lets us surface an "Update available — refresh" toast
-      // instead of the user discovering a stale UI on next reload. The
-      // SW skips waiting + claims clients in one click.
-      registerType: 'prompt',
-      includeAssets: [
-        'seed/static-data.json', 'favicon.svg', 'icon-source.svg',
-        'pwa/apple-touch-icon.png',
-        'pwa/apple-touch-icon-167.png',
-        'pwa/apple-touch-icon-152.png',
-        'pwa/apple-touch-icon-120.png',
-        'pwa/favicon-32.png',
-        'pwa/favicon-16.png',
-      ],
+      // A new worker installs, takes over and reloads the page on its own —
+      // nobody has to notice a toast to get the current build.
+      registerType: 'autoUpdate',
+      // Nothing from public/ goes into the precache: a precached
+      // static-data.json or icon is served from the cache first, which is
+      // exactly the staleness this configuration exists to avoid. Runtime
+      // caching below covers them network-first.
+      includeAssets: [],
       manifest: {
         // Stable identifier so `start_url` query strings don't fork the
         // installed PWA into multiple "apps" in Chrome.
@@ -125,22 +120,52 @@ export default defineConfig({
         importScripts: ['push-sw.js'],
         // Bump the cache size cap so a large grammar can't blow it.
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
-        // Precache the entire build output, including images, fonts and the
-        // generated PWA bitmap assets so the app cold-boots offline.
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,avif,woff2,json,ico}'],
-        // Routes inside the SPA — workbox serves index.html for any
-        // navigation that doesn't match a real precached file. Must match
-        // the actual precached path, which includes the base prefix on
-        // sub-path deploys (e.g. /readytoflutter/index.html on GH Pages).
-        navigateFallback: `${base}index.html`,
-        // Exclude /api/* (backend) and the base-prefixed /api/* so the SW
-        // never intercepts backend requests regardless of base path.
-        navigateFallbackDenylist: [/\/api\//],
+        // No app-shell precache. Precaching served index.html and every
+        // asset cache-first, so a deploy was invisible until the worker
+        // was swapped and the page reloaded — users kept seeing the old
+        // build for a full visit. Only push-sw.js is precached: its
+        // revision hash inside sw.js is what makes the browser notice a
+        // change to the push handlers.
+        globPatterns: ['push-sw.js'],
+        // No precached shell to fall back to; the navigation route below
+        // keeps the last fetched index.html for offline use instead.
+        navigateFallback: null,
+        // Old precache caches are dropped when the new worker activates,
+        // so nobody keeps serving a stale shell from a cache we no longer
+        // write to.
+        cleanupOutdatedCaches: true,
+        // Everything same-origin is network-first: online you always get
+        // the current build, offline you get the last one that loaded.
+        // Hashed /assets/ are the exception — their URL changes with their
+        // content, so cache-first is both safe and fast.
         runtimeCaching: [
           {
+            urlPattern: ({ request, url }) =>
+              request.mode === 'navigate' && !url.pathname.includes('/api/'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rtf-pages',
+              networkTimeoutSeconds: 4,
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/assets/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'rtf-assets',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             urlPattern: ({ url }) => url.pathname.endsWith('/seed/static-data.json'),
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'rtf-static-data' },
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rtf-static-data',
+              networkTimeoutSeconds: 4,
+              cacheableResponse: { statuses: [200] },
+            },
           },
           {
             // Cache YouTube thumbnails (Knowledge page recents strip) so
@@ -153,10 +178,21 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Icons, manifest, fonts outside /assets/ — anything else on
+            // this origin that is not the backend.
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && !url.pathname.includes('/api/'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rtf-shell',
+              networkTimeoutSeconds: 4,
+              cacheableResponse: { statuses: [200] },
+            },
+          },
         ],
-        // Skip-waiting + clients-claim wired through `messageSkipWaiting`
-        // — the React update toast triggers it on user click.
-        skipWaiting: false,
+        // A new worker takes over immediately; registerType 'autoUpdate'
+        // reloads the page once it has.
+        skipWaiting: true,
         clientsClaim: true,
       },
       // Make the service worker available in `npm run dev` too so we can

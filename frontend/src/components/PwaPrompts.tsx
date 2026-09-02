@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Download, X, Share2, RefreshCw } from 'lucide-react';
+import { Download, X, Share2 } from 'lucide-react';
 // virtual:pwa-register/react is created at build time by vite-plugin-pwa.
 // @ts-expect-error — virtual module, no static types.
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -18,9 +18,10 @@ import { useLang } from '../i18n/LangContext';
  * iOS Safari has no programmatic install — instead, on the third visit we
  * show a one-time bottom card explaining "Tap Share → Add to Home Screen".
  *
- * **Update** — when the service worker has a new build ready, we show a
- * sonner toast with a "Reload" action. Clicking it calls
- * `updateServiceWorker(true)` which skipsWaiting + clientsClaim + reloads.
+ * **Update** — nothing to do here any more: the worker is registered with
+ * `autoUpdate` (vite.config.js), so a new build installs, takes over and
+ * reloads the page by itself. The hourly `r.update()` below is what makes a
+ * long-open tab notice a deploy.
  */
 
 // Not in lib.dom yet — Chromium-only, and the shape we actually consume.
@@ -29,11 +30,6 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-// The virtual module ships no declarations; this is the slice we use.
-interface RegisterSWResult {
-  needRefresh: [boolean, (value: boolean) => void];
-  updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
-}
 
 const STORAGE = {
   installDismissed: 'rtf:pwa:install-dismissed',
@@ -72,11 +68,8 @@ export default function PwaPrompts() {
   const installEvent = useRef<BeforeInstallPromptEvent | null>(null);
   const [showIosHint, setShowIosHint] = useState(false);
 
-  // ── Service worker update handler ──────────────────────────────────────
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  }: RegisterSWResult = useRegisterSW({
+  // ── Service worker registration ────────────────────────────────────────
+  useRegisterSW({
     onRegisteredSW(_swUrl: string, r: ServiceWorkerRegistration | undefined) {
       // Periodic background check — a tab left open for hours catches
       // updates without the user reloading manually.
@@ -89,28 +82,6 @@ export default function PwaPrompts() {
       console.warn('[PWA] SW registration failed', err);
     },
   });
-
-  useEffect(() => {
-    if (!needRefresh) return;
-    toast.info(isRu ? 'Доступно обновление' : 'Update available', {
-      description: isRu
-        ? 'Обновите страницу, чтобы загрузить новую версию.'
-        : 'Reload the page to load the new build.',
-      duration: Infinity,
-      action: {
-        label: (
-          <span className="inline-flex items-center gap-1.5">
-            <RefreshCw className="h-3.5 w-3.5" />
-            {isRu ? 'Обновить' : 'Reload'}
-          </span>
-        ),
-        onClick: () => {
-          updateServiceWorker(true);
-        },
-      },
-      onDismiss: () => setNeedRefresh(false),
-    });
-  }, [needRefresh, isRu, updateServiceWorker, setNeedRefresh]);
 
   // ── Visit counter ─────────────────────────────────────────────────────
   useEffect(() => {
