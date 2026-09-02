@@ -124,7 +124,11 @@ let staticDataPromise: Promise<StaticDataPayload> | null = null;
 let staticDataLoadedAt = 0;
 
 const loadStaticData = (): Promise<StaticDataPayload> => {
-  const fresh = staticDataPromise && (Date.now() - staticDataLoadedAt) < STATIC_DATA_TTL_MS;
+  // A load still in flight (loadedAt is 0 until it resolves) is the freshest
+  // thing there is. Four callers race on boot; treating the in-flight promise
+  // as stale had each start its own download and parse of the 2 MB bundle.
+  const fresh = staticDataPromise !== null
+    && (staticDataLoadedAt === 0 || Date.now() - staticDataLoadedAt < STATIC_DATA_TTL_MS);
   if (fresh && staticDataPromise) return staticDataPromise;
 
   staticDataPromise = fetch(STATIC_DATA_URL)

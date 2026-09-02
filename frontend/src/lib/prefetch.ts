@@ -6,10 +6,10 @@
  *
  * BottomNav fires `prefetch(path)` on pointerdown so the chunk starts
  * downloading before the click handler runs (~50-150ms of headstart on
- * touch devices). `prefetchIdle()` warms the tab roots once the main thread
- * has a moment to spare.
+ * touch devices). `prefetchIdle()` warms the tab roots once the first screen
+ * has its data and the main thread has a moment to spare.
  */
-import { ROUTES } from './routes';
+import { ROUTES, TAB_ROUTES } from './routes';
 
 const REGISTRY: Record<string, () => Promise<unknown>> = Object.fromEntries(
   ROUTES.map((r) => [r.path, r.load]),
@@ -32,8 +32,12 @@ export function prefetch(path: string): void {
 }
 
 /**
- * Warm every registered route during browser idle time. Skipped on slow
- * connections (Save-Data / 2G) to avoid burning the user's data plan.
+ * Warm the tab roots during genuine browser idle — no timeout forcing the
+ * callback while the thread is busy. Only the five tabs: everything else is
+ * reached from a menu or the palette, where pointerdown prefetch covers the
+ * latency, and warming all ten routes put 22 chunk requests ahead of the
+ * seed bundle the first screen was waiting on. Skipped on slow connections
+ * (Save-Data / 2G) to avoid burning the user's data plan.
  */
 export function prefetchIdle(): void {
   if (typeof window === 'undefined') return;
@@ -42,11 +46,11 @@ export function prefetchIdle(): void {
   if (conn?.effectiveType && /^(slow-2g|2g)$/.test(conn.effectiveType)) return;
 
   const run = () => {
-    Object.keys(REGISTRY).forEach(prefetch);
+    TAB_ROUTES.forEach((route) => prefetch(route.path));
   };
-  const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void };
+  const w = window as Window & { requestIdleCallback?: (cb: () => void) => void };
   if (w.requestIdleCallback) {
-    w.requestIdleCallback(run, { timeout: 4000 });
+    w.requestIdleCallback(run);
   } else {
     setTimeout(run, 1500);
   }

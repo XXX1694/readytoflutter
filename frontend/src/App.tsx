@@ -64,9 +64,15 @@ export default function App() {
   // was still null at first paint.
   useEffect(() => {
     useAuth.getState().probeBackend(apiBaseUrl);
-    // Warm bottom-nav route chunks during idle so the first tap on any
-    // tab doesn't spend ~150ms waiting on a network round-trip.
-    prefetchIdle();
+    // Warm the tab-root chunks once the first screen has its data, so the
+    // first tap on a tab doesn't wait on a network round-trip — and started
+    // no earlier, or the chunks queue ahead of the seed bundle that screen
+    // is waiting on.
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.action.type !== 'success') return;
+      unsubscribe();
+      prefetchIdle();
+    });
     // Bring up the analytics SDK if a provider is configured. Lazy: no
     // network bytes if neither VITE_POSTHOG_KEY nor VITE_PLAUSIBLE_DOMAIN
     // is set at build time.

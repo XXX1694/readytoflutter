@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, Search, WifiOff, X } from 'lucide-react';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
@@ -11,6 +11,7 @@ import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
 import { FOCUS_ROUTES, routeAt, routeLabel } from '../lib/routes';
 import { goBack } from '../lib/navigation';
+import { useOnlineStatus } from '../lib/useOnlineStatus';
 
 /**
  * Native-style mobile header. Visible under the `lg` breakpoint, fixed to
@@ -25,6 +26,8 @@ import { goBack } from '../lib/navigation';
  *   is no prior in-app entry (deep link / first visit).
  * - The right action is `Search` everywhere; on focus-flow routes (session,
  *   timed, follow-ups, login, signup) the X close swaps in instead.
+ * - Offline, a badge sits before the action: the phone is the device that
+ *   loses the network, and writes are landing in localStorage.
  */
 const slugToLabel = (slug: string): string =>
   slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
@@ -65,6 +68,7 @@ export default function MobileHeader() {
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
 
   const title = usePageTitle();
+  const online = useOnlineStatus();
   const isHome = location.pathname === '/';
   const isFocus = FOCUS_ROUTES.some((re) => re.test(location.pathname));
 
@@ -127,7 +131,19 @@ export default function MobileHeader() {
         )}
 
         {/* Trailing slot — search by default, X on focus-flow routes. */}
-        <div className="ml-auto flex w-12 shrink-0 items-center justify-end">
+        <div className="ml-auto flex shrink-0 items-center">
+          {!online && (
+            <span
+              role="status"
+              aria-live="polite"
+              title={t.offlineHint}
+              className="inline-flex items-center gap-1 pr-1 text-[12px] text-coral"
+            >
+              <WifiOff className="h-3.5 w-3.5" aria-hidden />
+              {t.offline}
+            </span>
+          )}
+          <div className="flex w-12 shrink-0 items-center justify-end">
           {isFocus ? (
             <button
               type="button"
@@ -147,6 +163,7 @@ export default function MobileHeader() {
               <Search className="h-[22px] w-[22px]" aria-hidden />
             </button>
           )}
+          </div>
         </div>
       </div>
     </header>

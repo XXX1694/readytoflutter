@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Download, X, Share2 } from 'lucide-react';
 // virtual:pwa-register/react is created at build time by vite-plugin-pwa.
 // @ts-expect-error — virtual module, no static types.
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useLang } from '../i18n/LangContext';
+import { HIDE_BOTTOM_NAV } from '../lib/routes';
 
 /**
  * PWA install + update prompts.
@@ -18,10 +20,15 @@ import { useLang } from '../i18n/LangContext';
  * iOS Safari has no programmatic install — instead, on the third visit we
  * show a one-time bottom card explaining "Tap Share → Add to Home Screen".
  *
- * **Update** — nothing to do here any more: the worker is registered with
- * `autoUpdate` (vite.config.js), so a new build installs, takes over and
- * reloads the page by itself. The hourly `r.update()` below is what makes a
- * long-open tab notice a deploy.
+ * **Update** — a new build's worker installs and waits (`registerType:
+ * 'prompt'`, `skipWaiting: false` in vite.config.js). It is applied — which
+ * reloads the page — at the first moment that interrupts nothing: never
+ * inside a session, and not under a reader's feet, so on the next route
+ * change or when the tab is backgrounded. The hourly `r.update()` below is
+ * what makes a long-open tab notice a deploy at all.
+ *
+ * Neither prompt appears inside a session, a mock or a round: the install
+ * event is held until the user is back on a tab root.
  */
 
 // Not in lib.dom yet — Chromium-only, and the shape we actually consume.
@@ -62,19 +69,30 @@ const persistDismiss = (key: string): void => {
   try { localStorage.setItem(key, String(Date.now())); } catch { /* quota */ }
 };
 
+/** Full-screen flows nothing should interrupt. */
+const inFlow = (path: string): boolean => HIDE_BOTTOM_NAV.some((re) => re.test(path));
+
 export default function PwaPrompts() {
   const { lang } = useLang();
   const isRu = lang === 'ru';
+  const { pathname } = useLocation();
+  const busy = inFlow(pathname);
+  const busyRef = useRef(busy);
+  useEffect(() => { busyRef.current = busy; }, [busy]);
   const installEvent = useRef<BeforeInstallPromptEvent | null>(null);
   const [showIosHint, setShowIosHint] = useState(false);
 
   // ── Service worker registration ────────────────────────────────────────
-  useRegisterSW({
+  const updateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
     onRegisteredSW(_swUrl: string, r: ServiceWorkerRegistration | undefined) {
       // Periodic background check — a tab left open for hours catches
       // updates without the user reloading manually.
       if (!r) return;
-      setInterval(() => {
+      updateTimer.current = setInterval(() => {
         try { r.update(); } catch { /* offline / aborted */ }
       }, 60 * 60 * 1000);
     },
@@ -82,6 +100,24 @@ export default function PwaPrompts() {
       console.warn('[PWA] SW registration failed', err);
     },
   });
+  useEffect(() => () => { if (updateTimer.current) clearInterval(updateTimer.current); }, []);
+
+  // ── Apply a waiting worker ─────────────────────────────────────────────
+  // Applying reloads the page, so it waits for the next route change (a
+  // repaint the user asked for) or for the tab to go to the background —
+  // and never happens inside a session.
+  const flaggedAt = useRef<string | null>(null);
+  useEffect(() => {
+    if (!needRefresh) { flaggedAt.current = null; return; }
+    if (flaggedAt.current === null) flaggedAt.current = pathname;
+    const apply = () => { void updateServiceWorker(true); };
+    if (!busy && pathname !== flaggedAt.current) { apply(); return; }
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden' && !busyRef.current) apply();
+    };
+    document.addEventListener('visibilitychange', onHidden);
+    return () => document.removeEventListener('visibilitychange', onHidden);
+  }, [needRefresh, pathname, busy, updateServiceWorker]);
 
   // ── Visit counter ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -124,8 +160,22 @@ export default function PwaPrompts() {
         },
       },
       onDismiss: () => persistDismiss(STORAGE.installDismissed),
+      // Letting it time out is an answer too; without this the toast came
+      // back on every page load.
+      onAutoClose: () => persistDismiss(STORAGE.installDismissed),
     });
   }, [isRu]);
+
+  // Shown once per page lifetime, and only on a tab root: the event is held
+  // while a session is running and surfaced when the user is back.
+  const surfaced = useRef(false);
+  const maybeSurface = useCallback(() => {
+    if (surfaced.current || !installEvent.current || busyRef.current) return;
+    if (!visitsEnough() || dismissedRecently(STORAGE.installDismissed)) return;
+    surfaced.current = true;
+    surfaceInstallToast();
+  }, [surfaceInstallToast]);
+  useEffect(() => { if (!busy) maybeSurface(); }, [busy, maybeSurface]);
 
   useEffect(() => {
     if (isStandalone()) return;
@@ -136,8 +186,7 @@ export default function PwaPrompts() {
       installEvent.current = e as BeforeInstallPromptEvent;
       // Hold the prompt back until the user has shown some intent —
       // bombarding first-time visitors hurts conversion.
-      if (!visitsEnough()) return;
-      surfaceInstallToast();
+      maybeSurface();
     };
     const onInstalled = () => {
       installEvent.current = null;
@@ -150,7 +199,7 @@ export default function PwaPrompts() {
       window.removeEventListener('beforeinstallprompt', onPrompt);
       window.removeEventListener('appinstalled', onInstalled);
     };
-  }, [surfaceInstallToast]);
+  }, [maybeSurface]);
 
   // ── iOS Safari install hint ────────────────────────────────────────────
   useEffect(() => {
@@ -163,7 +212,9 @@ export default function PwaPrompts() {
     return () => clearTimeout(id);
   }, []);
 
-  if (!showIosHint) return null;
+  // Hidden, not dismissed, while a flow is running: it comes back on the
+  // next tab root.
+  if (!showIosHint || busy) return null;
 
   const dismissIosHint = () => {
     persistDismiss(STORAGE.iosHintDismissed);

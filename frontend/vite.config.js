@@ -12,13 +12,16 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // A new worker installs, takes over and reloads the page on its own —
-      // nobody has to notice a toast to get the current build.
-      registerType: 'autoUpdate',
-      // Nothing from public/ goes into the precache: a precached
-      // static-data.json or icon is served from the cache first, which is
-      // exactly the staleness this configuration exists to avoid. Runtime
-      // caching below covers them network-first.
+      // A new worker installs and waits; PwaPrompts applies it (and reloads)
+      // at the first moment that interrupts nothing — never inside a
+      // session, and not under a reader's feet. 'autoUpdate' reloaded the
+      // page the instant the worker activated, mid-mock-interview included.
+      registerType: 'prompt',
+      // Nothing from public/ goes into the precache beyond the manifest and
+      // its icons (the plugin adds those itself): a precached
+      // static-data.json is served from the cache first, which is exactly
+      // the staleness this configuration exists to avoid. Runtime caching
+      // below covers everything else network-first.
       includeAssets: [],
       manifest: {
         // `id`, `start_url` and `scope` are left to the plugin, which derives
@@ -121,12 +124,13 @@ export default defineConfig({
         // No app-shell precache. Precaching served index.html and every
         // asset cache-first, so a deploy was invisible until the worker
         // was swapped and the page reloaded — users kept seeing the old
-        // build for a full visit. Only push-sw.js is precached: its
-        // revision hash inside sw.js is what makes the browser notice a
-        // change to the push handlers.
+        // build for a full visit. Of our own files only push-sw.js is
+        // precached: its revision hash inside sw.js is what makes the
+        // browser notice a change to the push handlers.
         globPatterns: ['push-sw.js'],
         // No precached shell to fall back to; the navigation route below
-        // keeps the last fetched index.html for offline use instead.
+        // keeps the last fetched documents for offline use, and falls back
+        // to one of them for a path it has never seen.
         navigateFallback: null,
         // Old precache caches are dropped when the new worker activates,
         // so nobody keeps serving a stale shell from a cache we no longer
@@ -144,6 +148,11 @@ export default defineConfig({
             options: {
               cacheName: 'rtf-pages',
               networkTimeoutSeconds: 4,
+              // `/?stack=ios` and `/topics?level=junior` are the same document
+              // as the bare path: match on the path so a query string never
+              // turns into an offline miss.
+              matchOptions: { ignoreSearch: true },
+              expiration: { maxEntries: 50 },
               plugins: [
                 {
                   // GitHub Pages sends max-age=600 on HTML, and a plain fetch
@@ -155,6 +164,21 @@ export default defineConfig({
                   // nothing changed and with the new document when it did.
                   requestWillFetch: async ({ request }) =>
                     new globalThis.Request(request.url, { cache: 'no-cache', credentials: 'same-origin' }),
+                },
+                {
+                  // Offline, on a path this cache has never seen — a home
+                  // screen shortcut, a notification tap, any route reached
+                  // by pushState rather than a full load — serve the last
+                  // document fetched. The app is one shell: it renders the
+                  // route from the cached static data. Without this the
+                  // browser shows its own error page.
+                  handlerDidError: async () => {
+                    const cache = await globalThis.caches.open('rtf-pages');
+                    const shell = await cache.match(globalThis.registration.scope, { ignoreSearch: true });
+                    if (shell) return shell;
+                    const [first] = await cache.keys();
+                    return first ? cache.match(first) : undefined;
+                  },
                 },
               ],
               cacheableResponse: { statuses: [200] },
@@ -203,9 +227,9 @@ export default defineConfig({
             },
           },
         ],
-        // A new worker takes over immediately; registerType 'autoUpdate'
-        // reloads the page once it has.
-        skipWaiting: true,
+        // A new worker waits for PwaPrompts to say when (registerType
+        // 'prompt' above); once told, it takes over every open tab.
+        skipWaiting: false,
         clientsClaim: true,
       },
       // Make the service worker available in `npm run dev` too so we can

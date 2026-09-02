@@ -108,7 +108,7 @@ function readPayload(event) {
 function resolveUrl(path) {
   var scope = self.registration.scope;
   try {
-    var url = new URL(String(path || './').replace(/^\//, ''), scope);
+    var url = new URL(String(path || './').replace(/^\/+/, ''), scope);
     if (url.origin !== new URL(scope).origin) return scope;
     return url.href;
   } catch (err) {

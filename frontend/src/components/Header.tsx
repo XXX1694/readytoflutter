@@ -7,28 +7,10 @@ import { useT, type UICopy } from '../i18n/ui';
 import { IconButton } from '../ui/index';
 import { cn } from '../lib/cn';
 import { track } from '../lib/analytics';
+import { useOnlineStatus } from '../lib/useOnlineStatus';
 import AccountMenu from './AccountMenu';
 import { PLATFORMS } from '../lib/platform';
 import type { PlatformKey } from '../types/domain';
-
-// Subscribes to navigator.onLine so the header can show a small offline
-// badge when writes are going to localStorage instead of the server.
-function useOnlineStatus(): boolean {
-  const [online, setOnline] = useState(
-    typeof navigator === 'undefined' ? true : navigator.onLine,
-  );
-  useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
-  }, []);
-  return online;
-}
 
 // `PLATFORMS` stores its i18n keys as plain strings — resolve them against the
 // copy table without widening the table to `any`.
