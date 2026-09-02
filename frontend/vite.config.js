@@ -146,12 +146,19 @@ export default defineConfig({
             options: {
               cacheName: 'rtf-pages',
               networkTimeoutSeconds: 4,
-              // GitHub Pages sends max-age=600 on HTML, and a plain fetch
-              // from the worker would honour the browser's HTTP cache — the
-              // page could stay ten minutes behind a deploy. `no-cache`
-              // revalidates against the ETag instead: a 304 when nothing
-              // changed, the new document when it did.
-              fetchOptions: { cache: 'no-cache' },
+              plugins: [
+                {
+                  // GitHub Pages sends max-age=600 on HTML, and a plain fetch
+                  // from the worker honours the browser's HTTP cache — the
+                  // page could stay ten minutes behind a deploy. Workbox
+                  // ignores `fetchOptions` for navigation requests
+                  // (workbox#1796), so the request itself is rebuilt with
+                  // `no-cache`: a conditional request, answered with 304 when
+                  // nothing changed and with the new document when it did.
+                  requestWillFetch: async ({ request }) =>
+                    new globalThis.Request(request.url, { cache: 'no-cache', credentials: 'same-origin' }),
+                },
+              ],
               cacheableResponse: { statuses: [200] },
             },
           },
