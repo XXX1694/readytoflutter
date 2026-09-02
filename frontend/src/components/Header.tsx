@@ -116,8 +116,8 @@ export default function Header() {
           </span>
         )}
 
-        {/* Language — EN / RU. The current one carries the marker, the same
-            way the nav marks the page you are on. */}
+        {/* Language — EN / RU. The current one is ink on a tinted chip, the
+            same way the nav marks the page you are on. */}
         <div className="hidden items-center sm:flex">
           {LANGS.map((code) => {
             const active = lang === code;
@@ -130,10 +130,10 @@ export default function Header() {
                 aria-label={`${t.cmdSwitchLang} — ${code.toUpperCase()}`}
                 className={cn(
                   'inline-flex h-9 items-center rounded-md px-1.5 text-[12px] font-semibold transition-colors',
-                  active ? 'text-ink' : 'text-muted hover:text-ink',
+                  active ? 'bg-rule/8 text-ink' : 'text-muted hover:text-ink',
                 )}
               >
-                <span className={cn(active && 'marker')}>{code.toUpperCase()}</span>
+                <span>{code.toUpperCase()}</span>
               </button>
             );
           })}

@@ -2,9 +2,8 @@
  * Marginalia — the design system for Onsite.
  *
  * The premise: this is a book you study from, not a dashboard you monitor.
- * Warm paper, warm near-black ink, and exactly one accent — a citron
- * highlighter that only ever appears as a wash *behind* ink, the way a real
- * marker works. Everything else is set in type and spacing.
+ * Warm paper, warm near-black ink, and one accent — the pen's blue, kept for
+ * the things you can act on. Everything else is set in type and spacing.
  *
  * Three type roles, each earned:
  *   Schibsted Grotesk  UI, navigation, headings — scanned, not read
@@ -36,12 +35,9 @@
     --muted:        107 104  94;   /* #6B685E — 4.9:1 on paper */
     --muted-2:      110 106  95;   /* #6E6A5F — 4.6:1, still body-safe */
 
-    /* The metaphor is an annotated book: black ink, a yellow highlighter and
-       a blue pen. The marker is the accent — never a text colour, never a
-       fill for large areas, only a stroke laid behind ink. See .marker.
-       The previous citron (#CDE84A) read as a sickly wash rather than a
-       highlighter; a saturated warm yellow is what the gesture looks like. */
-    --marker:       255 214  64;   /* #FFD640 highlighter yellow */
+    /* The one accent is the pen (--brand, below). The yellow highlighter
+       that used to sit here as a second accent was retired: laid behind
+       text it read as a rendering glitch rather than emphasis. */
 
     /* Interactive: the blue pen. The previous petrol (#22384F) was so close
        to ink that nothing on the page read as a colour at all. */
@@ -78,8 +74,6 @@
     --rule-strong:  255 255 250;
     --muted:        158 154 143;   /* #9E9A8F — 6.2:1 on the sheet */
     --muted-2:      136 132 122;   /* #88847A — 4.6:1 on the sheet */
-
-    --marker:       201 162  39;   /* #C9A227 — the same marker, burnt down */
 
     --brand:        126 169 220;   /* #7EA9DC the pen, inverted for dark */
     --brand-ink:    160 192 235;
@@ -167,7 +161,7 @@
   h1, h2, h3, h4 { letter-spacing: -0.012em; font-weight: 600; }
   h1 { letter-spacing: -0.018em; font-weight: 600; }
 
-  ::selection { background: rgb(var(--marker) / 0.50); color: rgb(var(--ink)); }
+  ::selection { background: rgb(var(--brand) / 0.22); }
 
   /* Sleeker scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -180,19 +174,18 @@
   }
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--rule) / 0.32); background-clip: padding-box; }
 
-  /* Focus is the marker again, at full strength so it is unmissable. */
+  /* Focus is an ink outline, offset so it reads on any surface. */
   :focus-visible {
     outline: 2px solid rgb(var(--ink) / 0.85);
     outline-offset: 2px;
     border-radius: 4px;
-    box-shadow: 0 0 0 4px rgb(var(--marker) / 0.55);
   }
 }
 
 @layer components {
   /* ── Page background. Flat paper. The previous build floated three
        radial gradients here; ambient "lighting" is the single loudest tell
-       of a templated dashboard, and it fought the marker for attention. */
+       of a templated dashboard, and it fought the content for attention. */
   .bg-page {
     background: rgb(var(--paper));
     position: relative;
@@ -200,32 +193,6 @@
   /* Kept so the old stacking contract (children above the background) still
      holds for anything that relied on it. */
   .bg-page > * { position: relative; z-index: 1; }
-
-  /* ── The marker. The one accent in the system: a citron wash laid behind
-       ink, clipped to the text box like a real highlighter stroke, with the
-       ends left slightly ragged. Never use --marker as a text colour. */
-  .marker {
-    background-image: linear-gradient(
-      to right,
-      rgb(var(--marker) / 0) 0%,
-      rgb(var(--marker) / 0.55) 1.5%,
-      rgb(var(--marker) / 0.55) 98%,
-      rgb(var(--marker) / 0) 100%
-    );
-    background-repeat: no-repeat;
-    background-size: 100% 0.72em;
-    background-position: 0 0.72em;
-    padding: 0 0.12em;
-  }
-  .dark .marker {
-    background-image: linear-gradient(
-      to right,
-      rgb(var(--marker) / 0) 0%,
-      rgb(var(--marker) / 0.30) 1.5%,
-      rgb(var(--marker) / 0.30) 98%,
-      rgb(var(--marker) / 0) 100%
-    );
-  }
 
   /* ── Glass surface — translucent with backdrop blur. Use for floating
        UI like sidebars, headers, command palette. */
@@ -478,14 +445,6 @@ h1, h2, h3 { text-wrap: balance; }
   .codex-card, .soft-card {
     box-shadow: none !important;
     border: 1px solid rgb(0 0 0 / 0.25) !important;
-  }
-  /* Browsers drop background images when printing, and on a mono printer the
-     citron would come out as an indistinct grey band anyway. The marker's job
-     is emphasis, so on paper it becomes a rule under the text instead. */
-  .marker {
-    background-image: none;
-    padding: 0;
-    border-bottom: 2px solid rgb(0 0 0 / 0.55);
   }
   /* Keep a heading with the text it introduces, and don't strand single
      lines of an answer across a page break. */

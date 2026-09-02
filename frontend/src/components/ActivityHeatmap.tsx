@@ -11,16 +11,16 @@ import type { HeatmapCell } from '../lib/activity';
  * brand/brand-sky gradient with a glow on the hottest bucket, which is three
  * colours and two materials for a single ordered quantity.
  *
- * The ramp is the marker, because that is what these cells are: the days you
- * marked up. Alphas stop short of the neat citron so a full week of study
- * still reads as a highlighter pass over paper and not as a block of fill.
+ * The ramp is the pen's blue at rising alphas — one hue for one ordered
+ * quantity. It stops short of solid so a full week of study still reads as
+ * ink on paper and not as a block of fill.
  */
 const INTENSITY_CLASS = [
   'bg-rule/8',
-  'bg-[rgb(var(--marker)/0.22)] dark:bg-[rgb(var(--marker)/0.14)]',
-  'bg-[rgb(var(--marker)/0.42)] dark:bg-[rgb(var(--marker)/0.28)]',
-  'bg-[rgb(var(--marker)/0.62)] dark:bg-[rgb(var(--marker)/0.44)]',
-  'bg-[rgb(var(--marker)/0.85)] dark:bg-[rgb(var(--marker)/0.62)]',
+  'bg-brand/22',
+  'bg-brand/45',
+  'bg-brand/65',
+  'bg-brand/90',
 ];
 
 export interface ActivityHeatmapProps {

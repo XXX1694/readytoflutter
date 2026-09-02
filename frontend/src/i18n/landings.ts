@@ -12,9 +12,9 @@ import type { PlatformKey } from '../types/domain.ts';
 
 export interface LandingCopy {
   eyebrow: string;
-  // [first line, emphasised second line]. The second line used to be
-  // rendered with a clipped indigo→violet gradient; emphasis is now
-  // carried by the marker (see DESIGN.md).
+  // [first line, second line]. The second line used to be rendered with a
+  // clipped indigo→violet gradient; both lines are plain ink now, the type
+  // does the work (see DESIGN.md).
   title: [string, string];
   desc: string;
   docTitle: string;

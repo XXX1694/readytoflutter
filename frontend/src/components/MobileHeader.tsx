@@ -24,10 +24,8 @@ import { cn } from '../lib/cn';
  * - The right action is `Search` everywhere; on focus-flow routes (Study /
  *   Mock / Round / login / signup) the X close swaps in instead.
  *
- * The citron marker appears here only on the home route, where the title *is*
- * the wordmark — same treatment the Sidebar gives it. Ordinary page titles
- * stay plain ink: the marker means "the wordmark" or "the nav item you are
- * on" (Sidebar rows, BottomNav tabs), never "here is a heading".
+ * On the home route the title *is* the wordmark and is set a size larger,
+ * the same treatment the Sidebar gives it. Ordinary page titles stay plain.
  */
 const FOCUS_ROUTES = [/^\/study(\/|$)/, /^\/mock(\/|$)/, /^\/round(\/|$)/, /^\/login(\/|$)/, /^\/signup(\/|$)/];
 
@@ -145,7 +143,7 @@ export default function MobileHeader() {
           className="pointer-events-none absolute left-1/2 top-1/2 max-w-[64%] -translate-x-1/2 -translate-y-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink"
           aria-live="polite"
         >
-          <span className={cn(isHome && 'marker text-[17px] tracking-[-0.02em]')}>{title}</span>
+          <span className={cn(isHome && 'text-[17px] tracking-[-0.02em]')}>{title}</span>
         </h1>
 
         {/* Trailing slot — search by default, X on focus-flow routes. */}

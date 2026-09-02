@@ -146,7 +146,7 @@ export default function SignupPage() {
       <AuthShell>
         <Eyebrow>{R.panelEyebrow}</Eyebrow>
         <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
-          <span className="marker decoration-clone">{R.panelTitle}</span>
+          {R.panelTitle}
         </h1>
 
         <div className="mt-6">
@@ -201,7 +201,7 @@ export default function SignupPage() {
 
       <Eyebrow>{T.eyebrow}</Eyebrow>
       <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
-        <span className="marker decoration-clone">{T.title}</span>
+        {T.title}
       </h1>
       <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.subtitle}</p>
 

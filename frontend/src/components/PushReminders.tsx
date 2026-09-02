@@ -243,7 +243,7 @@ export default function PushReminders({ lang }: { lang: Lang }) {
               : 'mt-4 text-[13px] text-ink-2'
           }
         >
-          {note.tone === 'ok' ? <span className="marker">{note.text}</span> : note.text}
+          {note.text}
         </p>
       )}
     </section>

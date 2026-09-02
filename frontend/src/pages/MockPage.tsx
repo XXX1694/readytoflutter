@@ -283,15 +283,7 @@ export default function MockPage() {
         </div>
 
         <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[32px]">
-          <span
-            className={cn(
-              'marker [box-decoration-break:clone] [-webkit-box-decoration-break:clone]',
-              'transition-[background-size] duration-500 ease-out motion-reduce:transition-none',
-              revealed ? 'bg-[length:100%_0.72em]' : 'bg-[length:0%_0.72em]',
-            )}
-          >
-            {questionText(current)}
-          </span>
+          {questionText(current)}
         </h2>
 
         {!revealed && (

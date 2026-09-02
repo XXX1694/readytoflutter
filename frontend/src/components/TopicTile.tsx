@@ -23,7 +23,7 @@ export interface TopicTileProps {
  * Progress is a tally, not a bar: fifty progress bars in a grid is the shape
  * of a monitoring console, and `7 / 12` is both smaller and more precise than
  * a 4px sliver. A finished topic turns its count mint — the semantic "right" —
- * and a topic with cards waiting gets the marker, because that is the one
+ * and a topic with cards waiting gets the pen's blue, because that is the one
  * thing on the tile you can act on today.
  */
 function TopicTile({ topic, t, topicTitle, topicDesc, dueCount = 0 }: TopicTileProps) {
@@ -42,13 +42,13 @@ function TopicTile({ topic, t, topicTitle, topicDesc, dueCount = 0 }: TopicTileP
       aria-label={`${topicTitle(topic)} — ${done}/${total} ${t.completedOf}${hasDue ? `, ${dueCount} ${dueLabel}` : ''}`}
       className={cn(
         'codex-card flex flex-col gap-2.5 p-4 text-left',
-        hasDue && 'border-[rgb(var(--marker)/0.55)] hover:border-[rgb(var(--marker)/0.75)]',
+        hasDue && 'border-brand/40 hover:border-brand/60',
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <TopicGlyph topic={topic} size="md" />
         {hasDue && (
-          <span className="marker shrink-0 text-[13px] text-ink">
+          <span className="shrink-0 text-[13px] font-medium text-brand">
             <span className="num">{dueCount}</span> {dueLabel}
           </span>
         )}

@@ -18,15 +18,14 @@ import { filterTopicsByPlatform, topicPlatform, PLATFORM_GROUPS } from '../lib/p
 import type { PlatformKey } from '../types/domain';
 
 /**
- * The active-state device for the whole app chrome is the citron marker laid
- * behind the label — the same wash Sidebar, BottomNav and MobileHeader use, so
- * "where am I" reads identically in all three. Nothing else marks selection:
- * no pill, no tinted row, no ring.
+ * The active-state device for the app chrome is weight plus a tinted row —
+ * the same signal Sidebar, BottomNav and MobileHeader give, so "where am I"
+ * reads identically in all three. No pill, no ring, no highlight wash.
  */
 const navRowClass = (isActive: boolean): string =>
   cn(
     'mx-2 flex items-center gap-2.5 rounded-md px-3 py-2.5 text-[13.5px] transition-colors lg:py-2',
-    isActive ? 'text-ink font-semibold' : 'font-medium text-ink-2 hover:bg-rule/6 hover:text-ink',
+    isActive ? 'bg-rule/8 text-ink font-semibold' : 'font-medium text-ink-2 hover:bg-rule/6 hover:text-ink',
   );
 
 /**
@@ -55,7 +54,7 @@ function MainNavLink({ to, end, onClose, icon: Icon, children }: MainNavLinkProp
             className={cn('h-4 w-4 shrink-0', isActive ? 'text-ink' : 'text-muted')}
             aria-hidden
           />
-          <span className={cn(isActive && 'marker')}>{children}</span>
+          <span>{children}</span>
         </>
       )}
     </NavLink>
@@ -218,11 +217,11 @@ export default function Sidebar() {
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        {/* Wordmark. Set in the grotesk and marked with the citron — the name
-            is the mark, so there is no icon tile to go stale. */}
+        {/* Wordmark. Set in the grotesk — the name is the mark, so there is
+            no icon tile to go stale. */}
         <div className="flex items-center justify-between gap-2 border-b border-rule/8 px-5 py-4">
           <NavLink to="/" onClick={close} className="rounded-sm" aria-label={t.goToHomepage}>
-            <span className="marker font-display text-[19px] font-semibold tracking-[-0.02em] text-ink">
+            <span className="font-display text-[19px] font-semibold tracking-[-0.02em] text-ink">
               Onsite
             </span>
           </NavLink>
@@ -334,7 +333,7 @@ export default function Sidebar() {
                             className={({ isActive }) =>
                               cn(
                                 'mx-3 flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] transition-colors lg:py-1.5',
-                                isActive ? 'text-ink' : 'text-ink-2 hover:bg-rule/6 hover:text-ink',
+                                isActive ? 'bg-rule/8 text-ink' : 'text-ink-2 hover:bg-rule/6 hover:text-ink',
                               )
                             }
                           >
@@ -342,10 +341,8 @@ export default function Sidebar() {
                               <>
                                 <TopicGlyph topic={topic} size="sm" />
                                 <span className="min-w-0 flex-1">
-                                  {/* The wash goes on an inline child so it
-                                      hugs the title instead of the full row. */}
                                   <span className="block truncate leading-tight">
-                                    <span className={cn(isActive && 'marker font-semibold')}>
+                                    <span className={cn(isActive && 'font-semibold')}>
                                       {topicTitle(topic)}
                                     </span>
                                   </span>

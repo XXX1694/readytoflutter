@@ -146,8 +146,8 @@ function buildPlan(questions: Question[], topics: Topic[], now: number = Date.no
  *
  * Its composition used to be four coloured chips, each with an icon, a count
  * and a word — a control panel for three numbers. It reads as a sentence now,
- * and the marker sits on the card count because that is the figure the button
- * beneath acts on. Nothing else here is coloured.
+ * with the card count carrying the weight because that is the figure the
+ * button beneath acts on. Nothing here is coloured.
  */
 export default function TodayPlan() {
   const navigate = useNavigate();
@@ -203,16 +203,7 @@ export default function TodayPlan() {
               lang === 'ru' ? 'База закрыта — дальше закрепление' : 'Caught up — time to reinforce'
             ) : (
               <>
-                <span className="relative inline-block">
-                  {/* Highlighter stroke, sized to the digits: the `.marker`
-                      utility is tuned for body copy and sits below the
-                      baseline at headline sizes. */}
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-[-0.08em] bottom-[0.02em] top-[0.16em] bg-[rgb(var(--marker)/0.55)] dark:bg-[rgb(var(--marker)/0.28)]"
-                  />
-                  <span className="num relative">{total}</span>
-                </span>{' '}
+                <span className="num">{total}</span>{' '}
                 <span className="text-ink-2">
                   {lang === 'ru'
                     ? `${total === 1 ? 'карточка' : total < 5 ? 'карточки' : 'карточек'} · ~${minutes} мин`

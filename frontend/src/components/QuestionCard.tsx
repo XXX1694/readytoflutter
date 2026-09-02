@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo, forwardRef } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bookmark, Check, CheckCircle2, ChevronDown, Circle, CircleDot, EyeOff, Square, Volume2,
 } from 'lucide-react';
@@ -74,12 +74,9 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
   const update = useUpdateProgress();
   const [bookmarked, toggleBookmark] = useBookmark(question.id);
   const recallMode = usePrefs((s) => s.recallMode);
-  const reducedMotion = useReducedMotion();
 
   // Hint ladder, only walked when recallMode is on: 'hidden' → 'hint' → 'full'.
   const [reveal, setReveal] = useState<Reveal>(recallMode ? 'hidden' : 'full');
-  // True while the reveal sweep is playing — see `showAnswer` below.
-  const [sweeping, setSweeping] = useState(false);
 
   // The ladder starts over whenever the card is opened, the question changes or
   // recall mode is toggled. Adjusting during render rather than in an effect
@@ -90,7 +87,6 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
     setLastRevealSignature(revealSignature);
     if (open) {
       setReveal(recallMode ? 'hidden' : 'full');
-      setSweeping(false);
       setShowCode(false);
     }
   }
@@ -116,14 +112,10 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
     [question.id, question.difficulty, effectiveTopicSlug],
   );
 
-  // The reveal is the product's one signature gesture, so it gets exactly one
-  // motion: a citron marker wash lies over the answer and is pulled off to the
-  // right, leaving clean ink behind. Skipped entirely under reduced motion.
   const showAnswer = useCallback(() => {
     trackReveal(reveal === 'hint', true);
     setReveal('full');
-    setSweeping(!reducedMotion);
-  }, [reducedMotion, reveal, trackReveal]);
+  }, [reveal, trackReveal]);
 
   // Outside recall mode, opening the card *is* the reveal — there is no second
   // step to hang the event on.
@@ -193,7 +185,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
       className={cn(
         'overflow-hidden rounded-lg border bg-paper-2 transition-colors duration-200',
         open ? 'border-rule/25 shadow-codex' : 'border-rule/12 shadow-codex-sm hover:border-rule/25',
-        focused && !open && 'shadow-marker',
+        focused && !open && 'shadow-focus',
       )}
     >
       {/* Header. The toggle and the bookmark are two sibling buttons — a
@@ -349,7 +341,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                     {recallMode && reveal === 'full' && (
                       <button
                         type="button"
-                        onClick={() => { setReveal('hidden'); setSweeping(false); }}
+                        onClick={() => setReveal('hidden')}
                         className={cn(QUIET_ACTION, 'text-muted hover:text-ink')}
                       >
                         <EyeOff className="h-3 w-3" aria-hidden />
@@ -361,11 +353,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                   {recallMode && reveal === 'hidden' ? (
                     <div className="rounded-md border border-rule/12 bg-paper px-4 py-6 sm:px-5">
                       <p className="answer-text mb-4">
-                        {lang === 'ru' ? (
-                          <>Сначала ответь <span className="marker">по памяти</span>.</>
-                        ) : (
-                          <>Answer it <span className="marker">from memory</span> first.</>
-                        )}
+                        {lang === 'ru' ? 'Сначала ответь по памяти.' : 'Answer it from memory first.'}
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
                         <Button size="sm" onClick={showAnswer}>
@@ -380,8 +368,8 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                     </div>
                   ) : recallMode && reveal === 'hint' ? (
                     <div className="space-y-4">
-                      {/* A citron rule in the margin — the marker's other job. */}
-                      <div className="border-l-2 border-[rgb(var(--marker))] pl-4">
+                      {/* A pen rule in the margin. */}
+                      <div className="border-l-2 border-brand/40 pl-4">
                         <p className="eyebrow mb-1">{lang === 'ru' ? 'Подсказка' : 'Hint'}</p>
                         <p className="answer-text">{hintText}</p>
                       </div>
@@ -390,23 +378,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                       </Button>
                     </div>
                   ) : (
-                    <div className="relative">
-                      <AnswerText text={fullAnswer} />
-                      {sweeping && (
-                        <motion.span
-                          aria-hidden
-                          className="pointer-events-none absolute inset-0"
-                          // `originX` rather than Tailwind's `origin-right`:
-                          // framer writes its own transform-origin and would
-                          // overwrite the class.
-                          style={{ originX: 1, backgroundColor: 'rgb(var(--marker) / 0.42)' }}
-                          initial={{ scaleX: 1 }}
-                          animate={{ scaleX: 0 }}
-                          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                          onAnimationComplete={() => setSweeping(false)}
-                        />
-                      )}
-                    </div>
+                    <AnswerText text={fullAnswer} />
                   )}
 
                   {/* Code — only after full reveal */}

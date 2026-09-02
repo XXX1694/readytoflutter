@@ -28,7 +28,7 @@ type EaseBucket = 'strong' | 'solid' | 'shaky' | 'weak';
 
 /**
  * SM-2 easiness, said in words. It stays ink like everything else on this
- * page: colour here would be a fifth hue competing with the marker, and the
+ * page: colour here would be a fifth hue competing with the pen, and the
  * word already carries the whole meaning.
  */
 const EASE_LABEL: Record<Lang, Record<EaseBucket, string>> = {
@@ -160,7 +160,7 @@ export default function StatsPage() {
       }, [])
     : [];
 
-  // The marker lands on the one figure that asks for an action today.
+  // The pen's blue lands on the one figure that asks for an action today.
   const markedTile: 'overdue' | 'due' | null =
     srs.overdue > 0 ? 'overdue' : srs.due > 0 ? 'due' : null;
 
@@ -281,7 +281,7 @@ export default function StatsPage() {
         )}
 
         {/* Weakest topics — the same lines as below, just the three with the
-            least marker on them. */}
+            least wash on them. */}
         {weakest.some((r) => mastery(r) < 80) && (
           <section className="mb-10">
             <Eyebrow className="mb-3">
@@ -351,8 +351,8 @@ interface MasteryRowProps {
 }
 
 /**
- * A topic as a line of type with a highlighter run across it as far as you
- * have actually recalled it.
+ * A topic as a line of type with a wash of the pen's blue run across it as
+ * far as you have actually recalled it.
  *
  * This is the whole page in one element. A progress bar per row would be a
  * chart of an abstract quantity sitting next to the name; the wash *is* the
@@ -367,7 +367,7 @@ function MasteryRow({ row, masteryPct, lang, topicTitle, onTopic, onDrill }: Mas
     <div className="relative flex items-center gap-3 border-b border-rule/8 px-3 last:border-b-0">
       <span
         aria-hidden
-        className="absolute inset-y-2 left-0 bg-[rgb(var(--marker)/0.38)] dark:bg-[rgb(var(--marker)/0.20)]"
+        className="absolute inset-y-2 left-0 bg-brand/12 dark:bg-brand/18"
         style={{ width: `${Math.max(0, Math.min(100, masteryPct))}%` }}
       />
       <button

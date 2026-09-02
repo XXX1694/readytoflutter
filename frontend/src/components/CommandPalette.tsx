@@ -378,10 +378,10 @@ function CmdItem({ icon, children, trailing, current, onSelect, danger }: CmdIte
       <span className={cn('grid h-5 w-5 shrink-0 place-items-center', danger ? 'text-coral' : 'text-muted')}>
         {icon}
       </span>
-      {/* The marker means "this is the one in effect" — the same signal the
+      {/* Weight means "this is the one in effect" — the same signal the
           Sidebar and BottomNav give for the route you are on. */}
       <span className="min-w-0 flex-1 truncate">
-        <span className={cn(current && 'marker font-medium text-ink')}>{children}</span>
+        <span className={cn(current && 'font-medium text-ink')}>{children}</span>
       </span>
       {trailing && (
         <span className="shrink-0 font-mono text-[11px] text-muted-2">{trailing}</span>

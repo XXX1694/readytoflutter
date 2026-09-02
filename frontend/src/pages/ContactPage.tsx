@@ -109,7 +109,7 @@ export default function ContactPage() {
     return (
       <Shell>
         <h1 className="font-display text-3xl font-semibold text-ink">
-          <span className="marker decoration-clone">{T.sentTitle}</span>
+          {T.sentTitle}
         </h1>
         <p className="mt-4 font-serif text-[17px] leading-relaxed text-ink-2">{T.sentSub}</p>
         <Link

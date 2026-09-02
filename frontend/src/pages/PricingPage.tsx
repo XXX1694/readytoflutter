@@ -252,7 +252,7 @@ interface PlanProps {
   currentLabel?: string | null;
   note?: string;
   lede?: string;
-  /** Lays the citron marker behind the price — the one accent on this page. */
+  /** Sets the price in the pen's blue — the one accent on this page. */
   marked?: boolean;
   cta: ReactNode;
 }
@@ -267,7 +267,7 @@ function Plan({ name, price, period, features, currentLabel, note, lede, marked,
 
       <div>
         <p className="flex items-baseline gap-2">
-          <span className={cn('num text-4xl text-ink', marked && 'marker')}>{price}</span>
+          <span className={cn('num text-4xl', marked ? 'text-brand' : 'text-ink')}>{price}</span>
           <span className="text-sm text-muted">{period}</span>
         </p>
         {note && <p className="mt-2 text-[13px] text-muted">{note}</p>}

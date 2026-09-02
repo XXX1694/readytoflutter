@@ -78,8 +78,8 @@ function useDueCount(): number {
  * Mock interview, Round, the auth pages, the print/cheatsheet routes).
  *
  * The active tab is marked the same way the Sidebar marks its rows: ink icon
- * and label with the citron marker behind the label. One device, three
- * components. Haptic feedback fires on tap (Android-only on real devices; it
+ * and a semibold ink label. One device, three components. Haptic feedback
+ * fires on tap (Android-only on real devices; it
  * no-ops on iOS Safari, which blocks `navigator.vibrate`).
  */
 export default function BottomNav() {
@@ -177,7 +177,7 @@ export default function BottomNav() {
                   <span
                     className={cn(
                       'leading-[1.4]',
-                      isActive ? 'marker font-semibold text-ink' : 'text-muted',
+                      isActive ? 'font-semibold text-ink' : 'text-muted',
                     )}
                   >
                     {it.label}

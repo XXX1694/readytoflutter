@@ -12,7 +12,7 @@ import type { Level, Difficulty, ProgressStatus } from '../types/domain';
  * elevation available is a hairline plus the 1px `shadow-codex-sm` drop.
  *
  * Focus is deliberately not styled here: the global `:focus-visible` rule in
- * index.css draws the ink outline + marker ring on every control, and a local
+ * index.css draws the ink outline on every control, and a local
  * override would give buttons a different focus state from the rest of the UI.
  */
 

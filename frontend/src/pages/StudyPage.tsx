@@ -262,18 +262,8 @@ export default function StudyPage() {
           </span>
         </div>
 
-        {/* The reveal: the citron sweeps across the question you just answered,
-            the way you would mark the line in a book once you know it. */}
         <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[34px]">
-          <span
-            className={cn(
-              'marker [box-decoration-break:clone] [-webkit-box-decoration-break:clone]',
-              'transition-[background-size] duration-500 ease-out motion-reduce:transition-none',
-              revealed ? 'bg-[length:100%_0.72em]' : 'bg-[length:0%_0.72em]',
-            )}
-          >
-            {questionText(current)}
-          </span>
+          {questionText(current)}
         </h2>
 
         {!revealed && (

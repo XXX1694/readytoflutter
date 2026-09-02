@@ -99,9 +99,8 @@ export default {
         'codex-sm': '0 1px 2px 0 rgb(var(--shadow) / 0.04)',
         'codex':    '0 1px 3px 0 rgb(var(--shadow) / 0.06)',
         'codex-lg': '0 2px 8px -2px rgb(var(--shadow) / 0.10)',
-        // Keyboard focus on a card: the same ink+citron ring the global
-        // :focus-visible rule paints, available as a utility.
-        marker: '0 0 0 1px rgb(var(--ink) / 0.50), 0 0 0 4px rgb(var(--marker) / 0.45)',
+        // Keyboard focus on a card: an ink ring, available as a utility.
+        focus: '0 0 0 2px rgb(var(--ink) / 0.60)',
       },
 
       keyframes: {
