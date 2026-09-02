@@ -26,6 +26,7 @@ import {
   Cloud,
   Settings as SettingsIcon,
   Smartphone,
+  Milestone,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
@@ -176,6 +177,9 @@ export default function CommandPalette() {
                 </CmdItem>
                 <CmdItem icon={<Search />} onSelect={run(() => navigate('/search'))}>
                   {t.cmdGoSearch}
+                </CmdItem>
+                <CmdItem icon={<Milestone />} onSelect={run(() => navigate('/roadmap'))}>
+                  {t.roadmap.title}
                 </CmdItem>
                 <CmdItem
                   icon={<Brain />}

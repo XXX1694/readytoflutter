@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import type { PlatformKey, ProgressStatus, Level, Difficulty } from '../types/domain.ts';
+import type { PlatformKey, ProgressStatus, Level, Difficulty, RoadmapTrackKey } from '../types/domain.ts';
 
 // Two reading themes: light and dark. Sepia was removed (low usage, tripled
 // the surface area for every CSS-touching change). Persisted 'sepia' is
@@ -30,6 +30,12 @@ export interface PrefsState {
 
   platform: PlatformKey;
   setPlatform: (platform: PlatformKey) => void;
+
+  // The track the roadmap page was last switched to. `null` until the user
+  // picks one there; the page then follows the global stack filter (or
+  // Flutter when that filter is 'all'), so the two never need reconciling.
+  roadmapTrack: RoadmapTrackKey | null;
+  setRoadmapTrack: (roadmapTrack: RoadmapTrackKey) => void;
 
   searchFacets: SearchFacets;
   setSearchFacet: <K extends keyof SearchFacets>(key: K, value: SearchFacets[K]) => void;
@@ -92,6 +98,7 @@ interface PersistedPrefs {
   searchFacets: SearchFacets;
   recallMode: boolean;
   platform: PlatformKey;
+  roadmapTrack: RoadmapTrackKey | null;
 }
 
 export const usePrefs = create<PrefsState>()(
@@ -125,6 +132,9 @@ export const usePrefs = create<PrefsState>()(
       platform: 'all',
       setPlatform: (platform) => set({ platform }),
 
+      roadmapTrack: null,
+      setRoadmapTrack: (roadmapTrack) => set({ roadmapTrack }),
+
       // Search facets
       searchFacets: { level: null, difficulty: null, status: null },
       setSearchFacet: (key, value) =>
@@ -155,6 +165,7 @@ export const usePrefs = create<PrefsState>()(
         searchFacets: s.searchFacets,
         recallMode: s.recallMode,
         platform: s.platform,
+        roadmapTrack: s.roadmapTrack,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);

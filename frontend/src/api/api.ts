@@ -15,6 +15,7 @@ import type {
   ContactMessage,
   AiGrade,
   ProTier,
+  Roadmap,
 } from '../types/domain.ts';
 
 // Production fallback for GitHub Pages: when we're served from *.github.io
@@ -81,6 +82,7 @@ export { api, apiBaseUrl };
 interface StaticDataPayload {
   topics: Topic[];
   questions: Question[];
+  roadmap: Roadmap;
 }
 
 interface LocalProgressEntry {
@@ -372,6 +374,13 @@ export const getStats = (): Promise<Stats> =>
     () => api.get<Stats>('/stats').then((r) => r.data),
     fallbackGetStats,
   );
+
+// The roadmap is static content with no per-user state, generated from the
+// same seed as the questions, so it is read straight from the bundle the
+// frontend ships — there is no API route to try first. Progress is layered
+// on client-side from the questions' own status fields.
+export const getRoadmap = (): Promise<Roadmap> =>
+  loadStaticData().then((d) => d.roadmap);
 
 export const updateProgress = (
   questionId: number,

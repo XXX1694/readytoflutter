@@ -47,6 +47,12 @@ node -e "const db=require('./database');db.init();db.close();"   # smoke test
 The single biggest source of dev/prod drift in this repo is the static
 fallback bundle that ships to GitHub Pages.
 
+The roadmap (`backend/data/seed/roadmap.json`) lives in the same bundle. Each
+of its sixteen rungs names topics by slug plus the difficulty tiers that rung
+covers; questions are resolved from that at build time. Adding a topic to a
+stack means placing every one of its tiers on that stack's track, or the
+frontend coverage test fails.
+
 After **any** change under `backend/data/seed/`, regenerate the frontend
 bundle:
 

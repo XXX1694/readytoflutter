@@ -31,6 +31,7 @@ const SHORTCUTS: ShortcutGroup[] = [
   ]},
   { group: { en: 'Quick jump (g …)', ru: 'Быстрый переход (g …)' }, items: [
     { keys: ['G', 'H'], en: 'Home', ru: 'На главную' },
+    { keys: ['G', 'R'], en: 'Roadmap', ru: 'Роадмап' },
     { keys: ['G', 'S'], en: 'Search', ru: 'Поиск' },
     { keys: ['G', 'Y'], en: 'Study', ru: 'Учить' },
     { keys: ['G', 'M'], en: 'Mock', ru: 'Mock' },

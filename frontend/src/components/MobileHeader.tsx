@@ -50,6 +50,7 @@ function usePageTitle(): string {
   if (path === '/mock')      return lang === 'ru' ? 'Mock-собес' : 'Mock interview';
   if (path === '/search')    return lang === 'ru' ? 'Поиск' : 'Search';
   if (path === '/knowledge') return lang === 'ru' ? 'База знаний' : 'Knowledge';
+  if (path === '/roadmap')   return lang === 'ru' ? 'Роадмап' : 'Roadmap';
   if (path === '/bookmarks') return lang === 'ru' ? 'Закладки' : 'Saved';
   if (path === '/stats')     return lang === 'ru' ? 'Статистика' : 'Mastery';
   if (path === '/settings')  return lang === 'ru' ? 'Настройки' : 'Settings';

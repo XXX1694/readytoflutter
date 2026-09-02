@@ -51,6 +51,7 @@ const SignupPage = lazy(() => import('./pages/SignupPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage'));
+const RoadmapPage = lazy(() => import('./pages/RoadmapPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -258,6 +259,14 @@ export default function App() {
                   element={
                     <Suspense fallback={<FullPageLoader />}>
                       <KnowledgePage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="roadmap"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <RoadmapPage />
                     </Suspense>
                   }
                 />

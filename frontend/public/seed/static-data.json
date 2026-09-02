@@ -6892,5 +6892,1133 @@
       "code_example": "// Make the device a declared build input, so every run uses the same image\nandroid {\n  testOptions {\n    managedDevices {\n      localDevices {\n        create(\"pixel8api36\") {\n          device = \"Pixel 8\"\n          apiLevel = 36\n          systemImageSource = \"aosp-atd\"   // no Play Store, no system apps: boots far faster\n        }\n      }\n    }\n    execution = \"ANDROIDX_TEST_ORCHESTRATOR\"   // a fresh process per test\n    animationsDisabled = true\n  }\n  defaultConfig {\n    testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"\n    testInstrumentationRunnerArguments[\"clearPackageData\"] = \"true\"\n  }\n}\n\ndependencies {\n  androidTestUtil(\"androidx.test:orchestrator:1.6.1\")\n}\n\n// Shard across runners rather than waiting longer\n// ./gradlew pixel8api36DebugAndroidTest \\\n//   -Pandroid.testInstrumentationRunnerArguments.numShards=6 \\\n//   -Pandroid.testInstrumentationRunnerArguments.shardIndex=$SHARD\n\n// Real hardware for what an emulator cannot show — nightly, not per PR\n// gcloud firebase test android run --type instrumentation \\\n//   --device model=shiba,version=36 --device model=a54x,version=34 \\\n//   --num-flaky-test-attempts 1     // retry the test once; a repeat offender gets quarantined\n\n// iOS\n// xcodebuild test -scheme MyApp -parallel-testing-enabled YES \\\n//   -maximum-concurrent-test-simulator-destinations 3 -resultBundlePath results.xcresult\n// Upload the result bundle as an artifact: it carries the failure screenshots and the logs.",
       "code_language": "kotlin"
     }
-  ]
+  ],
+  "roadmap": {
+    "rungs": [
+      {
+        "id": "junior-1",
+        "band": "junior",
+        "step": 1
+      },
+      {
+        "id": "junior-2",
+        "band": "junior",
+        "step": 2
+      },
+      {
+        "id": "junior-3",
+        "band": "junior",
+        "step": 3
+      },
+      {
+        "id": "junior-4",
+        "band": "junior",
+        "step": 4
+      },
+      {
+        "id": "junior-5",
+        "band": "junior",
+        "step": 5
+      },
+      {
+        "id": "mid-1",
+        "band": "mid",
+        "step": 1
+      },
+      {
+        "id": "mid-2",
+        "band": "mid",
+        "step": 2
+      },
+      {
+        "id": "mid-3",
+        "band": "mid",
+        "step": 3
+      },
+      {
+        "id": "mid-4",
+        "band": "mid",
+        "step": 4
+      },
+      {
+        "id": "mid-5",
+        "band": "mid",
+        "step": 5
+      },
+      {
+        "id": "senior-1",
+        "band": "senior",
+        "step": 1
+      },
+      {
+        "id": "senior-2",
+        "band": "senior",
+        "step": 2
+      },
+      {
+        "id": "senior-3",
+        "band": "senior",
+        "step": 3
+      },
+      {
+        "id": "senior-4",
+        "band": "senior",
+        "step": 4
+      },
+      {
+        "id": "senior-5",
+        "band": "senior",
+        "step": 5
+      },
+      {
+        "id": "staff",
+        "band": "staff",
+        "step": 1
+      }
+    ],
+    "tracks": [
+      {
+        "platform": "flutter",
+        "rungs": {
+          "junior-1": {
+            "title_en": "Dart syntax and the widget tree",
+            "title_ru": "Синтаксис Dart и дерево виджетов",
+            "nodes": [
+              {
+                "topic": "dart-basics",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "flutter-fundamentals",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "basic-widgets",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-2": {
+            "title_en": "Types, classes and setState",
+            "title_ru": "Типы, классы и setState",
+            "nodes": [
+              {
+                "topic": "dart-basics",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "oop-dart",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "flutter-fundamentals",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "basic-state",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-3": {
+            "title_en": "Layout and navigation",
+            "title_ru": "Вёрстка и навигация",
+            "nodes": [
+              {
+                "topic": "basic-widgets",
+                "difficulty": [
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "navigation-routing",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "junior-4": {
+            "title_en": "Object model and Futures",
+            "title_ru": "Объектная модель и Future",
+            "nodes": [
+              {
+                "topic": "oop-dart",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "async-futures",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "junior-5": {
+            "title_en": "Ready for middle",
+            "title_ru": "Готов к middle",
+            "nodes": [
+              {
+                "topic": "basic-state",
+                "difficulty": [
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "oop-dart",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "navigation-routing",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "async-futures",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "mid-1": {
+            "title_en": "Streams and advanced Dart",
+            "title_ru": "Streams и продвинутый Dart",
+            "nodes": [
+              {
+                "topic": "streams",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "advanced-dart",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              },
+              {
+                "topic": "provider",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "mid-2": {
+            "title_en": "Provider and BLoC",
+            "title_ru": "Provider и BLoC",
+            "nodes": [
+              {
+                "topic": "provider",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "bloc",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-3": {
+            "title_en": "Networking and local storage",
+            "title_ru": "Сеть и локальное хранилище",
+            "nodes": [
+              {
+                "topic": "networking",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              },
+              {
+                "topic": "local-storage",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-4": {
+            "title_en": "Testing and architecture",
+            "title_ru": "Тестирование и архитектура",
+            "nodes": [
+              {
+                "topic": "testing",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "architecture",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-5": {
+            "title_en": "Ready for senior",
+            "title_ru": "Готов к senior",
+            "nodes": [
+              {
+                "topic": "streams",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "advanced-dart",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "provider",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "bloc",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "networking",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "local-storage",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "testing",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "architecture",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-1": {
+            "title_en": "Patterns, Riverpod and algorithms",
+            "title_ru": "Паттерны, Riverpod и алгоритмы",
+            "nodes": [
+              {
+                "topic": "design-patterns",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "advanced-state",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "dsa",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-2": {
+            "title_en": "Rendering and the native bridge",
+            "title_ru": "Рендеринг и мост к нативу",
+            "nodes": [
+              {
+                "topic": "performance",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "flutter-internals",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "platform-channels",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-3": {
+            "title_en": "Security and delivery",
+            "title_ru": "Безопасность и поставка",
+            "nodes": [
+              {
+                "topic": "security",
+                "difficulty": [
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "cicd",
+                "difficulty": [
+                  "medium",
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-4": {
+            "title_en": "Hard design and algorithms",
+            "title_ru": "Сложный дизайн и алгоритмы",
+            "nodes": [
+              {
+                "topic": "design-patterns",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "advanced-state",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "dsa",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-5": {
+            "title_en": "Deep internals",
+            "title_ru": "Глубокие внутренности",
+            "nodes": [
+              {
+                "topic": "flutter-internals",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "platform-channels",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "performance",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "staff": {
+            "title_en": "Cross-platform systems",
+            "title_ru": "Кросс-платформенные системы",
+            "nodes": [
+              {
+                "topic": "mobile-system-design",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "mobile-security",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "mobile-cicd",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "platform": "ios",
+        "rungs": {
+          "junior-1": {
+            "title_en": "Swift syntax and UIKit views",
+            "title_ru": "Синтаксис Swift и UIKit-вью",
+            "nodes": [
+              {
+                "topic": "swift-basics",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "uikit-fundamentals",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-2": {
+            "title_en": "Types, protocols and first SwiftUI",
+            "title_ru": "Типы, протоколы и первый SwiftUI",
+            "nodes": [
+              {
+                "topic": "swift-basics",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "swift-oop-protocols",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "swiftui-fundamentals",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-3": {
+            "title_en": "Layout on screen",
+            "title_ru": "Вёрстка на экране",
+            "nodes": [
+              {
+                "topic": "uikit-fundamentals",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "uikit-layout",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "junior-4": {
+            "title_en": "Protocol-oriented Swift and SwiftUI",
+            "title_ru": "Протокольный Swift и SwiftUI",
+            "nodes": [
+              {
+                "topic": "swift-oop-protocols",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "swiftui-fundamentals",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "junior-5": {
+            "title_en": "Ready for middle",
+            "title_ru": "Готов к middle",
+            "nodes": [
+              {
+                "topic": "swiftui-state",
+                "difficulty": [
+                  "easy",
+                  "medium"
+                ]
+              },
+              {
+                "topic": "swift-oop-protocols",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "ios-architecture",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "ios-networking",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "ios-persistence",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "mid-1": {
+            "title_en": "Structured concurrency",
+            "title_ru": "Структурированная конкурентность",
+            "nodes": [
+              {
+                "topic": "swift-concurrency",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-2": {
+            "title_en": "Networking and persistence",
+            "title_ru": "Сеть и персистентность",
+            "nodes": [
+              {
+                "topic": "ios-networking",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "ios-persistence",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-3": {
+            "title_en": "App architecture",
+            "title_ru": "Архитектура приложения",
+            "nodes": [
+              {
+                "topic": "ios-architecture",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-4": {
+            "title_en": "Generics and the type system",
+            "title_ru": "Дженерики и система типов",
+            "nodes": [
+              {
+                "topic": "swift-advanced",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-5": {
+            "title_en": "Ready for senior",
+            "title_ru": "Готов к senior",
+            "nodes": [
+              {
+                "topic": "swift-concurrency",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "swiftui-state",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "swift-advanced",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-1": {
+            "title_en": "ARC and Instruments",
+            "title_ru": "ARC и Instruments",
+            "nodes": [
+              {
+                "topic": "ios-performance",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-2": {
+            "title_en": "Combine",
+            "title_ru": "Combine",
+            "nodes": [
+              {
+                "topic": "combine",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-3": {
+            "title_en": "Kotlin Multiplatform for iOS",
+            "title_ru": "Kotlin Multiplatform для iOS",
+            "nodes": [
+              {
+                "topic": "kmp",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-4": {
+            "title_en": "Architecture and data, senior level",
+            "title_ru": "Архитектура и данные на уровне senior",
+            "nodes": [
+              {
+                "topic": "ios-architecture",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "ios-networking",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "ios-persistence",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-5": {
+            "title_en": "Performance and Combine in depth",
+            "title_ru": "Производительность и Combine вглубь",
+            "nodes": [
+              {
+                "topic": "ios-performance",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "combine",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "staff": {
+            "title_en": "Cross-platform systems",
+            "title_ru": "Кросс-платформенные системы",
+            "nodes": [
+              {
+                "topic": "mobile-system-design",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "mobile-security",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "mobile-cicd",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "platform": "android",
+        "rungs": {
+          "junior-1": {
+            "title_en": "Kotlin syntax and the Activity",
+            "title_ru": "Синтаксис Kotlin и Activity",
+            "nodes": [
+              {
+                "topic": "kotlin-basics",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "android-fundamentals",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-2": {
+            "title_en": "Classes, lambdas and the first composable",
+            "title_ru": "Классы, лямбды и первый composable",
+            "nodes": [
+              {
+                "topic": "kotlin-basics",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "kotlin-oop",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "compose-fundamentals",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-3": {
+            "title_en": "Lifecycle and layout",
+            "title_ru": "Жизненный цикл и вёрстка",
+            "nodes": [
+              {
+                "topic": "android-fundamentals",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "compose-fundamentals",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "junior-4": {
+            "title_en": "Kotlin's object model",
+            "title_ru": "Объектная модель Kotlin",
+            "nodes": [
+              {
+                "topic": "kotlin-oop",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "compose-state",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "junior-5": {
+            "title_en": "Ready for middle",
+            "title_ru": "Готов к middle",
+            "nodes": [
+              {
+                "topic": "compose-state",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "compose-fundamentals",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "android-networking",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "android-persistence",
+                "difficulty": [
+                  "easy"
+                ]
+              },
+              {
+                "topic": "android-di",
+                "difficulty": [
+                  "easy"
+                ]
+              }
+            ]
+          },
+          "mid-1": {
+            "title_en": "Coroutines and Flow",
+            "title_ru": "Корутины и Flow",
+            "nodes": [
+              {
+                "topic": "kotlin-coroutines",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-2": {
+            "title_en": "Networking and persistence",
+            "title_ru": "Сеть и персистентность",
+            "nodes": [
+              {
+                "topic": "android-networking",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "android-persistence",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-3": {
+            "title_en": "Architecture and DI",
+            "title_ru": "Архитектура и DI",
+            "nodes": [
+              {
+                "topic": "android-architecture",
+                "difficulty": [
+                  "medium"
+                ]
+              },
+              {
+                "topic": "android-di",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-4": {
+            "title_en": "Advanced Kotlin",
+            "title_ru": "Продвинутый Kotlin",
+            "nodes": [
+              {
+                "topic": "kotlin-advanced",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "mid-5": {
+            "title_en": "Ready for senior",
+            "title_ru": "Готов к senior",
+            "nodes": [
+              {
+                "topic": "kotlin-advanced",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "kotlin-coroutines",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "compose-state",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-1": {
+            "title_en": "Profiling, ANRs and startup",
+            "title_ru": "Профилирование, ANR и старт",
+            "nodes": [
+              {
+                "topic": "android-performance",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-2": {
+            "title_en": "Kotlin Multiplatform",
+            "title_ru": "Kotlin Multiplatform",
+            "nodes": [
+              {
+                "topic": "kmp",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-3": {
+            "title_en": "Compose Multiplatform",
+            "title_ru": "Compose Multiplatform",
+            "nodes": [
+              {
+                "topic": "compose-multiplatform",
+                "difficulty": [
+                  "medium"
+                ]
+              }
+            ]
+          },
+          "senior-4": {
+            "title_en": "Architecture and data, senior level",
+            "title_ru": "Архитектура и данные на уровне senior",
+            "nodes": [
+              {
+                "topic": "android-architecture",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "android-networking",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "android-persistence",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "android-di",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "senior-5": {
+            "title_en": "Performance and multiplatform in depth",
+            "title_ru": "Производительность и мультиплатформа вглубь",
+            "nodes": [
+              {
+                "topic": "android-performance",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "kmp",
+                "difficulty": [
+                  "hard"
+                ]
+              },
+              {
+                "topic": "compose-multiplatform",
+                "difficulty": [
+                  "hard"
+                ]
+              }
+            ]
+          },
+          "staff": {
+            "title_en": "Cross-platform systems",
+            "title_ru": "Кросс-платформенные системы",
+            "nodes": [
+              {
+                "topic": "mobile-system-design",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "mobile-security",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              },
+              {
+                "topic": "mobile-cicd",
+                "difficulty": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
 }

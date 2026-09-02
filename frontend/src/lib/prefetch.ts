@@ -14,6 +14,7 @@ const REGISTRY: Record<string, () => Promise<unknown>> = {
   '/mock':       () => import('../pages/MockPage'),
   '/bookmarks':  () => import('../pages/BookmarksPage'),
   '/knowledge':  () => import('../pages/KnowledgePage'),
+  '/roadmap':    () => import('../pages/RoadmapPage'),
   '/search':     () => import('../pages/SearchPage'),
   '/stats':      () => import('../pages/StatsPage'),
   '/settings':   () => import('../pages/SettingsPage'),

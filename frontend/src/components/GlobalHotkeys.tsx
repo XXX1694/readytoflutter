@@ -73,6 +73,7 @@ export default function GlobalHotkeys() {
   });
   useHotkeys('a', (e: KeyboardEvent) => consumeGo(e, '/settings'));
   useHotkeys('r', (e: KeyboardEvent) => {
+    if (consumeGo(e, '/roadmap')) return;
     if (isTyping(e) || open) return;
     e.preventDefault();
     toggleRecallMode();

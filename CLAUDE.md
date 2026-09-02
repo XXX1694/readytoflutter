@@ -65,11 +65,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 **These are specific to this repo. Breaking one produces a green local run and a
 red CI, a broken anonymous mode, or a silent perf regression.**
 
-**Seed content has one source.** Questions and topics are edited only in
-`backend/data/seed/topics.json` and `backend/data/seed/questions/*.json`. After
-any change there, run `npm --prefix backend run generate:static-data` — the
-committed `frontend/public/seed/static-data.json` is generated, never
-hand-edited. CI's `static-data-sync` job runs the same script with `--check`
+**Seed content has one source.** Questions, topics and the roadmap are edited
+only in `backend/data/seed/topics.json`, `backend/data/seed/questions/*.json`
+and `backend/data/seed/roadmap.json`. After any change there, run
+`npm --prefix backend run generate:static-data` — the committed
+`frontend/public/seed/static-data.json` is generated, never hand-edited. The
+generator refuses a roadmap with an empty rung, an unknown topic, or a question
+counted twice in one track; `src/lib/roadmap.test.ts` additionally fails if a
+track misses any question of its own stack. CI's `static-data-sync` job runs the same script with `--check`
 and fails the PR on drift.
 
 **Every API call goes through `tryRemote(remote, fallback)`.** See

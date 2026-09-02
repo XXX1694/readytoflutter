@@ -147,6 +147,40 @@ export interface Resource {
   cover_video_id?: string;
 }
 
+// Roadmap (backend/data/seed/roadmap.json, shipped inside static-data.json).
+// Sixteen rungs shared by every track; each track fills a rung with
+// (topic × difficulty) nodes that resolve to real questions at runtime.
+export type RoadmapBand = Level | 'staff';
+export type RoadmapTrackKey = Extract<PlatformKey, 'flutter' | 'ios' | 'android'>;
+
+export interface RoadmapRung {
+  id: string;
+  band: RoadmapBand;
+  step: number;
+}
+
+export interface RoadmapNode {
+  /** Topic slug. */
+  topic: string;
+  difficulty: Difficulty[];
+}
+
+export interface RoadmapTrackRung {
+  title_en: string;
+  title_ru: string;
+  nodes: RoadmapNode[];
+}
+
+export interface RoadmapTrack {
+  platform: RoadmapTrackKey;
+  rungs: Record<string, RoadmapTrackRung>;
+}
+
+export interface Roadmap {
+  rungs: RoadmapRung[];
+  tracks: RoadmapTrack[];
+}
+
 // AI grader result schema — mirrors the submit_grade tool in backend/ai.js.
 export interface AiGrade {
   verdict: 'great' | 'good' | 'rough' | 'off';

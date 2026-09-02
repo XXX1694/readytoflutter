@@ -13,6 +13,7 @@ import StatTile from '../components/StatTile';
 import TopicTile from '../components/TopicTile';
 import ActivityHeatmap from '../components/ActivityHeatmap';
 import TodayPlan from '../components/TodayPlan';
+import RoadmapCard from '../components/RoadmapCard';
 import PlatformFilter from '../components/PlatformFilter';
 import { filterTopicsByPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
@@ -226,6 +227,11 @@ export default function HomePage({ landing = null }: HomePageProps) {
             <StatTile label={t.inProgress} value={inProgress} />
             <StatTile label={t.completion} value={pct} suffix="%" />
           </div>
+        </section>
+
+        {/* ROADMAP — the rung you stand on and the one to work on next. */}
+        <section className="mb-7 sm:mb-12">
+          <RoadmapCard />
         </section>
 
         {/* ACTIVITY */}

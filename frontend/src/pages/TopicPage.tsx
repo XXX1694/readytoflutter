@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Brain, Target, Printer, FileText, MessagesSquare } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTopic } from '../lib/queries';
@@ -32,6 +32,9 @@ export default function TopicPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  // `?q=<id>` — the roadmap links straight to one question.
+  const focusParam = searchParams.get('q');
   const { lang } = useLang();
   const t = useT(lang);
   const { topicTitle, topicDesc } = useContent(lang);
@@ -111,6 +114,30 @@ export default function TopicPage() {
     const el = refs.current.get(id);
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
+
+  // Land on the deep-linked question: open it and put the cursor on it in
+  // the render that first sees the topic (adjusting state during render is
+  // React's own answer to "derive state from a prop"), then scroll once the
+  // cards have mounted their refs.
+  const focusKey = topic && focusParam ? `${topic.id}:${focusParam}` : null;
+  const [handledFocus, setHandledFocus] = useState<string | null>(null);
+  if (focusKey && handledFocus !== focusKey) {
+    setHandledFocus(focusKey);
+    const id = Number(focusParam);
+    const i = filtered.findIndex((q) => q.id === id);
+    if (i >= 0) {
+      setCursor(i);
+      setOpenId(id);
+    }
+  }
+  useEffect(() => {
+    if (!focusKey) return;
+    const id = Number(focusParam);
+    const timer = window.setTimeout(() => {
+      refs.current.get(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [focusKey, focusParam]);
 
   useHotkeys('j, ArrowDown', (e) => {
     e.preventDefault();

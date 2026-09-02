@@ -54,6 +54,7 @@ export type AnalyticsEvent =
   // Onboarding + discovery
   | 'stack_selected'
   | 'topic_opened'
+  | 'roadmap_opened'
   | 'search'
   // Core engagement
   | 'answer_revealed'

@@ -4,13 +4,14 @@ import {
   getTopic,
   getQuestions,
   getStats,
+  getRoadmap,
   updateProgress,
   resetProgress,
   type QuestionFilterParams,
 } from '../api/api';
 import { queryKeys } from './queryClient';
 
-import type { Topic, Question, Stats, ProgressStatus, Level } from '../types/domain.ts';
+import type { Topic, Question, Stats, ProgressStatus, Level, Roadmap } from '../types/domain.ts';
 
 interface TopicWithQuestions extends Topic {
   questions: Question[];
@@ -42,6 +43,15 @@ export function useQuestions(params?: QuestionFilterParams): UseQueryResult<Ques
   return useQuery({
     queryKey: queryKeys.questions(params),
     queryFn: () => getQuestions(params),
+  });
+}
+
+export function useRoadmap(): UseQueryResult<Roadmap> {
+  return useQuery({
+    queryKey: queryKeys.roadmap(),
+    queryFn: () => getRoadmap(),
+    // Baked into the build; nothing a refetch could change mid-session.
+    staleTime: Infinity,
   });
 }
 

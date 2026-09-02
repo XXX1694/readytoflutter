@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 import {
-  ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library,
+  ChevronRight, X, Home as HomeIcon, Brain, Target, Bookmark, TrendingUp, Library, Milestone,
   type LucideIcon,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries';
@@ -256,6 +256,9 @@ export default function Sidebar() {
         <nav className="flex-1 overflow-y-auto py-3">
           <MainNavLink to="/" end onClose={close} icon={HomeIcon}>
             {t.dashboard}
+          </MainNavLink>
+          <MainNavLink to="/roadmap" onClose={close} icon={Milestone}>
+            {t.roadmap.title}
           </MainNavLink>
           <MainNavLink to="/study" onClose={close} icon={Brain}>
             {lang === 'ru' ? 'Повторение' : 'Study'}
