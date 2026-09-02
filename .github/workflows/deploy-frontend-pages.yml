@@ -59,7 +59,17 @@ jobs:
           # repo Variable; if unset, the app stays functional in
           # anonymous-only mode on Pages.
           VITE_PROD_API_FALLBACK_URL: ${{ vars.VITE_PROD_API_FALLBACK_URL }}
+          # Analytics stay off unless a provider is configured in repo vars.
+          VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
+          VITE_PLAUSIBLE_DOMAIN: ${{ vars.VITE_PLAUSIBLE_DOMAIN }}
         run: npm run build
+
+      - name: SPA fallback for Pages
+        # 404.html is what Pages serves for unknown deeper paths (e.g.
+        # /search, /study). Snapshot the SPA shell now — the prerender step
+        # below overwrites dist/index.html with the rendered homepage.
+        run: cp frontend/dist/index.html frontend/dist/404.html
 
       # SSG: prerender the public surface (home, /flutter, /ios, /android,
       # /kmp, /pricing, /contact, all 53 /topic/<slug> + cheatsheets) into
@@ -71,13 +81,6 @@ jobs:
         env:
           SITE_URL: ${{ vars.SITE_URL }}
         run: npm run prerender
-
-      - name: SPA fallback for Pages
-        # 404.html is what Pages serves for unknown deeper paths (e.g.
-        # /search, /study). Snapshot the original SPA shell BEFORE the
-        # prerender step's homepage replacement would otherwise overwrite
-        # it with a content-heavy variant.
-        run: cp frontend/dist/index.html frontend/dist/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

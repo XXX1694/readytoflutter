@@ -15,7 +15,7 @@ function attach(app) {
 
   // Paginated user list with progress / last-active aggregates.
   app.get('/api/admin/users', adminGate, (req, res) => {
-    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 50, 200));
     const offset = Math.max(Number(req.query.offset) || 0, 0);
     const search = String(req.query.q || '').trim();
     res.json(db.listUsers({ limit, offset, search }));
@@ -60,7 +60,7 @@ function attach(app) {
   // Contact inbox.
   app.get('/api/admin/contact', adminGate, (req, res) => {
     const status = req.query.status === 'resolved' ? 'resolved' : (req.query.status === 'open' ? 'open' : null);
-    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 50, 200));
     const offset = Math.max(Number(req.query.offset) || 0, 0);
     res.json(db.listContactMessages({ status, limit, offset }));
   });

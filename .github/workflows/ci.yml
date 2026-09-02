@@ -166,6 +166,7 @@ jobs:
             fi
             sleep 1
           done
+          set -o pipefail
           curl -fsS http://localhost:3001/healthz | head -c 200
           kill $SERVER_PID || true
 
@@ -223,7 +224,8 @@ jobs:
             echo "::error::contentRu.ts must only be imported dynamically from i18n/content.ts"; exit 1; fi
       - name: every API call lives in api/api.ts
         run: |
-          if grep -rnE "\bapi\.(get|post|put|patch|delete)\(" frontend/src --include='*.ts' --include='*.tsx' | grep -v 'src/api/api.ts'; then
+          if grep -rnE '\b(api|axios)\.(get|post|put|patch|delete)\(|\bfetch\s*\(' frontend/src --include='*.ts' --include='*.tsx' \
+              | grep -vE 'src/api/api\.ts|src/store/auth\.ts|src/lib/knowledge\.ts|src/lib/push\.ts|\.test\.'; then
             echo "::error::call the backend through api/api.ts (tryRemote) only"; exit 1; fi
       - name: persistence keys are frozen
         run: |
@@ -269,7 +271,7 @@ jobs:
     steps:
       - name: Verify all required jobs succeeded
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" == "true" ]]; then
             echo "One or more required jobs failed."
             exit 1
           fi

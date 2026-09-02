@@ -25,6 +25,7 @@ const QUESTIONS_DIR = path.join(SEED_DIR, 'questions');
 const ROADMAP_FILE = path.join(SEED_DIR, 'roadmap.json');
 const OUT_FILE = path.join(ROOT, 'frontend', 'public', 'seed', 'static-data.json');
 const SITEMAP_FILE = path.join(ROOT, 'frontend', 'public', 'sitemap.xml');
+const ROBOTS_FILE = path.join(ROOT, 'frontend', 'public', 'robots.txt');
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -227,6 +228,8 @@ function main() {
 
   if (sitemap) {
     fs.writeFileSync(SITEMAP_FILE, sitemap);
+    // The Sitemap directive must be an absolute URL.
+    fs.writeFileSync(ROBOTS_FILE, `User-agent: *\nAllow: /\n\n# /admin is dev-only and not built for production; disallowed defensively.\nDisallow: /admin\n\nSitemap: ${siteUrl}/sitemap.xml\n`);
     const urlCount = (sitemap.match(/<url>/g) || []).length;
     console.log(`✓ wrote ${path.relative(ROOT, SITEMAP_FILE)} — ${urlCount} URLs (host: ${siteUrl})`);
   } else {

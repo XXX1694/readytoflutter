@@ -19,7 +19,7 @@ const contactSchema = z.object({
     .trim()
     .min(10, { message: 'Message too short' })
     .max(LIMITS.CONTACT_MAX_MESSAGE_LEN, { message: 'Message too long' }),
-  website: z.string().optional(), // honeypot
+  website: z.unknown().optional(), // honeypot — any value means a bot filled it
 });
 
 const contactLimiter = rateLimit({
@@ -41,7 +41,7 @@ function attach(app) {
       });
     }
     // Honeypot: real users never fill this. Acknowledge to look indistinguishable.
-    if (parsed.data.website && parsed.data.website.trim() !== '') {
+    if (parsed.data.website != null && String(parsed.data.website).trim() !== '') {
       return res.status(200).json({ ok: true });
     }
     const ip = req.ip || null;

@@ -64,13 +64,16 @@ export function useDocumentMeta({ title, description, canonical, ogImage }: Docu
       restorers.push(setMetaContent('meta[property="og:title"]', title));
       restorers.push(setMetaContent('meta[name="twitter:title"]', title));
     }
+    // Paths are app-relative; on GitHub Pages the app lives under /<repo>/.
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    const absolute = (p: string): string => (p.startsWith('http') ? p : `${window.location.origin}${base}${p}`);
     if (ogImage) {
-      const abs = ogImage.startsWith('http') ? ogImage : `${window.location.origin}${ogImage}`;
+      const abs = absolute(ogImage);
       restorers.push(setMetaContent('meta[property="og:image"]', abs));
       restorers.push(setMetaContent('meta[name="twitter:image"]', abs));
     }
     if (canonical) {
-      const abs = canonical.startsWith('http') ? canonical : `${window.location.origin}${canonical}`;
+      const abs = absolute(canonical);
       restorers.push(setLinkHref('canonical', abs));
       restorers.push(setMetaContent('meta[property="og:url"]', abs));
     }

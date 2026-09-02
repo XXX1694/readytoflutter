@@ -288,7 +288,7 @@ function attach(app) {
     currentPassword: z.string().min(1),
     newPassword: passwordSchema,
   });
-  app.put('/api/auth/password', requireAuth, async (req, res) => {
+  app.put('/api/auth/password', authLimiter, requireAuth, async (req, res) => {
     const parsed = passwordChangeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
@@ -365,7 +365,7 @@ function attach(app) {
     currentPassword: z.string().min(1),
     newEmail: emailSchema,
   });
-  app.put('/api/auth/email', requireAuth, async (req, res) => {
+  app.put('/api/auth/email', authLimiter, requireAuth, async (req, res) => {
     const parsed = emailChangeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({

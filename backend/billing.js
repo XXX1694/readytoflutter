@@ -131,7 +131,7 @@ function attach(app) {
         event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
       } catch (err) {
         console.warn('[billing] webhook signature failed:', err?.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        return res.status(400).send('Webhook signature verification failed');
       }
       try {
         await handleEvent(stripe, event);

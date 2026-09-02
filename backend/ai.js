@@ -204,6 +204,18 @@ async function gradeHandler(req, res) {
     if (!block || !block.input) {
       throw new Error('Model did not return a submit_grade tool_use block');
     }
+    // A truncated or malformed tool call is not a grade — do not bill it.
+    const grade = block.input;
+    const VERDICTS = new Set(['great', 'good', 'rough', 'off']);
+    if (
+      message.stop_reason === 'max_tokens'
+      || !VERDICTS.has(grade.verdict)
+      || typeof grade.score !== 'number' || grade.score < 0 || grade.score > 100
+      || typeof grade.summary !== 'string'
+      || !Array.isArray(grade.strengths) || !Array.isArray(grade.gaps)
+    ) {
+      throw new Error(`Model returned an incomplete grade (stop_reason=${message.stop_reason})`);
+    }
 
     const usage = message.usage || {};
     // Quota counter ticks ONLY on a successful grade — failed upstream calls
@@ -360,7 +372,9 @@ function attach(app) {
   // optionalAuth: we don't require sign-in to grade (the user wants
   // friction-free study), but we log the user_id when present.
   app.post('/api/ai/grade', aiLimiter, auth.optionalAuth, gradeHandler);
-  app.post('/api/ai/draft-question', aiLimiter, auth.optionalAuth, draftHandler);
+  // The question editor is dev-only; drafting spends the project's API key,
+  // so it takes an admin session, not an optional one.
+  app.post('/api/ai/draft-question', aiLimiter, auth.requireAuth, auth.requireAdmin, draftHandler);
 }
 
 module.exports = { attach };

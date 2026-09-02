@@ -1,3 +1,6 @@
+// Express 4 drops a rejected promise from an async handler and the request
+// hangs; this shim forwards it to the error handler below.
+require('express-async-errors');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -123,8 +126,11 @@ contact.attach(app);
 admin.attach(app);
 
 // ── Topics (public reads — show personalized progress when authenticated) ───
+// Query strings can arrive as arrays (`?level[]=x`); only a string is a filter.
+const str = (value) => (typeof value === 'string' ? value : undefined);
+
 app.get('/api/topics', auth.optionalAuth, readLimiter, (req, res) => {
-  res.json(db.getTopics(req.query.level, req.user?.id || 0));
+  res.json(db.getTopics(str(req.query.level), req.user?.id || 0));
 });
 
 app.get('/api/topics/:slug', auth.optionalAuth, readLimiter, (req, res) => {
@@ -135,7 +141,8 @@ app.get('/api/topics/:slug', auth.optionalAuth, readLimiter, (req, res) => {
 
 // ── Questions ────────────────────────────────────────────────────────────────
 app.get('/api/questions', auth.optionalAuth, readLimiter, (req, res) => {
-  res.json(db.getQuestions(req.query, req.user?.id || 0));
+  const { level, difficulty, search } = req.query;
+  res.json(db.getQuestions({ level: str(level), difficulty: str(difficulty), search: str(search) }, req.user?.id || 0));
 });
 
 // ── Progress (writes require auth + rate-limited) ───────────────────────────
@@ -149,13 +156,22 @@ app.post('/api/progress/bulk', writeLimiter, auth.requireAuth, (req, res) => {
   if (items.length > BULK_MAX_ITEMS) {
     return res.status(400).json({ error: 'Too many items in a single bulk' });
   }
+  const now = Date.now();
   for (const it of items) {
     if (!ALLOWED_STATUS.has(it?.status)) {
       return res.status(400).json({ error: 'Invalid status in bulk payload' });
     }
-    if (it.notes && String(it.notes).length > MAX_NOTES_LEN) {
+    if (it.notes != null && typeof it.notes !== 'string') {
+      return res.status(400).json({ error: 'Invalid notes in bulk payload' });
+    }
+    if (it.notes && it.notes.length > MAX_NOTES_LEN) {
       return res.status(400).json({ error: `Note exceeds ${MAX_NOTES_LEN} chars` });
     }
+    // A client clock cannot claim the future: a stamp like "9999" would win
+    // every later merge. Anything unparsable or ahead of now becomes now.
+    const stamp = Date.parse(it.updated_at ?? it.updatedAt);
+    it.updated_at = Number.isFinite(stamp) && stamp <= now + 60_000 ? new Date(stamp).toISOString() : new Date(now).toISOString();
+    delete it.updatedAt;
   }
   const result = db.bulkSetProgress(req.user.id, items);
   res.json({ success: true, ...result });
@@ -171,7 +187,10 @@ app.post('/api/progress/:questionId', writeLimiter, auth.requireAuth, (req, res)
   if (!ALLOWED_STATUS.has(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
-  if (notes && String(notes).length > MAX_NOTES_LEN) {
+  if (notes != null && typeof notes !== 'string') {
+    return res.status(400).json({ error: 'Invalid notes' });
+  }
+  if (notes && notes.length > MAX_NOTES_LEN) {
     return res.status(400).json({ error: `Note exceeds ${MAX_NOTES_LEN} chars` });
   }
   const qid = Number(req.params.questionId);

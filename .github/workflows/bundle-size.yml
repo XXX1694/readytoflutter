@@ -77,7 +77,14 @@ jobs:
           INDEX_KB=$(( ${INDEX:-0} / 1024 ))
           SHIKI_KB=$(( ${SHIKI:-0} / 1024 ))
           INDEX_GZ_KB=$(( $(gzip -c "$(find dist/assets -name 'index-*.js' | head -1)" | wc -c) / 1024 ))
-          echo "index=${INDEX_KB} KB raw / ${INDEX_GZ_KB} KB gzip; shiki=${SHIKI_KB} KB"
+          # First-paint JS is the entry plus the chunks index.html modulepreloads
+          # (tanstack, radix, motion). Sum their gzip sizes.
+          EAGER_GZ=0
+          for f in $(grep -oE 'assets/[^"]+\.js' dist/index.html | sort -u); do
+            EAGER_GZ=$(( EAGER_GZ + $(gzip -c "dist/$f" | wc -c) ))
+          done
+          EAGER_GZ_KB=$(( EAGER_GZ / 1024 ))
+          echo "index=${INDEX_KB} KB raw / ${INDEX_GZ_KB} KB gzip; eager total=${EAGER_GZ_KB} KB gzip; shiki=${SHIKI_KB} KB"
           fail=0
           if [[ ${INDEX_KB} -gt 700 ]]; then
             echo "::error::Main entry chunk is ${INDEX_KB} KB (ceiling 700 KB)."
@@ -88,7 +95,14 @@ jobs:
             echo "::error::Main entry chunk is ${INDEX_GZ_KB} KB gzip (ceiling 95 KB)."
             fail=1
           fi
-          if [[ ${SHIKI_KB} -gt 1500 ]]; then
+          if [[ ${EAGER_GZ_KB} -gt 240 ]]; then
+            echo "::error::First-paint JS is ${EAGER_GZ_KB} KB gzip (ceiling 240 KB)."
+            fail=1
+          fi
+          if [[ -z "${SHIKI:-}" ]]; then
+            echo "::error::No shiki-*.js chunk found — the manualChunks rule changed; update this gate."
+            fail=1
+          elif [[ ${SHIKI_KB} -gt 1500 ]]; then
             echo "::error::Shiki chunk is ${SHIKI_KB} KB (ceiling 1500 KB)."
             fail=1
           fi

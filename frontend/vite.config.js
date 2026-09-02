@@ -21,9 +21,9 @@ export default defineConfig({
       // caching below covers them network-first.
       includeAssets: [],
       manifest: {
-        // Stable identifier so `start_url` query strings don't fork the
-        // installed PWA into multiple "apps" in Chrome.
-        id: '/',
+        // `id`, `start_url` and `scope` are left to the plugin, which derives
+        // them from `base` — on GitHub Pages that is /<repo>/, and a hardcoded
+        // '/' launched the installed app at the wrong site.
         name: 'Onsite — Mobile Interview Prep',
         short_name: 'Onsite',
         description: 'Flutter, iOS, Android & cross-platform mobile interview workspace with spaced repetition, mock interviews and a curated knowledge base.',
@@ -38,8 +38,6 @@ export default defineConfig({
         // real estate; falls back gracefully on browsers that ignore it.
         display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         orientation: 'portrait',
-        start_url: '/',
-        scope: '/',
         lang: 'en',
         dir: 'ltr',
         categories: ['education', 'productivity'],
@@ -51,28 +49,28 @@ export default defineConfig({
             name: 'Start a study session',
             short_name: 'Study',
             description: 'Open the SRS queue',
-            url: '/study',
+            url: 'study',
             icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
           },
           {
             name: 'Mock interview',
             short_name: 'Mock',
             description: 'Run a timed mock interview',
-            url: '/mock',
+            url: 'mock',
             icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
           },
           {
             name: 'Knowledge base',
             short_name: 'Knowledge',
             description: 'Curated learning resources',
-            url: '/knowledge',
+            url: 'knowledge',
             icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
           },
           {
             name: 'Saved questions',
             short_name: 'Saved',
             description: 'Your bookmarked questions',
-            url: '/bookmarks',
+            url: 'bookmarks',
             icons: [{ src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
           },
         ],
@@ -240,10 +238,16 @@ export default defineConfig({
             || id.includes('regex-utilities')
             || /node_modules\/regex\//.test(id)
           ) return 'shiki';
+          // The hast / character-entity helpers are shared by Shiki's HTML
+          // serialiser and react-markdown; in their own small chunk neither
+          // side has to import the other's parser.
+          if (/node_modules\/(hast-util-to-html|hast-util-[a-z-]+|property-information|space-separated-tokens|comma-separated-tokens|ccount|zwitch|stringify-entities|character-entities|character-entities-legacy|character-reference-invalid|decode-named-character-reference|html-void-elements|is-decimal|is-hexadecimal|is-alphanumerical|is-alphabetical|@types\/hast|@types\/unist)/.test(id)) return 'hast';
           if (id.includes('framer-motion')) return 'motion';
           // react-markdown pulls the unified / micromark / mdast family in;
-          // every page that shows an answer shares one chunk of it.
-          if (/node_modules\/(react-markdown|remark-|micromark|mdast-|unified|unist-|hast-|vfile|property-information|space-separated-tokens|comma-separated-tokens|html-url-attributes|decode-named-character-reference|character-entities|trim-lines|bail|is-plain-obj|trough|devlop|extend|ccount|escape-string-regexp|markdown-table|longest-streak|zwitch|style-to-js|style-to-object|inline-style-parser|estree-util-is-identifier-name)/.test(id)) return 'markdown';
+          // every page that shows an answer shares one chunk of it. The tiny
+          // hast/property helpers it shares with Shiki are left to Rollup so
+          // a highlighted snippet does not drag the whole parser in.
+          if (/node_modules\/(react-markdown|remark-|micromark|mdast-|unified|unist-|vfile|trim-lines|bail|is-plain-obj|trough|devlop|markdown-table|longest-streak|style-to-js|style-to-object|inline-style-parser|estree-util-is-identifier-name|html-url-attributes)/.test(id)) return 'markdown';
           if (id.includes('@radix-ui')) return 'radix';
           if (id.includes('@tanstack')) return 'tanstack';
         },

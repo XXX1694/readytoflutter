@@ -25,9 +25,14 @@ const LIMITS = Object.freeze({
 
 // Override-friendly tier limits. Pulled from env at boot; defaults match the
 // pricing copy (free: 10/day, pro: unlimited).
+const envInt = (value, fallback) => {
+  if (value === undefined || value === '') return fallback;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+};
 const TIER_LIMITS = Object.freeze({
-  FREE_AI_GRADES_PER_DAY: Number(process.env.FREE_AI_GRADES_PER_DAY) || 10,
-  ANON_AI_GRADES_PER_DAY: Number(process.env.ANON_AI_GRADES_PER_DAY) || 3,
+  FREE_AI_GRADES_PER_DAY: envInt(process.env.FREE_AI_GRADES_PER_DAY, 10),
+  ANON_AI_GRADES_PER_DAY: envInt(process.env.ANON_AI_GRADES_PER_DAY, 3),
 });
 
 const SECURITY = Object.freeze({

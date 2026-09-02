@@ -180,7 +180,9 @@ function writeHtml(route, html) {
     // Strip the localhost origin AND any base prefix Vite injected during
     // canonical/og:image construction. We want absolute https URLs that
     // match the production site.
-    final = final.replace(new RegExp(`http://localhost:${PORT}`, 'g'), SITE_URL);
+    // The runtime canonical already carries the base path, and SITE_URL
+    // does too — swap the whole "origin + base" prefix, not just the origin.
+    final = final.split(`http://localhost:${PORT}${BASE_NO_TRAIL}`).join(SITE_URL);
   }
   fs.writeFileSync(path.join(outDir, 'index.html'), final);
 }
@@ -197,21 +199,17 @@ async function waitForReady(page, route) {
     await page.waitForSelector('li[id^="rung-"]', { timeout: 8000 }).catch(() => null);
     return;
   }
-  await page.waitForFunction(
-    () => {
-      // Either the dashboard topic-grid rendered or any text content
-      // beyond the boot shell exists.
-      const tiles = document.querySelectorAll('article, h1, h2');
-      const root = document.getElementById('root');
-      return tiles.length > 1 || (root && root.innerText.trim().length > 50);
-    },
-    { timeout: 8000 },
-  ).catch(() => null); // best-effort; if we time out, still capture what we have
+  // Every page renders its <h1> only once its data has resolved (the
+  // loading skeletons carry none, and the chrome has none), so the heading
+  // is the readiness contract. A timeout fails the route rather than
+  // shipping the skeleton as indexed HTML.
+  await page.waitForSelector('h1', { timeout: 15000 });
 }
 
 async function main() {
   const staticData = readStaticData();
   const routes = buildRouteList(staticData);
+  const failures = [];
   console.log(`▶︎  prerender ${routes.length} routes via ${HOST}`);
   if (SITE_URL) {
     console.log(`   canonicalising as ${SITE_URL}`);
@@ -263,6 +261,7 @@ async function main() {
             console.log(`✓ ${route}  (${done}/${total})`);
           } catch (err) {
             done += 1;
+            failures.push(route);
             console.warn(`✗ ${route}: ${err.message}  (${done}/${total})`);
           }
         }
@@ -275,6 +274,9 @@ async function main() {
       Array.from({ length: Math.min(CONCURRENCY, total) }, (_, i) => worker(i)),
     );
     console.log(`▼ prerender done in ${Math.round((Date.now() - startedAt) / 1000)}s (concurrency=${CONCURRENCY})`);
+    if (failures.length) {
+      throw new Error(`${failures.length} route(s) failed to prerender: ${failures.join(', ')}`);
+    }
   } finally {
     try { await browser?.close(); } catch { /* ignore */ }
     // Why we don't just `preview.kill('SIGTERM')` and return:

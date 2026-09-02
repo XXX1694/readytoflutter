@@ -303,10 +303,14 @@ function bootstrapAdminFromEnv() {
 function runOnce(name, fn) {
   const row = sqlite.prepare('SELECT 1 FROM migrations WHERE name = ?').get(name);
   if (row) return;
-  fn();
-  sqlite
-    .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
-    .run(name, new Date().toISOString());
+  // One transaction for the work and its marker: a crash between the two
+  // would otherwise re-run the migration on the next boot.
+  sqlite.transaction(() => {
+    fn();
+    sqlite
+      .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
+      .run(name, new Date().toISOString());
+  })();
 }
 
 // Idempotent: progress used `question_id` as PK; with auth each user gets a
@@ -318,6 +322,11 @@ function migrateProgressToUserScoped() {
   const hasUserId = cols.some((c) => c.name === 'user_id');
   if (hasUserId) return;
 
+  // The archive rows carry user_id = 0 and no such user exists, so the copy
+  // would trip the FK the new table declares. better-sqlite3 enforces
+  // foreign keys by default; switch them off for this one migration (the
+  // pragma is a no-op inside a transaction, so it sits outside it).
+  sqlite.pragma('foreign_keys = OFF');
   const tx = sqlite.transaction(() => {
     sqlite.exec(`
       CREATE TABLE progress_v2 (
@@ -338,7 +347,11 @@ function migrateProgressToUserScoped() {
       CREATE INDEX idx_progress_status ON progress(status);
     `);
   });
-  tx();
+  try {
+    tx();
+  } finally {
+    sqlite.pragma('foreign_keys = ON');
+  }
 }
 
 // Idempotent: clears legacy emoji icons. Safe to run on every boot.
@@ -415,20 +428,24 @@ function seedIfEmpty() {
 
 // The seed is the single source of question text (CLAUDE.md). `seedIfEmpty`
 // only fills an empty database, so a deployed instance kept whatever wording
-// it was first seeded with — the Markdown rewrite of every answer would
-// never have reached signed-in users. This upserts topics and questions from
-// the seed whenever the seed files change (keyed by a content hash, so a
-// normal boot does no work). Progress rows are untouched; nothing is deleted.
+// it was first seeded with. This brings topics and questions in line with the
+// seed whenever the seed files change: rows are upserted, rows the seed no
+// longer has are deleted (their progress goes with them), and the current
+// content hash is stored in `meta` so a normal boot does no work — and so
+// reverting a bad content commit is applied like any other change.
 function syncSeedContent() {
   const crypto = require('crypto');
   const { topics, questions } = readSeedData();
+  const live = questions.filter((question) => question.order_index < 100);
   const hash = crypto
     .createHash('sha256')
-    .update(JSON.stringify({ topics, questions }))
+    .update(JSON.stringify({ topics, questions: live }))
     .digest('hex')
     .slice(0, 16);
-  const marker = `seed-content:${hash}`;
-  if (sqlite.prepare('SELECT 1 FROM migrations WHERE name = ?').get(marker)) return;
+
+  sqlite.exec('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+  const current = sqlite.prepare("SELECT value FROM meta WHERE key = 'seed_content_hash'").get();
+  if (current?.value === hash) return;
 
   const upsertTopic = sqlite.prepare(`
     INSERT INTO topics (id, title, slug, level, category, description, icon, order_index)
@@ -449,23 +466,39 @@ function syncSeedContent() {
   `);
 
   const tx = sqlite.transaction(() => {
+    // Slugs are UNIQUE on their own, so two topics swapping slugs would
+    // collide half-way through the upsert loop. Park every slug first.
+    sqlite.prepare("UPDATE topics SET slug = 'pending:' || id").run();
     topics.forEach((topic) => upsertTopic.run(topic));
-    questions
-      .filter((question) => question.order_index < 100)
-      .forEach((question) =>
-        upsertQuestion.run({
-          ...question,
-          ...normalizeQuestionAnswer(question.question, question.answer),
-          code_example: question.code_example ?? null,
-          code_language: question.code_language || 'dart',
-        }),
-      );
+    live.forEach((question) =>
+      upsertQuestion.run({
+        ...question,
+        ...normalizeQuestionAnswer(question.question, question.answer),
+        code_example: question.code_example ?? null,
+        code_language: question.code_language || 'dart',
+      }),
+    );
+
+    // Rows the seed no longer carries. Questions first (progress cascades),
+    // then topics that own nothing any more.
+    const keepQuestions = new Set(live.map((q) => q.id));
+    const keepTopics = new Set(topics.map((t) => t.id));
+    for (const row of sqlite.prepare('SELECT id FROM questions').all()) {
+      if (!keepQuestions.has(row.id)) {
+        sqlite.prepare('DELETE FROM progress WHERE question_id = ?').run(row.id);
+        sqlite.prepare('DELETE FROM questions WHERE id = ?').run(row.id);
+      }
+    }
+    for (const row of sqlite.prepare('SELECT id FROM topics').all()) {
+      if (!keepTopics.has(row.id)) sqlite.prepare('DELETE FROM topics WHERE id = ?').run(row.id);
+    }
+
     sqlite
-      .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
-      .run(marker, new Date().toISOString());
+      .prepare("INSERT INTO meta (key, value) VALUES ('seed_content_hash', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(hash);
   });
   tx();
-  console.log(`Seed content synced (${topics.length} topics, ${questions.length} questions, ${marker})`);
+  console.log(`Seed content synced (${topics.length} topics, ${live.length} questions, ${hash})`);
 }
 
 // All read functions take a `userId` (default 0 = anonymous, no progress
@@ -612,7 +645,9 @@ function bulkSetProgress(userId, items) {
   const tx = sqlite.transaction(() => {
     for (const it of items) {
       const qid = Number(it.questionId ?? it.question_id);
-      if (!qid || !it.status) { skipped += 1; continue; }
+      // A question that has since left the catalogue (the browser keeps
+      // anonymous progress indefinitely) must not fail the whole batch.
+      if (!qid || !it.status || !questionExists(qid)) { skipped += 1; continue; }
       const incomingAt = it.updated_at || it.updatedAt || new Date().toISOString();
       const serverAt = existingMap.get(qid);
       if (serverAt && serverAt >= incomingAt) { skipped += 1; continue; }
