@@ -72,7 +72,13 @@ and `backend/data/seed/roadmap.json`. After any change there, run
 `frontend/public/seed/static-data.json` is generated, never hand-edited. The
 generator refuses a roadmap with an empty rung, an unknown topic, or a question
 counted twice in one track; `src/lib/roadmap.test.ts` additionally fails if a
-track misses any question of its own stack. CI's `static-data-sync` job runs the same script with `--check`
+track misses any question of its own stack. **Answers are Markdown** (CommonMark
++ GFM; `-` bullets, `### Heading`, `**term**`, `` `code` ``, fences) in both
+the seed and `frontend/src/i18n/contentRu.ts`; `AnswerText` renders them and
+`lib/markdown.ts` `toPlainText` is what speech, hints and search read. The
+backend upserts topics and questions from the seed on boot whenever the seed
+changes (`syncSeedContent`, keyed by a content hash), so a deployed database
+never serves stale wording. CI's `static-data-sync` job runs the same script with `--check`
 and fails the PR on drift.
 
 **Every API call goes through `tryRemote(remote, fallback)`.** See

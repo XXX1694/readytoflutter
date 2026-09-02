@@ -9,6 +9,7 @@ import { useContent } from '../i18n/content';
 import { useSessionCopy, type SessionCopy } from '../i18n/sessionPage';
 import { Button, Pill, FullPageLoader, difficultyTone } from '../ui/index';
 import AnswerText from '../components/AnswerText';
+import InlineMarkdown from '../components/InlineMarkdown';
 import CodeBlock from '../components/CodeBlock';
 import AnswerGrader, {
   SelfGrade, useAiHealth, type SelfGradeOption,
@@ -149,7 +150,7 @@ export default function RoundPage() {
         </div>
 
         <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[32px]">
-          {questionText(current)}
+          <InlineMarkdown text={questionText(current)} />
         </h2>
 
         {!revealed && (

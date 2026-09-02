@@ -359,6 +359,88 @@
   padding: 0.1em 0.32em;
 }
 
+@layer components {
+/* Answers written in Markdown. The first paragraph is the gist — a size up,
+   in the grotesk, ink — and the rest reads in the serif. Bullets hang from
+   a small ink dot; a heading is a 13px run-in label in the grotesk, never a
+   display size inside a card. */
+.answer-md {
+  font-family: theme('fontFamily.serif');
+  font-size: 1.0625rem;
+  line-height: 1.68;
+  max-width: 68ch;
+  color: rgb(var(--ink-2));
+  text-wrap: pretty;
+}
+.answer-md > * + * { margin-top: 0.9em; }
+.answer-md > p:first-child {
+  font-family: theme('fontFamily.sans');
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  font-weight: 500;
+  color: rgb(var(--ink));
+}
+@media (min-width: 640px) {
+  .answer-md > p:first-child { font-size: 1.125rem; }
+}
+.answer-md strong, .answer-md b { color: rgb(var(--ink)); font-weight: 650; }
+.answer-md em { font-style: italic; }
+.answer-md code, .inline-code {
+  font-family: theme('fontFamily.mono');
+  font-size: 0.86em;
+  background: rgb(var(--rule) / 0.07);
+  border-radius: 3px;
+  padding: 0.1em 0.32em;
+  color: rgb(var(--ink));
+}
+.answer-md .answer-heading {
+  font-family: theme('fontFamily.sans');
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: rgb(var(--muted));
+  margin-top: 1.4em;
+  margin-bottom: 0.45em;
+}
+.answer-md ul, .answer-md ol { padding-left: 1.4em; }
+.answer-md ul { list-style: none; }
+.answer-md ul > li { position: relative; }
+.answer-md ul > li::before {
+  content: '';
+  position: absolute;
+  left: -1.05em;
+  top: 0.74em;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(var(--ink) / 0.7);
+}
+.answer-md ol { list-style: decimal; }
+.answer-md ol > li::marker { color: rgb(var(--muted)); font-variant-numeric: tabular-nums; }
+.answer-md li + li { margin-top: 0.4em; }
+.answer-md li > ul, .answer-md li > ol { margin-top: 0.4em; }
+.answer-md blockquote {
+  border-left: 2px solid rgb(var(--rule) / 0.25);
+  padding-left: 1em;
+  color: rgb(var(--ink-3));
+}
+.answer-md table { width: 100%; border-collapse: collapse; font-size: 0.94em; }
+.answer-md th, .answer-md td { text-align: left; padding: 0.4em 0.6em; border-bottom: 1px solid rgb(var(--rule) / 0.12); vertical-align: top; }
+.answer-md th { font-family: theme('fontFamily.sans'); font-size: 0.8125rem; font-weight: 600; color: rgb(var(--muted)); }
+.answer-md hr { border: 0; border-top: 1px solid rgb(var(--rule) / 0.12); }
+.answer-md > pre, .answer-md > div { margin-top: 1em; }
+/* A hint or an excerpt: no lead paragraph, inherit the caller's type. */
+.answer-md--plain > p:first-child {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+}
+
 h1, h2, h3 { text-wrap: balance; }
 
 /* ─────────────────────────────────────────────────────────────────────────────

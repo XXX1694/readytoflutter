@@ -47,6 +47,13 @@ node -e "const db=require('./database');db.init();db.close();"   # smoke test
 The single biggest source of dev/prod drift in this repo is the static
 fallback bundle that ships to GitHub Pages.
 
+Answers are written in Markdown — a lead sentence as the first paragraph,
+`-` bullets (indent two spaces to nest), `### Heading` for a run-in label,
+`**term** — definition` bullets, `` `identifiers` `` in code spans, ```` ``` ````
+fences with a language for code. Escape a literal `*`, `_` or `<` in prose
+(`List\<T\>`, `go\_router`). The Russian answer for a question lives in
+`frontend/src/i18n/contentRu.ts` with the same conventions.
+
 The roadmap (`backend/data/seed/roadmap.json`) lives in the same bundle. Each
 of its sixteen rungs names topics by slug plus the difficulty tiers that rung
 covers; questions are resolved from that at build time. Adding a topic to a

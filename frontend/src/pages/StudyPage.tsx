@@ -12,6 +12,7 @@ import { useSessionCopy, type SessionCopy } from '../i18n/sessionPage';
 import { Button, PageShell, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
 import CodeBlock from '../components/CodeBlock';
 import AnswerText from '../components/AnswerText';
+import InlineMarkdown from '../components/InlineMarkdown';
 import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerGrader, {
   SelfGrade, useAiHealth, type SelfGradeOption,
@@ -263,7 +264,7 @@ export default function StudyPage() {
       </div>
 
       <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[34px]">
-        {questionText(current)}
+        <InlineMarkdown text={questionText(current)} />
       </h2>
 
       {!revealed && (

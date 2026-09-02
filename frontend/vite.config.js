@@ -241,6 +241,9 @@ export default defineConfig({
             || /node_modules\/regex\//.test(id)
           ) return 'shiki';
           if (id.includes('framer-motion')) return 'motion';
+          // react-markdown pulls the unified / micromark / mdast family in;
+          // every page that shows an answer shares one chunk of it.
+          if (/node_modules\/(react-markdown|remark-|micromark|mdast-|unified|unist-|hast-|vfile|property-information|space-separated-tokens|comma-separated-tokens|html-url-attributes|decode-named-character-reference|character-entities|trim-lines|bail|is-plain-obj|trough|devlop|extend|ccount|escape-string-regexp|markdown-table|longest-streak|zwitch|style-to-js|style-to-object|inline-style-parser|estree-util-is-identifier-name)/.test(id)) return 'markdown';
           if (id.includes('@radix-ui')) return 'radix';
           if (id.includes('@tanstack')) return 'tanstack';
         },

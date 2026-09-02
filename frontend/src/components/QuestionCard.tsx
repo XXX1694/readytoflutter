@@ -18,6 +18,8 @@ import { cn } from '../lib/cn';
 import { useBookmark } from '../lib/useBookmark';
 import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts';
 import { extractHint } from '../lib/hint';
+import { toPlainText } from '../lib/markdown';
+import InlineMarkdown from './InlineMarkdown';
 import { track } from '../lib/analytics';
 import type { ProgressStatus, Question } from '../types/domain';
 
@@ -209,7 +211,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] leading-snug text-ink">{questionText(question)}</span>
+          <span className="block text-[15px] leading-snug text-ink"><InlineMarkdown text={questionText(question)} /></span>
           <span className="mt-1 block text-[12px] leading-snug text-muted">{difficultyLabel}</span>
         </span>
 
@@ -292,8 +294,8 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                             stop();
                             setThisSpeakingToken(null);
                           } else {
-                            const body = reveal === 'full' ? fullAnswer : hintText;
-                            const text = `${questionText(question)}. ${body}`;
+                            const body = toPlainText(reveal === 'full' ? fullAnswer : hintText, { keepCode: false });
+                            const text = `${toPlainText(questionText(question))}. ${body}`;
                             const tok = speak(text, {
                               lang,
                               onEnd: () => setThisSpeakingToken(null),
@@ -354,7 +356,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                       {/* A pen rule in the margin. */}
                       <div className="border-l-2 border-brand/40 pl-4">
                         <p className="eyebrow mb-1">{lang === 'ru' ? 'Подсказка' : 'Hint'}</p>
-                        <p className="answer-text">{hintText}</p>
+                        <AnswerText text={hintText} />
                       </div>
                       <Button size="sm" onClick={showAnswer}>
                         {lang === 'ru' ? 'Показать ответ' : 'Show answer'}

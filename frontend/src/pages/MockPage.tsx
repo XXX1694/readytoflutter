@@ -13,6 +13,7 @@ import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform, PLATFORMS } from '../lib/platform';
 import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerText from '../components/AnswerText';
+import InlineMarkdown from '../components/InlineMarkdown';
 import CodeBlock from '../components/CodeBlock';
 import AnswerGrader, {
   SelfGrade, useAiHealth, type SelfGradeOption,
@@ -273,7 +274,7 @@ export default function MockPage() {
         </div>
 
         <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[32px]">
-          {questionText(current)}
+          <InlineMarkdown text={questionText(current)} />
         </h2>
 
         {!revealed && (

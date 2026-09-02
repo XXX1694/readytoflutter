@@ -231,6 +231,7 @@ function init() {
   migrateUsersBilling();
   migrateUsersRecovery();
   seedIfEmpty();
+  syncSeedContent();
   bootstrapAdminFromEnv();
   runOnce('remove_general_questions', removeGeneralQuestions);
   runOnce('normalize_existing_questions', normalizeExistingQuestions);
@@ -410,6 +411,61 @@ function seedIfEmpty() {
   });
 
   tx();
+}
+
+// The seed is the single source of question text (CLAUDE.md). `seedIfEmpty`
+// only fills an empty database, so a deployed instance kept whatever wording
+// it was first seeded with — the Markdown rewrite of every answer would
+// never have reached signed-in users. This upserts topics and questions from
+// the seed whenever the seed files change (keyed by a content hash, so a
+// normal boot does no work). Progress rows are untouched; nothing is deleted.
+function syncSeedContent() {
+  const crypto = require('crypto');
+  const { topics, questions } = readSeedData();
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ topics, questions }))
+    .digest('hex')
+    .slice(0, 16);
+  const marker = `seed-content:${hash}`;
+  if (sqlite.prepare('SELECT 1 FROM migrations WHERE name = ?').get(marker)) return;
+
+  const upsertTopic = sqlite.prepare(`
+    INSERT INTO topics (id, title, slug, level, category, description, icon, order_index)
+    VALUES (@id, @title, @slug, @level, @category, @description, '', @order_index)
+    ON CONFLICT(id) DO UPDATE SET
+      title = excluded.title, slug = excluded.slug, level = excluded.level,
+      category = excluded.category, description = excluded.description,
+      icon = '', order_index = excluded.order_index
+  `);
+  const upsertQuestion = sqlite.prepare(`
+    INSERT INTO questions (id, topic_id, order_index, difficulty, question, answer, code_example, code_language)
+    VALUES (@id, @topic_id, @order_index, @difficulty, @question, @answer, @code_example, @code_language)
+    ON CONFLICT(id) DO UPDATE SET
+      topic_id = excluded.topic_id, order_index = excluded.order_index,
+      difficulty = excluded.difficulty, question = excluded.question,
+      answer = excluded.answer, code_example = excluded.code_example,
+      code_language = excluded.code_language
+  `);
+
+  const tx = sqlite.transaction(() => {
+    topics.forEach((topic) => upsertTopic.run(topic));
+    questions
+      .filter((question) => question.order_index < 100)
+      .forEach((question) =>
+        upsertQuestion.run({
+          ...question,
+          ...normalizeQuestionAnswer(question.question, question.answer),
+          code_example: question.code_example ?? null,
+          code_language: question.code_language || 'dart',
+        }),
+      );
+    sqlite
+      .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
+      .run(marker, new Date().toISOString());
+  });
+  tx();
+  console.log(`Seed content synced (${topics.length} topics, ${questions.length} questions, ${marker})`);
 }
 
 // All read functions take a `userId` (default 0 = anonymous, no progress

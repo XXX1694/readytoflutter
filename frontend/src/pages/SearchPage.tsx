@@ -4,6 +4,7 @@ import MiniSearch from 'minisearch';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import QuestionCard from '../components/QuestionCard';
+import { toPlainText } from '../lib/markdown';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
@@ -107,8 +108,8 @@ export default function SearchPage() {
     ms.addAll(
       questions.map((q) => ({
         id: q.id,
-        q: questionText(q) || '',
-        a: answerText(q) || '',
+        q: toPlainText(questionText(q)),
+        a: toPlainText(answerText(q)),
         topic: topicTitle({ id: q.topic_id, title: q.topic_title || '' }) || q.topic_title || '',
         tags: q.tags || '',
       })),

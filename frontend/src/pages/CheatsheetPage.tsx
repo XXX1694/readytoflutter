@@ -8,6 +8,7 @@ import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { Button, FullPageLoader } from '../ui/index';
 import { cn } from '../lib/cn';
+import AnswerText from '../components/AnswerText';
 import { extractHint, shortenCode } from '../lib/hint';
 import type { Difficulty, Question } from '../types/domain';
 
@@ -172,9 +173,7 @@ export default function CheatsheetPage() {
               </div>
               {/* The hint is the one thing on this sheet that gets read rather
                   than scanned, so it takes the reading serif. */}
-              <p className="ml-7 mt-1.5 font-serif text-[13px] leading-[1.55] text-ink-2">
-                {it.hint}
-              </p>
+              <AnswerText text={it.hint} lead={false} className="ml-7 mt-1.5 max-w-none font-serif text-[13px] leading-[1.55] text-ink-2" />
               {it.code && (
                 <pre className="ml-7 mt-1.5 overflow-hidden whitespace-pre-wrap rounded border border-rule/12 bg-rule/4 p-1.5 font-mono text-[10.5px] leading-[1.45] text-ink print:bg-transparent">
                   <code>{it.code}</code>
