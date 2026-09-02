@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Drawer } from 'vaul';
-import { X, SlidersHorizontal } from 'lucide-react';
-import { cn } from '../lib/cn';
+import { X } from 'lucide-react';
 import { tapLight } from '../lib/haptics';
 
 /**
@@ -10,7 +9,7 @@ import { tapLight } from '../lib/haptics';
  *
  * Usage:
  *   const [open, setOpen] = useState(false);
- *   <FilterSheetTrigger onClick={() => setOpen(true)} count={2} />
+ *   <Chip onClick={() => setOpen(true)} aria-haspopup="dialog">Filters</Chip>
  *   <FilterSheet open={open} onOpenChange={setOpen} title="Filters">
  *     ...children (the actual controls)
  *     <FilterSheet.Footer onApply={...} onClear={...} />
@@ -86,42 +85,6 @@ export default function FilterSheet({
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
-  );
-}
-
-export interface FilterSheetTriggerProps {
-  onClick?: () => void;
-  count?: number;
-  label?: string;
-  className?: string;
-}
-
-/**
- * Pre-styled trigger pill with optional count badge — drop into a filter row.
- */
-export function FilterSheetTrigger({
-  onClick,
-  count = 0,
-  label = 'Filters',
-  className,
-}: FilterSheetTriggerProps) {
-  return (
-    <button
-      type="button"
-      onClick={() => { tapLight(); onClick?.(); }}
-      className={cn(
-        'inline-flex min-h-[40px] items-center gap-2 rounded-full border border-rule/12 bg-paper-2 px-3.5 py-1.5 text-[13px] font-medium text-ink-2 transition-colors active:border-rule/30',
-        className,
-      )}
-    >
-      <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
-      <span>{label}</span>
-      {count > 0 && (
-        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-ink px-1.5 text-[11px] font-semibold tabular-nums text-paper">
-          {count}
-        </span>
-      )}
-    </button>
   );
 }
 

@@ -1,23 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Brain, Target, Printer, FileText, MessagesSquare } from 'lucide-react';
+import { Target, Printer, FileText, MessagesSquare } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTopic } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import QuestionCard from '../components/QuestionCard';
+import TopicSources from '../components/TopicSources';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Pill, ProgressBar, Skeleton, TopicGlyph, levelTone } from '../ui/index';
-import { cn } from '../lib/cn';
+import { useTopicCopy } from '../i18n/topicPage';
+import {
+  PageShell, PageHeader, Button, Chip, ChipGroup, Meter, EmptyState, OverflowMenu, Skeleton,
+} from '../ui/index';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 import { track } from '../lib/analytics';
 import type { Question } from '../types/domain';
-import type { TopicFilter } from '../store/prefs';
 
-const FILTERS: TopicFilter[] = ['all', 'not_started', 'in_progress', 'completed'];
+/**
+ * The three columns a question can be in. "In progress" is not one of them:
+ * a question you started but did not finish is still a question to do, and a
+ * third bucket only made the user decide which one they were looking at.
+ */
+type Column = 'all' | 'not_started' | 'completed';
 
 /**
  * Last `topic_opened` we sent, as history-entry + slug. Module scope on
@@ -37,10 +44,15 @@ export default function TopicPage() {
   const focusParam = searchParams.get('q');
   const { lang } = useLang();
   const t = useT(lang);
+  const c = useTopicCopy(lang);
   const { topicTitle, topicDesc } = useContent(lang);
 
-  const filter = usePrefs((s) => s.topicFilter);
-  const setFilter = usePrefs((s) => s.setTopicFilter);
+  // The stored preference still speaks the old four-value vocabulary — it is
+  // shared with other surfaces and persisted for real users — so 'in_progress'
+  // is read as "to do" rather than migrated away.
+  const storedFilter = usePrefs((s) => s.topicFilter);
+  const setStoredFilter = usePrefs((s) => s.setTopicFilter);
+  const filter: Column = storedFilter === 'in_progress' ? 'not_started' : storedFilter;
 
   const { data: topic, isLoading, error } = useTopic(slug);
 
@@ -94,17 +106,15 @@ export default function TopicPage() {
   const filtered = useMemo(() => {
     return questions.filter((q) => {
       if (filter === 'all') return true;
-      if (filter === 'not_started') return !q.status || q.status === 'not_started';
-      return q.status === filter;
+      if (filter === 'completed') return q.status === 'completed';
+      return q.status !== 'completed';
     });
   }, [questions, filter]);
 
-  const counts = useMemo<Record<TopicFilter, number>>(() => ({
-    all: questions.length,
-    not_started: questions.filter((q) => !q.status || q.status === 'not_started').length,
-    in_progress: questions.filter((q) => q.status === 'in_progress').length,
-    completed: questions.filter((q) => q.status === 'completed').length,
-  }), [questions]);
+  const counts = useMemo<Record<Column, number>>(() => {
+    const completed = questions.filter((q) => q.status === 'completed').length;
+    return { all: questions.length, not_started: questions.length - completed, completed };
+  }, [questions]);
 
   // Changing the filter can shrink the list out from under the cursor. Clamping
   // during render keeps it valid without a second commit.
@@ -175,237 +185,107 @@ export default function TopicPage() {
     );
   }
 
-  const completedCount = questions.filter((q) => q.status === 'completed').length;
+  const completedCount = counts.completed;
   const pct = questions.length > 0 ? Math.round((completedCount / questions.length) * 100) : 0;
-  const levelT = t[topic.level];
-  // Resolve platform metadata so the breadcrumb above the title tells the user
-  // "iOS · Swift · Swift Basics" without making them guess.
-  const platformKey = topicPlatform(topic);
-  const platformMeta = PLATFORMS.find((p) => p.key === platformKey);
+  // Breadcrumb above the title: stack, category, level — "Flutter · Dart · Junior".
+  const platformMeta = PLATFORMS.find((p) => p.key === topicPlatform(topic));
+  // Several categories are named after their own stack ("Android" inside
+  // Android), and "Android · Android · Mid-Level" says one thing twice.
+  const crumbs = [
+    platformMeta ? (t[platformMeta.labelKey as keyof UICopy] as string) : null,
+    topic.category,
+    t[topic.level].short,
+  ].filter((crumb, i, all): crumb is string =>
+    Boolean(crumb) && all.findIndex((other) => other?.toLowerCase() === crumb?.toLowerCase()) === i);
+
+  const startSession = () =>
+    navigate(`/study?topic=${topic.slug}&label=${encodeURIComponent(topicTitle(topic))}`);
+  const openStandalone = (suffix: string) =>
+    window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/${suffix}`, '_blank', 'noopener');
 
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-4 pb-36 sm:px-6 sm:py-10 sm:pb-10 lg:px-8 2xl:px-12 lg:pb-12">
-        {/* Breadcrumb — desktop only. On mobile the back arrow lives in the
-            header chrome so this row would just waste vertical space. */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/')}
-          className="mb-5 -ml-2 hidden text-muted hover:text-ink lg:inline-flex"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-          {t.backToDashboard}
-        </Button>
-
-        {/* Header */}
-        <header className="mb-6 flex flex-col gap-4 border-b border-rule/12 pb-5 sm:mb-8 sm:pb-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <TopicGlyph topic={topic} size="lg" />
-            <div className="min-w-0 flex-1">
-              {/* Platform breadcrumb — clickable, jumps to dashboard scoped
-                  to the topic's stack. Always shows the category as a soft
-                  hint between platform and title. */}
-              <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
-                {platformMeta && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/?stack=${platformMeta.key}`)}
-                    className="text-ink-2 hover:text-ink"
-                  >
-                    {t[platformMeta.labelKey as keyof UICopy] as string}
-                  </button>
-                )}
-                {topic.category && (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>{topic.category}</span>
-                  </>
-                )}
-                <span aria-hidden>·</span>
-                <span>{levelT.short}</span>
-              </div>
-              <h1 className="mt-1 font-display text-2xl leading-tight text-ink sm:mt-2 sm:text-display-xs">
-                {topicTitle(topic)}
-              </h1>
-              <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-2 sm:mt-2 sm:text-base">
-                {topicDesc(topic)}
-              </p>
-            </div>
-            <Pill tone={levelTone[topic.level]} size="md" className="hidden shrink-0 sm:inline-flex">
-              {levelT.short}
-            </Pill>
-          </div>
-
-          {/* Progress */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <ProgressBar
-              value={completedCount}
-              max={questions.length}
-              size="sm"
-              tone={pct === 100 ? 'mint' : 'ink'}
-              className="max-w-md"
+    <PageShell width="reading" padBottom>
+      <PageHeader
+        eyebrow={crumbs.join(' · ')}
+        title={topicTitle(topic)}
+        subtitle={topicDesc(topic)}
+        back={{ to: '/topics', label: c.backToTopics }}
+        actions={
+          <>
+            {/* Below sm the same action is the sticky shelf at the bottom of
+                the screen; showing both would put one primary twice on one
+                phone screen. */}
+            <Button variant="codex" size="md" onClick={startSession} className="hidden sm:inline-flex">
+              {t.nav.startSession}
+            </Button>
+            <OverflowMenu
+              label={c.moreActions}
+              // Alone on its row below sm (the primary is the sticky shelf),
+              // so it sits at the right edge instead of floating mid-header.
+              className="ml-auto"
+              items={[
+                { label: t.nav.timed, icon: Target, onSelect: () => navigate(`/mock?topic=${topic.slug}`) },
+                { label: t.nav.followups, icon: MessagesSquare, onSelect: () => navigate(`/round/${topic.slug}`) },
+                { label: c.cheatsheet, icon: FileText, onSelect: () => openStandalone('cheatsheet') },
+                { label: c.print, icon: Printer, onSelect: () => openStandalone('print') },
+              ]}
             />
-            <span className="text-[12px] tabular-nums text-muted">
-              {completedCount}/{questions.length} · {pct}%
-            </span>
-          </div>
-
-          {/* Drill this topic — desktop+tablet show all CTAs inline. On mobile
-              the primary "Drill" lives as a sticky bottom CTA further down,
-              and only the secondaries (Round/Mock + tools) appear here as a
-              tight chip row. */}
-          <div className="hidden flex-col gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center">
-            <Button
-              variant="brand"
-              size="md"
-              className="w-full sm:w-auto"
-              onClick={() => navigate(`/study?topic=${topic.slug}&label=${encodeURIComponent(topicTitle(topic))}`)}
-            >
-              <Brain className="h-4 w-4" />
-              {lang === 'ru' ? 'Повторение' : 'Drill'}
-            </Button>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
-              <Button
-                variant="codex"
-                size="sm"
-                onClick={() => navigate(`/round/${topic.slug}`)}
-              >
-                <MessagesSquare className="h-3.5 w-3.5" />
-                {lang === 'ru' ? 'Раунд' : 'Round'}
-              </Button>
-              <Button
-                variant="codex"
-                size="sm"
-                onClick={() => navigate(`/mock?topic=${topic.slug}`)}
-              >
-                <Target className="h-3.5 w-3.5" />
-                {lang === 'ru' ? 'Mock-собес' : 'Mock'}
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-1 sm:ml-auto">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/cheatsheet`, '_blank', 'noopener')}
-                className="text-muted hover:text-ink"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                {lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/print`, '_blank', 'noopener')}
-                className="text-muted hover:text-ink"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                {lang === 'ru' ? 'PDF' : 'Print'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Mobile-only secondary chips — primary Drill is sticky-bottom. */}
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 no-scrollbar sm:hidden">
-            <Button variant="codex" size="md" className="shrink-0" onClick={() => navigate(`/round/${topic.slug}`)}>
-              <MessagesSquare className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Раунд' : 'Round'}
-            </Button>
-            <Button variant="codex" size="md" className="shrink-0" onClick={() => navigate(`/mock?topic=${topic.slug}`)}>
-              <Target className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Mock' : 'Mock'}
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
-              className="shrink-0"
-              onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/cheatsheet`, '_blank', 'noopener')}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
-              className="shrink-0"
-              onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/print`, '_blank', 'noopener')}
-            >
-              <Printer className="h-3.5 w-3.5" />
-              {lang === 'ru' ? 'PDF' : 'Print'}
-            </Button>
-          </div>
-        </header>
-
-        {/* Filters — wraps on desktop, horizontal-scrolls on mobile so the
-            chips never overflow into a second row. The strip is bled to the
-            full viewport width on small screens via -mx-4 + px-4 padding. */}
-        <div className="-mx-4 mb-5 flex items-center gap-2 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:mb-6 sm:flex-wrap sm:overflow-visible sm:px-0">
-          {FILTERS.map((f) => {
-            const label = {
-              all: t.filterAll,
-              not_started: t.filterTodo,
-              in_progress: t.filterInProgress,
-              completed: t.filterDone,
-            }[f];
-            const active = filter === f;
-            return (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                aria-pressed={active}
-                className={cn(
-                  'inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150',
-                  active
-                    ? 'border-ink bg-ink text-paper'
-                    : 'border-rule/12 bg-paper-2 text-muted hover:border-rule/25 hover:text-ink',
-                )}
-              >
-                <span>{label}</span>
-                <span className={cn('tabular-nums', active ? 'text-paper/65' : 'text-muted-2')}>
-                  {counts[f]}
-                </span>
-              </button>
-            );
-          })}
-          <span className="ml-auto hidden items-center gap-1.5 text-[12px] text-muted-2 sm:inline-flex">
-            <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">j</kbd>
-            <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">k</kbd>
-            <span>{lang === 'ru' ? 'перейти' : 'to move'}</span>
-            <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">space</kbd>
-            <span>{lang === 'ru' ? 'открыть' : 'to open'}</span>
-          </span>
+          </>
+        }
+      >
+        <div className="flex items-center gap-3">
+          <Meter
+            value={completedCount}
+            max={questions.length}
+            label={c.progressLabel(topicTitle(topic))}
+            barClassName="w-40"
+          />
+          <span className="text-[13px] text-muted">{c.percent(pct)}</span>
         </div>
+      </PageHeader>
 
-        {/* Questions list */}
-        <div className="space-y-3">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-16 text-center">
-              <p className="font-serif text-[17px] text-ink-2">{t.noQuestionsInCategory}</p>
-              {filter !== 'all' && (
-                <Button variant="outline" size="sm" onClick={() => setFilter('all')}>
-                  {lang === 'ru' ? 'Показать все вопросы' : 'Show all questions'}
-                </Button>
-              )}
-            </div>
-          ) : (
-            filtered.map((q, i) => (
-              <QuestionCard
-                key={q.id}
-                ref={(el) => {
-                  if (el) refs.current.set(q.id, el);
-                  else refs.current.delete(q.id);
-                }}
-                question={q}
-                index={questions.indexOf(q)}
-                expanded={openId === q.id}
-                onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
-                focused={activeCursor === i}
-                topicSlug={slug}
-              />
-            ))
-          )}
+      <ChipGroup ariaLabel={c.statusFilters} scroll className="mb-6">
+        <Chip active={filter === 'all'} count={counts.all} onClick={() => setStoredFilter('all')}>
+          {t.filterAll}
+        </Chip>
+        <Chip active={filter === 'not_started'} count={counts.not_started} onClick={() => setStoredFilter('not_started')}>
+          {t.filterTodo}
+        </Chip>
+        <Chip active={filter === 'completed'} count={counts.completed} onClick={() => setStoredFilter('completed')}>
+          {t.filterDone}
+        </Chip>
+      </ChipGroup>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          title={c.emptyTitle}
+          body={c.emptyBody}
+          action={filter !== 'all' ? { label: c.showAll, onClick: () => setStoredFilter('all') } : undefined}
+        />
+      ) : (
+        // The rows carry their own bottom hairline; this closes the list at
+        // the top so it reads as one ruled block.
+        <div className="border-t border-rule/12">
+          {filtered.map((q, i) => (
+            <QuestionCard
+              key={q.id}
+              ref={(el) => {
+                if (el) refs.current.set(q.id, el);
+                else refs.current.delete(q.id);
+              }}
+              question={q}
+              index={questions.indexOf(q)}
+              expanded={openId === q.id}
+              onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
+              focused={activeCursor === i}
+              topicSlug={slug}
+            />
+          ))}
         </div>
+      )}
+
+      <div className="mt-12">
+        <TopicSources topic={topic} />
       </div>
 
       {/* Sticky mobile CTA — rendered through a portal into <body> so the
@@ -419,69 +299,47 @@ export default function TopicPage() {
           className="fixed inset-x-0 z-30 sm:hidden"
           style={{ bottom: 'var(--bottom-nav-h, 56px)' }}
         >
-          {/* Solid shelf — opaque paper above a hairline, so it reads as a
-              sheet laid over the scrolling content rather than a glow. */}
-          <div className="border-t border-rule/12 bg-paper px-4 pb-2 pt-3">
-            <Button
-              variant="brand"
-              size="lg"
-              className="w-full"
-              onClick={() => navigate(`/study?topic=${topic.slug}&label=${encodeURIComponent(topicTitle(topic))}`)}
-            >
-              <Brain className="h-4 w-4" />
-              {lang === 'ru' ? 'Начать сессию' : 'Start a session'}
+          {/* A 16px scrim so the last row dissolves into the shelf instead of
+              being sliced by its hairline. */}
+          <div
+            aria-hidden
+            className="h-4"
+            style={{ background: 'linear-gradient(to top, rgb(var(--paper)), rgb(var(--paper) / 0))' }}
+          />
+          <div className="border-t border-rule/12 bg-paper-2 px-4 pb-2 pt-3">
+            <Button variant="codex" size="lg" className="w-full" onClick={startSession}>
+              {t.nav.startSession}
             </Button>
           </div>
         </div>,
         document.body,
       )}
-    </div>
+    </PageShell>
   );
 }
 
 function TopicSkeleton() {
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
-        <Skeleton className="mb-5 h-4 w-32" />
-        <header className="mb-8 border-b border-rule/12 pb-6">
-          <div className="flex items-start gap-4">
-            <Skeleton className="h-14 w-14 rounded-md" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-9 w-3/4" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-          </div>
-          <div className="mt-5 flex items-center gap-3">
-            <Skeleton className="h-2 w-1/2 max-w-md" />
-            <Skeleton className="h-3 w-16" />
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Skeleton className="h-8 w-24 rounded-md" />
-            <Skeleton className="h-8 w-20 rounded-md" />
-            <Skeleton className="h-8 w-28 rounded-md" />
-          </div>
-        </header>
-        <div className="mb-6 flex gap-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-7 w-20 rounded-full" />
-          ))}
-        </div>
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-lg border border-rule/12 bg-paper-2 p-4 shadow-codex-sm">
-              <div className="flex items-start gap-3">
-                <Skeleton className="h-7 w-7 rounded-md" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+    <PageShell width="reading" padBottom>
+      <div className="mb-6 border-b border-rule/12 pb-5 sm:mb-8 sm:pb-6">
+        <Skeleton className="h-3 w-40" />
+        <Skeleton className="mt-3 h-8 w-3/5" />
+        <Skeleton className="mt-3 h-4 w-4/5" />
+        <Skeleton className="mt-5 h-3 w-56" />
       </div>
-    </div>
+      <div className="mb-6 flex gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-24 rounded-full" />
+        ))}
+      </div>
+      <div className="border-t border-rule/12">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="border-b border-rule/10 px-1 py-4">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="mt-2 h-3 w-16" />
+          </div>
+        ))}
+      </div>
+    </PageShell>
   );
 }

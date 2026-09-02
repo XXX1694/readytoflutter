@@ -1,11 +1,11 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import { ArrowLeft, Check, Copy } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import { authResetWithRecoveryCode } from '../api/api';
 import { useLang } from '../i18n/LangContext';
 import { useRecoveryCopy, type RecoveryCopy, type RecoveryErrorKey } from '../i18n/ui';
-import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
+import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
 
 /**
  * Recovery-code reset. There is no email provider, so the code the user saved
@@ -82,42 +82,32 @@ export default function ResetPasswordPage() {
 
   if (issuedCode) {
     return (
-      <AuthShell>
-        <Eyebrow>{T.resetDoneEyebrow}</Eyebrow>
-        <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
-          {T.resetDoneTitle}
-        </h1>
-        <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.resetDoneBody}</p>
-
-        <div className="mt-8">
-          <RecoveryCodePanel
-            code={issuedCode}
-            T={T}
-            ctaLabel={T.toSignIn}
-            onAcknowledge={() => navigate('/login', { replace: true })}
-          />
-        </div>
-      </AuthShell>
+      <PageShell width="narrow" centered>
+        <PageHeader
+          eyebrow={T.resetDoneEyebrow}
+          title={T.resetDoneTitle}
+          subtitle={T.resetDoneBody}
+        />
+        <RecoveryCodePanel
+          code={issuedCode}
+          T={T}
+          ctaLabel={T.toSignIn}
+          onAcknowledge={() => navigate('/login', { replace: true })}
+        />
+      </PageShell>
     );
   }
 
   return (
-    <AuthShell>
-      <Link
-        to="/login"
-        className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {T.resetBack}
-      </Link>
+    <PageShell width="narrow" centered>
+      <PageHeader
+        eyebrow={T.resetEyebrow}
+        title={T.resetTitle}
+        subtitle={T.resetSubtitle}
+        back={{ to: '/login', label: T.resetBack }}
+      />
 
-      <Eyebrow>{T.resetEyebrow}</Eyebrow>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
-        {T.resetTitle}
-      </h1>
-      <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.resetSubtitle}</p>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <TextField
           label={T.resetEmail}
           type="email"
@@ -165,7 +155,7 @@ export default function ResetPasswordPage() {
       </form>
 
       <p className="mt-8 border-t border-rule/12 pt-5 text-[13px] text-muted">{T.resetNoCode}</p>
-    </AuthShell>
+    </PageShell>
   );
 }
 
@@ -236,14 +226,6 @@ export function RecoveryCodePanel({ code, T, ctaLabel, onAcknowledge }: Recovery
       </Button>
 
       <p className="text-[13px] text-muted">{T.panelFooter}</p>
-    </div>
-  );
-}
-
-function AuthShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-14">
-      <div className="w-full max-w-md">{children}</div>
     </div>
   );
 }

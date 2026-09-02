@@ -149,16 +149,20 @@ export default function TopicsPage() {
                       to={`/topic/${topic.slug}`}
                       leading={<TopicGlyph topic={topic} size="sm" />}
                       title={topicTitle(topic)}
-                      meta={topic.category}
+                      meta={
+                        due > 0 ? (
+                          <>
+                            {topic.category} · <span className="text-brand">{c.due(due)}</span>
+                          </>
+                        ) : topic.category
+                      }
                       trailing={
-                        <>
-                          {due > 0 && <span className="text-brand">{c.due(due)}</span>}
-                          <Meter
-                            value={topic.completed_count || 0}
-                            max={topic.question_count || 0}
-                            label={`${topicTitle(topic)} — ${c.completedOf}`}
-                          />
-                        </>
+                        <Meter
+                          value={topic.completed_count || 0}
+                          max={topic.question_count || 0}
+                          label={`${topicTitle(topic)} — ${c.completedOf}`}
+                          barClassName="w-10 sm:w-16"
+                        />
                       }
                     />
                   );

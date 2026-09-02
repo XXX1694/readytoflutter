@@ -1,11 +1,11 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
-import { Button, Eyebrow, TextField, TextArea } from '../ui/index';
+import { useContactCopy, type ContactErrorKey } from '../i18n/staticPages';
+import { Button, PageHeader, PageShell, TextField, TextArea } from '../ui/index';
 import { submitContact } from '../api/api';
 import { track } from '../lib/analytics';
 
@@ -15,53 +15,11 @@ const schema = z.object({
   message: z.string().trim().min(10, { message: 'too_short' }).max(4000, { message: 'too_long' }),
 });
 
-const EN = {
-  eyebrow: 'Contact',
-  back: 'Back to home',
-  title: 'Drop us a line',
-  subtitle: 'Bugs, feature ideas, partnerships — a real person reads every message.',
-  name: 'Name', namePh: 'Optional',
-  email: 'Email', emailPh: 'you@example.com',
-  message: 'Message', messagePh: 'Tell us what is on your mind…',
-  submit: 'Send message', sending: 'Sending…',
-  sentTitle: 'Message sent',
-  sentSub: 'We reply within two business days.',
-  err: {
-    invalid_email: 'That email address is not valid. Check the spelling.',
-    too_short: 'Add a bit more detail — at least 10 characters.',
-    too_long: 'That message is over 4000 characters. Trim it down.',
-    rate_limited: 'Too many messages just now. Try again in a few minutes.',
-    generic: 'Could not send your message. Try again in a moment.',
-  },
-};
-
-type Copy = typeof EN;
-type ErrorKey = keyof Copy['err'];
 type FormErrors = Partial<Record<'email' | 'message' | 'form', string>>;
-
-const RU: Copy = {
-  eyebrow: 'Контакты',
-  back: 'На главную',
-  title: 'Напиши нам',
-  subtitle: 'Баги, идеи, партнёрство — каждое сообщение читает живой человек.',
-  name: 'Имя', namePh: 'Необязательно',
-  email: 'Email', emailPh: 'you@example.com',
-  message: 'Сообщение', messagePh: 'Расскажи, что у тебя…',
-  submit: 'Отправить', sending: 'Отправляем…',
-  sentTitle: 'Сообщение отправлено',
-  sentSub: 'Отвечаем в течение двух рабочих дней.',
-  err: {
-    invalid_email: 'Некорректный email. Проверь написание.',
-    too_short: 'Добавь деталей — хотя бы 10 символов.',
-    too_long: 'Сообщение длиннее 4000 символов. Сократи его.',
-    rate_limited: 'Слишком много сообщений подряд. Попробуй через несколько минут.',
-    generic: 'Не удалось отправить сообщение. Попробуй ещё раз.',
-  },
-};
 
 export default function ContactPage() {
   const { lang } = useLang();
-  const T = lang === 'ru' ? RU : EN;
+  const T = useContactCopy(lang);
   const user = useAuth((s) => s.user);
 
   const [name, setName] = useState(user?.name ?? '');
@@ -74,7 +32,7 @@ export default function ContactPage() {
   const [done, setDone] = useState(false);
 
   const errLabel = (key: string | undefined): string | null =>
-    (key ? T.err[key as ErrorKey] ?? T.err.generic : null);
+    (key ? T.err[key as ContactErrorKey] ?? T.err.generic : null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -107,37 +65,25 @@ export default function ContactPage() {
 
   if (done) {
     return (
-      <Shell>
-        <h1 className="font-display text-3xl font-semibold text-ink">
-          {T.sentTitle}
-        </h1>
-        <p className="mt-4 font-serif text-[17px] leading-relaxed text-ink-2">{T.sentSub}</p>
-        <Link
-          to="/"
-          className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-brand underline-offset-4 hover:underline"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
+      <PageShell width="reading">
+        <PageHeader eyebrow={T.eyebrow} title={T.sentTitle} subtitle={T.sentSub} />
+        <Link to="/" className="text-[15px] font-medium text-brand underline-offset-4 hover:underline">
           {T.back}
         </Link>
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
-      <Link
-        to="/"
-        className="mb-8 hidden items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink lg:inline-flex"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {T.back}
-      </Link>
+    <PageShell width="reading">
+      <PageHeader
+        eyebrow={T.eyebrow}
+        title={T.title}
+        subtitle={T.subtitle}
+        back={{ to: '/', label: T.back }}
+      />
 
-      <Eyebrow>{T.eyebrow}</Eyebrow>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">{T.title}</h1>
-      <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.subtitle}</p>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
+      <form onSubmit={handleSubmit} className="max-w-md space-y-5" noValidate>
         <TextField
           label={T.name}
           type="text"
@@ -191,14 +137,6 @@ export default function ContactPage() {
           {submitting ? T.sending : T.submit}
         </Button>
       </form>
-    </Shell>
-  );
-}
-
-function Shell({ children }: { children: ReactNode }) {
-  return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-14">
-      <div className="w-full max-w-md">{children}</div>
-    </div>
+    </PageShell>
   );
 }

@@ -7,7 +7,9 @@ import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent, type ContentHelpers } from '../i18n/content';
-import { Button, Eyebrow, Pill, ProgressBar, Skeleton, TopicGlyph, difficultyTone } from '../ui/index';
+import {
+  Button, Chip, ChipGroup, Eyebrow, PageHeader, PageShell, ProgressBar, Section, Skeleton, TopicGlyph,
+} from '../ui/index';
 import RoadmapStrip from '../components/RoadmapStrip';
 import { cn } from '../lib/cn';
 import { PLATFORMS } from '../lib/platform';
@@ -40,7 +42,7 @@ const copy = (t: UICopy, key: string): string => {
 const studyUrl = (questions: Question[], label: string): string =>
   `/study?ids=${questions.map((q) => q.id).join(',')}&label=${encodeURIComponent(label)}`;
 
-/** A rung deep-linked as `/roadmap#mid-3`. */
+/** A level deep-linked as `/roadmap#mid-3`. */
 const hashRung = (hash: string): string | null => {
   const id = hash.replace(/^#/, '');
   return id ? id : null;
@@ -105,106 +107,83 @@ export default function RoadmapPage() {
   const pct = standing.total > 0 ? Math.round((standing.completed / standing.total) * 100) : 0;
 
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-5 sm:px-6 sm:py-10 lg:px-8 2xl:px-12 lg:py-12">
-        {/* HERO */}
-        <section className="mb-6 sm:mb-10">
-          <Eyebrow>{t.roadmap.title} · {trackLabel}</Eyebrow>
-          <h1 className="mt-3 font-display text-display-xs font-semibold leading-[1.04] tracking-tightest sm:text-display-sm">
-            {t.roadmap.subtitle}
-          </h1>
-          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-2 sm:text-[17px]">
-            {t.roadmap.intro}
-          </p>
+    <PageShell width="app">
+      <PageHeader
+        eyebrow={`${t.roadmap.title} · ${trackLabel}`}
+        title={t.roadmap.subtitle}
+        subtitle={t.roadmap.intro}
+      >
+        {/* Track switcher — the roadmap's own scope, separate from the header's
+            stack control, so it says what it filters. */}
+        <ChipGroup ariaLabel={t.roadmap.track} label={t.roadmap.track}>
+          {ROADMAP_TRACKS.map((key) => {
+            const meta = PLATFORMS.find((p) => p.key === key);
+            return (
+              <Chip key={key} active={key === trackKey} onClick={() => setRoadmapTrack(key)}>
+                {meta ? copy(t, meta.labelKey) : key}
+              </Chip>
+            );
+          })}
+        </ChipGroup>
+      </PageHeader>
 
-          {/* Track switcher — the same chips the stack filter uses, so the
-              two controls read as one family. Only stacks with a track. */}
-          <div className="mt-5 flex flex-col gap-2 sm:mt-7">
-            <Eyebrow>{t.roadmap.track}</Eyebrow>
-            <div role="group" aria-label={t.roadmap.track} className="-mx-1 flex flex-wrap gap-1 px-1">
-              {ROADMAP_TRACKS.map((key) => {
-                const meta = PLATFORMS.find((p) => p.key === key);
-                const active = key === trackKey;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setRoadmapTrack(key)}
-                    className={cn(
-                      'inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors',
-                      active
-                        ? 'border-ink bg-ink text-paper'
-                        : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
-                    )}
+      {/* STANDING — the one card on the page: where you are and what is next. */}
+      <section className="mb-10 sm:mb-14">
+        <div className="codex-card p-5 sm:p-7">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+            <div className="min-w-0 flex-1">
+              <Eyebrow>{t.roadmap.yourLevel}</Eyebrow>
+              <h2 className="mt-2 font-display text-[26px] font-semibold leading-tight text-ink sm:text-[28px]">
+                {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
+              </h2>
+              <p className="mt-2.5 text-[15px] leading-relaxed text-ink-2">
+                {next ? (
+                  <>
+                    {t.roadmap.nextUp}: <span className="font-medium text-ink">{rungLabel(next, bandNames)}</span>
+                    {' — '}{next.title}
+                    <span className="num text-muted"> · {next.completed} / {next.total}</span>
+                  </>
+                ) : t.roadmap.allPassed}
+              </p>
+              {next && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="brand"
+                    size="md"
+                    onClick={() => navigate(studyUrl(next.questions, `${rungLabel(next, bandNames)} · ${next.title}`))}
                   >
-                    <span className={cn('h-1.5 w-1.5 rounded-full', meta?.dot)} aria-hidden />
-                    {meta ? copy(t, meta.labelKey) : key}
-                  </button>
-                );
-              })}
+                    <Brain className="h-4 w-4" aria-hidden />
+                    {t.roadmap.drillNext}
+                  </Button>
+                  <Button variant="outline" size="md" onClick={() => jumpTo(next.id)}>
+                    {rungLabel(next, bandNames)}
+                    <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="shrink-0 lg:w-[380px]">
+              <RoadmapStrip rungs={rungs} nextId={next?.id ?? null} bandNames={bandNames} onSelect={jumpTo} />
+              <p className="mt-3 text-[13px] text-muted">
+                <span className="num text-ink">{standing.completed}</span>
+                <span className="num"> / {standing.total}</span>{' '}
+                {t.roadmap.inTrack} · <span className="num">{pct}%</span>
+              </p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* STANDING — where you are on the ladder and what to do next. */}
-        <section className="mb-8 sm:mb-12">
-          <div className="codex-card p-5 sm:p-7">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
-              <div className="min-w-0 flex-1">
-                <Eyebrow>{t.roadmap.yourLevel}</Eyebrow>
-                <h2 className="mt-2 font-display text-3xl font-semibold leading-tight text-ink sm:text-4xl">
-                  {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
-                </h2>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-ink-2">
-                  {next ? (
-                    <>
-                      {t.roadmap.nextUp}: <span className="font-medium text-ink">{rungLabel(next, bandNames)}</span>
-                      {' — '}{next.title}
-                      <span className="num text-muted"> · {next.completed} / {next.total}</span>
-                    </>
-                  ) : t.roadmap.allPassed}
-                </p>
-                {next && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button
-                      variant="brand"
-                      size="md"
-                      onClick={() => navigate(studyUrl(next.questions, `${rungLabel(next, bandNames)} · ${next.title}`))}
-                    >
-                      <Brain className="h-4 w-4" aria-hidden />
-                      {t.roadmap.drillNext}
-                    </Button>
-                    <Button variant="outline" size="md" onClick={() => jumpTo(next.id)}>
-                      {rungLabel(next, bandNames)}
-                      <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                    </Button>
-                  </div>
-                )}
-              </div>
-              <div className="shrink-0 lg:w-[380px]">
-                <RoadmapStrip rungs={rungs} nextId={next?.id ?? null} bandNames={bandNames} onSelect={jumpTo} />
-                <p className="mt-3 text-[13px] text-muted">
-                  <span className="num text-ink">{standing.completed}</span>
-                  <span className="num"> / {standing.total}</span>{' '}
-                  {t.questions} · <span className="num">{pct}%</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* LADDER — keyed by track so open/closed state resets on a switch. */}
-        <Ladder
-          key={trackKey}
-          rungs={rungs}
-          nextId={next?.id ?? null}
-          defaultOpenId={hashRung(location.hash) ?? next?.id ?? null}
-          t={t}
-          content={content}
-        />
-      </div>
-    </div>
+      {/* LADDER — keyed by track so open/closed state resets on a switch. */}
+      <Ladder
+        key={trackKey}
+        rungs={rungs}
+        nextId={next?.id ?? null}
+        defaultOpenId={hashRung(location.hash) ?? next?.id ?? null}
+        t={t}
+        content={content}
+      />
+    </PageShell>
   );
 }
 
@@ -220,12 +199,12 @@ interface LadderProps {
 
 function Ladder({ rungs, nextId, defaultOpenId, t, content }: LadderProps) {
   // Only explicit toggles are stored; everything else falls back to "the
-  // default rung is open", so the ladder needs no effect to initialise.
+  // default level is open", so the ladder needs no effect to initialise.
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const isOpen = (id: string): boolean => toggled[id] ?? id === defaultOpenId;
   const toggle = (id: string) => setToggled((prev) => ({ ...prev, [id]: !isOpen(id) }));
 
-  // A deep link (`#mid-3`) lands on its rung once the ladder has painted.
+  // A deep link (`#mid-3`) lands on its level once the ladder has painted.
   useEffect(() => {
     if (!defaultOpenId || !window.location.hash) return;
     const timer = window.setTimeout(() => {
@@ -242,21 +221,17 @@ function Ladder({ rungs, nextId, defaultOpenId, t, content }: LadderProps) {
         const total = items.reduce((s, r) => s + r.total, 0);
         const completed = items.reduce((s, r) => s + r.completed, 0);
         return (
-          <section key={band} className="mb-9 sm:mb-14">
-            <header className="mb-4 flex items-end justify-between gap-4 border-b border-rule/12 pb-3 sm:mb-5">
-              <div className="min-w-0">
-                <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
-                  {t.roadmap.band[band] ?? band}
-                </h2>
-                <p className="mt-1 text-[14px] text-muted">
-                  {t.roadmap.bandDesc[band]} · {t.roadmap.rungs(items.length)}
-                </p>
-              </div>
-              <span className="num shrink-0 text-[15px] text-ink">
-                {completed}<span className="text-muted"> / {total}</span>
+          <Section
+            key={band}
+            title={t.roadmap.band[band] ?? band}
+            subtitle={`${t.roadmap.bandDesc[band]} · ${t.roadmap.rungs(items.length)}`}
+            actions={
+              <span className="num text-[15px]">
+                <span className="text-ink">{completed}</span> / {total}
               </span>
-            </header>
-            <ol>
+            }
+          >
+            <ol className="divide-y divide-rule/10">
               {items.map((rung, i) => (
                 <RungItem
                   key={rung.id}
@@ -271,14 +246,14 @@ function Ladder({ rungs, nextId, defaultOpenId, t, content }: LadderProps) {
                 />
               ))}
             </ol>
-          </section>
+          </Section>
         );
       })}
     </div>
   );
 }
 
-// ── One rung ─────────────────────────────────────────────────────────────────
+// ── One level ────────────────────────────────────────────────────────────────
 
 interface RungItemProps {
   rung: ResolvedRung;
@@ -297,22 +272,22 @@ function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content
   const topicLine = rung.nodes.map((n) => content.topicTitle(n.topic)).join(' · ');
 
   return (
-    <li id={`rung-${rung.id}`} className="relative scroll-mt-20 pb-3 pl-9 sm:pl-11 lg:scroll-mt-6">
-      {/* Spine: a hairline through the markers, inked once the rung is passed. */}
+    <li id={`rung-${rung.id}`} className="relative scroll-mt-20 pl-9 sm:pl-11 lg:scroll-mt-6">
+      {/* Spine: a hairline through the markers, inked once the level is passed. */}
       <span
         aria-hidden
         className={cn(
           'absolute left-[11px] w-px',
-          isFirst ? 'top-3' : 'top-0',
-          isLast ? 'h-3' : 'bottom-0',
+          isFirst ? 'top-6' : 'top-0',
+          isLast ? 'h-6' : 'bottom-0',
           rung.passed ? 'bg-ink/50' : 'bg-rule/15',
         )}
       />
-      {/* Marker: filled once passed, the pen's blue for the rung to work on. */}
+      {/* Marker: filled once passed, the pen's blue for the level to work on. */}
       <span
         aria-hidden
         className={cn(
-          'absolute left-0 top-0 flex h-6 w-6 items-center justify-center rounded-full border',
+          'absolute left-0 top-3 flex h-6 w-6 items-center justify-center rounded-full border',
           rung.passed
             ? 'border-ink bg-ink text-paper'
             : isCurrent
@@ -327,79 +302,77 @@ function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content
         ) : null}
       </span>
 
-      <div className={cn('codex-card', isCurrent && 'border-brand/40')}>
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={open}
-          className="flex w-full items-start gap-3 p-4 text-left sm:items-center"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
-              <span className={cn('font-medium', isCurrent ? 'text-brand' : 'text-ink-2')}>{label}</span>
-              {rung.passed && <span className="text-mint">· {t.roadmap.passed}</span>}
-              {isCurrent && <span className="text-brand">· {t.roadmap.current}</span>}
-            </div>
-            <h3 className="mt-0.5 font-display text-[17px] font-semibold leading-tight text-ink">
-              {rung.title}
-            </h3>
-            <p className="mt-1 text-[13px] text-muted line-clamp-1">{topicLine}</p>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-start gap-3 py-3 text-left sm:items-center"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
+            <span className={cn('font-medium', isCurrent ? 'text-brand' : 'text-ink-2')}>{label}</span>
+            {rung.passed && <span className="text-mint">· {t.roadmap.passed}</span>}
+            {isCurrent && <span className="text-brand">· {t.roadmap.current}</span>}
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <span className="num text-[15px]">
-              <span className={rung.passed ? 'text-mint' : 'text-ink'}>{rung.completed}</span>
-              <span className="text-muted"> / {rung.total}</span>
-            </span>
-            <ChevronDown
-              className={cn('h-4 w-4 text-muted transition-transform duration-200', open && 'rotate-180')}
-              aria-hidden
-            />
-          </div>
-        </button>
+          <h3 className="mt-0.5 font-display text-[17px] font-semibold leading-tight text-ink">
+            {rung.title}
+          </h3>
+          <p className="mt-1 text-[13px] text-muted line-clamp-1">{topicLine}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="num text-[15px]">
+            <span className={rung.passed ? 'text-mint' : 'text-ink'}>{rung.completed}</span>
+            <span className="text-muted"> / {rung.total}</span>
+          </span>
+          <ChevronDown
+            className={cn('h-4 w-4 text-muted transition-transform duration-200', open && 'rotate-180')}
+            aria-hidden
+          />
+        </div>
+      </button>
 
-        <AnimatePresence initial={false}>
-          {open && (
-            <motion.div
-              key="body"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden"
-            >
-              <div className="border-t border-rule/12 px-4 pb-4 pt-3">
-                <div className="flex items-center gap-3">
-                  <ProgressBar
-                    value={rung.completed}
-                    max={rung.total}
-                    size="xs"
-                    tone={rung.passed ? 'mint' : 'ink'}
-                    className="max-w-xs"
-                  />
-                  <span className="num text-[12px] text-muted">{rung.pct}%</span>
-                </div>
-
-                <ul className="mt-3 divide-y divide-rule/10">
-                  {rung.nodes.map((node) => (
-                    <NodeRow key={node.key} node={node} t={t} content={content} />
-                  ))}
-                </ul>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    variant="brand"
-                    size="sm"
-                    onClick={() => navigate(studyUrl(rung.questions, `${label} · ${rung.title}`))}
-                  >
-                    <Brain className="h-3.5 w-3.5" aria-hidden />
-                    {t.roadmap.drillRung}
-                  </Button>
-                </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="pb-5">
+              <div className="flex items-center gap-3">
+                <ProgressBar
+                  value={rung.completed}
+                  max={rung.total}
+                  size="xs"
+                  tone={rung.passed ? 'mint' : 'ink'}
+                  className="max-w-xs"
+                />
+                <span className="num text-[12px] text-muted">{rung.pct}%</span>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+
+              <ul className="mt-3 divide-y divide-rule/10 border-t border-rule/10">
+                {rung.nodes.map((node) => (
+                  <NodeRow key={node.key} node={node} t={t} content={content} />
+                ))}
+              </ul>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  variant="brand"
+                  size="sm"
+                  onClick={() => navigate(studyUrl(rung.questions, `${label} · ${rung.title}`))}
+                >
+                  <Brain className="h-3.5 w-3.5" aria-hidden />
+                  {t.roadmap.drillRung}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </li>
   );
 }
@@ -457,9 +430,11 @@ function NodeRow({ node, t, content }: NodeRowProps) {
                   <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-ink-2 line-clamp-2">
                     {content.questionText(q)}
                   </span>
-                  <Pill tone={difficultyTone[q.difficulty]} size="xs" className="hidden shrink-0 sm:inline-flex">
+                  {/* Difficulty is a word, not a coloured chip: three tinted
+                      pills per row spent the palette on a fact you read once. */}
+                  <span className="hidden shrink-0 text-[12px] text-muted sm:inline">
                     {difficultyLabel[q.difficulty]}
-                  </Pill>
+                  </span>
                 </button>
               </li>
             ))}
@@ -507,36 +482,38 @@ function StatusMark({ status }: { status: Question['status'] }) {
 
 function RoadmapSkeleton() {
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-8 2xl:px-12 lg:py-12">
+    <PageShell width="app">
+      <div className="mb-6 border-b border-rule/12 pb-5 sm:mb-8 sm:pb-6">
         <Skeleton className="h-3 w-32" />
-        <Skeleton className="mt-4 h-10 w-2/3 max-w-md sm:h-12" />
-        <Skeleton className="mt-4 h-5 w-full max-w-2xl" />
-        <Skeleton className="mt-2 h-5 w-3/4 max-w-xl" />
-        <div className="mt-7 flex gap-1">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-9 w-24 rounded-md" />)}
+        <Skeleton className="mt-2 h-7 w-64 max-w-full" />
+        <Skeleton className="mt-3 h-4 w-full max-w-2xl" />
+        <Skeleton className="mt-2 h-4 w-3/4 max-w-xl" />
+        <div className="mt-5 flex gap-2">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-24 rounded-full" />)}
         </div>
-        <div className="codex-card mt-10 p-6">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="mt-3 h-9 w-40" />
-          <Skeleton className="mt-3 h-4 w-2/3 max-w-md" />
-        </div>
-        {[1, 2].map((band) => (
-          <section key={band} className="mt-12">
-            <Skeleton className="h-8 w-40" />
-            <Skeleton className="mt-2 h-3 w-64" />
-            <div className="mt-5 space-y-3 pl-9">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="codex-card p-4">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="mt-2 h-5 w-1/2" />
-                  <Skeleton className="mt-2 h-3 w-2/3" />
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
       </div>
-    </div>
+      <div className="codex-card p-5 sm:p-7">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="mt-3 h-8 w-40" />
+        <Skeleton className="mt-3 h-4 w-2/3 max-w-md" />
+      </div>
+      {[1, 2].map((band) => (
+        <div key={band} className="mt-10 sm:mt-14">
+          <div className="mb-4 border-b border-rule/12 pb-3">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="mt-2 h-3 w-64 max-w-full" />
+          </div>
+          <div className="space-y-4 pl-9">
+            {[1, 2, 3].map((i) => (
+              <div key={i}>
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="mt-2 h-5 w-1/2" />
+                <Skeleton className="mt-2 h-3 w-2/3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </PageShell>
   );
 }

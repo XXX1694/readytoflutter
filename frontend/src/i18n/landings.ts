@@ -39,14 +39,14 @@ export const LANDINGS: Record<string, LandingConfig> = {
       title: ['Ready for the', 'Flutter interview.'],
       desc: 'SRS-driven Flutter / Dart drills, mock interviews, and AI grading — for engineers heading into widget trees, BLoC, and platform channels next week.',
       docTitle: 'Flutter & Dart Interview Prep — Onsite',
-      metaDesc: 'Practice Flutter and Dart interview questions with spaced repetition, mock interviews, and AI-graded answers. 17 topics covering widgets, state, async, navigation, and more.',
+      metaDesc: 'Practice Flutter and Dart interview questions with spaced repetition, mock interviews, and AI-graded answers. 23 topics covering widgets, state, async, navigation, and more.',
     },
     ru: {
       eyebrow: 'Подготовка · Flutter & Dart',
       title: ['Готов к', 'Flutter-собесу.'],
       desc: 'SRS-задрочка по Flutter и Dart, mock-интервью и AI-оценка — для тех, у кого через неделю BLoC, виджет-дерево и platform channels.',
       docTitle: 'Подготовка к Flutter-собесу — Onsite',
-      metaDesc: 'Тренируй Flutter и Dart с SRS, mock-интервью и AI-проверкой ответов. 17 тем — виджеты, состояние, async, навигация и больше.',
+      metaDesc: 'Тренируй Flutter и Dart с SRS, mock-интервью и AI-проверкой ответов. 23 темы — виджеты, состояние, async, навигация и больше.',
     },
   },
   ios: {

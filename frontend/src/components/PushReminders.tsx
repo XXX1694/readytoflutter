@@ -8,7 +8,7 @@ import {
   type PushStatus,
   type EnableFailure,
 } from '../lib/push';
-import { Button } from '../ui/index';
+import { Button, Section } from '../ui/index';
 import type { Lang } from '../i18n/LangContext';
 
 /**
@@ -187,12 +187,7 @@ export default function PushReminders({ lang }: { lang: Lang }) {
   const hour = `${String(status.health.sendHourLocal).padStart(2, '0')}:00`;
 
   return (
-    <section className="rounded-lg border border-rule/12 bg-paper-2 p-5 shadow-codex-sm sm:p-6">
-      <div className="mb-5 border-b border-rule/12 pb-3">
-        <h2 className="font-display text-lg font-semibold text-ink">{T.title}</h2>
-        <p className="mt-1 text-[13px] text-muted">{T.subtitle}</p>
-      </div>
-
+    <Section title={T.title} subtitle={T.subtitle}>
       {status.needsInstall ? (
         <p className="text-[13px] leading-relaxed text-muted">{T.needsInstall}</p>
       ) : status.permission === 'denied' ? (
@@ -246,6 +241,6 @@ export default function PushReminders({ lang }: { lang: Lang }) {
           {note.text}
         </p>
       )}
-    </section>
+    </Section>
   );
 }

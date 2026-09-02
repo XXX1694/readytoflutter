@@ -22,6 +22,8 @@ export interface StatTileProps {
   of?: number;
   /** Glued to the figure, e.g. `%`. */
   suffix?: string;
+  /** A word after the figure, e.g. `days`. Set on figures that are not a tally. */
+  unit?: string;
   /**
    * Sets the figure in the pen's blue. At most one per screen: it means
    * "this is the number to act on", and a second one dilutes the first.
@@ -30,7 +32,7 @@ export interface StatTileProps {
   className?: string;
 }
 
-function StatTile({ label, value, of, suffix, marked = false, className }: StatTileProps) {
+function StatTile({ label, value, of, suffix, unit, marked = false, className }: StatTileProps) {
   const figure: ReactNode = (
     <>
       {value}
@@ -49,6 +51,7 @@ function StatTile({ label, value, of, suffix, marked = false, className }: StatT
         {of != null && (
           <span className="num text-[15px] leading-none text-muted">/ {of}</span>
         )}
+        {unit && <span className="text-[13px] leading-none text-muted">{unit}</span>}
       </div>
       <span className="text-[13px] leading-snug text-muted">{label}</span>
     </div>

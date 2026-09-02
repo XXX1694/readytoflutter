@@ -100,11 +100,11 @@ export const UI = {
       rungs: (n: number) => `${n} level${n === 1 ? '' : 's'}`,
       questions: (n: number) => `${n} question${n === 1 ? '' : 's'}`,
       tier: { easy: 'Foundations', medium: 'Core', hard: 'Advanced', all: 'Whole topic' } as Record<string, string>,
+      inTrack: 'questions in this track',
       metaDesc: 'A sixteen-level interview roadmap for Flutter, iOS and Android — Junior 1 to Staff — where every level is a set of real interview questions.',
     },
 
     // TopicPage
-    backToDashboard: 'Back to dashboard',
     loadingTopic: 'Loading topic...',
     topicNotFound: 'Topic not found',
     redirectingHome: 'Heading back to dashboard…',
@@ -306,11 +306,11 @@ export const UI = {
       rungs: (n: number) => `${n} ${n === 1 ? 'уровень' : n < 5 ? 'уровня' : 'уровней'}`,
       questions: (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'вопрос' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'вопроса' : 'вопросов'}`,
       tier: { easy: 'Основы', medium: 'База', hard: 'Продвинутое', all: 'Вся тема' } as Record<string, string>,
+      inTrack: 'вопросов в этом треке',
       metaDesc: 'Маршрут подготовки к собеседованию для Flutter, iOS и Android из шестнадцати уровней — от Junior 1 до Staff, где каждый уровень — набор реальных вопросов.',
     },
 
     // TopicPage
-    backToDashboard: 'Назад к темам',
     loadingTopic: 'Загрузка темы...',
     topicNotFound: 'Тема не найдена',
     redirectingHome: 'Возвращаемся на главную…',

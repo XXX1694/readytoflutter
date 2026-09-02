@@ -3,7 +3,7 @@
 // to spot drift (e.g. a label phrased one way on signup, another on login).
 
 const RU = {
-  back: 'На главную',
+  back: 'Назад',
   eyebrow: 'Регистрация',
   title: 'Создать аккаунт.',
   subtitle: 'Один email + пароль. Прогресс будет синхронизироваться между устройствами.',
@@ -37,7 +37,7 @@ const RU = {
 };
 
 const EN = {
-  back: 'Back to dashboard',
+  back: 'Back',
   eyebrow: 'Create account',
   title: 'Create your account.',
   subtitle: 'Email + password. Your progress syncs across devices.',

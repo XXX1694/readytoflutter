@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import MiniSearch from 'minisearch';
-import { ArrowLeft, Search as SearchIcon, X } from 'lucide-react';
+import { Search as SearchIcon, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import QuestionCard from '../components/QuestionCard';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Eyebrow, Skeleton } from '../ui/index';
-import { cn } from '../lib/cn';
+import { useSearchCopy } from '../i18n/searchPage';
+import {
+  Button, Chip, ChipGroup, EmptyState, PageHeader, PageShell, Skeleton,
+} from '../ui/index';
 import { useAdmin, applyDiff } from '../store/admin';
-import PlatformFilter from '../components/PlatformFilter';
-import FilterSheet, { FilterSheetTrigger } from '../components/FilterSheet';
 import { usePrefs, type SearchFacets } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 import { track } from '../lib/analytics';
@@ -31,9 +31,9 @@ const FACET_KEYS = Object.keys(FACETS) as FacetKey[];
 const NO_FACETS: SearchFacets = { level: null, difficulty: null, status: null };
 
 /**
- * Results are paged on the client. An empty query lists the whole bank — 392
- * cards, each with its own notes editor and expand animation — and mounting
- * all of them at once is a multi-second stall on a phone.
+ * Results are paged on the client. An empty query lists the whole bank — every
+ * card with its own notes editor and expand animation — and mounting all of
+ * them at once is a multi-second stall on a phone.
  */
 const PAGE_SIZE = 30;
 
@@ -47,16 +47,15 @@ let lastSearch: string | null = null;
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
+  const c = useSearchCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
 
   const initialQuery = searchParams.get('q') || '';
   const [input, setInput] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery);
   const [facets, setFacets] = useState<SearchFacets>(NO_FACETS);
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,274 +191,131 @@ export default function SearchPage() {
     [t],
   );
 
-  // Short labels: the chips beneath already say what they filter, so
-  // "Filter by level" would be the same word twice in a row.
-  const groupHeading: Record<FacetKey, string> = useMemo(
-    () => ({
-      level: lang === 'ru' ? 'Уровень' : 'Level',
-      difficulty: lang === 'ru' ? 'Сложность' : 'Difficulty',
-      status: lang === 'ru' ? 'Статус' : 'Status',
-    }),
-    [lang],
-  );
-
   if (isLoading) return <SearchSkeleton />;
 
-  // Active facet count drives the badge on the mobile filters trigger.
-  const facetCount = FACET_KEYS.filter((k) => facets[k]).length;
-
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-4 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
-        {/* Back row — desktop only, mobile uses header arrow. */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/')}
-          className="-ml-2 mb-5 hidden text-muted hover:text-ink lg:inline-flex"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-          {t.backToDashboard}
-        </Button>
-
-        <header className="mb-6 border-b border-rule/12 pb-5">
-          <Eyebrow>{lang === 'ru' ? 'Поиск' : 'Search'}</Eyebrow>
-          <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
-            {t.searchHeading.replace(':', '')}
-          </h1>
-
-          <div className="mt-5 flex items-center gap-2 rounded-lg border border-rule/12 bg-paper-2 px-4 transition-colors duration-150 focus-within:border-rule/30">
-            <SearchIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
-            <input
-              ref={inputRef}
-              type="search"
-              inputMode="search"
-              enterKeyHint="search"
-              autoCorrect="off"
-              spellCheck={false}
-              autoCapitalize="off"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onFocus={(e) => {
-                const el = e.target;
-                setTimeout(() => {
-                  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-                  catch { /* older Safari */ }
-                }, 250);
-              }}
-              placeholder={t.searchPlaceholderLong}
-              aria-label={t.searchPlaceholderLong}
-              className="h-12 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
-              autoFocus
-            />
-            {input && (
-              <button
-                type="button"
-                onClick={() => { setInput(''); inputRef.current?.focus(); }}
-                aria-label={lang === 'ru' ? 'Очистить' : 'Clear'}
-                className="-mr-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:text-ink"
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </button>
-            )}
-            <kbd className="hidden rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[11px] text-muted-2 sm:inline-block">
-              /
-            </kbd>
-          </div>
-        </header>
-
-        {/* Platform scope — narrows the indexed pool to one stack so search
-            stays sharp when the catalog spans multiple technologies. */}
-        <div className="mb-5">
-          <PlatformFilter />
-        </div>
-
-        {/* Facets — mobile shows a single Filters trigger that opens a
-            bottom-sheet with the same controls. Desktop keeps the inline
-            stack so the full surface is visible at once. */}
-        <div className="mb-5 flex items-center gap-3 sm:hidden">
-          <FilterSheetTrigger
-            onClick={() => setFilterSheetOpen(true)}
-            count={facetCount}
-            label={lang === 'ru' ? 'Фильтры' : 'Filters'}
+    <PageShell width="reading">
+      <PageHeader title={t.nav.search}>
+        <div className="flex items-center gap-2 rounded-lg border border-rule/12 bg-paper-2 px-4 transition-colors duration-150 focus-within:border-rule/30">
+          <SearchIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+          <input
+            ref={inputRef}
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            autoCorrect="off"
+            spellCheck={false}
+            autoCapitalize="off"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onFocus={(e) => {
+              const el = e.target;
+              setTimeout(() => {
+                try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                catch { /* older Safari */ }
+              }, 250);
+            }}
+            placeholder={t.searchPlaceholderLong}
+            aria-label={t.searchPlaceholderLong}
+            className="h-12 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
+            autoFocus
           />
-          {hasFacets && (
+          {input && (
             <button
               type="button"
-              onClick={clearFacets}
-              className="text-[13px] text-muted underline-offset-4 active:underline"
+              onClick={() => { setInput(''); inputRef.current?.focus(); }}
+              aria-label={c.clearQuery}
+              className="-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:text-ink"
             >
-              {lang === 'ru' ? 'Сбросить' : 'Clear filters'}
+              <X className="h-4 w-4" aria-hidden />
             </button>
           )}
+          <kbd className="hidden rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[11px] text-muted-2 sm:inline-block">
+            /
+          </kbd>
         </div>
 
-        <div className="mb-6 hidden space-y-2.5 sm:block">
-          {FACET_KEYS.map((key) => (
-            <div key={key} className="flex flex-wrap items-center gap-2">
-              <span className="w-24 shrink-0 text-[13px] text-muted">{groupHeading[key]}</span>
-              {FACETS[key].map((value: string) => {
-                const active = facets[key] === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setFacet(key, value)}
-                    aria-pressed={active}
-                    className={cn(
-                      'inline-flex min-h-[34px] items-center rounded-md border px-3 text-[13px] font-medium transition-colors duration-150',
-                      active
-                        ? 'border-ink bg-ink text-paper'
-                        : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
-                    )}
-                  >
-                    {labelFor(key, value)}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-          {hasFacets && (
-            <button
-              type="button"
-              onClick={clearFacets}
-              className="text-[13px] text-muted underline-offset-4 hover:text-ink hover:underline"
-            >
-              {lang === 'ru' ? 'Сбросить фильтры' : 'Clear filters'}
-            </button>
+        <ChipGroup ariaLabel={c.facetsLabel} scroll className="mt-4">
+          {FACET_KEYS.flatMap((key) =>
+            FACETS[key].map((value) => (
+              <Chip
+                key={`${key}:${value}`}
+                active={facets[key] === value}
+                onClick={() => setFacet(key, value)}
+              >
+                {labelFor(key, value)}
+              </Chip>
+            )),
           )}
-        </div>
+        </ChipGroup>
+      </PageHeader>
 
-        {/* Bottom-sheet filters — same control set, larger touch targets,
-            stacked vertically. */}
-        <FilterSheet
-          open={filterSheetOpen}
-          onOpenChange={setFilterSheetOpen}
-          title={lang === 'ru' ? 'Фильтры' : 'Filters'}
-          closeLabel={lang === 'ru' ? 'Закрыть' : 'Close'}
-          footer={
-            <FilterSheet.Footer
-              onApply={() => setFilterSheetOpen(false)}
-              onClear={hasFacets ? clearFacets : null}
-              applyLabel={lang === 'ru' ? 'Готово' : 'Done'}
-              clearLabel={lang === 'ru' ? 'Сброс' : 'Clear'}
-            />
-          }
-        >
-          <div className="space-y-5 pt-1">
-            {FACET_KEYS.map((key) => (
-              <div key={key}>
-                <div className="mb-2 text-[13px] text-muted">{groupHeading[key]}</div>
-                <div className="flex flex-wrap gap-2">
-                  {FACETS[key].map((value: string) => {
-                    const active = facets[key] === value;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setFacet(key, value)}
-                        aria-pressed={active}
-                        className={cn(
-                          'inline-flex min-h-[44px] items-center rounded-md border px-4 text-[14px] font-medium transition-colors duration-150',
-                          active
-                            ? 'border-ink bg-ink text-paper'
-                            : 'border-rule/12 bg-paper-2 text-ink-2',
-                        )}
-                      >
-                        {labelFor(key, value)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </FilterSheet>
-
-        {/* Results meta */}
-        <div className="mb-4 flex items-center justify-between border-b border-rule/12 pb-3 text-[13px] text-muted">
-          <span>
-            {t.resultCount(results.length)}
-            {query && <span className="ml-2 text-ink-2">“{query}”</span>}
-          </span>
-        </div>
-
-        {/* Results */}
-        {results.length === 0 ? (
-          <div className="codex-card mt-6 flex flex-col items-start gap-4 p-6 sm:items-center sm:p-12 sm:text-center">
-            <div className="space-y-2">
-              <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
-                {query ? t.noResultsFor(query) : t.enterSearchQuery}
-              </h2>
-              <p className="max-w-sm text-[15px] leading-relaxed text-ink-2">
-                {query
-                  ? t.tryDifferentKeywords
-                  : (lang === 'ru'
-                      ? `В индексе ${questions.length} вопросов по выбранному стеку.`
-                      : `${questions.length} questions indexed for the stack you picked.`)}
-              </p>
-            </div>
-            {hasFacets && (
-              <Button variant="outline" size="sm" onClick={clearFacets}>
-                {lang === 'ru' ? 'Сбросить фильтры' : 'Clear filters'}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {shown.map((q, i) => (
-              <div key={q.id} className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-1.5 px-1 text-[13px] text-muted">
-                  <span>{q.topic_title}</span>
-                  <span className="text-muted-2">·</span>
-                  <span>{(q.level && t[q.level]?.short) || q.level}</span>
-                </div>
-                <QuestionCard question={q} index={i} />
-              </div>
-            ))}
-            {remaining > 0 && (
-              <div className="flex flex-col items-center gap-2 pt-3">
-                <Button variant="outline" size="md" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
-                  {lang === 'ru'
-                    ? `Показать ещё ${Math.min(PAGE_SIZE, remaining)}`
-                    : `Show ${Math.min(PAGE_SIZE, remaining)} more`}
-                </Button>
-                <span className="text-[12px] text-muted-2">
-                  {lang === 'ru'
-                    ? `${shown.length} из ${results.length}`
-                    : `${shown.length} of ${results.length}`}
-                </span>
-              </div>
-            )}
-          </div>
+      <div className="mb-4 flex items-center justify-between gap-3 text-[13px] text-muted">
+        <span>
+          {t.resultCount(results.length)}
+          {query && <span className="ml-2 text-ink-2">“{query}”</span>}
+        </span>
+        {hasFacets && (
+          <button
+            type="button"
+            onClick={clearFacets}
+            className="shrink-0 underline-offset-4 hover:text-ink hover:underline"
+          >
+            {c.clearFilters}
+          </button>
         )}
       </div>
-    </div>
+
+      {results.length === 0 ? (
+        <EmptyState
+          title={query ? t.noResultsFor(query) : t.enterSearchQuery}
+          body={query ? t.tryDifferentKeywords : c.indexed(questions.length)}
+          action={hasFacets ? { label: c.clearFilters, onClick: clearFacets } : undefined}
+        />
+      ) : (
+        <div className="space-y-3">
+          {shown.map((q, i) => (
+            <div key={q.id} className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 px-1 text-[13px] text-muted">
+                <span>{q.topic_title}</span>
+                <span className="text-muted-2">·</span>
+                <span>{(q.level && t[q.level]?.short) || q.level}</span>
+              </div>
+              <QuestionCard question={q} index={i} />
+            </div>
+          ))}
+          {remaining > 0 && (
+            <div className="flex flex-col items-center gap-2 pt-3">
+              <Button variant="outline" size="md" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+                {c.showMore(Math.min(PAGE_SIZE, remaining))}
+              </Button>
+              <span className="text-[12px] text-muted-2">{c.shownOf(shown.length, results.length)}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </PageShell>
   );
 }
 
 function SearchSkeleton() {
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-6 sm:px-6 sm:py-10 lg:px-8 2xl:px-12">
-        <Skeleton className="mb-5 h-4 w-32" />
-        <Skeleton className="mb-2 h-3 w-16" />
-        <Skeleton className="mb-6 h-9 w-1/2 max-w-md" />
-        <Skeleton className="mb-6 h-12 w-full rounded-lg" />
-        <div className="mb-6 flex gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-20 rounded-md" />
-          ))}
-        </div>
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="codex-card p-4">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="mt-2 h-3 w-1/2" />
-            </div>
-          ))}
-        </div>
+    <PageShell width="reading">
+      <Skeleton className="mb-6 h-8 w-40" />
+      <Skeleton className="mb-4 h-12 w-full rounded-lg" />
+      <div className="mb-8 flex gap-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-20 rounded-full" />
+        ))}
       </div>
-    </div>
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="codex-card p-4">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="mt-2 h-3 w-1/2" />
+          </div>
+        ))}
+      </div>
+    </PageShell>
   );
 }

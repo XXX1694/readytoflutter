@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../store/auth';
 import {
@@ -16,7 +15,7 @@ import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useLoginCopy, type LoginCopy } from '../i18n/loginPage';
 import { useRecoveryCopy } from '../i18n/ui';
-import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
+import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
 
 const schema = z.object({
   email: z.string().trim().email({ message: 'invalid_email' }),
@@ -115,72 +114,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-14">
-      <div className="w-full max-w-md">
-        <Link
-          to="/"
-          className="mb-8 hidden items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink lg:inline-flex"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          {T.back}
+    <PageShell width="narrow" centered>
+      <PageHeader
+        eyebrow={T.eyebrow}
+        title={T.title}
+        subtitle={T.subtitle}
+        back={{ to: '/', label: T.back }}
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <TextField
+          label={T.email}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          value={email}
+          onChange={setEmail}
+          placeholder="you@example.com"
+          error={errLabel(errors.email)}
+          autoFocus
+        />
+
+        <PasswordField
+          label={T.password}
+          autoComplete="current-password"
+          value={password}
+          onChange={setPassword}
+          error={errLabel(errors.password)}
+          showLabel={T.showPwd}
+          hideLabel={T.hidePwd}
+        />
+
+        {errors.form && (
+          <p role="alert" className="rounded-md border border-coral/30 bg-coral/8 px-3 py-2 text-[13px] text-coral">
+            {errLabel(errors.form)}
+          </p>
+        )}
+
+        <Button type="submit" variant="codex" className="w-full" disabled={submitting}>
+          {submitting ? T.submitting : T.submit}
+        </Button>
+      </form>
+
+      <p className="mt-4 text-[13px] text-muted">
+        {R.forgotLead}{' '}
+        <Link to="/reset" className="text-brand underline-offset-4 hover:underline">
+          {R.forgotLink}
         </Link>
+      </p>
 
-        <Eyebrow>{T.eyebrow}</Eyebrow>
-        <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
-          {T.title}
-        </h1>
-        <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.subtitle}</p>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
-          <TextField
-            label={T.email}
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            autoCapitalize="none"
-            value={email}
-            onChange={setEmail}
-            placeholder="you@example.com"
-            error={errLabel(errors.email)}
-            autoFocus
-          />
-
-          <PasswordField
-            label={T.password}
-            autoComplete="current-password"
-            value={password}
-            onChange={setPassword}
-            error={errLabel(errors.password)}
-            showLabel={T.showPwd}
-            hideLabel={T.hidePwd}
-          />
-
-          {errors.form && (
-            <p role="alert" className="rounded-md border border-coral/30 bg-coral/8 px-3 py-2 text-[13px] text-coral">
-              {errLabel(errors.form)}
-            </p>
-          )}
-
-          <Button type="submit" variant="codex" className="w-full" disabled={submitting}>
-            {submitting ? T.submitting : T.submit}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-[13px] text-muted">
-          {R.forgotLead}{' '}
-          <Link to="/reset" className="text-brand underline-offset-4 hover:underline">
-            {R.forgotLink}
-          </Link>
-        </p>
-
-        <p className="mt-8 border-t border-rule/12 pt-5 text-sm text-muted">
-          {T.noAccount}{' '}
-          <Link to="/signup" className="font-medium text-brand underline-offset-4 hover:underline">
-            {T.toSignup}
-          </Link>
-        </p>
-        <p className="mt-3 text-[13px] text-muted-2">{T.guestNote}</p>
-      </div>
-    </div>
+      <p className="mt-8 border-t border-rule/12 pt-5 text-[15px] text-muted">
+        {T.noAccount}{' '}
+        <Link to="/signup" className="font-medium text-brand underline-offset-4 hover:underline">
+          {T.toSignup}
+        </Link>
+      </p>
+      <p className="mt-3 text-[13px] text-muted-2">{T.guestNote}</p>
+    </PageShell>
   );
 }

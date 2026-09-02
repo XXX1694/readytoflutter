@@ -11,6 +11,7 @@ import {
 } from '../api/api';
 import { track, resetIdentity } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
 import { cn } from '../lib/cn';
 import type { User } from '../types/domain';
 
@@ -26,6 +27,7 @@ export default function AccountMenu() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const isRu = lang === 'ru';
+  const t = useT(lang);
 
   const token = useAuth((s) => s.token);
   const user = useAuth((s) => s.user);
@@ -59,7 +61,7 @@ export default function AccountMenu() {
         className="inline-flex h-9 items-center gap-1.5 rounded-md border border-rule/12 px-3 text-[13px] font-medium text-ink transition-colors hover:border-rule/24"
       >
         <LogIn className="h-3.5 w-3.5" aria-hidden />
-        {isRu ? 'Войти' : 'Sign in'}
+        {t.nav.signIn}
       </Link>
     );
   }
@@ -186,7 +188,7 @@ export default function AccountMenu() {
           )}
 
           <Item icon={<Settings className="h-3.5 w-3.5" />} onSelect={() => navigate('/settings')}>
-            {isRu ? 'Настройки' : 'Settings'}
+            {t.nav.me}
           </Item>
           {user?.is_admin ? (
             <Item icon={<Shield className="h-3.5 w-3.5" />} onSelect={() => navigate('/admin')}>

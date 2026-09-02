@@ -3,7 +3,7 @@
 // when adding fields.
 
 const RU = {
-  back: 'На главную',
+  back: 'Назад',
   eyebrow: 'Вход',
   title: 'С возвращением.',
   subtitle: 'Войди, чтобы прогресс синхронизировался между устройствами.',
@@ -26,7 +26,7 @@ const RU = {
 };
 
 const EN = {
-  back: 'Back to dashboard',
+  back: 'Back',
   eyebrow: 'Sign in',
   title: 'Welcome back.',
   subtitle: 'Sign in so your progress syncs across devices.',

@@ -1,8 +1,7 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../store/auth';
 import {
@@ -17,7 +16,7 @@ import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useSignupCopy, type SignupCopy } from '../i18n/signupPage';
 import { useRecoveryCopy } from '../i18n/ui';
-import { Button, Eyebrow, TextField, PasswordField } from '../ui/index';
+import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
 import { RecoveryCodePanel } from './ResetPasswordPage';
 
 const schema = z.object({
@@ -143,34 +142,28 @@ export default function SignupPage() {
 
   if (issuedCode) {
     return (
-      <AuthShell>
-        <Eyebrow>{R.panelEyebrow}</Eyebrow>
-        <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
-          {R.panelTitle}
-        </h1>
-
-        <div className="mt-6">
-          <RecoveryCodePanel
-            code={issuedCode}
-            T={R}
-            ctaLabel={R.continue}
-            onAcknowledge={finishRecovery}
-          />
-        </div>
-      </AuthShell>
+      <PageShell width="narrow" centered>
+        <PageHeader eyebrow={R.panelEyebrow} title={R.panelTitle} />
+        <RecoveryCodePanel
+          code={issuedCode}
+          T={R}
+          ctaLabel={R.continue}
+          onAcknowledge={finishRecovery}
+        />
+      </PageShell>
     );
   }
 
   if (pendingImport) {
     return (
-      <AuthShell>
-        <Eyebrow>{T.syncEyebrow}</Eyebrow>
-        <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
-          {T.syncTitle(pendingImport.length)}
-        </h1>
-        <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.syncSubtitle}</p>
+      <PageShell width="narrow" centered>
+        <PageHeader
+          eyebrow={T.syncEyebrow}
+          title={T.syncTitle(pendingImport.length)}
+          subtitle={T.syncSubtitle}
+        />
 
-        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button variant="codex" className="flex-1" onClick={handleImport} disabled={submitting}>
             {submitting ? T.syncing : T.syncConfirm}
           </Button>
@@ -185,27 +178,20 @@ export default function SignupPage() {
         </div>
 
         <p className="mt-5 text-[13px] text-muted-2">{T.syncNote}</p>
-      </AuthShell>
+      </PageShell>
     );
   }
 
   return (
-    <AuthShell>
-      <Link
-        to="/"
-        className="mb-8 hidden items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink lg:inline-flex"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        {T.back}
-      </Link>
+    <PageShell width="narrow" centered>
+      <PageHeader
+        eyebrow={T.eyebrow}
+        title={T.title}
+        subtitle={T.subtitle}
+        back={{ to: '/', label: T.back }}
+      />
 
-      <Eyebrow>{T.eyebrow}</Eyebrow>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
-        {T.title}
-      </h1>
-      <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">{T.subtitle}</p>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <TextField
           label={`${T.name} · ${T.optional}`}
           autoComplete="name"
@@ -250,20 +236,12 @@ export default function SignupPage() {
         </Button>
       </form>
 
-      <p className="mt-8 border-t border-rule/12 pt-5 text-sm text-muted">
+      <p className="mt-8 border-t border-rule/12 pt-5 text-[15px] text-muted">
         {T.haveAccount}{' '}
         <Link to="/login" className="font-medium text-brand underline-offset-4 hover:underline">
           {T.toLogin}
         </Link>
       </p>
-    </AuthShell>
-  );
-}
-
-function AuthShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="bg-page flex min-h-full items-center justify-center px-4 py-14">
-      <div className="w-full max-w-md">{children}</div>
-    </div>
+    </PageShell>
   );
 }

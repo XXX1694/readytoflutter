@@ -1,51 +1,30 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Compass, Search } from 'lucide-react';
 import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
+import { useNotFoundCopy } from '../i18n/staticPages';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
-import { Button } from '../ui/index';
+import { EmptyState, PageShell } from '../ui/index';
 
 // Catch-all for unmatched routes. Without it a typo in the URL rendered an
 // empty <div id="root"> — especially visible on GitHub Pages, where 404.html
 // is a copy of index.html, so every bad path reaches the SPA router.
 export default function NotFoundPage() {
-  const navigate = useNavigate();
   const { lang } = useLang();
-  const isRu = lang === 'ru';
+  const t = useT(lang);
+  const c = useNotFoundCopy(lang);
 
-  useDocumentMeta({
-    title: isRu ? 'Страница не найдена · Onsite' : 'Page not found · Onsite',
-  });
+  useDocumentMeta({ title: c.docTitle });
 
   return (
-    <div className="bg-page">
-      <div className="w-full px-4 py-16 sm:px-6 sm:py-24 lg:px-8 2xl:px-12">
-        <div className="max-w-xl">
-          <p className="font-mono text-[13px] text-muted">404</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">
-            {isRu ? 'Такой страницы нет' : 'No such page'}
-          </h1>
-          <p className="mt-3 font-serif text-[17px] leading-relaxed text-ink-2">
-            {isRu
-              ? 'Ссылка битая или устарела. Вернись на главную или найди вопрос через поиск.'
-              : 'The link is broken or out of date. Head back to the dashboard, or find the question through search.'}
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-2">
-            <Button onClick={() => navigate('/')}>
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {isRu ? 'На главную' : 'Back to dashboard'}
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/search')}>
-              <Search className="h-3.5 w-3.5" />
-              {isRu ? 'Поиск' : 'Search'}
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/knowledge')}>
-              <Compass className="h-3.5 w-3.5" />
-              {isRu ? 'База знаний' : 'Knowledge base'}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <PageShell width="narrow" centered>
+      {/* The empty state carries the message; the h1 keeps the prerender
+          contract every route holds to. */}
+      <h1 className="sr-only">{c.title}</h1>
+      <EmptyState
+        title={c.title}
+        body={c.body}
+        action={{ label: t.nav.today, to: '/' }}
+        secondary={{ label: t.nav.topics, to: '/topics' }}
+      />
+    </PageShell>
   );
 }

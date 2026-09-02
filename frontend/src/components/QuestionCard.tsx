@@ -12,7 +12,8 @@ import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Pill, difficultyTone } from '../ui/index';
+import { useTopicCopy } from '../i18n/topicPage';
+import { Button } from '../ui/index';
 import { cn } from '../lib/cn';
 import { useBookmark } from '../lib/useBookmark';
 import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts';
@@ -70,6 +71,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
 
   const { lang } = useLang();
   const t = useT(lang);
+  const c = useTopicCopy(lang);
   const { questionText, answerText } = useContent(lang);
   const update = useUpdateProgress();
   const [bookmarked, toggleBookmark] = useBookmark(question.id);
@@ -183,75 +185,39 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
       ref={ref}
       data-question-id={question.id}
       className={cn(
-        'overflow-hidden rounded-lg border bg-paper-2 transition-colors duration-200',
-        open ? 'border-rule/25 shadow-codex' : 'border-rule/12 shadow-codex-sm hover:border-rule/25',
-        focused && !open && 'shadow-focus',
+        'overflow-hidden transition-colors duration-200',
+        // One border level per row: closed rows are separated by a hairline,
+        // and only the question you are actually reading becomes a card.
+        open ? 'codex-card' : 'border-b border-rule/10',
+        focused && !open && 'rounded-sm shadow-focus',
       )}
     >
-      {/* Header. The toggle and the bookmark are two sibling buttons — a
-          control nested inside a control is invalid HTML and reads as one
-          confused element to a screen reader. Pointer clicks on the icon
-          cluster (and its padding) still open the card, so the whole row
-          stays a single target; keyboard users have the toggle itself. */}
-      <div className="flex items-start">
-        <button
-          type="button"
-          onClick={handleToggle}
-          aria-expanded={open}
-          className="flex min-w-0 flex-1 items-start gap-3 py-4 pl-4 pr-2 text-left sm:gap-4 sm:py-5 sm:pl-5"
-        >
-          <span
-            className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-rule/12 bg-paper font-mono text-[11px] tabular-nums text-muted"
-            aria-hidden
-          >
-            {String(index + 1).padStart(2, '0')}
-          </span>
+      {/* Header — the whole row is the one control that opens it. Number,
+          question, difficulty as plain meta, chevron. The bookmark and the
+          status live in the body, where there is room to label them. */}
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-expanded={open}
+        className={cn(
+          'flex min-h-[56px] w-full items-start gap-3 text-left sm:gap-4',
+          open ? 'px-4 py-4 sm:px-5' : 'px-1 py-3.5 sm:py-4',
+        )}
+      >
+        <span className="num mt-px w-6 shrink-0 text-[13px] text-muted-2" aria-hidden>
+          {index + 1}
+        </span>
 
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] leading-snug text-ink sm:text-base">{questionText(question)}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <Pill tone={difficultyTone[question.difficulty] || 'neutral'} size="xs">
-                {difficultyLabel}
-              </Pill>
-              {question.tags &&
-                question.tags
-                  .split(',')
-                  .map((tag, i) => (
-                    <Pill key={`${tag}-${i}`} tone="neutral" size="xs">
-                      {tag.trim()}
-                    </Pill>
-                  ))}
-            </div>
-          </div>
-        </button>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] leading-snug text-ink">{questionText(question)}</span>
+          <span className="mt-1 block text-[12px] leading-snug text-muted">{difficultyLabel}</span>
+        </span>
 
-        <div
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 py-4 pr-4 sm:py-5 sm:pr-5"
-          onClick={handleToggle}
-        >
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); toggleBookmarked(); }}
-            aria-label={bookmarked
-              ? (lang === 'ru' ? 'Убрать из закладок' : 'Remove bookmark')
-              : (lang === 'ru' ? 'В закладки' : 'Bookmark')}
-            aria-pressed={bookmarked}
-            // Visible 28×28 stays the same; -m-2 + p-2 grows the actual hit
-            // area to 44px on touch without nudging adjacent layout.
-            className={cn(
-              'box-content -m-2 inline-flex h-7 w-7 items-center justify-center rounded p-2 transition-colors',
-              bookmarked ? 'text-[rgb(var(--amber))]' : 'text-muted hover:text-ink',
-            )}
-          >
-            <Bookmark className="h-4 w-4" fill={bookmarked ? 'currentColor' : 'none'} />
-          </button>
-          <StatusIcon className={cn('h-5 w-5', STATUS_META[status].accent)} aria-hidden />
-          <ChevronDown
-            className={cn('h-4 w-4 text-muted transition-transform', open && 'rotate-180')}
-            aria-hidden
-          />
-        </div>
-      </div>
+        <ChevronDown
+          className={cn('mt-0.5 h-4 w-4 shrink-0 text-muted-2 transition-transform', open && 'rotate-180')}
+          aria-hidden
+        />
+      </button>
 
       <AnimatePresence initial={false}>
         {open && (
@@ -264,8 +230,11 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
             className="overflow-hidden"
           >
             <div className="border-t border-rule/12">
-              {/* Status segmented control */}
+              {/* Status segmented control, with the status icon that used to
+                  sit in the row header and the bookmark beside it — both only
+                  mean anything next to the words that name them. */}
               <div className="flex flex-wrap items-center gap-2 border-b border-rule/12 bg-paper px-4 py-3 sm:px-5">
+                <StatusIcon className={cn('h-4 w-4 shrink-0', STATUS_META[status].accent)} aria-hidden />
                 <span className="eyebrow">{t.markAs}</span>
                 <div className="inline-flex items-center gap-px rounded border border-rule/12 bg-paper-2 p-0.5">
                   {STATUS_KEYS.map((key) => {
@@ -293,6 +262,20 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                     );
                   })}
                 </div>
+                <button
+                  type="button"
+                  onClick={toggleBookmarked}
+                  aria-label={bookmarked ? c.unbookmark : c.bookmark}
+                  aria-pressed={bookmarked}
+                  // Visible 28×28; -m-2 + p-2 grows the hit area to 44px on
+                  // touch without nudging the row's layout.
+                  className={cn(
+                    'box-content -m-2 ml-auto inline-flex h-7 w-7 items-center justify-center rounded p-2 transition-colors',
+                    bookmarked ? 'text-[rgb(var(--amber))]' : 'text-muted hover:text-ink',
+                  )}
+                >
+                  <Bookmark className="h-4 w-4" fill={bookmarked ? 'currentColor' : 'none'} aria-hidden />
+                </button>
               </div>
 
               {/* Answer — everything below sits in one reading column. */}

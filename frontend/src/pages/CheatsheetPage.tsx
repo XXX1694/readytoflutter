@@ -109,7 +109,7 @@ export default function CheatsheetPage() {
           <span className="eyebrow shrink-0">{lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}</span>
           <span className="truncate text-sm text-ink-2">{topicTitle(topic)}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleCopy}>
             {copied
               ? <Check className="h-3.5 w-3.5 text-mint" aria-hidden />

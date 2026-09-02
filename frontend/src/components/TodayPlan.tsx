@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Brain, Target, ChevronRight } from 'lucide-react';
+import { useMemo, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuestions, useTopics } from '../lib/queries';
 import { getCardState } from '../lib/srs';
 import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
+import { useHomeCopy } from '../i18n/homePage';
 import { Button, Eyebrow } from '../ui/index';
 import { usePrefs } from '../store/prefs';
 import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform';
@@ -25,8 +26,8 @@ export interface Plan {
   fresh: number;
   weakTopic: Topic | null;
   weakMastery: number | null;
-  srsLearned: number;
-  srsTotal: number;
+  /** The weak topic has nothing completed and nothing in the SRS queue yet. */
+  weakUntouched: boolean;
 }
 
 interface TopicRollup {
@@ -46,21 +47,18 @@ interface TopicRollup {
 function buildPlan(questions: Question[], topics: Topic[], now: number = Date.now()): Plan {
   const empty: Plan = {
     ids: [], due: 0, weak: 0, fresh: 0,
-    weakTopic: null, weakMastery: null,
-    srsLearned: 0, srsTotal: questions.length,
+    weakTopic: null, weakMastery: null, weakUntouched: false,
   };
   if (!questions.length) return empty;
 
   const dueCards: Array<{ q: Question; lateness: number }> = [];
   const freshCards: Question[] = [];
-  let srsLearned = 0;
 
   // Pre-compute card states once
   const stateById = new Map<number, CardState>();
   for (const q of questions) {
     const s = getCardState(q.id);
     stateById.set(q.id, s);
-    if (s.reps > 0) srsLearned += 1;
     if (s.reps === 0 && !s.lastAt) {
       freshCards.push(q);
     } else if (s.dueAt <= now) {
@@ -136,22 +134,31 @@ function buildPlan(questions: Question[], topics: Topic[], now: number = Date.no
     fresh: freshChosen.length,
     weakTopic: weakRow?.topic || null,
     weakMastery: weakRow ? masteryFor(weakRow) : null,
-    srsLearned,
-    srsTotal: questions.length,
+    // "Weakest" is a claim about practice. A topic nobody has opened is not
+    // weak, it is untouched — and saying "0%" about it reads as a failure.
+    weakUntouched: weakRow ? weakRow.completed === 0 && weakRow.easeCount === 0 : false,
   };
 }
 
+export interface TodayPlanProps {
+  /**
+   * Shown above the headline. Today passes nothing (its own `h1` already says
+   * "Today"); the landings pass it, since there the `h1` names the stack.
+   */
+  eyebrow?: ReactNode;
+}
+
 /**
- * The one card on the dashboard that tells you what to do next.
- *
- * Its composition used to be four coloured chips, each with an icon, a count
- * and a word — a control panel for three numbers. It reads as a sentence now,
- * with the card count carrying the weight because that is the figure the
- * button beneath acts on. Nothing here is coloured.
+ * The one card on Today. Four lines and one button: what today is, what it is
+ * made of, where you are weakest, and the way in. Everything it used to also
+ * carry — an SRS-only button, a mock button, an "x / 636 learned" tally — was
+ * a second and third answer to a question the page asks once.
  */
-export default function TodayPlan() {
+export default function TodayPlan({ eyebrow }: TodayPlanProps) {
   const navigate = useNavigate();
   const { lang } = useLang();
+  const t = useT(lang);
+  const c = useHomeCopy(lang);
   const { topicTitle } = useContent(lang);
   const { data: allQuestions = [] } = useQuestions();
   const { data: allTopics = [] } = useTopics();
@@ -172,112 +179,56 @@ export default function TodayPlan() {
 
   const total = plan.ids.length;
   const minutes = Math.max(1, Math.round((total * SECONDS_PER_CARD) / 60));
-
-  const startPlan = (): void => {
-    if (!total) return;
-    const label = lang === 'ru' ? 'План на сегодня' : 'Today\'s plan';
-    navigate(`/study?ids=${plan.ids.join(',')}&label=${encodeURIComponent(label)}`);
-  };
-
   const empty = total === 0;
   const allCaughtUp = !empty && plan.due === 0 && plan.fresh === 0 && plan.weak === 0;
   const weakTopic = plan.weakTopic;
 
+  // The deep link the button opens. Same contract as before: an explicit id
+  // list plus the label the session header shows.
+  const start = (): void => {
+    if (empty) {
+      navigate('/study');
+      return;
+    }
+    navigate(`/study?ids=${plan.ids.join(',')}&label=${encodeURIComponent(t.nav.today)}`);
+  };
+
   // Composition, as a sentence rather than a rack of chips.
   const parts: string[] = [];
-  if (plan.due > 0) parts.push(`${plan.due} ${lang === 'ru' ? 'к разбору' : 'due'}`);
-  if (plan.weak > 0) parts.push(`${plan.weak} ${lang === 'ru' ? 'из слабой темы' : 'from your weakest topic'}`);
-  if (plan.fresh > 0) parts.push(`${plan.fresh} ${lang === 'ru' ? 'новых' : 'new'}`);
+  if (plan.due > 0) parts.push(t.nav.due(plan.due));
+  if (plan.weak > 0) parts.push(c.weak(plan.weak));
+  if (plan.fresh > 0) parts.push(c.fresh(plan.fresh));
 
   return (
     <div className="codex-card p-5 sm:p-7">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
-        {/* LEFT — what today is */}
-        <div className="min-w-0 flex-1">
-          <Eyebrow>{lang === 'ru' ? 'План на сегодня' : 'Today\'s plan'}</Eyebrow>
+      {eyebrow && <Eyebrow className="mb-2">{eyebrow}</Eyebrow>}
 
-          <h2 className="mt-2 font-display text-2xl font-semibold leading-tight text-ink sm:text-3xl">
-            {empty ? (
-              lang === 'ru' ? 'Начни с первого прогона' : 'Start with a first pass'
-            ) : allCaughtUp ? (
-              lang === 'ru' ? 'База закрыта — дальше закрепление' : 'Caught up — time to reinforce'
-            ) : (
-              <>
-                <span className="num">{total}</span>{' '}
-                <span className="text-ink-2">
-                  {lang === 'ru'
-                    ? `${total === 1 ? 'карточка' : total < 5 ? 'карточки' : 'карточек'} · ~${minutes} мин`
-                    : `${total === 1 ? 'card' : 'cards'} · ~${minutes} min`}
-                </span>
-              </>
-            )}
-          </h2>
+      <h2 className="font-display text-[26px] font-semibold leading-tight text-ink sm:text-[30px]">
+        {empty ? c.planEmpty : allCaughtUp ? c.planCaughtUp : <span className="num">{c.plan(total, minutes)}</span>}
+      </h2>
 
-          {parts.length > 0 && (
-            <p className="mt-2.5 text-[15px] leading-relaxed text-ink-2">{parts.join(' · ')}</p>
-          )}
+      {parts.length > 0 && (
+        <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{parts.join(' · ')}</p>
+      )}
 
-          {weakTopic && (
-            <button
-              type="button"
-              onClick={() => navigate(`/topic/${weakTopic.slug}`)}
-              className="mt-3 inline-flex max-w-full items-center gap-1.5 text-left text-[13px] text-muted hover:text-ink"
-            >
-              <span>{lang === 'ru' ? 'Слабее всего:' : 'Weakest right now:'}</span>
-              <span className="truncate text-ink-2">{topicTitle(weakTopic)}</span>
-              <span className="num shrink-0">{plan.weakMastery}%</span>
-              <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            </button>
-          )}
-        </div>
+      {weakTopic && (
+        <Link
+          to={`/topic/${weakTopic.slug}`}
+          className="mt-2 inline-block max-w-full truncate rounded-sm text-[13px] text-muted transition-colors hover:text-ink"
+        >
+          {plan.weakUntouched
+            ? c.untouched(topicTitle(weakTopic))
+            : c.weakest(topicTitle(weakTopic), plan.weakMastery ?? 0)}
+        </Link>
+      )}
 
-        {/* RIGHT — the actions */}
-        <div className="flex shrink-0 flex-col gap-2 sm:w-[220px]">
-          {empty ? (
-            <Button variant="brand" size="md" className="w-full" onClick={() => navigate('/study')}>
-              <Brain className="h-4 w-4" aria-hidden />
-              {lang === 'ru' ? 'Открыть SRS' : 'Open SRS'}
-            </Button>
-          ) : allCaughtUp ? (
-            <>
-              <Button variant="brand" size="md" className="w-full" onClick={() => navigate('/mock')}>
-                <Target className="h-4 w-4" aria-hidden />
-                {lang === 'ru' ? 'Mock-собеседование' : 'Mock interview'}
-              </Button>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/study')}>
-                {lang === 'ru' ? 'Случайный набор' : 'Random set'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="brand" size="md" className="w-full" onClick={startPlan}>
-                <Brain className="h-4 w-4" aria-hidden />
-                {lang === 'ru' ? 'Начать план' : 'Start plan'}
-              </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => navigate('/study')}
-                  disabled={plan.due === 0}
-                >
-                  {lang === 'ru' ? 'Только SRS' : 'SRS only'}
-                </Button>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/mock')}>
-                  <Target className="h-3.5 w-3.5" aria-hidden />
-                  Mock
-                </Button>
-              </div>
-            </>
-          )}
-
-          <p className="mt-1 text-center text-[13px] text-muted">
-            <span className="num">{plan.srsLearned}</span>
-            <span className="num text-muted-2"> / {plan.srsTotal}</span>{' '}
-            {lang === 'ru' ? 'изучено' : 'learned'}
-          </p>
-        </div>
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 sm:mt-6">
+        <Button variant="brand" size="md" className="w-full sm:w-auto" onClick={start}>
+          {t.nav.startSession}
+        </Button>
+        <Link to="/mock" className="rounded-sm text-[13px] text-brand hover:underline">
+          {t.nav.timed}
+        </Link>
       </div>
     </div>
   );

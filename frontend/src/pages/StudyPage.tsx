@@ -5,10 +5,11 @@ import { useQuestions, useTopics } from '../lib/queries';
 import { pickDueQueue, rateCard, getCardState } from '../lib/srs';
 import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
-import { useLang, type Lang } from '../i18n/LangContext';
+import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
+import { useSessionCopy, type SessionCopy } from '../i18n/sessionPage';
+import { Button, PageShell, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
 import CodeBlock from '../components/CodeBlock';
 import AnswerText from '../components/AnswerText';
 import VoiceInputButton from '../components/VoiceInputButton';
@@ -39,11 +40,11 @@ const isLevel = (value: string | null): value is Level =>
   value !== null && LEVELS.includes(value);
 
 /** The intervals are what makes this grade meaningful, so each one shows its. */
-const grades = (lang: Lang): SelfGradeOption[] => [
-  { rating: 'again', label: lang === 'ru' ? 'Снова' : 'Again', hint: '< 1d' },
-  { rating: 'hard', label: lang === 'ru' ? 'Тяжело' : 'Hard', hint: '~1d' },
-  { rating: 'good', label: lang === 'ru' ? 'Хорошо' : 'Good', hint: '~6d' },
-  { rating: 'easy', label: lang === 'ru' ? 'Легко' : 'Easy', hint: '~14d' },
+const grades = (c: SessionCopy): SelfGradeOption[] => [
+  { rating: 'again', label: c.grades.again, hint: c.gradeHints.again },
+  { rating: 'hard', label: c.grades.hard, hint: c.gradeHints.hard },
+  { rating: 'good', label: c.grades.good, hint: c.gradeHints.good },
+  { rating: 'easy', label: c.grades.easy, hint: c.gradeHints.easy },
 ];
 
 export default function StudyPage() {
@@ -55,8 +56,8 @@ export default function StudyPage() {
   const scopeLabel = searchParams.get('label');
 
   const { lang } = useLang();
-  const ru = lang === 'ru';
   const t = useT(lang);
+  const c = useSessionCopy(lang);
   const { questionText, answerText } = useContent(lang);
   const recallMode = usePrefs((s) => s.recallMode);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
@@ -88,7 +89,7 @@ export default function StudyPage() {
   const scopeText = scopeLabel
     || (topicScope && allQuestions.find((q) => q.topic_slug === topicScope)?.topic_title)
     || (isLevel(levelScope) && t[levelScope].label)
-    || (idsScope && (ru ? 'Закладки' : 'Bookmarks'))
+    || (idsScope && c.bookmarksScope)
     || null;
 
   // A new pool is a new set of cards. Deriving the queue during render rather
@@ -171,10 +172,10 @@ export default function StudyPage() {
 
   if (pool.length === 0) {
     return (
-      <EmptyState
-        title={ru ? 'Здесь пока нет вопросов' : 'Nothing to study here yet'}
-        body={ru ? 'Попробуй другой уровень или тему.' : 'Try another level or topic.'}
-        lang={lang}
+      <Notice
+        title={c.emptyTitle}
+        body={c.emptyBody}
+        label={c.dashboard}
         onClose={() => navigate('/')}
       />
     );
@@ -184,8 +185,8 @@ export default function StudyPage() {
     return (
       <Recap
         counts={counts}
-        total={total}
-        lang={lang}
+        meta={c.cardsReviewed(total)}
+        c={c}
         onAgain={() => setQueue(pickDueQueue(pool, QUEUE_SIZE))}
         onClose={() => navigate('/')}
       />
@@ -194,10 +195,10 @@ export default function StudyPage() {
 
   if (!current) {
     return (
-      <EmptyState
-        title={ru ? 'Всё повторено' : 'All caught up'}
-        body={ru ? 'Новые карточки будут завтра.' : 'The next cards come due tomorrow.'}
-        lang={lang}
+      <Notice
+        title={c.caughtUpTitle}
+        body={c.caughtUpBody}
+        label={c.dashboard}
         onClose={() => navigate('/')}
       />
     );
@@ -207,173 +208,165 @@ export default function StudyPage() {
   const isFresh = getCardState(current.id).reps === 0;
 
   return (
-    <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-3xl px-4 pb-20 pt-4 sm:px-6 sm:pt-10">
-        {/* Title and close are hidden under sm: the mobile header already
-            carries both for this route. */}
-        <header className="mb-5 flex items-center gap-3">
-          <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
-            {ru ? 'Повторение' : 'Study'}
-          </h1>
-          {hasScope && scopeText && <Pill size="xs">{scopeText}</Pill>}
-          <div className="ml-auto flex items-center gap-1">
-            <button
-              type="button"
-              onClick={toggleRecallMode}
-              aria-pressed={recallMode}
-              title={ru ? 'Записывать суть до ответа' : 'Write the gist before the answer'}
-              className={cn(
-                'touch-target inline-flex items-center gap-1.5 rounded-lg px-2.5 text-[13px]',
-                'transition-colors duration-150',
-                recallMode ? 'bg-ink text-paper' : 'text-muted hover:bg-rule/8 hover:text-ink',
-              )}
-            >
-              <PenLine className="h-3.5 w-3.5" aria-hidden />
-              {ru ? 'Припоминание' : 'Recall'}
-            </button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden sm:inline-flex"
-              onClick={() => navigate(-1)}
-            >
-              <X className="h-4 w-4" aria-hidden />
-              <span className="sr-only">{ru ? 'Закрыть' : 'Close'}</span>
-            </Button>
-          </div>
-        </header>
-
-        <div className="mb-9 flex items-center gap-3">
-          <ProgressBar
-            value={session.index}
-            max={total}
-            size="xs"
-            tone="ink"
-            label={ru ? 'Прогресс сессии' : 'Session progress'}
-          />
-          <span className="num shrink-0 text-[12px] text-muted">{session.index}/{total}</span>
+    <PageShell width="reading">
+      {/* Title and close are hidden under sm: the mobile header already
+          carries both for this route. */}
+      <header className="mb-5 flex items-center gap-3">
+        <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
+          {t.nav.session}
+        </h1>
+        {hasScope && scopeText && <Pill size="xs">{scopeText}</Pill>}
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleRecallMode}
+            aria-pressed={recallMode}
+            title={c.writeItFirstHint}
+            className={cn(
+              'touch-target inline-flex items-center gap-1.5 rounded-lg px-2.5 text-[13px]',
+              'transition-colors duration-150',
+              recallMode ? 'bg-ink text-paper' : 'text-muted hover:bg-rule/8 hover:text-ink',
+            )}
+          >
+            <PenLine className="h-3.5 w-3.5" aria-hidden />
+            {t.nav.writeItFirst}
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden sm:inline-flex"
+            onClick={() => navigate(-1)}
+          >
+            <X className="h-4 w-4" aria-hidden />
+            <span className="sr-only">{c.close}</span>
+          </Button>
         </div>
+      </header>
 
-        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Pill tone={difficultyTone[current.difficulty]} size="xs">{difficultyLabel}</Pill>
-          <span className="eyebrow">
-            {current.topic_title}
-            {isFresh && ` · ${ru ? 'новая' : 'new'}`}
-          </span>
-        </div>
-
-        <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[34px]">
-          {questionText(current)}
-        </h2>
-
-        {!revealed && (
-          <>
-            {recallMode && (
-              <div className="mt-8">
-                <label htmlFor="gist" className="eyebrow mb-2 block">
-                  {ru ? 'Что помнишь? Пара строк' : 'What do you remember? A line or two'}
-                </label>
-                <textarea
-                  id="gist"
-                  ref={draftRef}
-                  value={session.draft}
-                  onChange={(e) => session.setDraft(e.target.value)}
-                  placeholder={ru
-                    ? 'Даже одно слово фиксирует мысль'
-                    : 'Even one word commits the thought'}
-                  rows={3}
-                  autoFocus
-                  autoCorrect="off"
-                  spellCheck={false}
-                  autoCapitalize="off"
-                  className="w-full resize-none rounded-lg border border-rule/12 bg-paper-2 px-4 py-3 font-serif text-[17px] leading-relaxed text-ink outline-none placeholder:text-muted-2"
-                />
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="sm" />
-                  <span className="num text-[11px] text-muted-2">
-                    {session.draft.length}/{GIST_LIMIT}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Button variant="brand" onClick={session.reveal}>
-                {ru ? 'Показать ответ' : 'Show answer'}
-              </Button>
-              <span className="hidden text-[13px] text-muted sm:inline">
-                {ru ? 'или' : 'or'}{' '}
-                <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[11px]">
-                  space
-                </kbd>
-              </span>
-            </div>
-          </>
-        )}
-
-        {revealed && (
-          <div className="mt-8">
-            {recallMode && (
-              <AnswerGrader
-                key={current.id}
-                questionId={current.id}
-                userAnswer={session.draft}
-                lang={lang}
-              />
-            )}
-
-            {recallMode && session.draft.trim() && (
-              <div className="mb-7 border-l-2 border-rule/15 pl-4">
-                <div className="eyebrow mb-1.5">{ru ? 'Ты написал' : 'What you wrote'}</div>
-                <p className="answer-text">{session.draft}</p>
-              </div>
-            )}
-
-            <div className="eyebrow mb-2">{t.answer}</div>
-            <AnswerText text={answerText(current)} />
-
-            {current.code_example && (
-              <details key={current.id} className="group mt-6">
-                <summary className="eyebrow inline-flex cursor-pointer list-none items-center gap-1.5 hover:text-ink">
-                  <ChevronDown
-                    className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
-                    aria-hidden
-                  />
-                  <span className="group-open:hidden">
-                    {ru ? 'Показать код' : 'Show the code'}
-                  </span>
-                  <span className="hidden group-open:inline">
-                    {ru ? 'Скрыть код' : 'Hide the code'}
-                  </span>
-                </summary>
-                <div className="mt-3">
-                  <CodeBlock
-                    code={current.code_example}
-                    language={current.code_language || 'dart'}
-                  />
-                </div>
-              </details>
-            )}
-
-            <div className="mt-10 border-t border-rule/12 pt-5">
-              <p className="eyebrow mb-2">{ru ? 'Как вспомнилось?' : 'How did that go?'}</p>
-              <SelfGrade options={grades(lang)} onGrade={session.grade} />
-            </div>
-          </div>
-        )}
+      <div className="mb-9 flex items-center gap-3">
+        <ProgressBar
+          value={session.index}
+          max={total}
+          size="xs"
+          tone="ink"
+          label={c.sessionProgress}
+        />
+        <span className="num shrink-0 text-[12px] text-muted">{session.index}/{total}</span>
       </div>
-    </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Pill tone={difficultyTone[current.difficulty]} size="xs">{difficultyLabel}</Pill>
+        <span className="eyebrow">
+          {current.topic_title}
+          {isFresh && ` · ${c.isNew}`}
+        </span>
+      </div>
+
+      <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[34px]">
+        {questionText(current)}
+      </h2>
+
+      {!revealed && (
+        <>
+          {recallMode && (
+            <div className="mt-8">
+              <label htmlFor="gist" className="eyebrow mb-2 block">
+                {c.gistPrompt}
+              </label>
+              <textarea
+                id="gist"
+                ref={draftRef}
+                value={session.draft}
+                onChange={(e) => session.setDraft(e.target.value)}
+                placeholder={c.gistPlaceholder}
+                rows={3}
+                autoFocus
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="off"
+                className="w-full resize-none rounded-lg border border-rule/12 bg-paper-2 px-4 py-3 font-serif text-[17px] leading-relaxed text-ink outline-none placeholder:text-muted-2"
+              />
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="sm" />
+                <span className="num text-[11px] text-muted-2">
+                  {session.draft.length}/{GIST_LIMIT}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Button variant="brand" onClick={session.reveal}>
+              {c.showAnswer}
+            </Button>
+            <span className="hidden text-[13px] text-muted sm:inline">
+              {c.or}{' '}
+              <kbd className="rounded border border-rule/15 px-1.5 py-0.5 font-mono text-[11px]">
+                space
+              </kbd>
+            </span>
+          </div>
+        </>
+      )}
+
+      {revealed && (
+        <div className="mt-8">
+          {recallMode && (
+            <AnswerGrader
+              key={current.id}
+              questionId={current.id}
+              userAnswer={session.draft}
+              lang={lang}
+            />
+          )}
+
+          {recallMode && session.draft.trim() && (
+            <div className="mb-7 border-l-2 border-rule/15 pl-4">
+              <div className="eyebrow mb-1.5">{c.whatYouWrote}</div>
+              <p className="answer-text">{session.draft}</p>
+            </div>
+          )}
+
+          <div className="eyebrow mb-2">{t.answer}</div>
+          <AnswerText text={answerText(current)} />
+
+          {current.code_example && (
+            <details key={current.id} className="group mt-6">
+              <summary className="eyebrow inline-flex cursor-pointer list-none items-center gap-1.5 hover:text-ink">
+                <ChevronDown
+                  className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                  aria-hidden
+                />
+                <span className="group-open:hidden">{c.showCode}</span>
+                <span className="hidden group-open:inline">{c.hideCode}</span>
+              </summary>
+              <div className="mt-3">
+                <CodeBlock
+                  code={current.code_example}
+                  language={current.code_language || 'dart'}
+                />
+              </div>
+            </details>
+          )}
+
+          <div className="mt-10 border-t border-rule/12 pt-5">
+            <p className="eyebrow mb-2">{c.howDidThatGo}</p>
+            <SelfGrade options={grades(c)} onGrade={session.grade} />
+          </div>
+        </div>
+      )}
+    </PageShell>
   );
 }
 
-interface EmptyStateProps {
+interface NoticeProps {
   title: string;
   body: string;
-  lang: Lang;
+  label: string;
   onClose: () => void;
 }
 
-function EmptyState({ title, body, lang, onClose }: EmptyStateProps) {
+function Notice({ title, body, label, onClose }: NoticeProps) {
   return (
     <div className="bg-page flex h-full items-center justify-center px-4">
       <div className="flex max-w-sm flex-col items-start gap-3">
@@ -381,7 +374,7 @@ function EmptyState({ title, body, lang, onClose }: EmptyStateProps) {
         <p className="text-sm text-muted">{body}</p>
         <Button variant="brand" size="sm" onClick={onClose} className="mt-1">
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          {lang === 'ru' ? 'На главную' : 'Dashboard'}
+          {label}
         </Button>
       </div>
     </div>
@@ -390,50 +383,61 @@ function EmptyState({ title, body, lang, onClose }: EmptyStateProps) {
 
 interface RecapProps {
   counts: OutcomeCounts;
-  total: number;
-  lang: Lang;
+  meta: string;
+  c: SessionCopy;
   onAgain: () => void;
   onClose: () => void;
 }
 
-function Recap({ counts, total, lang, onAgain, onClose }: RecapProps) {
-  const ru = lang === 'ru';
-  const rows = [
-    { key: 'again', label: ru ? 'Снова' : 'Again', ink: 'text-coral' },
-    { key: 'hard', label: ru ? 'Тяжело' : 'Hard', ink: 'text-[rgb(var(--amber))]' },
-    { key: 'good', label: ru ? 'Хорошо' : 'Good', ink: 'text-mint' },
-    { key: 'easy', label: ru ? 'Легко' : 'Easy', ink: 'text-mint' },
-  ] as const;
-
+/** The recap all three runners wear: title, one meta line, the four grades. */
+function Recap({ counts, meta, c, onAgain, onClose }: RecapProps) {
   return (
     <div className="bg-page flex h-full items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
-        <h1 className="font-display text-3xl font-semibold text-ink">
-          {ru ? 'Сессия закрыта' : 'Session done'}
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          {ru ? `${total} карточек повторено` : `${total} cards reviewed`}
-        </p>
+        <h1 className="font-display text-3xl font-semibold text-ink">{c.recapTitle}</h1>
+        <p className="mt-2 text-sm text-muted">{meta}</p>
 
-        <dl className="mt-7 grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-rule/12 bg-rule/10">
-          {rows.map((row) => (
-            <div key={row.key} className="flex flex-col gap-1 bg-paper-2 px-2 py-4 text-center">
-              <dd className={cn('num text-2xl', row.ink)}>{counts[row.key]}</dd>
-              <dt className="text-[12px] text-muted">{row.label}</dt>
-            </div>
-          ))}
-        </dl>
+        <RecapCounts counts={counts} c={c} className="mt-7" />
 
         <div className="mt-7 flex flex-col gap-2 sm:flex-row">
           <Button variant="brand" className="flex-1" onClick={onAgain}>
-            {ru ? 'Ещё подход' : 'One more set'}
+            {c.again}
           </Button>
           <Button variant="outline" className="flex-1" onClick={onClose}>
             <ArrowRight className="h-4 w-4" aria-hidden />
-            {ru ? 'На главную' : 'Dashboard'}
+            {c.dashboard}
           </Button>
         </div>
       </div>
     </div>
+  );
+}
+
+const RECAP_ROWS = [
+  { key: 'again', ink: 'text-coral' },
+  { key: 'hard', ink: 'text-[rgb(var(--amber))]' },
+  { key: 'good', ink: 'text-mint' },
+  { key: 'easy', ink: 'text-mint' },
+] as const;
+
+interface RecapCountsProps {
+  counts: OutcomeCounts;
+  c: SessionCopy;
+  className?: string;
+}
+
+/** The four grades as a tally. The timed session and the follow-ups render
+    the same block from their own files — the shared thing is the vocabulary,
+    not a component. */
+function RecapCounts({ counts, c, className }: RecapCountsProps) {
+  return (
+    <dl className={cn('grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-rule/12 bg-rule/10', className)}>
+      {RECAP_ROWS.map((row) => (
+        <div key={row.key} className="flex flex-col gap-1 bg-paper-2 px-2 py-4 text-center">
+          <dd className={cn('num text-2xl', row.ink)}>{counts[row.key]}</dd>
+          <dt className="text-[12px] text-muted">{c.grades[row.key]}</dt>
+        </div>
+      ))}
+    </dl>
   );
 }

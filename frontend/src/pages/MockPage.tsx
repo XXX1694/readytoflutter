@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, ChevronRight, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
-import { useLang, type Lang } from '../i18n/LangContext';
-import { UI, useT, type UICopy } from '../i18n/ui';
+import { useLang } from '../i18n/LangContext';
+import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
-import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
-import PlatformFilter from '../components/PlatformFilter';
+import { useSessionCopy, type SessionCopy } from '../i18n/sessionPage';
+import {
+  Button, Chip, ChipGroup, PageHeader, PageShell, Pill, ProgressBar, FullPageLoader, difficultyTone,
+} from '../ui/index';
 import { usePrefs } from '../store/prefs';
-import { filterQuestionsByPlatform } from '../lib/platform';
+import { filterQuestionsByPlatform, PLATFORMS } from '../lib/platform';
 import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerText from '../components/AnswerText';
 import CodeBlock from '../components/CodeBlock';
@@ -39,44 +41,32 @@ interface MockConfig {
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
 
+/** A timed session is timed: three minutes a question unless you say otherwise. */
+const DEFAULT_TIMER = 180;
+
 const LEVEL_OPTIONS: readonly LevelScope[] = ['all', 'junior', 'mid', 'senior'];
 const isLevelScope = (value: string | null): value is LevelScope =>
   value !== null && (LEVEL_OPTIONS as readonly string[]).includes(value);
 
-const levelLabel = (level: LevelScope, lang: Lang): string => {
-  if (level !== 'all') return UI[lang][level].short;
-  return lang === 'ru' ? 'Все' : 'Mixed';
-};
+const levelLabel = (level: LevelScope, t: UICopy, c: SessionCopy): string =>
+  (level === 'all' ? c.levelMixed : t[level].short);
 
-const timerOptions = (lang: Lang): Array<{ seconds: number; label: string }> => [
-  { seconds: 0, label: lang === 'ru' ? 'Без таймера' : 'No timer' },
-  { seconds: 180, label: lang === 'ru' ? '3 мин' : '3 min' },
-  { seconds: 300, label: lang === 'ru' ? '5 мин' : '5 min' },
+const timerOptions = (c: SessionCopy): Array<{ seconds: number; label: string }> => [
+  { seconds: 0, label: c.noTimer },
+  { seconds: 180, label: c.minutes(3) },
+  { seconds: 300, label: c.minutes(5) },
 ];
 
-/** Interview wording — you are grading a performance, not scheduling a card. */
-const grades = (lang: Lang): SelfGradeOption[] => [
-  { rating: 'again', label: lang === 'ru' ? 'Провалил' : 'Bombed' },
-  { rating: 'hard', label: lang === 'ru' ? 'С трудом' : 'Rough' },
-  { rating: 'good', label: lang === 'ru' ? 'Уверенно' : 'Solid' },
-  { rating: 'easy', label: lang === 'ru' ? 'Идеально' : 'Nailed' },
+/** One scale everywhere: the same four words the session and the follow-ups use. */
+const grades = (c: SessionCopy): SelfGradeOption[] => [
+  { rating: 'again', label: c.grades.again },
+  { rating: 'hard', label: c.grades.hard },
+  { rating: 'good', label: c.grades.good },
+  { rating: 'easy', label: c.grades.easy },
 ];
 
-const OUTCOME_TONE = {
-  easy: 'mint',
-  good: 'mint',
-  hard: 'amber',
-  again: 'coral',
-  skipped: 'neutral',
-} as const;
-
-const outcomeLabel = (outcome: Outcome, lang: Lang): string => ({
-  again: lang === 'ru' ? 'провалил' : 'bombed',
-  hard: lang === 'ru' ? 'с трудом' : 'rough',
-  good: lang === 'ru' ? 'уверенно' : 'solid',
-  easy: lang === 'ru' ? 'идеально' : 'nailed',
-  skipped: lang === 'ru' ? 'пропуск' : 'skipped',
-}[outcome]);
+const outcomeLabel = (outcome: Outcome, c: SessionCopy): string =>
+  (outcome === 'skipped' ? c.skippedShort : c.grades[outcome]);
 
 const shuffle = <T,>(items: T[]): T[] => {
   const out = [...items];
@@ -101,8 +91,8 @@ export default function MockPage() {
   const initialIds = searchParams.get('ids');
 
   const { lang } = useLang();
-  const ru = lang === 'ru';
   const t = useT(lang);
+  const c = useSessionCopy(lang);
   const { questionText, answerText } = useContent(lang);
   const { data: allQuestions = NO_QUESTIONS, isLoading } = useQuestions();
   const { data: allTopics = NO_TOPICS } = useTopics();
@@ -114,7 +104,7 @@ export default function MockPage() {
   const [config, setConfig] = useState<MockConfig>({
     level: isLevelScope(initialLevel) ? initialLevel : 'all',
     count: 10,
-    timer: 0,
+    timer: DEFAULT_TIMER,
     topic: searchParams.get('topic'),
     ids: initialIds ? initialIds.split(',').map(Number).filter(Boolean) : null,
   });
@@ -169,7 +159,7 @@ export default function MockPage() {
     onAdvance: () => setQuestionStartedAt(Date.now()),
     onExit: () => {
       if (!started) navigate(-1);
-      else if (window.confirm(ru ? 'Закончить сессию?' : 'End the session?')) navigate('/');
+      else if (window.confirm(c.endConfirm)) navigate('/');
     },
   });
   const { current, revealed, draft, draftRef } = session;
@@ -205,10 +195,10 @@ export default function MockPage() {
         config={config}
         onChange={setConfig}
         onStart={start}
-        onCancel={() => navigate(-1)}
         available={available.length}
-        lang={lang}
-        showPlatformFilter={!config.ids?.length}
+        t={t}
+        c={c}
+        showStack={!config.ids?.length}
       />
     );
   }
@@ -221,8 +211,8 @@ export default function MockPage() {
         outcomes={session.outcomes}
         counts={counts}
         startedAt={sessionStartedAt}
-        lang={lang}
         t={t}
+        c={c}
         questionText={questionText}
         answerText={answerText}
         onAgain={start}
@@ -243,15 +233,15 @@ export default function MockPage() {
             both for this route. */}
         <header className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
-            {ru ? 'Mock-собеседование' : 'Mock interview'}
+            {t.nav.timed}
           </h1>
           <span className="num text-[13px] text-muted">
             {session.index + 1}/{queue.length}
           </span>
           <div className="ml-auto flex items-center gap-4">
-            <Clock label={ru ? 'Всего' : 'Total'} seconds={Math.floor((now - sessionStartedAt) / 1000)} />
+            <Clock label={c.clockTotal} seconds={Math.floor((now - sessionStartedAt) / 1000)} />
             {timeLeft !== null && (
-              <Clock label={ru ? 'Осталось' : 'Left'} seconds={timeLeft} urgent={timeLeft < 30} />
+              <Clock label={c.clockLeft} seconds={timeLeft} urgent={timeLeft < 30} />
             )}
             <Button
               variant="ghost"
@@ -260,7 +250,7 @@ export default function MockPage() {
               onClick={() => navigate('/')}
             >
               <X className="h-4 w-4" aria-hidden />
-              <span className="sr-only">{ru ? 'Закрыть' : 'Close'}</span>
+              <span className="sr-only">{c.close}</span>
             </Button>
           </div>
         </header>
@@ -271,7 +261,7 @@ export default function MockPage() {
           size="xs"
           tone="ink"
           className="mb-9"
-          label={ru ? 'Прогресс сессии' : 'Session progress'}
+          label={c.sessionProgress}
         />
 
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -289,7 +279,7 @@ export default function MockPage() {
         {!revealed && (
           <div className="mt-8">
             <label htmlFor="attempt" className="eyebrow mb-2 block">
-              {ru ? 'Отвечай так, как сказал бы вслух' : 'Answer the way you would say it out loud'}
+              {c.answerPrompt}
             </label>
             <textarea
               id="attempt"
@@ -306,17 +296,14 @@ export default function MockPage() {
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="sm" />
-                <span className="num text-[11px] text-muted-2">
-                  {draft.length}
-                  {ru ? ' знаков' : ' chars'}
-                </span>
+                <span className="num text-[11px] text-muted-2">{c.chars(draft.length)}</span>
               </div>
               <div className="flex gap-2">
                 <Button variant="ghost" size="md" onClick={session.skip}>
-                  {ru ? 'Пропустить' : 'Skip'}
+                  {c.skip}
                 </Button>
                 <Button variant="brand" size="md" onClick={session.reveal}>
-                  {ru ? 'Показать ответ' : 'Show answer'}
+                  {c.showAnswer}
                 </Button>
               </div>
             </div>
@@ -326,7 +313,7 @@ export default function MockPage() {
         {revealed && (
           <div className="mt-8">
             {/* Feedback first, then the side-by-side, then the self-grade —
-                the same order the round uses, so the muscle memory carries. */}
+                the same order the follow-ups use, so the muscle memory carries. */}
             <AnswerGrader
               key={current.id}
               questionId={current.id}
@@ -334,16 +321,11 @@ export default function MockPage() {
               lang={lang}
             />
 
-            <Compare
-              draft={draft}
-              question={current}
-              answerText={answerText}
-              lang={lang}
-            />
+            <Compare draft={draft} question={current} answerText={answerText} c={c} />
 
             <div className="mt-10 border-t border-rule/12 pt-5">
-              <p className="eyebrow mb-2">{ru ? 'Как прошло?' : 'How did that go?'}</p>
-              <SelfGrade options={grades(lang)} onGrade={session.grade} />
+              <p className="eyebrow mb-2">{c.howDidThatGo}</p>
+              <SelfGrade options={grades(c)} onGrade={session.grade} />
             </div>
           </div>
         )}
@@ -367,25 +349,24 @@ interface CompareProps {
   draft: string;
   question: Question;
   answerText: (question: Question) => string;
-  lang: Lang;
+  c: SessionCopy;
 }
 
 /** The user's attempt beside the reference. Mobile puts the reference first —
     that is what you want to see the second you stop writing. */
-function Compare({ draft, question, answerText, lang }: CompareProps) {
-  const ru = lang === 'ru';
+function Compare({ draft, question, answerText, c }: CompareProps) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
       <section className="order-2 lg:order-1">
-        <div className="eyebrow mb-2">{ru ? 'Ты написал' : 'What you wrote'}</div>
+        <div className="eyebrow mb-2">{c.whatYouWrote}</div>
         {draft.trim() ? (
           <p className="answer-text">{draft}</p>
         ) : (
-          <p className="text-sm italic text-muted-2">{ru ? 'Ничего' : 'Nothing written'}</p>
+          <p className="text-sm italic text-muted-2">{c.nothingWritten}</p>
         )}
       </section>
       <section className="order-1 lg:order-2 lg:border-l lg:border-rule/12 lg:pl-10">
-        <div className="eyebrow mb-2">{ru ? 'Эталон' : 'Reference'}</div>
+        <div className="eyebrow mb-2">{c.reference}</div>
         <AnswerText text={answerText(question)} />
         {question.code_example && (
           <div className="mt-4">
@@ -403,60 +384,106 @@ interface SetupProps {
   config: MockConfig;
   onChange: (config: MockConfig) => void;
   onStart: () => void;
-  onCancel: () => void;
   available: number;
-  lang: Lang;
-  showPlatformFilter: boolean;
+  t: UICopy;
+  c: SessionCopy;
+  showStack: boolean;
 }
 
-function Setup({
-  config, onChange, onStart, onCancel, available, lang, showPlatformFilter,
-}: SetupProps) {
-  const ru = lang === 'ru';
+/**
+ * One sentence, one button. The four knobs are all readable in the sentence
+ * itself; Options exists for the person who wants to see them as a list.
+ */
+function Setup({ config, onChange, onStart, available, t, c, showStack }: SetupProps) {
   const update = (patch: Partial<MockConfig>) => onChange({ ...config, ...patch });
   const empty = available === 0;
 
+  const slots: Record<string, ReactNode> = {
+    count: (
+      <InlineSelect
+        label={c.optionCount}
+        value={String(config.count)}
+        onChange={(value) => update({ count: Number(value) })}
+        options={COUNT_OPTIONS.map((count) => ({ value: String(count), label: String(count) }))}
+      />
+    ),
+    level: (
+      <InlineSelect
+        label={c.optionLevel}
+        value={config.level}
+        onChange={(value) => isLevelScope(value) && update({ level: value })}
+        options={LEVEL_OPTIONS.map((level) => ({ value: level, label: levelLabel(level, t, c) }))}
+      />
+    ),
+    timer: (
+      <InlineSelect
+        label={c.optionTimer}
+        value={String(config.timer)}
+        onChange={(value) => update({ timer: Number(value) })}
+        options={timerOptions(c).map((o) => ({ value: String(o.seconds), label: o.label }))}
+      />
+    ),
+  };
+
   return (
-    <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
-        <h1 className="font-display text-display-xs font-semibold text-ink">
-          {ru ? 'Mock-собеседование' : 'Mock interview'}
-        </h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-2">
-          {ru
-            ? 'Случайный набор вопросов, таймер по желанию и честная самооценка. Чем чаще проходишь, тем спокойнее на настоящем собеседовании.'
-            : 'A random set, an optional timer, an honest self-grade. The more of these you run, the calmer the real one gets.'}
+    <PageShell width="reading">
+      <PageHeader title={t.nav.timed} subtitle={c.setupIntro} />
+
+      {/* Each clause holds together on its own line; the separator is glued to
+          the clause before it with a non-breaking space, so a wrap never
+          starts a line with a stray dot. */}
+      <p className="font-display text-[20px] leading-[2] text-ink sm:text-[22px]">
+        {c.setupSentence.map((segment, i) => (
+          <span key={segment.slot}>
+            {i > 0 && <span className="text-muted-2">{' · '}</span>}
+            <span className="whitespace-nowrap">
+              {segment.before}
+              {slots[segment.slot]}
+              {segment.after}
+            </span>
+          </span>
+        ))}
+      </p>
+
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button variant="brand" size="lg" disabled={empty} onClick={onStart}>
+          {c.start}
+        </Button>
+        <p className={cn('text-[13px]', empty ? 'text-coral' : 'text-muted')}>
+          {empty ? c.noneMatch : c.availableOf(Math.min(config.count, available), available)}
         </p>
+      </div>
 
-        <div className="mt-10 space-y-8">
-          {showPlatformFilter && (
-            <Field label={ru ? 'Стек' : 'Stack'}>
-              <PlatformFilter hideLabel />
-            </Field>
-          )}
+      <details className="group mt-10 border-t border-rule/12 pt-5">
+        <summary className="eyebrow inline-flex cursor-pointer list-none items-center gap-1.5 hover:text-ink">
+          <ChevronDown
+            className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+            aria-hidden
+          />
+          {c.optionsToggle}
+        </summary>
 
-          <Field label={ru ? 'Уровень' : 'Level'}>
+        <div className="mt-6 space-y-7">
+          {showStack && <StackChips label={c.optionStack} t={t} />}
+
+          <ChipGroup label={c.optionLevel} ariaLabel={c.optionLevel}>
             {LEVEL_OPTIONS.map((level) => (
-              <Chip
-                key={level}
-                active={config.level === level}
-                onClick={() => update({ level })}
-              >
-                {levelLabel(level, lang)}
+              <Chip key={level} active={config.level === level} onClick={() => update({ level })}>
+                {levelLabel(level, t, c)}
               </Chip>
             ))}
-          </Field>
+          </ChipGroup>
 
-          <Field label={ru ? 'Сколько вопросов' : 'How many questions'}>
+          <ChipGroup label={c.optionCount} ariaLabel={c.optionCount}>
             {COUNT_OPTIONS.map((count) => (
               <Chip key={count} active={config.count === count} onClick={() => update({ count })}>
                 {count}
               </Chip>
             ))}
-          </Field>
+          </ChipGroup>
 
-          <Field label={ru ? 'Таймер на вопрос' : 'Timer per question'}>
-            {timerOptions(lang).map((option) => (
+          <ChipGroup label={c.optionTimer} ariaLabel={c.optionTimer}>
+            {timerOptions(c).map((option) => (
               <Chip
                 key={option.seconds}
                 active={config.timer === option.seconds}
@@ -465,68 +492,71 @@ function Setup({
                 {option.label}
               </Chip>
             ))}
-          </Field>
+          </ChipGroup>
         </div>
-
-        <div className="mt-10 flex flex-col gap-3 border-t border-rule/12 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className={cn('text-[13px]', empty ? 'text-coral' : 'text-muted')}>
-            {empty
-              ? (ru
-                  ? 'Под эти фильтры вопросов нет. Смягчи их.'
-                  : 'No questions match these filters. Loosen one.')
-              : (ru
-                  ? `${Math.min(config.count, available)} из ${available} доступных`
-                  : `${Math.min(config.count, available)} of ${available} available`)}
-          </p>
-          {/* On a phone the pair fills the row so Start is a thumb-sized target. */}
-          <div className="flex gap-2">
-            <Button variant="ghost" className="flex-1 sm:flex-none" onClick={onCancel}>
-              {ru ? 'Отмена' : 'Cancel'}
-            </Button>
-            <Button variant="brand" className="flex-[2] sm:flex-none" disabled={empty} onClick={onStart}>
-              {ru ? 'Начать' : 'Start'}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </details>
+    </PageShell>
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+/** The global stack, wearing the same chip as the other three options. */
+function StackChips({ label, t }: { label: string; t: UICopy }) {
+  const platform = usePrefs((s) => s.platform);
+  const setPlatform = usePrefs((s) => s.setPlatform);
+
   return (
-    <div>
-      <div className="eyebrow mb-2.5">{label}</div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
+    <ChipGroup label={label} ariaLabel={label}>
+      {PLATFORMS.map((p) => (
+        <Chip
+          key={p.key}
+          active={platform === p.key}
+          onClick={() => {
+            // Re-picking the active stack is a no-op, so it sends nothing.
+            if (p.key !== platform) track('stack_selected', { stack: p.key, source: 'filter' });
+            setPlatform(p.key);
+          }}
+        >
+          {t[p.labelKey as keyof UICopy] as string}
+        </Chip>
+      ))}
+    </ChipGroup>
   );
 }
 
-interface ChipProps {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
+interface InlineSelectProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
 }
 
-function Chip({ active, onClick, children }: ChipProps) {
+/** A word in the sentence that happens to be a control. */
+function InlineSelect({ label, value, onChange, options }: InlineSelectProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'inline-flex min-h-[40px] items-center rounded-lg border px-4 text-[14px] transition-colors duration-150',
-        active
-          ? 'border-ink bg-ink text-paper'
-          : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
-      )}
-    >
-      {children}
-    </button>
+    <span className="relative inline-flex items-center">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cursor-pointer appearance-none rounded-md bg-rule/8 py-1 pl-2.5 pr-7 font-display text-[inherit] font-semibold text-ink outline-none transition-colors hover:bg-rule/14"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted" aria-hidden />
+    </span>
   );
 }
 
 /* ── Recap ──────────────────────────────────────────────────────────────── */
+
+const RECAP_ROWS = [
+  { key: 'again', ink: 'text-coral' },
+  { key: 'hard', ink: 'text-[rgb(var(--amber))]' },
+  { key: 'good', ink: 'text-mint' },
+  { key: 'easy', ink: 'text-mint' },
+] as const;
 
 interface RecapProps {
   queue: Question[];
@@ -534,8 +564,8 @@ interface RecapProps {
   outcomes: Readonly<Record<number, Outcome>>;
   counts: OutcomeCounts;
   startedAt: number;
-  lang: Lang;
   t: UICopy;
+  c: SessionCopy;
   questionText: (question: Question) => string;
   answerText: (question: Question) => string;
   onAgain: () => void;
@@ -543,48 +573,32 @@ interface RecapProps {
 }
 
 function Recap({
-  queue, drafts, outcomes, counts, startedAt, lang, t, questionText, answerText, onAgain, onHome,
+  queue, drafts, outcomes, counts, startedAt, t, c, questionText, answerText, onAgain, onHome,
 }: RecapProps) {
-  const ru = lang === 'ru';
   // Frozen at mount: a recap that ticks upward while you read it is noise.
   const [totalSec] = useState(() => Math.floor((Date.now() - startedAt) / 1000));
-  const scorePct = Math.round(((counts.good + counts.easy * 1.5) / queue.length / 1.5) * 100);
-
-  const buckets = [
-    { key: 'easy', label: ru ? 'Идеально' : 'Nailed', ink: 'text-mint' },
-    { key: 'good', label: ru ? 'Уверенно' : 'Solid', ink: 'text-mint' },
-    { key: 'hard', label: ru ? 'С трудом' : 'Rough', ink: 'text-[rgb(var(--amber))]' },
-    { key: 'again', label: ru ? 'Провалил' : 'Bombed', ink: 'text-coral' },
-    { key: 'skipped', label: ru ? 'Пропущено' : 'Skipped', ink: 'text-muted' },
-  ] as const;
+  const meta = [
+    c.questionsCount(queue.length),
+    clock(totalSec),
+    ...(counts.skipped > 0 ? [c.skippedCount(counts.skipped)] : []),
+  ].join(' · ');
 
   return (
     <div className="bg-page min-h-full">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        <header className="border-b border-rule/12 pb-7">
-          <div className="eyebrow">{ru ? 'Mock-собеседование · итоги' : 'Mock interview · recap'}</div>
-          <h1 className="mt-3 font-display text-display-xs font-semibold text-ink sm:text-display-sm">
-            {scorePct >= 80
-              ? (ru ? 'Сильно.' : 'Strong.')
-              : scorePct >= 50
-              ? (ru ? 'Хорошая база.' : 'Solid base.')
-              : (ru ? 'Есть что подтянуть.' : 'Room to grow.')}
-          </h1>
-          <p className="num mt-2 text-[13px] font-normal text-muted">
-            {queue.length} {ru ? 'вопросов' : 'questions'} · {clock(totalSec)} · {scorePct}%
-          </p>
-        </header>
+        <h1 className="font-display text-3xl font-semibold text-ink">{c.recapTitle}</h1>
+        <p className="num mt-2 text-sm text-muted">{meta}</p>
 
-        <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-rule/12 bg-rule/10 sm:grid-cols-5">
-          {buckets.map((bucket) => (
-            <div key={bucket.key} className="flex flex-col gap-1 bg-paper-2 px-4 py-5">
-              <dd className={cn('num text-3xl', bucket.ink)}>{counts[bucket.key]}</dd>
-              <dt className="text-[12px] text-muted">{bucket.label}</dt>
+        <dl className="mt-7 grid max-w-2xl grid-cols-4 gap-px overflow-hidden rounded-lg border border-rule/12 bg-rule/10">
+          {RECAP_ROWS.map((row) => (
+            <div key={row.key} className="flex flex-col gap-1 bg-paper-2 px-2 py-4 text-center">
+              <dd className={cn('num text-2xl', row.ink)}>{counts[row.key]}</dd>
+              <dt className="text-[12px] text-muted">{c.grades[row.key]}</dt>
             </div>
           ))}
         </dl>
 
-        <div className="eyebrow mb-3 mt-10">{ru ? 'По вопросам' : 'Question by question'}</div>
+        <div className="eyebrow mb-3 mt-10">{c.questionByQuestion}</div>
         <div className="divide-y divide-rule/12 border-y border-rule/12">
           {queue.map((question, i) => (
             <details key={question.id} className="group py-3">
@@ -593,9 +607,9 @@ function Recap({
                 <span className="flex-1 truncate text-sm text-ink-2">
                   {questionText(question)}
                 </span>
-                <Pill tone={OUTCOME_TONE[outcomes[question.id]]} size="xs">
-                  {outcomeLabel(outcomes[question.id], lang)}
-                </Pill>
+                <span className="shrink-0 text-[13px] text-muted">
+                  {outcomeLabel(outcomes[question.id], c)}
+                </span>
                 <ChevronRight
                   className="h-3.5 w-3.5 shrink-0 text-muted transition-transform group-open:rotate-90"
                   aria-hidden
@@ -603,16 +617,16 @@ function Recap({
               </summary>
               <div className="mt-4 grid grid-cols-1 gap-6 pl-9 lg:grid-cols-2">
                 <div>
-                  <div className="eyebrow mb-1.5">{ru ? 'Ты написал' : 'What you wrote'}</div>
+                  <div className="eyebrow mb-1.5">{c.whatYouWrote}</div>
                   {drafts[question.id]?.trim() ? (
                     <p className="answer-text">{drafts[question.id]}</p>
                   ) : (
-                    <p className="text-sm italic text-muted-2">{ru ? 'Ничего' : 'Nothing written'}</p>
+                    <p className="text-sm italic text-muted-2">{c.nothingWritten}</p>
                   )}
                 </div>
                 <div>
                   <div className="eyebrow mb-1.5">
-                    {ru ? 'Эталон' : 'Reference'}
+                    {c.reference}
                     {' · '}
                     {{ easy: t.easy, medium: t.medium, hard: t.hard }[question.difficulty]}
                   </div>
@@ -633,11 +647,11 @@ function Recap({
 
         <div className="mt-10 flex flex-col gap-2 sm:flex-row">
           <Button variant="brand" className="flex-1" onClick={onAgain}>
-            {ru ? 'Ещё подход' : 'Run it again'}
+            {c.again}
           </Button>
           <Button variant="outline" className="flex-1" onClick={onHome}>
             <ArrowRight className="h-4 w-4" aria-hidden />
-            {ru ? 'На главную' : 'Dashboard'}
+            {c.dashboard}
           </Button>
         </div>
       </div>
