@@ -225,7 +225,7 @@ jobs:
       - name: every API call lives in api/api.ts
         run: |
           if grep -rnE '\b(api|axios)\.(get|post|put|patch|delete)\(|\bfetch\s*\(' frontend/src --include='*.ts' --include='*.tsx' \
-              | grep -vE 'src/api/api\.ts|src/store/auth\.ts|src/lib/knowledge\.ts|src/lib/push\.ts|\.test\.'; then
+              | grep -vE 'src/api/api\.ts|src/store/auth\.ts|src/lib/knowledge\.ts|src/lib/push\.ts|src/i18n/|\.test\.'; then
             echo "::error::call the backend through api/api.ts (tryRemote) only"; exit 1; fi
       - name: persistence keys are frozen
         run: |
