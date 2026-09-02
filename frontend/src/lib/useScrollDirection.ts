@@ -7,6 +7,14 @@ interface UseScrollDirectionOptions {
   topGuard?: number;
 }
 
+/**
+ * A single scroll event never moves this far by hand — even an iOS flick
+ * lands well under it per frame. A jump this size is a programmatic scroll
+ * (Back restoring a page's offset) and says nothing about which way the
+ * user is going, so it must not hide the header.
+ */
+const JUMP = 400;
+
 interface UseScrollDirectionResult {
   direction: ScrollDirection;
   atTop: boolean;
@@ -44,7 +52,7 @@ export function useScrollDirection(
       const delta = y - last;
       const passedTop = y > topGuard;
       if (Math.abs(delta) >= threshold) {
-        setDirection(delta > 0 ? 'down' : 'up');
+        if (Math.abs(delta) < JUMP) setDirection(delta > 0 ? 'down' : 'up');
         last = y;
       }
       setAtTop(!passedTop);

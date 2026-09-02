@@ -380,7 +380,7 @@ export default function Sidebar() {
             to="/pricing"
             onClick={close}
             className={({ isActive }) =>
-              cn('transition-colors hover:text-ink', isActive && 'text-ink')
+              cn('inline-flex min-h-[32px] items-center transition-colors hover:text-ink', isActive && 'text-ink')
             }
           >
             {lang === 'ru' ? 'Цены' : 'Pricing'}
@@ -389,7 +389,7 @@ export default function Sidebar() {
             to="/contact"
             onClick={close}
             className={({ isActive }) =>
-              cn('transition-colors hover:text-ink', isActive && 'text-ink')
+              cn('inline-flex min-h-[32px] items-center transition-colors hover:text-ink', isActive && 'text-ink')
             }
           >
             {lang === 'ru' ? 'Контакты' : 'Contact'}

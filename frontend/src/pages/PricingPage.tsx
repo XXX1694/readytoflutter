@@ -182,7 +182,7 @@ export default function PricingPage() {
       <div className="mx-auto max-w-3xl">
         <Link
           to="/"
-          className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
+          className="mb-8 hidden items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink lg:inline-flex"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           {T.back}

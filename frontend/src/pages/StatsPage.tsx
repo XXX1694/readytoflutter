@@ -171,7 +171,7 @@ export default function StatsPage() {
           variant="ghost"
           size="sm"
           onClick={() => navigate('/')}
-          className="-ml-2 mb-5 text-muted hover:text-ink"
+          className="-ml-2 mb-5 hidden text-muted hover:text-ink lg:inline-flex"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           {t.backToDashboard}

@@ -50,7 +50,7 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           to="/"
-          className="mb-6 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
+          className="mb-6 hidden items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink lg:inline-flex"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           {T.back}

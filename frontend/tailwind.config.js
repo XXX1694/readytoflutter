@@ -2,6 +2,10 @@
 export default {
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   darkMode: 'class',
+  // `hover:` utilities compile to `@media (hover: hover)`. Without this a tap
+  // on a phone leaves the hover tint stuck on the card or chip until the
+  // next tap somewhere else.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {

@@ -286,7 +286,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                         disabled={update.isPending}
                         aria-pressed={active}
                         className={cn(
-                          'rounded-sm px-2.5 py-1 text-[12px] font-medium transition-colors',
+                          'min-h-[36px] rounded-sm px-2.5 py-1 text-[12px] font-medium transition-colors sm:min-h-0',
                           active
                             ? key === 'completed'
                               ? 'bg-mint text-paper'

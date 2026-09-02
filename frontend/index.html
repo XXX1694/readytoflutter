@@ -2,11 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- `maximum-scale=1, user-scalable=no` blocks the iOS Safari zoom-on-input-focus
-         behaviour that otherwise zooms the entire viewport when a text field
-         is focused. Pair with the 16px+ font-size rule in index.css so the
-         input itself never falls under the auto-zoom threshold. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Pinch-zoom stays enabled (WCAG 1.4.4). The iOS zoom-on-input-focus is
+         handled by the 16px+ font-size rule for form controls in index.css,
+         so the scale no longer has to be locked to prevent it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Favicons — SVG for modern browsers, PNG fallbacks for older ones. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

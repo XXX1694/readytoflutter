@@ -1,15 +1,10 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
-import {
-  motion,
-  AnimatePresence,
-  type Transition,
-  type TargetAndTransition,
-} from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useIsMobile } from '../lib/useMediaQuery';
 
 /**
- * Smooth route transitions + scroll restoration.
+ * Smooth route transitions + scroll handling.
  *
  * Three navigation tiers, each with a different animation:
  *
@@ -23,8 +18,9 @@ import { useIsMobile } from '../lib/useMediaQuery';
  *
  * Desktop keeps a single subtle fade for everything.
  *
- * Honours `prefers-reduced-motion` — collapses to a 0ms swap. Scroll is
- * reset to top on every path change.
+ * Scroll: a new page starts at the top; a page reached with Back (or
+ * Forward) comes back at the offset it was left at, the way a native stack
+ * does. Honours `prefers-reduced-motion` — collapses to a 0ms swap.
  */
 
 // Roots that the bottom nav can land on. Switching between any two of
@@ -33,6 +29,56 @@ const TAB_ROOTS = ['/', '/study', '/bookmarks', '/knowledge', '/settings', '/log
 
 const isTabRoot = (path: string): boolean => TAB_ROOTS.includes(path);
 
+type NavKind = 'same' | 'tab' | 'push' | 'pop';
+
+/**
+ * Scroll offset of every history entry the user has scrolled, keyed by the
+ * entry's key. Module scope so it outlives this component; bounded by the
+ * number of entries visited this session.
+ */
+const scrollMemory = new Map<string, number>();
+
+/** Frames to wait for a restored page to grow tall enough for its old offset.
+ *  Cached data paints in one or two; a fresh lazy chunk needs a few more. */
+const RESTORE_FRAMES = 30;
+
+const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const EASE_IOS: [number, number, number, number] = [0.32, 0.72, 0, 1];
+const SLIDE = { duration: 0.22, ease: EASE_IOS };
+const FADE = { duration: 0.12, ease: 'easeOut' as const };
+
+// The page variants take the navigation kind as `custom`. AnimatePresence
+// forwards its own `custom` to the *exiting* child, so the page on its way
+// out moves with the navigation that removed it — a page popped by Back
+// slides right, the same page pushed away slides left — instead of replaying
+// whichever direction it happened to arrive by.
+const DESKTOP: Variants = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.18, ease: EASE_OUT } },
+  // `wait` holds the new page back until this finishes, so the exit is kept
+  // to a blink — every millisecond here is felt as latency on a click.
+  exit: { opacity: 0, y: -4, transition: { duration: 0.08, ease: 'easeIn' } },
+};
+
+// Mobile push/pop get a *light* slide (16% offset, not 100%) so the GPU only
+// repaints a strip, not the whole screen, and the motion finishes before
+// lazy chunks would otherwise feel sluggish.
+const MOBILE: Variants = {
+  initial: (kind: NavKind) =>
+    kind === 'pop' ? { x: '-16%', opacity: 0.4 }
+      : kind === 'push' ? { x: '16%', opacity: 0.4 }
+        : { opacity: 0 },
+  animate: (kind: NavKind) => ({
+    x: 0,
+    opacity: 1,
+    transition: kind === 'tab' ? FADE : SLIDE,
+  }),
+  exit: (kind: NavKind) =>
+    kind === 'pop' ? { x: '16%', opacity: 0.4, transition: SLIDE }
+      : kind === 'push' ? { x: '-16%', opacity: 0.4, transition: SLIDE }
+        : { opacity: 0, transition: FADE },
+};
+
 export interface RouteTransitionProps {
   children: ReactNode;
 }
@@ -40,104 +86,104 @@ export interface RouteTransitionProps {
 export default function RouteTransition({ children }: RouteTransitionProps) {
   const location = useLocation();
   const navType = useNavigationType(); // 'PUSH' | 'POP' | 'REPLACE'
-  const lastPath = useRef(location.pathname);
   const isMobile = useIsMobile();
   const reduce = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Classify the navigation that *led to* this render. We compare the path
-  // we're rendering now against the path that was rendered last time.
-  const navKind = useMemo(() => {
-    const from = lastPath.current;
-    const to = location.pathname;
-    if (from === to) return 'same';
-    if (isTabRoot(from) && isTabRoot(to)) return 'tab';
-    if (navType === 'POP') return 'pop';
-    return 'push';
-    // navType is implicitly captured per render; the ref read is intentional
-    // — we *want* the previous path.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  // The page being rendered and the one before it. Adjusting state during
+  // render (React's own "derive from a prop" pattern) means the render that
+  // switches pages already knows where it came from, without a render-phase
+  // ref read. Only the pathname counts: a search-param change is the same page.
+  const [trail, setTrail] = useState<{ from: string | null; to: string }>({
+    from: null,
+    to: location.pathname,
+  });
+  if (trail.to !== location.pathname) {
+    setTrail({ from: trail.to, to: location.pathname });
+  }
 
+  let navKind: NavKind = 'same';
+  if (trail.from !== null && trail.from !== trail.to) {
+    if (isTabRoot(trail.from) && isTabRoot(trail.to)) navKind = 'tab';
+    else if (navType === 'POP') navKind = 'pop';
+    else navKind = 'push';
+  }
+
+  // Where the current entry is scrolled to, recorded as it happens. Reading it
+  // after the switch is too late on mobile, where the outgoing page is already
+  // out of flow and the scroller has been clamped to the incoming one.
+  const entryKey = useRef(location.key);
   useEffect(() => {
-    const pathChanged = lastPath.current !== location.pathname;
+    entryKey.current = location.key;
+  }, [location.key]);
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+    const onScroll = () => { scrollMemory.set(entryKey.current, main.scrollTop); };
+    main.addEventListener('scroll', onScroll, { passive: true });
+    return () => main.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // On a page change: a fresh page starts at the top; an entry reached with
+  // Back/Forward returns to where it was left. The incoming page is found by
+  // its data-route marker, because with `mode="wait"` on desktop it mounts
+  // only after the outgoing one has finished leaving. Layout effect so the
+  // mobile case (mounted synchronously) never paints a frame at the wrong
+  // offset.
+  const lastPath = useRef(location.pathname);
+  useLayoutEffect(() => {
+    if (lastPath.current === location.pathname) return;
     lastPath.current = location.pathname;
-    if (!pathChanged) return;
-    requestAnimationFrame(() => {
-      const main = document.querySelector('main');
-      if (main && typeof main.scrollTo === 'function') main.scrollTo({ top: 0, behavior: 'instant' });
-      else window.scrollTo({ top: 0, behavior: 'instant' });
+    const main = document.querySelector('main');
+    if (!main) return;
+
+    const remembered = navType === 'POP' ? scrollMemory.get(location.key) : undefined;
+    if (remembered === undefined) main.scrollTo({ top: 0, behavior: 'instant' });
+
+    let frame = 0;
+    let attempts = 0;
+    const settle = () => {
+      const mounted = main.querySelector(`[data-route="${CSS.escape(location.pathname)}"]`) !== null;
+      const tall = remembered === undefined || main.scrollHeight - main.clientHeight >= remembered;
+      if (!(mounted && tall) && attempts < RESTORE_FRAMES) {
+        attempts += 1;
+        frame = requestAnimationFrame(settle);
+        return;
+      }
+      if (remembered !== undefined) main.scrollTo({ top: remembered, behavior: 'instant' });
       // The element that was clicked has usually just unmounted, which drops
       // focus to <body> — from there a screen reader reads nothing and Tab
       // starts over from the top of the chrome. Park focus on <main> instead
       // (it carries tabIndex=-1) unless the new page already focused a field.
       const active = document.activeElement;
-      if (main && (!active || active === document.body)) {
-        main.focus({ preventScroll: true });
-      }
-    });
-  }, [location.pathname]);
+      if (!active || active === document.body) main.focus({ preventScroll: true });
+    };
+    settle();
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname, location.key, navType]);
 
-  if (reduce) return <>{children}</>;
-
-  // Pick variants by tier. Mobile push/pop get a *light* slide (16% offset,
-  // not 100%) so the GPU only repaints a strip, not the whole screen, and
-  // the motion finishes before lazy chunks would otherwise feel sluggish.
-  // Annotated so the cubic-bezier stays a 4-tuple rather than widening to
-  // number[], and so `mode` keeps AnimatePresence's union.
-  let variants: { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition };
-  let transition: Transition;
-  let mode: 'wait' | 'popLayout' | 'sync';
-
-  if (!isMobile) {
-    variants = {
-      initial: { opacity: 0, y: 6 },
-      animate: { opacity: 1, y: 0 },
-      // `wait` holds the new page back until the old one has gone, so the
-      // exit is kept to a blink — every millisecond here is felt as latency
-      // on a click. The enter is where the motion reads.
-      exit:    { opacity: 0, y: -4, transition: { duration: 0.08, ease: 'easeIn' } },
-    };
-    transition = { duration: 0.18, ease: [0.22, 1, 0.36, 1] };
-    mode = 'wait';
-  } else if (navKind === 'tab') {
-    // Tab swap — instant fade, no slide, no waiting for the previous page
-    // to exit. This is the path that fires on every BottomNav tap.
-    variants = {
-      initial: { opacity: 0 },
-      animate: { opacity: 1 },
-      exit:    { opacity: 0 },
-    };
-    transition = { duration: 0.12, ease: 'easeOut' };
-    mode = 'popLayout';
-  } else if (navKind === 'pop') {
-    // Back — new (older) page from the left.
-    variants = {
-      initial: { x: '-16%', opacity: 0.4 },
-      animate: { x: 0, opacity: 1 },
-      exit:    { x: '16%', opacity: 0.4 },
-    };
-    transition = { duration: 0.22, ease: [0.32, 0.72, 0, 1] };
-    mode = 'popLayout';
-  } else {
-    // Forward push — new page from the right.
-    variants = {
-      initial: { x: '16%', opacity: 0.4 },
-      animate: { x: 0, opacity: 1 },
-      exit:    { x: '-16%', opacity: 0.4 },
-    };
-    transition = { duration: 0.22, ease: [0.32, 0.72, 0, 1] };
-    mode = 'popLayout';
+  if (reduce) {
+    return (
+      <div data-route={location.pathname} className="h-full">
+        {children}
+      </div>
+    );
   }
 
+  // Tab swaps and slides run on `popLayout` so the incoming page never waits
+  // for the outgoing one — that is the path every BottomNav tap takes.
+  const mode = isMobile ? 'popLayout' : 'wait';
+
   return (
-    <AnimatePresence mode={mode} initial={false}>
+    <AnimatePresence mode={mode} initial={false} custom={navKind}>
       <motion.div
         key={location.pathname}
-        initial={variants.initial}
-        animate={variants.animate}
-        exit={variants.exit}
-        transition={transition}
+        data-route={location.pathname}
+        custom={navKind}
+        variants={isMobile ? MOBILE : DESKTOP}
+        initial="initial"
+        animate="animate"
+        exit="exit"
         className="h-full"
         // GPU hint — tells the browser to allocate a layer so the transform
         // animation runs on the compositor, not the main thread.

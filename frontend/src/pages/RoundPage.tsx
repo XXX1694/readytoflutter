@@ -291,7 +291,7 @@ function FollowUps({ lang }: { lang: Lang }) {
             aria-pressed={prompt.key === openKey}
             onClick={() => setOpenKey(prompt.key === openKey ? null : prompt.key)}
             className={cn(
-              'rounded-lg border px-3 py-1.5 text-[13px] transition-colors duration-150',
+              'inline-flex min-h-[36px] items-center rounded-lg border px-3 py-1.5 text-[13px] transition-colors duration-150',
               prompt.key === openKey
                 ? 'border-ink bg-ink text-paper'
                 : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',

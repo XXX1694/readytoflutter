@@ -36,4 +36,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
   return <LangContext.Provider value={{ lang, setLang }}>{children}</LangContext.Provider>;
 }
 
+// Every consumer imports the hook from here next to the provider; splitting
+// it out would only move the fast-refresh boundary, not remove it.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLang = (): LangContextValue => useContext(LangContext);
