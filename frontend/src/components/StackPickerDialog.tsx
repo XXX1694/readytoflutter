@@ -80,7 +80,7 @@ export default function StackPickerDialog() {
                 type="button"
                 onClick={skip}
                 aria-label={t.stackPickerLater}
-                className="text-muted hover:text-ink"
+                className="-mr-2 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-rule/8 hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>

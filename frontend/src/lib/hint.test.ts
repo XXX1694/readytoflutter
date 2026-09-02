@@ -32,6 +32,11 @@ describe('extractHint', () => {
       .toBe('Clean Architecture (Robert C. Martin) points dependencies inward.');
   });
 
+  it('ends the sentence on a lone letter that is not an initial', () => {
+    expect(extractHint('Big O describes how running time scales with input size n. Constants still matter.'))
+      .toBe('Big O describes how running time scales with input size n.');
+  });
+
   it('handles ! and ? as terminators', () => {
     expect(extractHint('Never block the main thread! Everything else follows.'))
       .toBe('Never block the main thread!');

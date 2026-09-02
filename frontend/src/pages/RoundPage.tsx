@@ -107,7 +107,10 @@ export default function RoundPage() {
 
   if (error || !topic) {
     return (
-      <Notice title={t.topicNotFound} action={{ label: 'Dashboard', onClick: () => navigate('/') }} />
+      <Notice
+        title={t.topicNotFound}
+        action={{ label: ru ? 'На главную' : 'Dashboard', onClick: () => navigate('/') }}
+      />
     );
   }
 
@@ -214,10 +217,10 @@ export default function RoundPage() {
                 {ru ? ' знаков' : ' chars'}
               </span>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={session.skip}>
+                <Button variant="ghost" size="md" onClick={session.skip}>
                   {ru ? 'Пропустить' : 'Skip'}
                 </Button>
-                <Button variant="brand" size="sm" onClick={session.reveal}>
+                <Button variant="brand" size="md" onClick={session.reveal}>
                   {ru ? 'Показать ответ' : 'Show answer'}
                 </Button>
               </div>
@@ -495,7 +498,7 @@ function Recap({
           </Button>
           <Button variant="outline" className="flex-1" onClick={onHome}>
             <ArrowRight className="h-4 w-4" aria-hidden />
-            Dashboard
+            {ru ? 'На главную' : 'Dashboard'}
           </Button>
         </div>
       </div>

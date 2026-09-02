@@ -194,6 +194,9 @@ export function useQuestionSession<T extends SessionItem>({
   // Read the matched hotkey rather than the event's key: the library matches on
   // physical key position, so on a layout where Digit1 types something else
   // `event.key` would not be "1".
+  // `preventDefault` matters here: grading advances the session and the next
+  // question's draft box is focused in the same keydown dispatch, so without
+  // it the digit you pressed lands as the first character of the next draft.
   useHotkeys(
     ['1', '2', '3', '4'],
     (_event, matched) => {
@@ -201,7 +204,7 @@ export function useQuestionSession<T extends SessionItem>({
       const rating = RATING_ORDER[Number(matched.hotkey) - 1];
       if (rating) grade(rating);
     },
-    { enableOnFormTags: false },
+    { enableOnFormTags: false, preventDefault: true },
     [revealed, grade],
   );
 

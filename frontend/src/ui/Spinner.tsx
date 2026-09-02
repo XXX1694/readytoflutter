@@ -1,4 +1,6 @@
 import { cn } from '../lib/cn';
+import { useLang } from '../i18n/LangContext';
+import { useT } from '../i18n/ui';
 
 const SIZES = {
   sm: 'w-4 h-4 border-2',
@@ -33,10 +35,12 @@ export interface FullPageLoaderProps {
 }
 
 export function FullPageLoader({ label }: FullPageLoaderProps) {
+  const { lang } = useLang();
+  const t = useT(lang);
   return (
     <div className="flex h-full items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <Spinner size="lg" label={label} />
+        <Spinner size="lg" label={label || t.loading} />
         {label && <span className="text-[13px] text-muted">{label}</span>}
       </div>
     </div>

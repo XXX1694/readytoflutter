@@ -49,7 +49,7 @@ export default function PlatformFilter({ className, hideLabel = false }: Platfor
               aria-pressed={active}
               onClick={() => choose(p.key)}
               className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors',
+                'inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors',
                 active
                   ? 'border-ink bg-ink text-paper'
                   : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',

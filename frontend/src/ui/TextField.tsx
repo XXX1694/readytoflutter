@@ -85,8 +85,11 @@ export function PasswordField({ showLabel, hideLabel, ...field }: PasswordFieldP
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="text-muted transition-colors hover:text-ink"
+          aria-pressed={visible}
           aria-label={visible ? hideLabel : showLabel}
+          // The label row is 20px tall; the negative margins let the button
+          // reach a 36px hit area without pushing the row apart.
+          className="-my-2 -mr-2 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors hover:text-ink"
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

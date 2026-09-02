@@ -174,6 +174,7 @@ export default function StudyPage() {
       <EmptyState
         title={ru ? 'Здесь пока нет вопросов' : 'Nothing to study here yet'}
         body={ru ? 'Попробуй другой уровень или тему.' : 'Try another level or topic.'}
+        lang={lang}
         onClose={() => navigate('/')}
       />
     );
@@ -196,6 +197,7 @@ export default function StudyPage() {
       <EmptyState
         title={ru ? 'Всё повторено' : 'All caught up'}
         body={ru ? 'Новые карточки будут завтра.' : 'The next cards come due tomorrow.'}
+        lang={lang}
         onClose={() => navigate('/')}
       />
     );
@@ -297,7 +299,7 @@ export default function StudyPage() {
                   className="w-full resize-none rounded-lg border border-rule/12 bg-paper-2 px-4 py-3 font-serif text-[17px] leading-relaxed text-ink outline-none placeholder:text-muted-2"
                 />
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="xs" />
+                  <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="sm" />
                   <span className="num text-[11px] text-muted-2">
                     {session.draft.length}/{GIST_LIMIT}
                   </span>
@@ -377,10 +379,11 @@ export default function StudyPage() {
 interface EmptyStateProps {
   title: string;
   body: string;
+  lang: Lang;
   onClose: () => void;
 }
 
-function EmptyState({ title, body, onClose }: EmptyStateProps) {
+function EmptyState({ title, body, lang, onClose }: EmptyStateProps) {
   return (
     <div className="bg-page flex h-full items-center justify-center px-4">
       <div className="flex max-w-sm flex-col items-start gap-3">
@@ -388,7 +391,7 @@ function EmptyState({ title, body, onClose }: EmptyStateProps) {
         <p className="text-sm text-muted">{body}</p>
         <Button variant="brand" size="sm" onClick={onClose} className="mt-1">
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          Dashboard
+          {lang === 'ru' ? 'На главную' : 'Dashboard'}
         </Button>
       </div>
     </div>
@@ -437,7 +440,7 @@ function Recap({ counts, total, lang, onAgain, onClose }: RecapProps) {
           </Button>
           <Button variant="outline" className="flex-1" onClick={onClose}>
             <ArrowRight className="h-4 w-4" aria-hidden />
-            Dashboard
+            {ru ? 'На главную' : 'Dashboard'}
           </Button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 import {
@@ -25,7 +25,7 @@ import type { PlatformKey } from '../types/domain';
  */
 const navRowClass = (isActive: boolean): string =>
   cn(
-    'mx-2 flex items-center gap-2.5 rounded-md px-3 py-2 text-[13.5px] transition-colors',
+    'mx-2 flex items-center gap-2.5 rounded-md px-3 py-2.5 text-[13.5px] transition-colors lg:py-2',
     isActive ? 'text-ink font-semibold' : 'font-medium text-ink-2 hover:bg-rule/6 hover:text-ink',
   );
 
@@ -124,6 +124,38 @@ export default function Sidebar() {
   const isCompact = useIsCompact();
   const close = () => { tapLight(); setSidebarOpen(false); };
 
+  // Under lg the drawer is a modal, and has to behave like one: it announces
+  // as a dialog, takes focus when it opens, closes on Escape and hands focus
+  // back to whatever opened it. While it is parked off-screen it is `inert`,
+  // otherwise Tab from the page walks through forty invisible links before it
+  // reaches anything you can see.
+  const asideRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerOpen = isCompact && sidebarOpen;
+  const drawerParked = isCompact && !sidebarOpen;
+
+  useEffect(() => {
+    asideRef.current?.toggleAttribute('inert', drawerParked);
+  }, [drawerParked]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      // The palette sits above the drawer and owns Escape while it is open.
+      if (e.key !== 'Escape' || usePrefs.getState().commandOpen) return;
+      e.preventDefault();
+      tapLight();
+      setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [drawerOpen, setSidebarOpen]);
+
   // Pointer-driven drag to close — committed when the user pulls the drawer
   // > 80px to the left or flicks it. Below threshold it springs back.
   // Disabled at lg+ since the drawer is static (always visible).
@@ -151,9 +183,17 @@ export default function Sidebar() {
       </AnimatePresence>
 
       <motion.aside
+        ref={asideRef}
+        role={drawerOpen ? 'dialog' : undefined}
+        aria-modal={drawerOpen || undefined}
+        aria-label={drawerOpen ? (lang === 'ru' ? 'Меню' : 'Menu') : undefined}
         // Use framer-motion under <lg so we get spring open/close + drag.
         // At lg+ we drop the inline transform entirely and let Tailwind hold
         // the drawer in its static slot.
+        // No mount animation: without this framer tweens from the element's
+        // natural x=0 to the parked -100% on every page load, so the drawer
+        // was seen sliding off-screen each time a phone opened the app.
+        initial={false}
         drag={isCompact ? 'x' : false}
         dragDirectionLock
         dragConstraints={{ left: 0, right: 0 }}
@@ -187,11 +227,12 @@ export default function Sidebar() {
             </span>
           </NavLink>
           <IconButton
-            size="sm"
+            ref={closeButtonRef}
+            size="md"
             variant="ghost"
             label={t.closeSidebar}
             onClick={close}
-            className="lg:hidden"
+            className="touch-target -mr-2 lg:hidden"
           >
             <X className="h-4 w-4" />
           </IconButton>
@@ -292,7 +333,7 @@ export default function Sidebar() {
                             onClick={close}
                             className={({ isActive }) =>
                               cn(
-                                'mx-3 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors',
+                                'mx-3 flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] transition-colors lg:py-1.5',
                                 isActive ? 'text-ink' : 'text-ink-2 hover:bg-rule/6 hover:text-ink',
                               )
                             }

@@ -49,7 +49,7 @@ function usePageTitle(): string {
   }
   if (path === '/' || path === '') return 'Onsite';
   if (path === '/study')     return lang === 'ru' ? 'Повторение' : 'Study';
-  if (path === '/mock')      return lang === 'ru' ? 'Mock-собес' : 'Mock';
+  if (path === '/mock')      return lang === 'ru' ? 'Mock-собес' : 'Mock interview';
   if (path === '/search')    return lang === 'ru' ? 'Поиск' : 'Search';
   if (path === '/knowledge') return lang === 'ru' ? 'База знаний' : 'Knowledge';
   if (path === '/bookmarks') return lang === 'ru' ? 'Закладки' : 'Saved';

@@ -280,17 +280,17 @@ export default function TopicPage() {
 
           {/* Mobile-only secondary chips — primary Drill is sticky-bottom. */}
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 no-scrollbar sm:hidden">
-            <Button variant="codex" size="sm" className="shrink-0" onClick={() => navigate(`/round/${topic.slug}`)}>
+            <Button variant="codex" size="md" className="shrink-0" onClick={() => navigate(`/round/${topic.slug}`)}>
               <MessagesSquare className="h-3.5 w-3.5" />
               {lang === 'ru' ? 'Раунд' : 'Round'}
             </Button>
-            <Button variant="codex" size="sm" className="shrink-0" onClick={() => navigate(`/mock?topic=${topic.slug}`)}>
+            <Button variant="codex" size="md" className="shrink-0" onClick={() => navigate(`/mock?topic=${topic.slug}`)}>
               <Target className="h-3.5 w-3.5" />
               {lang === 'ru' ? 'Mock' : 'Mock'}
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               className="shrink-0"
               onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/cheatsheet`, '_blank', 'noopener')}
             >
@@ -299,7 +299,7 @@ export default function TopicPage() {
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               className="shrink-0"
               onClick={() => window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/print`, '_blank', 'noopener')}
             >
@@ -344,9 +344,9 @@ export default function TopicPage() {
           <span className="ml-auto hidden items-center gap-1.5 text-[12px] text-muted-2 sm:inline-flex">
             <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">j</kbd>
             <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">k</kbd>
-            <span>to move</span>
+            <span>{lang === 'ru' ? 'перейти' : 'to move'}</span>
             <kbd className="rounded border border-rule/12 px-1 py-0.5 font-mono text-[11px]">space</kbd>
-            <span>to open</span>
+            <span>{lang === 'ru' ? 'открыть' : 'to open'}</span>
           </span>
         </div>
 

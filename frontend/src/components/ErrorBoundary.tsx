@@ -34,7 +34,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       return (
         <div className="bg-page flex min-h-dvh items-center justify-center px-4">
           <div className="w-full max-w-md rounded-lg border border-rule/12 bg-paper-2 p-8">
-            <p className="eyebrow mb-3">{t.errorDetails}</p>
+            <p className="eyebrow mb-3">{lang === 'ru' ? 'Ошибка' : 'Error'}</p>
             <h1 className="mb-2 font-display text-2xl font-semibold text-ink">
               {t.somethingWentWrong}
             </h1>

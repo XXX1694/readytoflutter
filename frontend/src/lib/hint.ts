@@ -9,7 +9,9 @@
  * complete sentence. `minBody` skips a terminator that would leave too small
  * a fragment to be a useful hint.
  */
-const ABBREVIATION = /(?:^|[\s([])(?:[A-Za-z]|e\.g|i\.e|etc|vs|cf|approx|Fig|Dr|Mr|Ms|Mrs|St)$/;
+const ABBREVIATION = /(?:^|[\s([])(?:e\.g|i\.e|etc|vs|cf|approx|Fig|Dr|Mr|Ms|Mrs|St)$/;
+/** An initial is a lone capital preceded by a capitalised word: "Robert C." but not "size n." */
+const INITIAL = /\b[A-Z][a-z]+ [A-Z]$/;
 
 function findSentenceEnd(text: string, minBody: number): number {
   for (let i = 0; i < text.length; i++) {
@@ -19,7 +21,8 @@ function findSentenceEnd(text: string, minBody: number): number {
     const next = text[i + 1];
     if (next !== undefined && !/\s/.test(next)) continue;
     if (i < minBody) continue;
-    if (ch === '.' && ABBREVIATION.test(text.slice(0, i))) continue;
+    const before = text.slice(0, i);
+    if (ch === '.' && (ABBREVIATION.test(before) || INITIAL.test(before))) continue;
     return i;
   }
   return -1;

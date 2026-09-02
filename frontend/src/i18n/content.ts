@@ -9,7 +9,7 @@
  * chunk resolves the helpers return the English field, which is the same
  * fallback already used for questions that have no translation.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { Topic, Question } from '../types/domain';
 import type { Lang } from './LangContext';
@@ -73,10 +73,14 @@ export function useContent(lang: Lang): ContentHelpers {
 
   const t = isRu ? ru : null;
 
-  return {
+  // Stable identities: these helpers sit in memo dependency lists downstream
+  // (the search index is rebuilt from `questionText`/`answerText`, for one),
+  // and fresh closures on every render made those memos re-run every render.
+  // Only the table they read from can change what they return.
+  return useMemo<ContentHelpers>(() => ({
     topicTitle: (topic) => t?.TOPICS_RU[topic.id]?.title || topic.title,
     topicDesc: (topic) => t?.TOPICS_RU[topic.id]?.description || topic.description,
     questionText: (question) => t?.QUESTIONS_RU[question.id]?.question || question.question,
     answerText: (question) => t?.QUESTIONS_RU[question.id]?.answer || question.answer,
-  };
+  }), [t]);
 }

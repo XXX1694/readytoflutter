@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Reactive `matchMedia` hook. Returns `false` until mounted so SSR /
- * hydration stay deterministic. Updates whenever the breakpoint flips
- * (rotation, browser resize, IDE simulator change).
+ * Reactive `matchMedia` hook. Reads the query synchronously on first render
+ * (the app is client-rendered, so there is no hydration to keep in step) and
+ * updates whenever the breakpoint flips (rotation, browser resize, IDE
+ * simulator change).
+ *
+ * Starting from `false` and correcting in an effect painted one frame of the
+ * desktop layout on every phone load — the sidebar drawer sat open at x=0 and
+ * then sprang off-screen.
  */
+const read = (query: string): boolean =>
+  typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(query).matches;
+
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(false);
+  const [matches, setMatches] = useState<boolean>(() => read(query));
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia(query);

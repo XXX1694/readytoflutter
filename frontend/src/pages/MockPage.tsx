@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronRight, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import { useLang, type Lang } from '../i18n/LangContext';
-import { useT, type UICopy } from '../i18n/ui';
+import { UI, useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { Button, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
 import PlatformFilter from '../components/PlatformFilter';
@@ -44,7 +44,7 @@ const isLevelScope = (value: string | null): value is LevelScope =>
   value !== null && (LEVEL_OPTIONS as readonly string[]).includes(value);
 
 const levelLabel = (level: LevelScope, lang: Lang): string => {
-  if (level !== 'all') return { junior: 'Junior', mid: 'Mid', senior: 'Senior' }[level];
+  if (level !== 'all') return UI[lang][level].short;
   return lang === 'ru' ? 'Все' : 'Mixed';
 };
 
@@ -243,7 +243,7 @@ export default function MockPage() {
             both for this route. */}
         <header className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
-            {ru ? 'Мок-интервью' : 'Mock interview'}
+            {ru ? 'Mock-собеседование' : 'Mock interview'}
           </h1>
           <span className="num text-[13px] text-muted">
             {session.index + 1}/{queue.length}
@@ -313,17 +313,17 @@ export default function MockPage() {
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="xs" />
+                <VoiceInputButton lang={lang} onAppend={session.appendDraft} size="sm" />
                 <span className="num text-[11px] text-muted-2">
                   {draft.length}
                   {ru ? ' знаков' : ' chars'}
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={session.skip}>
+                <Button variant="ghost" size="md" onClick={session.skip}>
                   {ru ? 'Пропустить' : 'Skip'}
                 </Button>
-                <Button variant="brand" size="sm" onClick={session.reveal}>
+                <Button variant="brand" size="md" onClick={session.reveal}>
                   {ru ? 'Показать ответ' : 'Show answer'}
                 </Button>
               </div>
@@ -428,7 +428,7 @@ function Setup({
     <div className="bg-page min-h-full">
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
         <h1 className="font-display text-display-xs font-semibold text-ink">
-          {ru ? 'Мок-интервью' : 'Mock interview'}
+          {ru ? 'Mock-собеседование' : 'Mock interview'}
         </h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-2">
           {ru
@@ -486,9 +486,12 @@ function Setup({
                   ? `${Math.min(config.count, available)} из ${available} доступных`
                   : `${Math.min(config.count, available)} of ${available} available`)}
           </p>
+          {/* On a phone the pair fills the row so Start is a thumb-sized target. */}
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onCancel}>{ru ? 'Отмена' : 'Cancel'}</Button>
-            <Button variant="brand" disabled={empty} onClick={onStart}>
+            <Button variant="ghost" className="flex-1 sm:flex-none" onClick={onCancel}>
+              {ru ? 'Отмена' : 'Cancel'}
+            </Button>
+            <Button variant="brand" className="flex-[2] sm:flex-none" disabled={empty} onClick={onStart}>
               {ru ? 'Начать' : 'Start'}
             </Button>
           </div>
@@ -567,7 +570,7 @@ function Recap({
     <div className="bg-page min-h-full">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <header className="border-b border-rule/12 pb-7">
-          <div className="eyebrow">{ru ? 'Мок-интервью · итоги' : 'Mock interview · recap'}</div>
+          <div className="eyebrow">{ru ? 'Mock-собеседование · итоги' : 'Mock interview · recap'}</div>
           <h1 className="mt-3 font-display text-display-xs font-semibold text-ink sm:text-display-sm">
             {scorePct >= 80
               ? (ru ? 'Сильно.' : 'Strong.')
@@ -642,7 +645,7 @@ function Recap({
           </Button>
           <Button variant="outline" className="flex-1" onClick={onHome}>
             <ArrowRight className="h-4 w-4" aria-hidden />
-            Dashboard
+            {ru ? 'На главную' : 'Dashboard'}
           </Button>
         </div>
       </div>

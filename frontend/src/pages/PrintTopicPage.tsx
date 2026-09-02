@@ -69,10 +69,10 @@ export default function PrintTopicPage() {
       {/* On-screen toolbar. `print:hidden` rather than a `.print-hide` class:
           that class was never defined in index.css, so the toolbar used to
           print at the top of page one. */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule/12 bg-paper px-4 py-3 print:hidden sm:px-6">
-        <div className="flex items-center gap-3">
-          <span className="eyebrow">{lang === 'ru' ? 'Печать / PDF' : 'Print / PDF'}</span>
-          <span className="text-sm text-ink-2">{topicTitle(topic)}</span>
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-rule/12 bg-paper px-4 py-3 print:hidden sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="eyebrow shrink-0">{lang === 'ru' ? 'Печать / PDF' : 'Print / PDF'}</span>
+          <span className="truncate text-sm text-ink-2">{topicTitle(topic)}</span>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()}>

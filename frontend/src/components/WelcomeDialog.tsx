@@ -122,7 +122,7 @@ export default function WelcomeDialog() {
                 type="button"
                 onClick={dismiss}
                 aria-label={lang === 'ru' ? 'Закрыть' : 'Close'}
-                className="text-muted hover:text-ink"
+                className="-mr-2 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-rule/8 hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -141,11 +141,16 @@ export default function WelcomeDialog() {
                     aria-label={lang === 'ru' ? `Шаг ${i + 1}` : `Step ${i + 1}`}
                     aria-current={i === step}
                     onClick={() => setStep(i)}
-                    className={cn(
-                      'h-1.5 w-6 rounded-full transition-colors',
-                      i === step ? 'bg-ink' : 'bg-rule/15 hover:bg-rule/30',
-                    )}
-                  />
+                    // The dot is 6px tall; the padding is what you actually tap.
+                    className="group -my-2 px-0.5 py-2"
+                  >
+                    <span
+                      className={cn(
+                        'block h-1.5 w-6 rounded-full transition-colors',
+                        i === step ? 'bg-ink' : 'bg-rule/15 group-hover:bg-rule/30',
+                      )}
+                    />
+                  </button>
                 ))}
               </div>
               <div className="flex items-center gap-2">

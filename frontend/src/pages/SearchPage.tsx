@@ -31,6 +31,13 @@ const FACET_KEYS = Object.keys(FACETS) as FacetKey[];
 const NO_FACETS: SearchFacets = { level: null, difficulty: null, status: null };
 
 /**
+ * Results are paged on the client. An empty query lists the whole bank — 392
+ * cards, each with its own notes editor and expand animation — and mounting
+ * all of them at once is a multi-second stall on a phone.
+ */
+const PAGE_SIZE = 30;
+
+/**
  * Last query we reported. Module scope rather than a ref because StrictMode
  * remounts this route in dev and hands the remount a fresh ref, which would
  * report the same search twice. Holding only the most recent query means a
@@ -129,6 +136,21 @@ export default function SearchPage() {
     });
   }, [query, facets, index, questions]);
 
+  // A new result set starts from the top of the first page again. Keyed on
+  // the inputs rather than the array's identity — the memo above recomputes
+  // whenever the content helpers change identity, and resetting on that would
+  // loop. Adjusting during render keeps the first paint of the new list short
+  // instead of flashing however many pages the previous one had grown to.
+  const resultsKey = [query.trim(), facets.level, facets.difficulty, facets.status, platform, lang].join('|');
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [seenKey, setSeenKey] = useState(resultsKey);
+  if (seenKey !== resultsKey) {
+    setSeenKey(resultsKey);
+    setVisible(PAGE_SIZE);
+  }
+  const shown = results.slice(0, visible);
+  const remaining = results.length - shown.length;
+
   // What people look for, and what came back empty. The zero-result queries
   // are the content backlog — that is the whole reason this event exists.
   // Keyed on the debounced `query` so it is one event per search, not one per
@@ -226,6 +248,7 @@ export default function SearchPage() {
                 }, 250);
               }}
               placeholder={t.searchPlaceholderLong}
+              aria-label={t.searchPlaceholderLong}
               className="h-12 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted-2 outline-none"
               autoFocus
             />
@@ -234,7 +257,7 @@ export default function SearchPage() {
                 type="button"
                 onClick={() => { setInput(''); inputRef.current?.focus(); }}
                 aria-label={lang === 'ru' ? 'Очистить' : 'Clear'}
-                className="text-muted hover:text-ink"
+                className="-mr-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:text-ink"
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>
@@ -313,6 +336,7 @@ export default function SearchPage() {
           open={filterSheetOpen}
           onOpenChange={setFilterSheetOpen}
           title={lang === 'ru' ? 'Фильтры' : 'Filters'}
+          closeLabel={lang === 'ru' ? 'Закрыть' : 'Close'}
           footer={
             <FilterSheet.Footer
               onApply={() => setFilterSheetOpen(false)}
@@ -383,7 +407,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {results.map((q, i) => (
+            {shown.map((q, i) => (
               <div key={q.id} className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-1.5 px-1 text-[13px] text-muted">
                   <span>{q.topic_title}</span>
@@ -393,6 +417,20 @@ export default function SearchPage() {
                 <QuestionCard question={q} index={i} />
               </div>
             ))}
+            {remaining > 0 && (
+              <div className="flex flex-col items-center gap-2 pt-3">
+                <Button variant="outline" size="md" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+                  {lang === 'ru'
+                    ? `Показать ещё ${Math.min(PAGE_SIZE, remaining)}`
+                    : `Show ${Math.min(PAGE_SIZE, remaining)} more`}
+                </Button>
+                <span className="text-[12px] text-muted-2">
+                  {lang === 'ru'
+                    ? `${shown.length} из ${results.length}`
+                    : `${shown.length} of ${results.length}`}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

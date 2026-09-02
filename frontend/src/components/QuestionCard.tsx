@@ -196,69 +196,70 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
         focused && !open && 'shadow-marker',
       )}
     >
-      {/* Header — clickable to toggle */}
-      <button
-        type="button"
-        onClick={handleToggle}
-        aria-expanded={open}
-        className="flex w-full items-start gap-3 p-4 text-left sm:gap-4 sm:p-5"
-      >
-        <span
-          className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-rule/12 bg-paper font-mono text-[11px] tabular-nums text-muted"
-          aria-hidden
+      {/* Header. The toggle and the bookmark are two sibling buttons — a
+          control nested inside a control is invalid HTML and reads as one
+          confused element to a screen reader. Pointer clicks on the icon
+          cluster (and its padding) still open the card, so the whole row
+          stays a single target; keyboard users have the toggle itself. */}
+      <div className="flex items-start">
+        <button
+          type="button"
+          onClick={handleToggle}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-start gap-3 py-4 pl-4 pr-2 text-left sm:gap-4 sm:py-5 sm:pl-5"
         >
-          {String(index + 1).padStart(2, '0')}
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] leading-snug text-ink sm:text-base">{questionText(question)}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <Pill tone={difficultyTone[question.difficulty] || 'neutral'} size="xs">
-              {difficultyLabel}
-            </Pill>
-            {question.tags &&
-              question.tags
-                .split(',')
-                .map((tag, i) => (
-                  <Pill key={`${tag}-${i}`} tone="neutral" size="xs">
-                    {tag.trim()}
-                  </Pill>
-                ))}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
           <span
-            role="button"
-            tabIndex={0}
+            className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-rule/12 bg-paper font-mono text-[11px] tabular-nums text-muted"
+            aria-hidden
+          >
+            {String(index + 1).padStart(2, '0')}
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] leading-snug text-ink sm:text-base">{questionText(question)}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Pill tone={difficultyTone[question.difficulty] || 'neutral'} size="xs">
+                {difficultyLabel}
+              </Pill>
+              {question.tags &&
+                question.tags
+                  .split(',')
+                  .map((tag, i) => (
+                    <Pill key={`${tag}-${i}`} tone="neutral" size="xs">
+                      {tag.trim()}
+                    </Pill>
+                  ))}
+            </div>
+          </div>
+        </button>
+
+        <div
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 py-4 pr-4 sm:py-5 sm:pr-5"
+          onClick={handleToggle}
+        >
+          <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); toggleBookmarked(); }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.stopPropagation();
-                e.preventDefault();
-                toggleBookmarked();
-              }
-            }}
             aria-label={bookmarked
               ? (lang === 'ru' ? 'Убрать из закладок' : 'Remove bookmark')
               : (lang === 'ru' ? 'В закладки' : 'Bookmark')}
             aria-pressed={bookmarked}
-            // Visible 28×28 stays the same; -m-1.5 + p-1.5 grows the actual
-            // hit area to ~44px on touch without nudging adjacent layout.
+            // Visible 28×28 stays the same; -m-2 + p-2 grows the actual hit
+            // area to 44px on touch without nudging adjacent layout.
             className={cn(
-              'box-content -m-1.5 inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded p-1.5 transition-colors',
+              'box-content -m-2 inline-flex h-7 w-7 items-center justify-center rounded p-2 transition-colors',
               bookmarked ? 'text-[rgb(var(--amber))]' : 'text-muted hover:text-ink',
             )}
           >
             <Bookmark className="h-4 w-4" fill={bookmarked ? 'currentColor' : 'none'} />
-          </span>
+          </button>
           <StatusIcon className={cn('h-5 w-5', STATUS_META[status].accent)} aria-hidden />
           <ChevronDown
             className={cn('h-4 w-4 text-muted transition-transform', open && 'rotate-180')}
             aria-hidden
           />
         </div>
-      </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {open && (

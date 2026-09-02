@@ -51,9 +51,11 @@ const initialTheme = (): Theme => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
+// Mirrors --paper in index.css (and the <meta name="theme-color"> pair in
+// index.html) so the status bar blends with the page instead of a stale grey.
 const THEME_COLORS: Record<Theme, string> = {
-  light: '#FAFAFB',
-  dark:  '#09090B',
+  light: '#F9F9F6',
+  dark:  '#121210',
 };
 
 const applyTheme = (theme: Theme): void => {

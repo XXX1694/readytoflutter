@@ -49,12 +49,6 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   tools: Wrench,
 };
 
-const LEVEL_LABEL: Record<Level, string> = {
-  junior: 'Junior',
-  mid: 'Mid',
-  senior: 'Senior',
-};
-
 // Only the two media types worth naming on a card — the rest are implied by
 // the category the card sits under.
 const MEDIA_LABEL: Record<string, Option<string>> = {
@@ -65,9 +59,15 @@ const MEDIA_LABEL: Record<string, Option<string>> = {
 const LEVELS: Option<Level | 'all'>[] = [
   { key: 'all', en: 'All levels', ru: 'Любой уровень' },
   { key: 'junior', en: 'Junior', ru: 'Junior' },
-  { key: 'mid', en: 'Mid', ru: 'Mid' },
+  // "Middle" is how the rest of the app names the grade in Russian.
+  { key: 'mid', en: 'Mid', ru: 'Middle' },
   { key: 'senior', en: 'Senior', ru: 'Senior' },
 ];
+
+const levelLabel = (level: Level, isRu: boolean): string => {
+  const option = LEVELS.find((l) => l.key === level);
+  return option ? (isRu ? option.ru : option.en) : level;
+};
 
 const LANGS: Option<string>[] = [
   { key: 'all', en: 'Any', ru: 'Любой' },
@@ -303,9 +303,9 @@ export default function KnowledgePage() {
               type="button"
               onClick={() => setQuery('')}
               aria-label={isRu ? 'Очистить' : 'Clear'}
-              className="text-muted hover:text-ink"
+              className="-my-2 -mr-1.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:text-ink"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -646,7 +646,7 @@ function ResourceCard({
   // length and (when it isn't obvious) the media type.
   const meta = [
     r.source,
-    r.level && LEVEL_LABEL[r.level],
+    r.level && levelLabel(r.level, isRu),
     r.lang?.toUpperCase(),
     r.duration,
     mediaLabel && (isRu ? mediaLabel.ru : mediaLabel.en),

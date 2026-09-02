@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { MotionConfig } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import MobileHeader from './MobileHeader';
@@ -39,52 +40,63 @@ export default function Layout() {
   }, []);
 
   return (
+    // `reducedMotion="user"` makes every framer animation below (the drawer
+    // spring, the card expand, the route slide) honour the OS setting in one
+    // place — DESIGN.md rule 5 — instead of each call site remembering to.
+    //
     // Use dynamic viewport units (`100dvh`) so the iOS browser chrome /
     // virtual keyboard correctly shrink the visible area. `h-screen` bakes in
     // the larger `100vh` (max chrome) which clips the bottom of inputs when
     // the keyboard pops up. `min-h-dvh` lets layout grow if a child is huge
     // while still resizing with the keyboard.
-    <div className="flex min-h-dvh h-dvh overflow-hidden bg-page text-ink">
-      <Sidebar />
+    <MotionConfig reducedMotion="user">
+      <div className="flex min-h-dvh h-dvh overflow-hidden bg-page text-ink">
+        <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Desktop header — sticky in flow at lg+ */}
-        <Header />
-        {/* Mobile header — fixed overlay under lg, hides on scroll-down */}
-        <MobileHeader />
-        <main className="mobile-header-spacer flex-1 overflow-y-auto overscroll-contain">
-          <RouteTransition>
-            <Outlet />
-          </RouteTransition>
-        </main>
-        <div ref={bottomNavRef}>
-          <BottomNav />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Desktop header — sticky in flow at lg+ */}
+          <Header />
+          {/* Mobile header — fixed overlay under lg, hides on scroll-down */}
+          <MobileHeader />
+          <main
+            // Focus target for route changes (see RouteTransition); the ring is
+            // suppressed because a whole page outlined in ink means nothing.
+            tabIndex={-1}
+            className="mobile-header-spacer flex-1 overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:shadow-none"
+          >
+            <RouteTransition>
+              <Outlet />
+            </RouteTransition>
+          </main>
+          <div ref={bottomNavRef}>
+            <BottomNav />
+          </div>
         </div>
-      </div>
 
-      <PlatformUrlSync />
-      {/* Global keyboard shortcuts (mod+K, vim go-prefix, etc.) live in a
-          tiny eager file so they fire even before the lazy palette chunk
-          downloads. The actual UI overlays are gated and lazy. */}
-      <GlobalHotkeys />
-      <LazyOverlays />
-      <PwaPrompts />
-      <Toaster
-        theme={theme === 'dark' ? 'dark' : 'light'}
-        position="bottom-right"
-        /* Toasts anchor to the bottom edge, which on narrow screens belongs to
-           the bottom nav — an infinite-duration toast (the PWA update prompt)
-           parked there covers it. --bottom-nav-h is measured above and is 0 on
-           routes that hide the nav. */
-        mobileOffset={{ bottom: 'calc(var(--bottom-nav-h, 56px) + 12px)', left: '12px', right: '12px' }}
-        toastOptions={{
-          classNames: {
-            toast:
-              '!font-sans !text-sm !rounded-lg !border !border-rule/12 !bg-paper-2 !text-ink !shadow-codex-lg',
-            description: '!text-ink-2',
-          },
-        }}
-      />
-    </div>
+        <PlatformUrlSync />
+        {/* Global keyboard shortcuts (mod+K, vim go-prefix, etc.) live in a
+            tiny eager file so they fire even before the lazy palette chunk
+            downloads. The actual UI overlays are gated and lazy. */}
+        <GlobalHotkeys />
+        <LazyOverlays />
+        <PwaPrompts />
+        <Toaster
+          theme={theme === 'dark' ? 'dark' : 'light'}
+          position="bottom-right"
+          /* Toasts anchor to the bottom edge, which on narrow screens belongs to
+             the bottom nav — an infinite-duration toast (the PWA update prompt)
+             parked there covers it. --bottom-nav-h is measured above and is 0 on
+             routes that hide the nav. */
+          mobileOffset={{ bottom: 'calc(var(--bottom-nav-h, 56px) + 12px)', left: '12px', right: '12px' }}
+          toastOptions={{
+            classNames: {
+              toast:
+                '!font-sans !text-sm !rounded-lg !border !border-rule/12 !bg-paper-2 !text-ink !shadow-codex-lg',
+              description: '!text-ink-2',
+            },
+          }}
+        />
+      </div>
+    </MotionConfig>
   );
 }

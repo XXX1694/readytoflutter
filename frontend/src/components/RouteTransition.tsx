@@ -67,6 +67,14 @@ export default function RouteTransition({ children }: RouteTransitionProps) {
       const main = document.querySelector('main');
       if (main && typeof main.scrollTo === 'function') main.scrollTo({ top: 0, behavior: 'instant' });
       else window.scrollTo({ top: 0, behavior: 'instant' });
+      // The element that was clicked has usually just unmounted, which drops
+      // focus to <body> — from there a screen reader reads nothing and Tab
+      // starts over from the top of the chrome. Park focus on <main> instead
+      // (it carries tabIndex=-1) unless the new page already focused a field.
+      const active = document.activeElement;
+      if (main && (!active || active === document.body)) {
+        main.focus({ preventScroll: true });
+      }
     });
   }, [location.pathname]);
 
@@ -85,7 +93,10 @@ export default function RouteTransition({ children }: RouteTransitionProps) {
     variants = {
       initial: { opacity: 0, y: 6 },
       animate: { opacity: 1, y: 0 },
-      exit:    { opacity: 0, y: -6 },
+      // `wait` holds the new page back until the old one has gone, so the
+      // exit is kept to a blink — every millisecond here is felt as latency
+      // on a click. The enter is where the motion reads.
+      exit:    { opacity: 0, y: -4, transition: { duration: 0.08, ease: 'easeIn' } },
     };
     transition = { duration: 0.18, ease: [0.22, 1, 0.36, 1] };
     mode = 'wait';
