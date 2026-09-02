@@ -4,7 +4,6 @@ import { Command } from 'cmdk';
 import * as Dialog from '@radix-ui/react-dialog';
 import { toast } from 'sonner';
 import {
-  Home,
   Search,
   Sun,
   Moon,
@@ -12,25 +11,18 @@ import {
   RotateCcw,
   Layers,
   ArrowRight,
-  Brain,
-  Target,
-  Library,
-  Bookmark,
   Pencil,
-  TrendingUp,
-  HelpCircle,
   Edit3,
   LogIn,
   LogOut,
   UserPlus,
   Cloud,
-  Settings as SettingsIcon,
   Smartphone,
-  Milestone,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
+import { PALETTE_ROUTES, routeLabel } from '../lib/routes';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
@@ -48,6 +40,14 @@ const GROUP_CLASS =
   'px-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-[12px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted';
 
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];
+
+// Keyboard shortcuts shown next to a destination; registered in GlobalHotkeys.
+const PALETTE_SHORTCUTS: Record<string, string> = {
+  '/study': '⌘+S',
+  '/mock': '⌘+M',
+  '/bookmarks': '⌘+B',
+  '/settings': '⌘+,',
+};
 
 // `PLATFORMS` stores its i18n keys as plain strings — resolve them against the
 // copy table without widening the table to `any`.
@@ -171,58 +171,22 @@ export default function CommandPalette() {
                 {t.cmdNoResults}
               </Command.Empty>
 
+              {/* One list of destinations, read from lib/routes so the
+                  palette names the same places as the rail and the tab bar. */}
               <Command.Group heading={t.cmdNavigation} className={GROUP_CLASS}>
-                <CmdItem icon={<Home />} onSelect={run(() => navigate('/'))}>
-                  {t.cmdGoDashboard}
-                </CmdItem>
+                {PALETTE_ROUTES.map((route) => (
+                  <CmdItem
+                    key={route.path}
+                    icon={<route.icon />}
+                    onSelect={run(() => navigate(route.path))}
+                    trailing={PALETTE_SHORTCUTS[route.path]}
+                  >
+                    {route.path === '/study' ? t.nav.startSession : routeLabel(t, route)}
+                  </CmdItem>
+                ))}
                 <CmdItem icon={<Search />} onSelect={run(() => navigate('/search'))}>
                   {t.cmdGoSearch}
                 </CmdItem>
-                <CmdItem icon={<Milestone />} onSelect={run(() => navigate('/roadmap'))}>
-                  {t.roadmap.title}
-                </CmdItem>
-                <CmdItem
-                  icon={<Brain />}
-                  onSelect={run(() => navigate('/study'))}
-                  trailing="⌘+S"
-                >
-                  {lang === 'ru' ? 'Начать сессию повторения' : 'Start study session'}
-                </CmdItem>
-                <CmdItem
-                  icon={<Target />}
-                  onSelect={run(() => navigate('/mock'))}
-                  trailing="⌘+M"
-                >
-                  {lang === 'ru' ? 'Mock-собеседование' : 'Mock interview'}
-                </CmdItem>
-                <CmdItem
-                  icon={<Library />}
-                  onSelect={run(() => navigate('/knowledge'))}
-                >
-                  {lang === 'ru' ? 'База знаний' : 'Knowledge base'}
-                </CmdItem>
-                <CmdItem
-                  icon={<Bookmark />}
-                  onSelect={run(() => navigate('/bookmarks'))}
-                  trailing="⌘+B"
-                >
-                  {lang === 'ru' ? 'Закладки' : 'Bookmarks'}
-                </CmdItem>
-                <CmdItem
-                  icon={<TrendingUp />}
-                  onSelect={run(() => navigate('/stats'))}
-                >
-                  {lang === 'ru' ? 'Статистика' : 'Mastery map'}
-                </CmdItem>
-                {backendAvailable && (
-                  <CmdItem
-                    icon={<SettingsIcon />}
-                    onSelect={run(() => navigate('/settings'))}
-                    trailing="⌘+,"
-                  >
-                    {lang === 'ru' ? 'Настройки' : 'Settings'}
-                  </CmdItem>
-                )}
                 {import.meta.env.DEV && (
                   <CmdItem
                     icon={<Pencil />}
@@ -232,15 +196,6 @@ export default function CommandPalette() {
                     {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
                   </CmdItem>
                 )}
-                <CmdItem
-                  icon={<HelpCircle />}
-                  onSelect={run(() => {
-                    try { localStorage.removeItem('rtf:welcome:v1'); } catch { /* private mode */ }
-                    window.location.reload();
-                  })}
-                >
-                  {lang === 'ru' ? 'Показать гайд снова' : 'Show welcome tour'}
-                </CmdItem>
               </Command.Group>
 
               {backendAvailable && (

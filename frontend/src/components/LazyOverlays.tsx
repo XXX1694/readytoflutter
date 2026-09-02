@@ -2,25 +2,17 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { usePrefs } from '../store/prefs';
 
 /**
- * Lazy-loaded global overlays. Each one used to live in `Layout` as an
- * eager import — collectively they were ~150kb of cmdk + 4× Radix Dialog
- * + WelcomeDialog content sitting in the entry chunk before the user
- * could possibly need any of it.
- *
- * Now each overlay is gated by its trigger condition and only downloaded
- * when that condition first flips:
+ * Lazy-loaded global overlays. Each is gated by its trigger condition and
+ * only downloaded when that condition first flips:
  *   - CommandPalette → first time `commandOpen` becomes true
- *   - WelcomeDialog → first time, only if the welcome flag is unset
- *   - StackPickerDialog → only if no stack chosen yet AND not dismissed
- *   - ShortcutsOverlay → first time the user requests it
- *   - CommandHint → first paint after a 4s grace, only if not dismissed
+ *   - ShortcutsOverlay → first time the user presses `?`
+ *
+ * First-run onboarding is no longer a dialog: the stack picker renders
+ * inline on Today until a stack is chosen, so nothing covers the page.
  */
 
 const CommandPaletteLazy = lazy(() => import('./CommandPalette'));
-const WelcomeDialogLazy = lazy(() => import('./WelcomeDialog'));
-const StackPickerDialogLazy = lazy(() => import('./StackPickerDialog'));
 const ShortcutsOverlayLazy = lazy(() => import('./ShortcutsOverlay'));
-const CommandHintLazy = lazy(() => import('./CommandHint'));
 
 // `commandOpen` flipping to true is the only signal the palette needs.
 // Once mounted we keep the chunk loaded for the rest of the session —
@@ -36,36 +28,6 @@ function LazyCommandPalette() {
   return (
     <Suspense fallback={null}>
       <CommandPaletteLazy />
-    </Suspense>
-  );
-}
-
-// First-paint dialogs gated by their localStorage flag. We read the flag
-// synchronously at mount so the lazy import only fires for users who
-// would actually see the dialog. After they dismiss it we keep the
-// component mounted (it self-hides) — no need to unmount.
-function LazyWelcomeDialog() {
-  const [needs] = useState(() => {
-    if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem('rtf:welcome:v1') == null;
-  });
-  if (!needs) return null;
-  return (
-    <Suspense fallback={null}>
-      <WelcomeDialogLazy />
-    </Suspense>
-  );
-}
-
-function LazyStackPickerDialog() {
-  const [needs] = useState(() => {
-    if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem('rtf:stackpicker:v1') == null;
-  });
-  if (!needs) return null;
-  return (
-    <Suspense fallback={null}>
-      <StackPickerDialogLazy />
     </Suspense>
   );
 }
@@ -96,33 +58,11 @@ function LazyShortcutsOverlay() {
   );
 }
 
-// CommandHint shows a tiny "press ⌘K" pill on the first session. We delay
-// the import 4 seconds so it doesn't compete with the dashboard's first
-// render, and skip entirely if the user has already dismissed it.
-function LazyCommandHint() {
-  const [shouldMount, setShouldMount] = useState(false);
-  useEffect(() => {
-    if (typeof localStorage === 'undefined') return;
-    if (localStorage.getItem('rtf:cmdk:hint:dismissed:v1')) return;
-    const id = setTimeout(() => setShouldMount(true), 4000);
-    return () => clearTimeout(id);
-  }, []);
-  if (!shouldMount) return null;
-  return (
-    <Suspense fallback={null}>
-      <CommandHintLazy />
-    </Suspense>
-  );
-}
-
 export default function LazyOverlays() {
   return (
     <>
       <LazyCommandPalette />
-      <LazyCommandHint />
       <LazyShortcutsOverlay />
-      <LazyStackPickerDialog />
-      <LazyWelcomeDialog />
     </>
   );
 }

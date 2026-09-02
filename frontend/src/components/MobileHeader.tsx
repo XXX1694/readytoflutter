@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, Search, X } from 'lucide-react';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
@@ -9,6 +9,7 @@ import { useTopics } from '../lib/queries';
 import { useScrollDirection } from '../lib/useScrollDirection';
 import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
+import { FOCUS_ROUTES, routeAt, routeLabel } from '../lib/routes';
 
 /**
  * Native-style mobile header. Visible under the `lg` breakpoint, fixed to
@@ -16,25 +17,21 @@ import { cn } from '../lib/cn';
  * column. Layout pads `<main>` to compensate via `.mobile-header-spacer`.
  *
  * Slot anatomy:
- *   [back / menu] ………………………………… [page title] ………………………………… [primary action]
+ *   [wordmark | back] ……………………… [page title] ……………………… [search | close]
  *
- * - Home → menu (opens sidebar drawer).
+ * - Home → the wordmark sits in the leading slot; there is no drawer to open.
  * - Anywhere else → back arrow (history.back). Falls back to `/` when there
  *   is no prior entry (deep link / first visit).
- * - The right action is `Search` everywhere; on focus-flow routes (Study /
- *   Mock / Round / login / signup) the X close swaps in instead.
- *
- * On the home route the title *is* the wordmark and is set a size larger,
- * the same treatment the Sidebar gives it. Ordinary page titles stay plain.
+ * - The right action is `Search` everywhere; on focus-flow routes (session,
+ *   timed, follow-ups, login, signup) the X close swaps in instead.
  */
-const FOCUS_ROUTES = [/^\/study(\/|$)/, /^\/mock(\/|$)/, /^\/round(\/|$)/, /^\/login(\/|$)/, /^\/signup(\/|$)/];
-
 const slugToLabel = (slug: string): string =>
   slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
 
 function usePageTitle(): string {
   const location = useLocation();
   const { lang } = useLang();
+  const t = useT(lang);
   const { topicTitle } = useContent(lang);
   const { data: topics = [] } = useTopics();
 
@@ -45,18 +42,14 @@ function usePageTitle(): string {
     if (topic) return topicTitle(topic);
     return slugToLabel(topicMatch[1]);
   }
-  if (path === '/' || path === '') return 'Onsite';
-  if (path === '/study')     return lang === 'ru' ? 'Повторение' : 'Study';
-  if (path === '/mock')      return lang === 'ru' ? 'Mock-собес' : 'Mock interview';
-  if (path === '/search')    return lang === 'ru' ? 'Поиск' : 'Search';
-  if (path === '/knowledge') return lang === 'ru' ? 'База знаний' : 'Knowledge';
-  if (path === '/roadmap')   return lang === 'ru' ? 'Роадмап' : 'Roadmap';
-  if (path === '/bookmarks') return lang === 'ru' ? 'Закладки' : 'Saved';
-  if (path === '/stats')     return lang === 'ru' ? 'Статистика' : 'Mastery';
-  if (path === '/settings')  return lang === 'ru' ? 'Настройки' : 'Settings';
-  if (path === '/admin')     return 'Admin';
-  if (path === '/login')     return lang === 'ru' ? 'Войти' : 'Sign in';
-  if (path === '/signup')    return lang === 'ru' ? 'Регистрация' : 'Sign up';
+  const route = routeAt(path);
+  if (route) return routeLabel(t, route);
+  if (path === '/admin')  return 'Admin';
+  if (path === '/login')  return t.nav.signIn;
+  if (path === '/signup') return lang === 'ru' ? 'Регистрация' : 'Sign up';
+  if (path === '/reset')  return lang === 'ru' ? 'Восстановление' : 'Recovery';
+  if (path === '/pricing') return lang === 'ru' ? 'Цены' : 'Pricing';
+  if (path === '/contact') return lang === 'ru' ? 'Контакты' : 'Contact';
   return '';
 }
 
@@ -68,7 +61,6 @@ export default function MobileHeader() {
   const location = useLocation();
   const { lang } = useLang();
   const t = useT(lang);
-  const toggleSidebar = usePrefs((s) => s.toggleSidebar);
   const setCommandOpen = usePrefs((s) => s.setCommandOpen);
 
   const title = usePageTitle();
@@ -76,21 +68,18 @@ export default function MobileHeader() {
   const isFocus = FOCUS_ROUTES.some((re) => re.test(location.pathname));
 
   // Track scroll direction on the main scroller so we can auto-hide the
-  // bar like Twitter/Instagram. `mainEl` resolves after Layout mounts —
-  // the hook handles a null target gracefully on the first render.
+  // bar. `mainEl` resolves after Layout mounts — the hook handles a null
+  // target gracefully on the first render.
   const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
   useEffect(() => {
     const find = () => setMainEl(document.querySelector('main'));
     find();
-    // The main element is created once, but routing remounts may swap it.
-    // Re-run after a frame to catch any deferred mounts.
     const id = requestAnimationFrame(find);
     return () => cancelAnimationFrame(id);
   }, [location.pathname]);
   const { direction, atTop } = useScrollDirection(() => mainEl, { threshold: 6 });
   const hidden = direction === 'down' && !atTop;
 
-  const onMenu = () => { tapLight(); toggleSidebar(); };
   const onBack = () => {
     tapLight();
     if (window.history.length > 1) navigate(-1);
@@ -104,7 +93,7 @@ export default function MobileHeader() {
       data-mobile-header
       className={cn(
         'fixed inset-x-0 top-0 z-40 lg:hidden',
-        'glass border-b border-rule/8',
+        'border-b border-rule/8 bg-paper/95 backdrop-blur',
         'transition-transform duration-300 ease-out',
         'will-change-transform',
         hidden ? '-translate-y-full' : 'translate-y-0',
@@ -113,19 +102,10 @@ export default function MobileHeader() {
       aria-label={lang === 'ru' ? 'Заголовок' : 'Page header'}
     >
       <div className="relative flex h-14 items-center px-2">
-        {/* Leading slot — menu on home, back arrow elsewhere. The button
-            wrapper is 44×44 so even tapping near the edge stays inside the
-            target. */}
-        <div className="flex w-12 shrink-0 items-center">
+        {/* Leading slot — the wordmark on home, back everywhere else. */}
+        <div className="flex shrink-0 items-center">
           {isHome ? (
-            <button
-              type="button"
-              onClick={onMenu}
-              aria-label={t.openMenu}
-              className={cn(ACTION_CLASS, 'ml-0.5')}
-            >
-              <Menu className="h-[22px] w-[22px]" aria-hidden />
-            </button>
+            <span className="pl-2 font-display text-[17px] font-semibold tracking-[-0.02em] text-ink">Onsite</span>
           ) : (
             <button
               type="button"
@@ -138,14 +118,13 @@ export default function MobileHeader() {
           )}
         </div>
 
-        {/* Title — absolutely centered so it doesn't shift when actions
-            change. Truncates beyond 64% width to keep edges clear. */}
-        <h1
-          className="pointer-events-none absolute left-1/2 top-1/2 max-w-[64%] -translate-x-1/2 -translate-y-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink"
-          aria-live="polite"
-        >
-          <span className={cn(isHome && 'text-[17px] tracking-[-0.02em]')}>{title}</span>
-        </h1>
+        {/* Title — absolutely centred so it doesn't shift when actions
+            change. Truncates beyond 60% width to keep edges clear. */}
+        {!isHome && (
+          <span className="pointer-events-none absolute left-1/2 top-1/2 max-w-[60%] -translate-x-1/2 -translate-y-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink">
+            {title}
+          </span>
+        )}
 
         {/* Trailing slot — search by default, X on focus-flow routes. */}
         <div className="ml-auto flex w-12 shrink-0 items-center justify-end">

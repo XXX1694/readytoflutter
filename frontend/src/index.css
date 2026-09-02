@@ -65,8 +65,10 @@
 
   .dark {
     /* Dark — the same paper after hours: warm black, warm off-white ink. */
-    --paper:         18  18  16;   /* #121210 */
-    --paper-2:       28  28  25;   /* #1C1C19 */
+    /* Page and sheet sit 13 levels apart (they were 6): a card needs an
+       edge in the dark too, and a 14% hairline can carry it. */
+    --paper:         14  14  13;   /* #0E0E0D */
+    --paper-2:       27  27  24;   /* #1B1B18 */
     --ink:          242 241 234;   /* #F2F1EA */
     --ink-2:        199 196 185;
     --ink-3:        158 154 143;
@@ -98,7 +100,19 @@
     -webkit-tap-highlight-color: transparent;
   }
   .dark * {
-    border-color: rgb(var(--rule) / 0.10);
+    border-color: rgb(var(--rule) / 0.14);
+  }
+
+  /* DESIGN.md rule 5 in one place: with reduced motion on, every CSS
+     transition and animation collapses. framer-motion honours the same
+     setting through <MotionConfig reducedMotion="user"> in Layout. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   html, body, #root { height: 100%; }
@@ -190,9 +204,6 @@
     background: rgb(var(--paper));
     position: relative;
   }
-  /* Kept so the old stacking contract (children above the background) still
-     holds for anything that relied on it. */
-  .bg-page > * { position: relative; z-index: 1; }
 
   /* ── Glass surface — translucent with backdrop blur. Use for floating
        UI like sidebars, headers, command palette. */
@@ -254,17 +265,6 @@
     letter-spacing: -0.015em;
   }
 
-  /* ── Level and difficulty chips. Tinted background + matching text, no
-       border — one less line per chip, and rows of them stop looking like
-       a control panel. */
-  .level-badge-junior { @apply bg-brand/8 text-brand; }
-  .level-badge-mid    { @apply bg-plum/10 text-plum; }
-  .level-badge-senior { @apply bg-ink/8 text-ink-2; }
-
-  .diff-easy   { @apply bg-mint/10 text-mint; }
-  .diff-medium { @apply bg-amber/12 text-[rgb(var(--amber))]; }
-  .diff-hard   { @apply bg-coral/10 text-coral; }
-
   /* ── Touch-target — Apple HIG 44px / Material 48px. Apply to small icons
        sitting inside dense rows so the tap area covers a full finger pad
        even when the icon visual is 18-20px. */
@@ -272,19 +272,6 @@
     min-width: 44px;
     min-height: 44px;
   }
-  .touch-target-lg {
-    min-width: 48px;
-    min-height: 48px;
-  }
-
-  /* ── Safe-area paddings — wrap UI that hits screen edges on iPhones with
-       a notch / home indicator. Combine with sticky bottoms / tops. */
-  .safe-pt    { padding-top:    env(safe-area-inset-top, 0px); }
-  .safe-pb    { padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .safe-pl    { padding-left:   env(safe-area-inset-left, 0px); }
-  .safe-pr    { padding-right:  env(safe-area-inset-right, 0px); }
-  .safe-px    { padding-left:   env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-  .safe-py    { padding-top:    env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 
   /* Active-state ripple-ish feedback. Tailwind's `active:` variant scales
      the visual; this combines a subtle bg-tint + scale for buttons that
@@ -312,48 +299,6 @@
     .mobile-header-spacer { padding-top: 0; }
   }
 
-  /* Snap utility for horizontal swiping panels (filter chips, tab strips). */
-  .snap-x-mandatory {
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-  }
-  .snap-start { scroll-snap-align: start; }
-
-  /* Mobile sidebar drawer override — under <lg we want a *solid*, slightly
-     ink-tinted surface so the drawer doesn't wash out against bright page
-     content. The desktop `.glass` look (frosted near-white) stays intact
-     at lg+ where the sidebar is permanent and benefits from translucency. */
-  @media (max-width: 1023px) {
-    [data-drawer-mobile] {
-      background: rgb(var(--paper));
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-      box-shadow:
-        inset 0 0 0 1px rgb(var(--rule) / 0.06),
-        4px 0 24px -4px rgb(var(--shadow) / 0.20);
-    }
-    /* Add a subtle ink wash so the drawer reads "darker than the page"
-       in light theme where paper and paper-2 are nearly identical. */
-    [data-drawer-mobile]::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgb(var(--ink) / 0.04);
-      pointer-events: none;
-      z-index: 0;
-    }
-    /* Lift the drawer's children above the wash so they paint on top. */
-    [data-drawer-mobile] > * {
-      position: relative;
-      z-index: 1;
-    }
-    .dark [data-drawer-mobile] {
-      background: rgb(var(--paper-2));
-    }
-    .dark [data-drawer-mobile]::before {
-      background: rgb(var(--rule) / 0.04);
-    }
-  }
 }
 
 /* ── Vaul bottom-sheet polish — the library renders an unstyled drawer; we

@@ -55,7 +55,6 @@ export default function PlatformFilter({ className, hideLabel = false }: Platfor
                   : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
               )}
             >
-              <span className={cn('h-1.5 w-1.5 rounded-full', p.dot)} aria-hidden />
               {platformCopy(t, p.labelKey)}
             </button>
           );

@@ -66,11 +66,12 @@ export default function GlobalHotkeys() {
   useHotkeys('k', (e: KeyboardEvent) => consumeGo(e, '/knowledge'));
   useHotkeys('b', (e: KeyboardEvent) => consumeGo(e, '/bookmarks'));
   useHotkeys('t', (e: KeyboardEvent) => {
-    if (consumeGo(e, '/stats')) return;
+    if (consumeGo(e, '/topics')) return;
     if (isTyping(e) || open) return;
     e.preventDefault();
     toggleTheme();
   });
+  useHotkeys('p', (e: KeyboardEvent) => consumeGo(e, '/stats'));
   useHotkeys('a', (e: KeyboardEvent) => consumeGo(e, '/settings'));
   useHotkeys('r', (e: KeyboardEvent) => {
     if (consumeGo(e, '/roadmap')) return;

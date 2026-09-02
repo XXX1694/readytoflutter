@@ -21,10 +21,6 @@ export interface PrefsState {
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 
-  sidebarOpen: boolean;
-  setSidebarOpen: (sidebarOpen: boolean) => void;
-  toggleSidebar: () => void;
-
   topicFilter: TopicFilter;
   setTopicFilter: (topicFilter: TopicFilter) => void;
 
@@ -61,7 +57,7 @@ const initialTheme = (): Theme => {
 // index.html) so the status bar blends with the page instead of a stale grey.
 const THEME_COLORS: Record<Theme, string> = {
   light: '#F9F9F6',
-  dark:  '#121210',
+  dark:  '#0E0E0D',
 };
 
 const applyTheme = (theme: Theme): void => {
@@ -116,11 +112,6 @@ export const usePrefs = create<PrefsState>()(
         applyTheme(next);
         set({ theme: next });
       },
-
-      // Sidebar (mobile)
-      sidebarOpen: false,
-      setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-      toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
       // Topic page filter
       topicFilter: 'all',

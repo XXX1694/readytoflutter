@@ -49,11 +49,11 @@ export default {
         // Display scale. Schibsted has a tall x-height and open counters, so
         // it needs far less negative tracking than Inter did — the previous
         // -0.045em at 6.5rem collided the letterforms into a logo.
+        // Two display steps only. The 60/80/104px marketing sizes were used
+        // by one headline that greeted returning users every session; a page
+        // title is 28px (`text-[28px]`), a section 20px.
         'display-xs': ['2rem',    { lineHeight: '1.08', letterSpacing: '-0.014em', fontWeight: '600' }],
         'display-sm': ['2.75rem', { lineHeight: '1.05', letterSpacing: '-0.017em', fontWeight: '600' }],
-        'display-md': ['3.75rem', { lineHeight: '1.02', letterSpacing: '-0.020em', fontWeight: '600' }],
-        'display-lg': ['5rem',    { lineHeight: '0.98', letterSpacing: '-0.023em', fontWeight: '600' }],
-        'display-xl': ['6.5rem',  { lineHeight: '0.96', letterSpacing: '-0.026em', fontWeight: '600' }],
       },
 
       letterSpacing: {
@@ -89,8 +89,6 @@ export default {
         md: '8px',
         lg: '10px',
         xl: '12px',
-        '2xl': '14px',
-        '3xl': '18px',
       },
 
       boxShadow: {

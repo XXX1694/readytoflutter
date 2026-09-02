@@ -3,8 +3,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type { Level, Difficulty, ProgressStatus } from '../types/domain';
 
 /**
- * Class definitions for Button, Card and Pill, kept out of the component files
- * so those export components only and Fast Refresh keeps working.
+ * Class definitions for Button and Pill, kept out of the component files so
+ * those export components only and Fast Refresh keeps working.
  */
 
 /**
@@ -58,43 +58,6 @@ export const buttonVariants = cva(
 );
 
 export type ButtonVariantProps = VariantProps<typeof buttonVariants>;
-
-/**
- * Card — a sheet on the page. Matches the `.codex-card` utility in index.css:
- * hairline border, 10px radius, a 1px drop and nothing more. Hovering an
- * interactive card darkens its border; it does not move.
- */
-const sheet = 'bg-paper-2 border border-rule/12 rounded-lg shadow-codex-sm';
-
-export const cardVariants = cva('relative', {
-  variants: {
-    variant: {
-      codex: sheet,
-      codexInteractive: [
-        sheet,
-        'cursor-pointer text-left',
-        'transition-colors duration-150 ease-out hover:border-rule/22',
-      ],
-      soft: 'bg-paper-2 border border-rule/12 rounded-lg',
-      quiet: 'bg-paper-2 border border-rule/8 rounded-lg',
-      outline: 'bg-transparent border border-rule/12 rounded-lg',
-      // `.glass` already carries its own hairline border.
-      glass: 'rounded-lg glass shadow-codex-sm',
-    },
-    padding: {
-      none: 'p-0',
-      sm: 'p-3',
-      md: 'p-5',
-      lg: 'p-6 sm:p-8',
-    },
-  },
-  defaultVariants: {
-    variant: 'codex',
-    padding: 'md',
-  },
-});
-
-export type CardVariantProps = VariantProps<typeof cardVariants>;
 
 /**
  * Pill — a tinted chip: background wash plus matching text, no border. Set in

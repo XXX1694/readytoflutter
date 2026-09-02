@@ -1,26 +1,19 @@
 /**
- * Route prefetch registry. Each entry is an `import()` thunk for a lazy
- * page chunk. Calling the thunk twice is fine — Vite/Rollup reuse the
- * already-resolved module, so spamming `prefetch('/study')` is cheap.
+ * Route prefetch. Each registered destination in lib/routes carries an
+ * `import()` thunk for its page chunk. Calling a thunk twice is fine —
+ * Vite/Rollup reuse the already-resolved module, so spamming
+ * `prefetch('/study')` is cheap.
  *
  * BottomNav fires `prefetch(path)` on pointerdown so the chunk starts
  * downloading before the click handler runs (~50-150ms of headstart on
- * touch devices). `prefetchIdle()` warms the rest of the tab roots once
- * the main thread has a moment to spare.
+ * touch devices). `prefetchIdle()` warms the tab roots once the main thread
+ * has a moment to spare.
  */
-const REGISTRY: Record<string, () => Promise<unknown>> = {
-  '/':           () => import('../pages/HomePage'),
-  '/study':      () => import('../pages/StudyPage'),
-  '/mock':       () => import('../pages/MockPage'),
-  '/bookmarks':  () => import('../pages/BookmarksPage'),
-  '/knowledge':  () => import('../pages/KnowledgePage'),
-  '/roadmap':    () => import('../pages/RoadmapPage'),
-  '/search':     () => import('../pages/SearchPage'),
-  '/stats':      () => import('../pages/StatsPage'),
-  '/settings':   () => import('../pages/SettingsPage'),
-  '/login':      () => import('../pages/LoginPage'),
-  '/signup':     () => import('../pages/SignupPage'),
-};
+import { ROUTES } from './routes';
+
+const REGISTRY: Record<string, () => Promise<unknown>> = Object.fromEntries(
+  ROUTES.map((r) => [r.path, r.load]),
+);
 
 const fired = new Set<string>();
 

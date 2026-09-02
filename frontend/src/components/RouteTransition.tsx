@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { TAB_ROOTS } from '../lib/routes';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useIsMobile } from '../lib/useMediaQuery';
@@ -25,8 +26,6 @@ import { useIsMobile } from '../lib/useMediaQuery';
 
 // Roots that the bottom nav can land on. Switching between any two of
 // these counts as a tab swap, not a push/pop.
-const TAB_ROOTS = ['/', '/study', '/bookmarks', '/knowledge', '/settings', '/login', '/signup', '/stats', '/search', '/mock'];
-
 const isTabRoot = (path: string): boolean => TAB_ROOTS.includes(path);
 
 type NavKind = 'same' | 'tab' | 'push' | 'pop';
