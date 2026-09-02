@@ -74,10 +74,11 @@ function convertBullet(line) {
   // Emphasise a short leading term: "term — rest" or "term: rest".
   const dash = body.match(/^(.{2,40}?) — (.*)$/);
   const colon = body.match(/^([^:]{2,40}?): (.*)$/);
+  // Emphasis cannot close on whitespace, so a padded term ("Pre-order  ") is trimmed.
   if (dash && isTerm(dash[1])) {
-    body = `**${mapProse(dash[1], escapeProse)}** — ${mapProse(dash[2], escapeProse)}`;
+    body = `**${mapProse(dash[1].trim(), escapeProse)}** — ${mapProse(dash[2], escapeProse)}`;
   } else if (colon && isTerm(colon[1])) {
-    body = `**${mapProse(colon[1], escapeProse)}**: ${mapProse(colon[2], escapeProse)}`;
+    body = `**${mapProse(colon[1].trim(), escapeProse)}**: ${mapProse(colon[2], escapeProse)}`;
   } else {
     body = mapProse(body, escapeProse);
   }

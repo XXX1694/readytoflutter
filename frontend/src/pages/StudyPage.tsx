@@ -59,7 +59,7 @@ export default function StudyPage() {
   const { lang } = useLang();
   const t = useT(lang);
   const c = useSessionCopy(lang);
-  const { questionText, answerText } = useContent(lang);
+  const { questionText, answerText, topicTitle } = useContent(lang);
   const recallMode = usePrefs((s) => s.recallMode);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
   const platform = usePrefs((s) => s.platform);
@@ -172,7 +172,16 @@ export default function StudyPage() {
   if (isLoading) return <FullPageLoader />;
 
   if (pool.length === 0) {
-    return (
+    // An `?ids=` link whose questions are gone has no level or topic control
+    // to offer; the way out is today's session.
+    return idsScope ? (
+      <Notice
+        title={c.staleTitle}
+        body={c.staleBody}
+        label={t.nav.startSession}
+        onClose={() => navigate('/study', { replace: true })}
+      />
+    ) : (
       <Notice
         title={c.emptyTitle}
         body={c.emptyBody}
@@ -258,7 +267,7 @@ export default function StudyPage() {
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <Pill tone={difficultyTone[current.difficulty]} size="xs">{difficultyLabel}</Pill>
         <span className="eyebrow">
-          {current.topic_title}
+          {topicTitle({ id: current.topic_id, title: current.topic_title || '' })}
           {isFresh && ` · ${c.isNew}`}
         </span>
       </div>

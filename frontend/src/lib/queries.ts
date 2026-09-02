@@ -10,6 +10,7 @@ import {
   type QuestionFilterParams,
 } from '../api/api';
 import { queryKeys } from './queryClient';
+import { resetAll as resetSrs } from './srs';
 
 import type { Topic, Question, Stats, ProgressStatus, Level, Roadmap } from '../types/domain.ts';
 
@@ -125,6 +126,9 @@ export function useResetProgress() {
   return useMutation({
     mutationFn: () => resetProgress(),
     onSuccess: () => {
+      // "Reset all progress" means the schedule too: with the cards' ease and
+      // due dates kept, Today's plan would never return to a first pass.
+      resetSrs();
       qc.invalidateQueries();
     },
   });

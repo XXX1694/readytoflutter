@@ -8,7 +8,7 @@ import { useBookmarksCopy } from '../i18n/bookmarksPage';
 import { Button, EmptyState, PageHeader, PageShell, Skeleton } from '../ui/index';
 import QuestionCard from '../components/QuestionCard';
 import { usePrefs } from '../store/prefs';
-import { filterQuestionsByPlatform } from '../lib/platform';
+import { filterQuestionsByPlatform, PLATFORMS } from '../lib/platform';
 
 /**
  * Saved: the questions flagged for another pass, scoped to the stack chosen
@@ -24,11 +24,14 @@ export default function BookmarksPage() {
   const ids = useBookmarkIds();
   const platform = usePrefs((s) => s.platform);
 
-  const bookmarked = useMemo(() => {
+  const { bookmarked, ownCount } = useMemo(() => {
     const set = new Set(ids);
     const own = questions.filter((q) => set.has(q.id));
-    return filterQuestionsByPlatform(own, topics, platform);
+    return { bookmarked: filterQuestionsByPlatform(own, topics, platform), ownCount: own.length };
   }, [questions, topics, ids, platform]);
+  const setPlatform = usePrefs((s) => s.setPlatform);
+  const stackMeta = PLATFORMS.find((p) => p.key === platform);
+  const stackLabel = stackMeta ? (t[stackMeta.labelKey as keyof typeof t] as string) : platform;
 
   if (isLoading) {
     return (
@@ -61,7 +64,13 @@ export default function BookmarksPage() {
         )}
       />
 
-      {bookmarked.length === 0 ? (
+      {bookmarked.length === 0 && ownCount > 0 ? (
+        <EmptyState
+          title={c.scopedTitle(ownCount)}
+          body={c.scopedBody(stackLabel)}
+          action={{ label: t.nav.allStacks, onClick: () => setPlatform('all') }}
+        />
+      ) : bookmarked.length === 0 ? (
         <EmptyState
           title={c.emptyTitle}
           body={c.emptyBody}

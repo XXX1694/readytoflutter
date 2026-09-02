@@ -138,6 +138,15 @@ export default function TopicPage() {
     if (i >= 0) {
       setCursor(i);
       setOpenId(id);
+    } else {
+      // The question exists but the persisted To do / Done filter hides it.
+      // A deep link outranks a filter: show every question and land on it.
+      const all = questions.findIndex((q) => q.id === id);
+      if (all >= 0) {
+        setStoredFilter('all');
+        setCursor(all);
+        setOpenId(id);
+      }
     }
   }
   useEffect(() => {
@@ -166,11 +175,15 @@ export default function TopicPage() {
   }, { preventDefault: true });
 
   useHotkeys('space', (e) => {
+    // A focused button, link or menu trigger keeps its own Space behaviour;
+    // the toggle is for the reading cursor on the page body.
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, [role="button"], [role="menuitem"], summary')) return;
     if (!filtered.length) return;
     e.preventDefault();
     const q = filtered[activeCursor];
     setOpenId((prev) => (prev === q.id ? null : q.id));
-  }, { preventDefault: true });
+  });
 
   if (isLoading) return <TopicSkeleton />;
   if (error || !topic) {

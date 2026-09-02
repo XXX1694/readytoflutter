@@ -1,3 +1,5 @@
+import { ruPlural } from './plural';
+
 export const UI = {
   en: {
     // App loader
@@ -107,7 +109,7 @@ export const UI = {
     // TopicPage
     loadingTopic: 'Loading topic...',
     topicNotFound: 'Topic not found',
-    redirectingHome: 'Heading back to dashboard…',
+    redirectingHome: 'Heading back to Today…',
     filterAll: 'All',
     filterTodo: 'To do',
     filterInProgress: 'In progress',
@@ -270,7 +272,7 @@ export const UI = {
     progressReset: 'Прогресс сброшен',
     offline: 'Офлайн',
     offlineHint: 'Нет сети — пишем локально',
-    topicCount: (n: number) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
+    topicCount: (n: number) => `${n} ${ruPlural(n, 'тема', 'темы', 'тем')}`,
     completedOf: 'пройдено',
 
     // Level labels
@@ -303,8 +305,8 @@ export const UI = {
       drillNode: 'Пройти эти',
       openTopic: 'Открыть тему',
       openRoadmap: 'Открыть маршрут',
-      rungs: (n: number) => `${n} ${n === 1 ? 'уровень' : n < 5 ? 'уровня' : 'уровней'}`,
-      questions: (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'вопрос' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'вопроса' : 'вопросов'}`,
+      rungs: (n: number) => `${n} ${ruPlural(n, 'уровень', 'уровня', 'уровней')}`,
+      questions: (n: number) => `${n} ${ruPlural(n, 'вопрос', 'вопроса', 'вопросов')}`,
       tier: { easy: 'Основы', medium: 'База', hard: 'Продвинутое', all: 'Вся тема' } as Record<string, string>,
       inTrack: 'вопросов в этом треке',
       metaDesc: 'Маршрут подготовки к собеседованию для Flutter, iOS и Android из шестнадцати уровней — от Junior 1 до Staff, где каждый уровень — набор реальных вопросов.',
@@ -322,7 +324,7 @@ export const UI = {
 
     // SearchPage
     searchHeading: 'Поиск:',
-    resultCount: (n: number) => `${n} ${n === 1 ? 'результат' : n < 5 ? 'результата' : 'результатов'}`,
+    resultCount: (n: number) => `${n} ${ruPlural(n, 'результат', 'результата', 'результатов')}`,
     noResultsFor: (q: string) => `Ничего по запросу «${q}»`,
     tryDifferentKeywords: 'Попробуй другие слова или сними фильтры',
     filterByLevel: 'Фильтр по уровню',
@@ -399,7 +401,7 @@ export const UI = {
     stackPickerTitle: 'Какой стек готовишь?',
     stackPickerSubtitle: 'Выбери один — каталог свернётся под него. Поменять можно в любой момент с дашборда или из Cmd+K.',
     stackPickerLater: 'Позже',
-    stackPickerCount: (n: number) => `${n} ${n === 1 ? 'тема' : n < 5 ? 'темы' : 'тем'}`,
+    stackPickerCount: (n: number) => `${n} ${ruPlural(n, 'тема', 'темы', 'тем')}`,
     platformDescAll: 'Все темы по всем стекам — для общего обзора.',
     platformDescFlutter: 'Flutter и Dart — виджеты, состояние, async, навигация, внутренности.',
     platformDescIos: 'Swift, SwiftUI, UIKit, Combine, архитектура и перформанс iOS.',

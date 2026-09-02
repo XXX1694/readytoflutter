@@ -9,6 +9,7 @@ import { useContent } from '../i18n/content';
 import { Button, FullPageLoader } from '../ui/index';
 import { cn } from '../lib/cn';
 import AnswerText from '../components/AnswerText';
+import InlineMarkdown from '../components/InlineMarkdown';
 import { extractHint, shortenCode } from '../lib/hint';
 import type { Difficulty, Question } from '../types/domain';
 
@@ -165,7 +166,7 @@ export default function CheatsheetPage() {
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <h2 className="font-display text-[13.5px] font-semibold leading-snug text-ink">
-                  {it.question}
+                  <InlineMarkdown text={it.question} />
                 </h2>
               </div>
               <div className={cn('ml-7 mt-0.5 text-[11px]', diffTone[it.difficulty] || 'text-muted')}>

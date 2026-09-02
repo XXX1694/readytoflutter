@@ -1,4 +1,5 @@
 import type { Lang } from './LangContext';
+import { ruPlural } from './plural';
 
 // Copy for /topics. Lives beside the page (not in ui.ts) so the strings ship
 // with the page chunk rather than the entry.
@@ -20,7 +21,7 @@ const en = {
 const ru: typeof en = {
   eyebrow: 'Каталог',
   title: 'Темы',
-  subtitle: (topics, questions) => `${topics} тем · ${questions} вопросов`,
+  subtitle: (topics, questions) => `${topics} ${ruPlural(topics, 'тема', 'темы', 'тем')} · ${questions} ${ruPlural(questions, 'вопрос', 'вопроса', 'вопросов')}`,
   filterPlaceholder: 'Найти тему',
   levelAll: 'Все уровни',
   showEveryStack: 'Показать все стеки',

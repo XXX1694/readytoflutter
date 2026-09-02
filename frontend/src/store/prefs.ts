@@ -33,10 +33,6 @@ export interface PrefsState {
   roadmapTrack: RoadmapTrackKey | null;
   setRoadmapTrack: (roadmapTrack: RoadmapTrackKey) => void;
 
-  searchFacets: SearchFacets;
-  setSearchFacet: <K extends keyof SearchFacets>(key: K, value: SearchFacets[K]) => void;
-  resetSearchFacets: () => void;
-
   commandOpen: boolean;
   setCommandOpen: (commandOpen: boolean) => void;
   toggleCommand: () => void;
@@ -91,7 +87,6 @@ const nextTheme = (current: Theme): Theme => {
 interface PersistedPrefs {
   theme: Theme;
   topicFilter: TopicFilter;
-  searchFacets: SearchFacets;
   recallMode: boolean;
   platform: PlatformKey;
   roadmapTrack: RoadmapTrackKey | null;
@@ -126,13 +121,6 @@ export const usePrefs = create<PrefsState>()(
       roadmapTrack: null,
       setRoadmapTrack: (roadmapTrack) => set({ roadmapTrack }),
 
-      // Search facets
-      searchFacets: { level: null, difficulty: null, status: null },
-      setSearchFacet: (key, value) =>
-        set((s) => ({ searchFacets: { ...s.searchFacets, [key]: value } })),
-      resetSearchFacets: () =>
-        set({ searchFacets: { level: null, difficulty: null, status: null } }),
-
       // Command palette open state
       commandOpen: false,
       setCommandOpen: (commandOpen) => set({ commandOpen }),
@@ -153,7 +141,6 @@ export const usePrefs = create<PrefsState>()(
       partialize: (s): PersistedPrefs => ({
         theme: s.theme,
         topicFilter: s.topicFilter,
-        searchFacets: s.searchFacets,
         recallMode: s.recallMode,
         platform: s.platform,
         roadmapTrack: s.roadmapTrack,

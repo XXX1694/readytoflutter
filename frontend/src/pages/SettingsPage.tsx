@@ -21,7 +21,7 @@ import {
 import PushReminders from '../components/PushReminders';
 import { RecoveryCodePanel } from './ResetPasswordPage';
 import { getBookmarkIds } from '../lib/bookmarks';
-import { useResetProgress } from '../lib/queries';
+import { useQuestions, useResetProgress } from '../lib/queries';
 import { PLATFORMS } from '../lib/platform';
 import { cn } from '../lib/cn';
 import type { User } from '../types/domain';
@@ -516,7 +516,16 @@ function SavedRow({ c }: { c: SettingsCopy }) {
 
 function DataFlows({ c, t }: { c: SettingsCopy; t: UICopy }) {
   const reset = useResetProgress();
-  const [items] = useState(() => serializeLocalProgress(readLocalProgress()));
+  const token = useAuth((s) => s.token);
+  // Signed in, the browser's copy is empty by design (it was synced and
+  // cleared at sign-in) — the export has to come from the server's view.
+  const { data: questions = [] } = useQuestions();
+  const [localItems] = useState(() => serializeLocalProgress(readLocalProgress()));
+  const items = token
+    ? questions
+      .filter((q) => q.status && q.status !== 'not_started')
+      .map((q) => ({ questionId: q.id, status: q.status!, notes: q.notes ?? null, updated_at: new Date().toISOString() }))
+    : localItems;
   const [bookmarks] = useState(() => getBookmarkIds());
   const empty = items.length === 0 && bookmarks.length === 0;
 

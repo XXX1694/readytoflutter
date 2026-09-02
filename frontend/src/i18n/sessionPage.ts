@@ -1,4 +1,5 @@
 import type { Lang } from './LangContext';
+import { ruPlural } from './plural';
 
 // Copy for the three session runners — /study (Session), /mock (Timed
 // session) and /round/:slug (Follow-ups). One dictionary, because the three
@@ -54,10 +55,12 @@ const en = {
   questionsCount: (n: number) => `${n} questions`,
   skippedCount: (n: number) => `${n} skipped`,
   again: 'One more set',
-  dashboard: 'Dashboard',
+  dashboard: 'Today',
 
   // ── Session (/study) ────────────────────────────────────────────────────
-  bookmarksScope: 'Bookmarks',
+  bookmarksScope: 'Saved',
+  staleTitle: 'This link has no questions left',
+  staleBody: 'The set it pointed to has changed. Start today\'s session instead.',
   emptyTitle: 'No questions in this scope',
   emptyBody: 'Try another level or topic.',
   caughtUpTitle: 'All caught up',
@@ -110,7 +113,7 @@ const ru: typeof en = {
   gistPrompt: 'Что помнишь? Пара строк',
   gistPlaceholder: 'Даже одно слово фиксирует мысль',
   answerPrompt: 'Отвечай так, как сказал бы вслух',
-  chars: (n) => `${n} знаков`,
+  chars: (n) => `${n} ${ruPlural(n, 'знак', 'знака', 'знаков')}`,
   whatYouWrote: 'Ты написал',
   nothingWritten: 'Ничего',
   reference: 'Эталон',
@@ -125,13 +128,15 @@ const ru: typeof en = {
   skippedShort: 'пропуск',
 
   recapTitle: 'Сессия закрыта',
-  cardsReviewed: (n) => `${n} карточек повторено`,
-  questionsCount: (n) => `${n} вопросов`,
+  cardsReviewed: (n) => `${n} ${ruPlural(n, 'карточка повторена', 'карточки повторены', 'карточек повторено')}`,
+  questionsCount: (n) => `${n} ${ruPlural(n, 'вопрос', 'вопроса', 'вопросов')}`,
   skippedCount: (n) => `${n} пропущено`,
   again: 'Ещё подход',
   dashboard: 'На главную',
 
-  bookmarksScope: 'Закладки',
+  bookmarksScope: 'Сохранённое',
+  staleTitle: 'В этой ссылке не осталось вопросов',
+  staleBody: 'Набор, на который она вела, изменился. Начни сегодняшнюю сессию.',
   emptyTitle: 'Здесь пока нет вопросов',
   emptyBody: 'Попробуй другой уровень или тему.',
   caughtUpTitle: 'Всё повторено',

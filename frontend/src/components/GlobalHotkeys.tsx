@@ -24,6 +24,15 @@ export default function GlobalHotkeys() {
 
   useHotkeys('mod+k', (e: KeyboardEvent) => { e.preventDefault(); setOpen(!open); }, { enableOnFormTags: true });
   useHotkeys('mod+slash', (e: KeyboardEvent) => { e.preventDefault(); setOpen(!open); }, { enableOnFormTags: true });
+  // Plain `/` opens the palette from any page — the same thing the header's
+  // search field does. Skipped while typing so a slash still types a slash.
+  useHotkeys('slash', (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement | null;
+    const tag = (target?.tagName || '').toLowerCase();
+    if (['input', 'textarea', 'select'].includes(tag) || target?.isContentEditable || open) return;
+    e.preventDefault();
+    setOpen(true);
+  });
   useHotkeys('mod+s', (e: KeyboardEvent) => { e.preventDefault(); navigate('/study'); }, { enableOnFormTags: true });
   useHotkeys('mod+m', (e: KeyboardEvent) => { e.preventDefault(); navigate('/mock'); }, { enableOnFormTags: true });
   useHotkeys('mod+b', (e: KeyboardEvent) => { e.preventDefault(); navigate('/bookmarks'); }, { enableOnFormTags: true });

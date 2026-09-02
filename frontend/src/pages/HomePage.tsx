@@ -134,7 +134,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
       to="/roadmap"
       className="rounded-sm text-[15px] leading-relaxed text-ink-2 transition-colors hover:text-ink"
     >
-      <span className="font-medium text-ink">{trackMeta ? copy(t, trackMeta.labelKey) : trackKey}</span>
+      <span className="font-medium text-ink">{c.trackLine(trackMeta ? copy(t, trackMeta.labelKey) : trackKey)}</span>
       <span aria-hidden className="text-muted-2"> · </span>
       {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
       <span aria-hidden className="text-muted-2"> · </span>

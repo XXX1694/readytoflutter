@@ -94,7 +94,7 @@ export default function MockPage() {
   const { lang } = useLang();
   const t = useT(lang);
   const c = useSessionCopy(lang);
-  const { questionText, answerText } = useContent(lang);
+  const { questionText, answerText, topicTitle } = useContent(lang);
   const { data: allQuestions = NO_QUESTIONS, isLoading } = useQuestions();
   const { data: allTopics = NO_TOPICS } = useTopics();
   const platform = usePrefs((s) => s.platform);
@@ -248,7 +248,7 @@ export default function MockPage() {
               variant="ghost"
               size="icon"
               className="hidden sm:inline-flex"
-              onClick={() => navigate('/')}
+              onClick={() => { if (!started || window.confirm(c.endConfirm)) navigate('/'); }}
             >
               <X className="h-4 w-4" aria-hidden />
               <span className="sr-only">{c.close}</span>
@@ -268,7 +268,7 @@ export default function MockPage() {
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
           <Pill tone={difficultyTone[current.difficulty]} size="xs">{difficultyLabel}</Pill>
           <span className="eyebrow">
-            {current.topic_title}
+            {topicTitle({ id: current.topic_id, title: current.topic_title || '' })}
             {current.level && ` · ${t[current.level].short}`}
           </span>
         </div>
@@ -606,7 +606,7 @@ function Recap({
               <summary className="flex cursor-pointer list-none items-center gap-3">
                 <span className="num w-6 shrink-0 text-[13px] text-muted-2">{i + 1}</span>
                 <span className="flex-1 truncate text-sm text-ink-2">
-                  {questionText(question)}
+                  <InlineMarkdown text={questionText(question)} />
                 </span>
                 <span className="shrink-0 text-[13px] text-muted">
                   {outcomeLabel(outcomes[question.id], c)}

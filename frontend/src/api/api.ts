@@ -272,7 +272,10 @@ const fallbackGetStats = async (): Promise<Stats> => {
   const progress = readProgress();
 
   const totalQuestions = questions.length;
-  const values = Object.values(progress);
+  const known = new Set(questions.map((q) => q.id));
+  const values = Object.entries(progress)
+    .filter(([id]) => known.has(Number(id)))
+    .map(([, entry]) => entry);
   const completed = values.filter((p) => p.status === 'completed').length;
   const inProgress = values.filter((p) => p.status === 'in_progress').length;
 

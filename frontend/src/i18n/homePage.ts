@@ -14,6 +14,8 @@ const plural = (n: number, forms: [string, string, string]): string => {
 };
 
 const en = {
+  /** The orientation line names the roadmap track explicitly — it can differ from the header's stack. */
+  trackLine: (track: string) => `${track} roadmap`,
   // First run — the inline stack picker that replaced the modal.
   promise: 'Answer the questions you\'ll actually be asked. Fifteen minutes a day.',
   pickStack: 'Choose a stack',
@@ -36,6 +38,7 @@ const en = {
 };
 
 const ru: typeof en = {
+  trackLine: (track) => `Маршрут ${track}`,
   promise: 'Отвечай на те вопросы, которые реально спросят. Пятнадцать минут в день.',
   pickStack: 'Выбери стек',
   browseEverything: 'Смотреть всё',

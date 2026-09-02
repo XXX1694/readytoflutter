@@ -6,6 +6,7 @@ import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { Button, FullPageLoader } from '../ui/index';
 import AnswerText from '../components/AnswerText';
+import InlineMarkdown from '../components/InlineMarkdown';
 import CodeBlock from '../components/CodeBlock';
 import type { Question } from '../types/domain';
 
@@ -114,7 +115,7 @@ export default function PrintTopicPage() {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <h2 className="font-display text-base font-semibold leading-snug text-ink sm:text-lg">
-                    {questionText(q)}
+                    <InlineMarkdown text={questionText(q)} />
                   </h2>
                 </div>
                 <div className="ml-9 mt-0.5 text-[12px] text-muted">{difficultyLabel}</div>

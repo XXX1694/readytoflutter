@@ -278,7 +278,7 @@ export default function SearchPage() {
           {shown.map((q, i) => (
             <div key={q.id} className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5 px-1 text-[13px] text-muted">
-                <span>{q.topic_title}</span>
+                <span>{topicTitle({ id: q.topic_id, title: q.topic_title || '' })}</span>
                 <span className="text-muted-2">·</span>
                 <span>{(q.level && t[q.level]?.short) || q.level}</span>
               </div>

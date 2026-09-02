@@ -1,4 +1,5 @@
 import type { Lang } from './LangContext';
+import { ruPlural } from './plural';
 
 // Copy for /settings ("Me"). The page works signed out, so most of this is
 // read by anonymous visitors; the account flows below only appear once there
@@ -149,7 +150,7 @@ const ru: typeof en = {
   writeItFirstHint: 'Каждая карточка сначала просит записать суть и только потом показывает ответ. Клавиша R переключает режим на ходу.',
 
   savedRow: 'Сохранённые вопросы',
-  savedCount: (n) => `${n} вопросов`,
+  savedCount: (n) => `${n} ${ruPlural(n, 'вопрос', 'вопроса', 'вопросов')}`,
   sourcesRow: 'Книги, документация и доклады',
   sourcesMeta: 'То, из чего выросли вопросы',
 

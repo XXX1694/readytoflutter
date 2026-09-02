@@ -25,7 +25,7 @@ const SHORTCUTS: ShortcutGroup[] = [
     { keys: [M, 'M'], en: 'Timed session', ru: 'Сессия на время' },
     { keys: [M, 'B'], en: 'Saved', ru: 'Сохранённое' },
     { keys: [M, ','], en: 'Me', ru: 'Профиль' },
-    { keys: ['/'],    en: 'Focus global search', ru: 'Фокус на поиск' },
+    { keys: ['/'],    en: 'Search or run a command', ru: 'Поиск или команда' },
     { keys: ['?'],    en: 'This panel', ru: 'Эта панель' },
     { keys: ['Esc'],  en: 'Close / leave', ru: 'Закрыть / уйти' },
   ]},
@@ -57,9 +57,9 @@ const SHORTCUTS: ShortcutGroup[] = [
     { keys: ['3'],     en: 'Good',  ru: 'Хорошо' },
     { keys: ['4'],     en: 'Easy',  ru: 'Легко' },
   ]},
-  { group: { en: 'Mock interview', ru: 'Mock-собес' }, items: [
+  { group: { en: 'Timed session', ru: 'Сессия на время' }, items: [
     { keys: [M, '↵'], en: 'Reveal answer', ru: 'Показать эталон' },
-    { keys: ['1–4'],  en: 'Self-grade after reveal', ru: 'Self-grade после reveal' },
+    { keys: ['1–4'],  en: 'Self-grade after reveal', ru: 'Самооценка после ответа' },
   ]},
 ];
 

@@ -42,11 +42,12 @@ const GROUP_CLASS =
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];
 
 // Keyboard shortcuts shown next to a destination; registered in GlobalHotkeys.
+const modKey = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl';
 const PALETTE_SHORTCUTS: Record<string, string> = {
-  '/study': '⌘+S',
-  '/mock': '⌘+M',
-  '/bookmarks': '⌘+B',
-  '/settings': '⌘+,',
+  '/study': `${modKey}+S`,
+  '/mock': `${modKey}+M`,
+  '/bookmarks': `${modKey}+B`,
+  '/settings': `${modKey}+,`,
 };
 
 // `PLATFORMS` stores its i18n keys as plain strings — resolve them against the
@@ -191,7 +192,7 @@ export default function CommandPalette() {
                   <CmdItem
                     icon={<Pencil />}
                     onSelect={run(() => navigate('/admin'))}
-                    trailing="⌘+E"
+                    trailing={`${modKey}+E`}
                   >
                     {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
                   </CmdItem>

@@ -399,7 +399,7 @@ function Recap({
                 <Pill tone={difficultyTone[question.difficulty]} size="xs">
                   {{ easy: t.easy, medium: t.medium, hard: t.hard }[question.difficulty]}
                 </Pill>
-                <span className="flex-1 truncate text-sm text-ink-2">{questionText(question)}</span>
+                <span className="flex-1 truncate text-sm text-ink-2"><InlineMarkdown text={questionText(question)} /></span>
                 <span className="shrink-0 text-[13px] text-muted">
                   {outcomeLabel(outcomes[question.id], c)}
                 </span>

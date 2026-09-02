@@ -244,6 +244,7 @@ export default function KnowledgePage() {
           active={filterCount > 0}
           count={filterCount || undefined}
           onClick={() => setFilterSheetOpen(true)}
+          aria-pressed={undefined}
           aria-haspopup="dialog"
           aria-expanded={filterSheetOpen}
         >

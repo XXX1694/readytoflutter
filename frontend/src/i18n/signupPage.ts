@@ -1,3 +1,4 @@
+import { ruPlural } from './plural';
 // SignupPage copy. Mirrors the loginPage.js shape — both pages share the
 // auth visual language so keeping their dicts side-by-side makes it easy
 // to spot drift (e.g. a label phrased one way on signup, another on login).
@@ -21,7 +22,7 @@ const RU = {
   haveAccount: 'Уже есть аккаунт?',
   toLogin: 'Войти',
   syncEyebrow: 'Синхронизация',
-  syncTitle: (n: number) => `Импортировать ${n} ${n === 1 ? 'карточку' : n < 5 ? 'карточки' : 'карточек'}?`,
+  syncTitle: (n: number) => `Импортировать ${n} ${ruPlural(n, 'карточку', 'карточки', 'карточек')}?`,
   syncSubtitle: 'У тебя есть прогресс в этом браузере. Перенести на сервер? Локальная копия очистится после успешного импорта.',
   syncConfirm: 'Импортировать',
   syncing: 'Импортирую…',

@@ -11,6 +11,7 @@ import {
   Button, Chip, ChipGroup, Eyebrow, PageHeader, PageShell, ProgressBar, Section, Skeleton, TopicGlyph,
 } from '../ui/index';
 import RoadmapStrip from '../components/RoadmapStrip';
+import InlineMarkdown from '../components/InlineMarkdown';
 import { cn } from '../lib/cn';
 import { PLATFORMS } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
@@ -428,7 +429,7 @@ function NodeRow({ node, t, content }: NodeRowProps) {
                 >
                   <StatusMark status={q.status} />
                   <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-ink-2 line-clamp-2">
-                    {content.questionText(q)}
+                    <InlineMarkdown text={content.questionText(q)} />
                   </span>
                   {/* Difficulty is a word, not a coloured chip: three tinted
                       pills per row spent the palette on a fact you read once. */}

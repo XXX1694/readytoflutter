@@ -133,7 +133,7 @@ function buildPlan(questions: Question[], topics: Topic[], now: number = Date.no
     weak: weakChosen.length,
     fresh: freshChosen.length,
     weakTopic: weakRow?.topic || null,
-    weakMastery: weakRow ? masteryFor(weakRow) : null,
+    weakMastery: weakRow ? Math.round((weakRow.completed / weakRow.total) * 100) : null,
     // "Weakest" is a claim about practice. A topic nobody has opened is not
     // weak, it is untouched — and saying "0%" about it reads as a failure.
     weakUntouched: weakRow ? weakRow.completed === 0 && weakRow.easeCount === 0 : false,
@@ -179,14 +179,15 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
 
   const total = plan.ids.length;
   const minutes = Math.max(1, Math.round((total * SECONDS_PER_CARD) / 60));
-  const empty = total === 0;
-  const allCaughtUp = !empty && plan.due === 0 && plan.fresh === 0 && plan.weak === 0;
+  // Nothing in the stack at all vs. everything learned and nothing due.
+  const empty = questions.length === 0;
+  const allCaughtUp = !empty && total === 0;
   const weakTopic = plan.weakTopic;
 
   // The deep link the button opens. Same contract as before: an explicit id
   // list plus the label the session header shows.
   const start = (): void => {
-    if (empty) {
+    if (total === 0) {
       navigate('/study');
       return;
     }

@@ -21,7 +21,7 @@ const pricingEn = {
   subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading — the part that earns its keep when interview week is three days out.',
   // Shown instead of the above while Pro is withdrawn.
   titleFree: 'All of it, free.',
-  subtitleFree: 'There is no paid plan at the moment. Every topic, every question, spaced repetition, mock interviews and the cheatsheets are yours for nothing, with no account required.',
+  subtitleFree: 'There is no paid plan at the moment. Every topic, every question, spaced repetition, timed sessions and the cheatsheets are yours for nothing, with no account required.',
   aiNote: 'AI answer-grading is capped per day. That is a cost limit, not a paywall — the grading runs against a paid model and the cap keeps it affordable to leave switched on for everyone.',
   free: 'Free',
   pro: 'Pro',
@@ -33,8 +33,8 @@ const pricingEn = {
   catalogue: (topics: number, questions: number): string =>
     (topics && questions ? `All ${topics} topics, ${questions} questions` : 'Every topic, every question'),
   freeFeatures: [
-    'SRS scheduling and active recall',
-    'Mock interviews with self-grading',
+    'Spaced repetition and write-it-first recall',
+    'Timed sessions with self-grading',
     'Cheatsheets, saved questions, English and Russian',
     '10 AI-graded answers per day',
   ],
@@ -65,7 +65,7 @@ const pricingRu: typeof pricingEn = {
   title: 'Платишь, если окупается.',
   subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку — то, что окупается, когда интервью через три дня.',
   titleFree: 'Всё бесплатно.',
-  subtitleFree: 'Платного тарифа сейчас нет. Все темы и вопросы, интервальное повторение, mock-интервью и шпаргалки доступны бесплатно и без аккаунта.',
+  subtitleFree: 'Платного тарифа сейчас нет. Все темы и вопросы, интервальное повторение, сессии на время и шпаргалки доступны бесплатно и без аккаунта.',
   aiNote: 'У AI-проверки ответов есть дневной лимит. Это ограничение по стоимости, а не пейволл: проверка идёт через платную модель, и лимит позволяет держать её включённой для всех.',
   free: 'Бесплатно',
   pro: 'Pro',
@@ -77,7 +77,7 @@ const pricingRu: typeof pricingEn = {
     : 'Все темы и все вопросы'),
   freeFeatures: [
     'SRS-планирование и активное припоминание',
-    'Mock-интервью с самопроверкой',
+    'Сессии на время с самооценкой',
     'Шпаргалки, сохранённые вопросы, английский и русский',
     '10 AI-проверок в день',
   ],

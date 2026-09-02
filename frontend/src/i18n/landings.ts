@@ -56,14 +56,14 @@ export const LANDINGS: Record<string, LandingConfig> = {
     en: {
       eyebrow: 'iOS prep · Swift / SwiftUI / UIKit',
       title: ['Ready for the', 'iOS interview.'],
-      desc: 'Swift, SwiftUI, UIKit and iOS architecture — drilled with SRS, mock interviews, and AI grading. Recall mode forces real recall, not skim.',
+      desc: 'Swift, SwiftUI, UIKit and iOS architecture — drilled with SRS, mock interviews, and AI grading. Write it first forces real recall, not skim.',
       docTitle: 'iOS Interview Prep — Swift, SwiftUI, UIKit · Onsite',
       metaDesc: 'iOS interview questions with SRS scheduling and AI-graded answers. Swift, SwiftUI, UIKit, Combine, persistence, and architecture — 13 topics.',
     },
     ru: {
       eyebrow: 'Подготовка · iOS — Swift, SwiftUI, UIKit',
       title: ['Готов к', 'iOS-собесу.'],
-      desc: 'Swift, SwiftUI, UIKit и iOS-архитектура — с SRS, mock-интервью и AI-проверкой. Recall-режим заставляет вспоминать, а не скроллить.',
+      desc: 'Swift, SwiftUI, UIKit и iOS-архитектура — с SRS, mock-интервью и AI-проверкой. «Сначала своими словами» заставляет вспоминать, а не скроллить.',
       docTitle: 'Подготовка к iOS-собесу — Swift, SwiftUI, UIKit · Onsite',
       metaDesc: 'Вопросы для iOS-собеседования с SRS и AI-проверкой ответов. Swift, SwiftUI, UIKit, Combine, хранение, архитектура — 13 тем.',
     },
