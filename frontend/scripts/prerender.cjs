@@ -188,7 +188,14 @@ function writeHtml(route, html) {
 // `networkidle0` is too aggressive (PWA service worker can keep traffic
 // flowing); instead we wait for either the topic list to render or a
 // short bail-out timeout — the post-hydration DOM is what we want either way.
-async function waitForReady(page) {
+async function waitForReady(page, route) {
+  // The roadmap paints its ladder only after three queries resolve; the
+  // generic check below is satisfied by the sidebar alone and captured the
+  // page's loading skeleton (deploy of d9033f5). Wait for the first rung.
+  if (route === '/roadmap') {
+    await page.waitForSelector('li[id^="rung-"]', { timeout: 8000 }).catch(() => null);
+    return;
+  }
   await page.waitForFunction(
     () => {
       // Either the dashboard topic-grid rendered or any text content
@@ -248,7 +255,7 @@ async function main() {
             : `${HOST}${BASE_NO_TRAIL}${route}`;
           try {
             await page.goto(url, { waitUntil: 'domcontentloaded' });
-            await waitForReady(page);
+            await waitForReady(page, route);
             const html = await page.content();
             writeHtml(route, html);
             done += 1;
