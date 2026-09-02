@@ -146,6 +146,12 @@ export default defineConfig({
             options: {
               cacheName: 'rtf-pages',
               networkTimeoutSeconds: 4,
+              // GitHub Pages sends max-age=600 on HTML, and a plain fetch
+              // from the worker would honour the browser's HTTP cache — the
+              // page could stay ten minutes behind a deploy. `no-cache`
+              // revalidates against the ETag instead: a 304 when nothing
+              // changed, the new document when it did.
+              fetchOptions: { cache: 'no-cache' },
               cacheableResponse: { statuses: [200] },
             },
           },
@@ -164,6 +170,7 @@ export default defineConfig({
             options: {
               cacheName: 'rtf-static-data',
               networkTimeoutSeconds: 4,
+              fetchOptions: { cache: 'no-cache' },
               cacheableResponse: { statuses: [200] },
             },
           },
@@ -186,6 +193,7 @@ export default defineConfig({
             options: {
               cacheName: 'rtf-shell',
               networkTimeoutSeconds: 4,
+              fetchOptions: { cache: 'no-cache' },
               cacheableResponse: { statuses: [200] },
             },
           },
