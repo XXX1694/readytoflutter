@@ -1,4 +1,5 @@
 import { cn } from '../lib/cn';
+import { TOPIC_ICONS_BY_SLUG, TOPIC_ICONS_BY_CATEGORY } from '../lib/topicIcons';
 
 import type { Topic, Level } from '../types/domain';
 
@@ -6,6 +7,12 @@ const SIZES = {
   sm: 'h-7 w-7 text-[11px] rounded-md',
   md: 'h-10 w-10 text-sm rounded-lg',
   lg: 'h-14 w-14 text-xl rounded-xl',
+} as const;
+
+const ICON_SIZES = {
+  sm: 'h-[15px] w-[15px]',
+  md: 'h-5 w-5',
+  lg: 'h-7 w-7',
 } as const;
 
 /**
@@ -21,13 +28,26 @@ const TONES: Record<Level | 'default', string> = {
 };
 
 export interface TopicGlyphProps {
-  topic: Pick<Topic, 'title' | 'category' | 'level'> | null | undefined;
+  topic:
+    | (Pick<Topic, 'title' | 'category' | 'level'> & Partial<Pick<Topic, 'slug'>>)
+    | null
+    | undefined;
   size?: keyof typeof SIZES;
   className?: string;
 }
 
-/** A monogram tile for a topic — the seed `icon` fields are unused. */
+/**
+ * A topic's tile: its lucide icon (see lib/topicIcons) on the level-tinted
+ * wash. A topic the icon map does not know falls back to a two-letter
+ * monogram, so the tile never comes up empty. The seed `icon` fields are
+ * unused.
+ */
 export function TopicGlyph({ topic, size = 'md', className }: TopicGlyphProps) {
+  // Plain table lookups, not a call — the static-components lint rule reads
+  // a call whose result is rendered as a component made during render.
+  const Icon = (topic?.slug && TOPIC_ICONS_BY_SLUG[topic.slug])
+    || (topic?.category && TOPIC_ICONS_BY_CATEGORY[topic.category])
+    || null;
   const title = topic?.title || topic?.category || '';
   const mark = title
     .split(/[\s/&-]+/)
@@ -49,7 +69,7 @@ export function TopicGlyph({ topic, size = 'md', className }: TopicGlyphProps) {
         className,
       )}
     >
-      {mark}
+      {Icon ? <Icon className={ICON_SIZES[size]} strokeWidth={1.75} /> : mark}
     </span>
   );
 }

@@ -40,7 +40,9 @@ highlight wash anywhere, and no `.marker` class.
 
 1. **No emoji anywhere in the UI.** Not in copy, not in empty states, not as
    icons. Use `lucide-react` or a typographic mark. (Topic `icon` fields in the
-   seed data are already unused — `TopicGlyph` renders monograms.)
+   seed data are unused — `TopicGlyph` renders the lucide icon mapped per topic
+   in `lib/topicIcons.ts`, one icon per *concept* so "networking" looks the
+   same in every stack, with a monogram only as the fallback.)
 2. **No uppercase micro-labels with wide tracking.** `uppercase` +
    `tracking-[0.18em]` + `font-mono` + `text-[10px]` is the house tell of a
    templated dashboard, and at 10px it is genuinely hard to read. Use sentence
