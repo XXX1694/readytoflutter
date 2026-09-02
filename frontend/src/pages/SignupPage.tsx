@@ -18,6 +18,7 @@ import { useSignupCopy, type SignupCopy } from '../i18n/signupPage';
 import { useRecoveryCopy } from '../i18n/ui';
 import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
 import { RecoveryCodePanel } from './ResetPasswordPage';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 const schema = z.object({
   name: z.string().trim().max(80).optional().or(z.literal('').transform((): undefined => undefined)),
@@ -34,6 +35,7 @@ export default function SignupPage() {
   const markSynced = useAuth((s) => s.markSynced);
   const qc = useQueryClient();
   const { lang } = useLang();
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Регистрация' : 'Create account'} — Onsite` });
   const isRu = lang === 'ru';
 
   const [name, setName] = useState('');

@@ -29,7 +29,7 @@ export const TOPICS_RU: Record<number, TopicTranslation> = {
   15: { title: 'Архитектурные паттерны', description: 'MVC, MVP, MVVM, Clean Architecture, паттерн Repository' },
   16: { title: 'Паттерны проектирования', description: 'Singleton, Factory, Observer, Builder, Strategy, Command во Flutter' },
   17: { title: 'Структуры данных и алгоритмы', description: 'Массивы, деревья, графы, сортировка, поиск, нотация Big O' },
-  18: { title: 'Platform Channels', description: 'MethodChannel, EventChannel, разработка плагинов, FFI' },
+  18: { title: 'Платформенные каналы', description: 'MethodChannel, EventChannel, разработка плагинов, FFI' },
   19: { title: 'Производительность', description: 'Конвейер рендеринга, jank, утечки памяти, инструменты профилирования' },
   20: { title: 'Состояние — Riverpod', description: 'Провайдеры Riverpod, AsyncNotifier, ref, кодогенерация' },
   21: { title: 'Безопасность', description: 'Безопасное хранилище, certificate pinning, обфускация, OWASP Mobile Top 10' },

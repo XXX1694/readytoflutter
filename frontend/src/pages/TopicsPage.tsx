@@ -8,6 +8,7 @@ import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { useTopicsCopy } from '../i18n/topicsPage';
+import { categoryLabel } from '../i18n/categories';
 import {
   PageShell, PageHeader, Section, Chip, ChipGroup, List, ListRow, Meter, EmptyState, Skeleton, TopicGlyph,
 } from '../ui/index';
@@ -152,9 +153,9 @@ export default function TopicsPage() {
                       meta={
                         due > 0 ? (
                           <>
-                            {topic.category} · <span className="text-brand">{c.due(due)}</span>
+                            {categoryLabel(lang, topic.category)} · <span className="text-brand">{c.due(due)}</span>
                           </>
-                        ) : topic.category
+                        ) : categoryLabel(lang, topic.category)
                       }
                       trailing={
                         <Meter

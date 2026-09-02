@@ -20,6 +20,7 @@ import {
 import { cn } from '../lib/cn';
 
 import type { Difficulty, Question, Topic } from '../types/domain';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /** How many questions an interviewer gets through on one thread. */
 const ROUND_LENGTH = 5;
@@ -43,6 +44,7 @@ export default function RoundPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.followups} — Onsite` });
   const c = useSessionCopy(lang);
   const { topicTitle, questionText, answerText } = useContent(lang);
   const { data: topic, isLoading, error } = useTopic(slug);

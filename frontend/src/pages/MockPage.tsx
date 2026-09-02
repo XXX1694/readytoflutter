@@ -25,6 +25,7 @@ import { cn } from '../lib/cn';
 import { track } from '../lib/analytics';
 
 import type { Level, Question, Topic } from '../types/domain';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /** Stable empty defaults, so the pool memo isn't invalidated every render. */
 const NO_QUESTIONS: Question[] = [];
@@ -93,6 +94,7 @@ export default function MockPage() {
 
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.timed} — Onsite` });
   const c = useSessionCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
   const { data: allQuestions = NO_QUESTIONS, isLoading } = useQuestions();

@@ -8,6 +8,7 @@ import { useContactCopy, type ContactErrorKey } from '../i18n/staticPages';
 import { Button, PageHeader, PageShell, TextField, TextArea } from '../ui/index';
 import { submitContact } from '../api/api';
 import { track } from '../lib/analytics';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 const schema = z.object({
   name: z.string().trim().max(120).optional().or(z.literal('').transform((): undefined => undefined)),
@@ -19,6 +20,7 @@ type FormErrors = Partial<Record<'email' | 'message' | 'form', string>>;
 
 export default function ContactPage() {
   const { lang } = useLang();
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Контакты' : 'Contact'} — Onsite` });
   const T = useContactCopy(lang);
   const user = useAuth((s) => s.user);
 

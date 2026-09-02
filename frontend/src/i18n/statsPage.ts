@@ -1,4 +1,5 @@
 import type { Lang } from './LangContext';
+import { ruPlural } from './plural';
 
 // Copy for /stats (Progress). Lives beside the page, like i18n/topicsPage.ts,
 // so the strings ship with the page chunk rather than the entry.
@@ -28,7 +29,7 @@ const en = {
   needsReview: 'Needs review',
   needsReviewHint: 'Started, and either due for review or under 80% done.',
   notStarted: 'Not started',
-  notStartedHint: 'No question marked and no card scheduled yet.',
+  notStartedHint: 'No questions marked and no cards scheduled yet.',
 
   // Stack × level matrix
   byStack: 'By stack',
@@ -49,7 +50,7 @@ const ru: typeof en = {
   activeDays: 'Активных дней',
   days: 'дн.',
 
-  activity: (weeks) => `Активность · последние ${weeks} недель`,
+  activity: (weeks) => `Активность · последние ${weeks} ${ruPlural(weeks, 'неделя', 'недели', 'недель')}`,
   activityHint: 'Один квадрат — один день, считаем каждый отмеченный вопрос.',
 
   needsReview: 'Нужно повторить',

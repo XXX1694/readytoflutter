@@ -16,6 +16,7 @@ import { useLang } from '../i18n/LangContext';
 import { useLoginCopy, type LoginCopy } from '../i18n/loginPage';
 import { useRecoveryCopy } from '../i18n/ui';
 import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 const schema = z.object({
   email: z.string().trim().email({ message: 'invalid_email' }),
@@ -42,6 +43,7 @@ export default function LoginPage() {
   const markSynced = useAuth((s) => s.markSynced);
   const qc = useQueryClient();
   const { lang } = useLang();
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Войти' : 'Sign in'} — Onsite` });
   const isRu = lang === 'ru';
 
   const [email, setEmail] = useState('');

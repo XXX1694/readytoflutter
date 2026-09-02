@@ -69,8 +69,8 @@ export default function RoadmapPage() {
 
   useDocumentMeta({
     title: lang === 'ru'
-      ? `Роадмап ${trackLabel} — от Junior 1 до Staff · Onsite`
-      : `${trackLabel} roadmap — Junior 1 to Staff · Onsite`,
+      ? `Маршрут ${trackLabel} — Onsite`
+      : `${trackLabel} roadmap — Onsite`,
     description: t.roadmap.metaDesc,
     canonical: '/roadmap',
   });

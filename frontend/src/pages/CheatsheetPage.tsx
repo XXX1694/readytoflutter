@@ -36,9 +36,9 @@ export default function CheatsheetPage() {
     if (!topic) return;
     const original = document.title;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    document.title = `${safe} · Cheatsheet — Onsite`;
+    document.title = lang === 'ru' ? `${safe}: шпаргалка — Onsite` : `${safe} cheatsheet — Onsite`;
     return () => { document.title = original; };
-  }, [topic, topicTitle]);
+  }, [topic, topicTitle, lang]);
 
   const items = useMemo(() => {
     if (!topic?.questions) return [];
@@ -150,7 +150,7 @@ export default function CheatsheetPage() {
             <span aria-hidden>·</span>
             <span>{items.length} {lang === 'ru' ? 'тезисов' : 'items'}</span>
             <span aria-hidden>·</span>
-            <span>{lang === 'ru' ? 'короткая выжимка для скима' : 'compressed for a skim'}</span>
+            <span>{lang === 'ru' ? 'короткая выжимка для беглого чтения' : 'compressed for a skim'}</span>
           </div>
         </header>
 

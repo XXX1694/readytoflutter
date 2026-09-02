@@ -3,12 +3,12 @@ import { ruPlural } from './plural';
 export const UI = {
   en: {
     // App loader
-    loading: 'Loading...',
+    loading: 'Loading…',
 
     // Header
     toggleMenu: 'Toggle menu',
-    searchPlaceholder: 'Search...',
-    searchPlaceholderLong: 'Search questions, topics, concepts...',
+    searchPlaceholder: 'Search…',
+    searchPlaceholderLong: 'Search questions, topics, concepts…',
     toggleTheme: 'Toggle theme',
     light: 'Light',
     dark: 'Dark',
@@ -71,7 +71,7 @@ export const UI = {
 
     // Level labels
     junior: { label: 'Junior Developer', short: 'Junior', desc: '0–2 years experience' },
-    mid:    { label: 'Mid-Level Developer', short: 'Mid-Level', desc: '2–5 years experience' },
+    mid:    { label: 'Middle Developer', short: 'Middle', desc: '2–5 years experience' },
     senior: { label: 'Senior Developer', short: 'Senior', desc: '5+ years experience' },
     staff:  { label: 'Staff Engineer', short: 'Staff', desc: 'Leads across teams and platforms' },
 
@@ -102,7 +102,7 @@ export const UI = {
       rungs: (n: number) => `${n} level${n === 1 ? '' : 's'}`,
       questions: (n: number) => `${n} question${n === 1 ? '' : 's'}`,
       tier: { easy: 'Foundations', medium: 'Core', hard: 'Advanced', all: 'Whole topic' } as Record<string, string>,
-      inTrack: 'questions in this track',
+      inTrack: 'questions across the track\'s 16 levels, cross-platform ones included',
       metaDesc: 'A sixteen-level interview roadmap for Flutter, iOS and Android — Junior 1 to Staff — where every level is a set of real interview questions.',
     },
 
@@ -125,7 +125,7 @@ export const UI = {
     filterByDifficulty: 'Filter by difficulty',
     allLevels: 'All levels',
     juniorOption: 'Junior',
-    midOption: 'Mid-Level',
+    midOption: 'Middle',
     seniorOption: 'Senior',
     allDifficulties: 'All difficulties',
     easy: 'Easy',
@@ -186,7 +186,7 @@ export const UI = {
     masteryByStack: 'Mastery by stack',
     masteryByStackHint: 'Each row is a platform · each column is a grade. Numbers are completed / total questions.',
     masteryColJunior: 'Junior',
-    masteryColMid: 'Mid',
+    masteryColMid: 'Middle',
     masteryColSenior: 'Senior',
     masteryColTotal: 'Total',
 
@@ -211,12 +211,12 @@ export const UI = {
 
   ru: {
     // App loader
-    loading: 'Загрузка...',
+    loading: 'Загрузка…',
 
     // Header
     toggleMenu: 'Открыть меню',
-    searchPlaceholder: 'Поиск...',
-    searchPlaceholderLong: 'Поиск вопросов, тем, концепций...',
+    searchPlaceholder: 'Поиск…',
+    searchPlaceholderLong: 'Поиск вопросов, тем, концепций…',
     toggleTheme: 'Сменить тему',
     light: 'Светлая',
     dark: 'Тёмная',
@@ -308,7 +308,7 @@ export const UI = {
       rungs: (n: number) => `${n} ${ruPlural(n, 'уровень', 'уровня', 'уровней')}`,
       questions: (n: number) => `${n} ${ruPlural(n, 'вопрос', 'вопроса', 'вопросов')}`,
       tier: { easy: 'Основы', medium: 'База', hard: 'Продвинутое', all: 'Вся тема' } as Record<string, string>,
-      inTrack: 'вопросов в этом треке',
+      inTrack: 'вопросов во всех 16 уровнях трека, включая кросс-платформенные',
       metaDesc: 'Маршрут подготовки к собеседованию для Flutter, iOS и Android из шестнадцати уровней — от Junior 1 до Staff, где каждый уровень — набор реальных вопросов.',
     },
 
@@ -407,7 +407,7 @@ export const UI = {
     platformDescIos: 'Swift, SwiftUI, UIKit, Combine, архитектура и перформанс iOS.',
     platformDescAndroid: 'Kotlin, Jetpack Compose, корутины, архитектура и DI Android.',
     platformDescCross: 'Kotlin Multiplatform и Compose Multiplatform — шаринг кода между сторами.',
-    platformDescMobile: 'Cross-stack темы — system design, безопасность, CI/CD.',
+    platformDescMobile: 'Общие для всех стеков темы — system design, безопасность, CI/CD.',
 
     // Misc
     openMenu: 'Открыть меню',
@@ -437,7 +437,7 @@ const RECOVERY_EN = {
   copy: 'Copy code',
   copied: 'Copied',
   ack: 'I have saved this code',
-  panelFooter: 'If you lose it, sign in and generate a new one under Settings → Security.',
+  panelFooter: 'If you lose it, sign in and generate a new one under Me → Change password.',
   continue: 'Continue',
   toSignIn: 'Go to sign in',
   done: 'Done',
@@ -463,7 +463,7 @@ const RECOVERY_EN = {
   resetSubmit: 'Set new password',
   resetSubmitting: 'Setting password…',
   resetBack: 'Back to sign in',
-  resetNoCode: 'No code saved? An account without one cannot be recovered — sign in and generate one under Settings → Security.',
+  resetNoCode: 'No code saved? An account without one cannot be recovered — sign in and generate one under Me → Change password.',
   resetDoneEyebrow: 'Password changed',
   resetDoneTitle: 'Your new password is set',
   resetDoneBody: 'The code you just used is spent. Here is its replacement — save this one the same way.',
@@ -507,19 +507,19 @@ const RECOVERY_RU: RecoveryCopy = {
     + 'Положи его туда, где он будет и через год: в менеджер паролей или на бумагу.',
   copy: 'Скопировать код',
   copied: 'Скопировано',
-  ack: 'Я сохранил этот код',
-  panelFooter: 'Если потеряешь — войди в аккаунт и создай новый в разделе «Настройки → Безопасность».',
+  ack: 'Код сохранён',
+  panelFooter: 'Если потеряешь — войди в аккаунт и создай новый в «Профиль → Смена пароля».',
   continue: 'Продолжить',
   toSignIn: 'Перейти ко входу',
   done: 'Готово',
 
-  forgotLead: 'Забыл пароль?',
+  forgotLead: 'Не помнишь пароль?',
   forgotLink: 'Войти по коду восстановления',
 
   resetEyebrow: 'Восстановление доступа',
   resetTitle: 'Сброс пароля',
   resetSubtitle:
-    'Введи код восстановления, который сохранил при регистрации. '
+    'Введи код восстановления, сохранённый при регистрации. '
     + 'Здесь задашь новый пароль, потом войдёшь с ним.',
   resetEmail: 'Email',
   resetCode: 'Код восстановления',
@@ -532,10 +532,10 @@ const RECOVERY_RU: RecoveryCopy = {
   resetSubmit: 'Задать новый пароль',
   resetSubmitting: 'Сохраняю пароль…',
   resetBack: 'Назад ко входу',
-  resetNoCode: 'Кода нет? Аккаунт без кода восстановить нельзя — войди и создай код в разделе «Настройки → Безопасность».',
+  resetNoCode: 'Кода нет? Аккаунт без кода восстановить нельзя — войди и создай код в «Профиль → Смена пароля».',
   resetDoneEyebrow: 'Пароль изменён',
   resetDoneTitle: 'Новый пароль сохранён',
-  resetDoneBody: 'Код, который ты только что ввёл, использован. Вот его замена — сохрани её так же.',
+  resetDoneBody: 'Введённый код использован. Вот его замена — сохрани её так же.',
 
   settingsTitle: 'Код восстановления',
   settingsSubtitle: 'Способ вернуться в аккаунт, если забудешь пароль. Письма для сброса тут нет.',

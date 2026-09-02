@@ -25,6 +25,7 @@ import { useQuestions, useResetProgress } from '../lib/queries';
 import { PLATFORMS } from '../lib/platform';
 import { cn } from '../lib/cn';
 import type { User } from '../types/domain';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /**
  * Me. Works with no account and no backend: appearance, session defaults,
@@ -35,6 +36,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.me} — Onsite` });
   const c = useSettingsCopy(lang);
 
   const token = useAuth((s) => s.token);

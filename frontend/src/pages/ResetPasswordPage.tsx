@@ -6,6 +6,7 @@ import { authResetWithRecoveryCode } from '../api/api';
 import { useLang } from '../i18n/LangContext';
 import { useRecoveryCopy, type RecoveryCopy, type RecoveryErrorKey } from '../i18n/ui';
 import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /**
  * Recovery-code reset. There is no email provider, so the code the user saved
@@ -33,6 +34,7 @@ type FormErrors = Partial<Record<FieldName | 'form', RecoveryErrorKey>>;
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Сброс пароля' : 'Reset your password'} — Onsite` });
   const T = useRecoveryCopy(lang);
 
   const [email, setEmail] = useState('');

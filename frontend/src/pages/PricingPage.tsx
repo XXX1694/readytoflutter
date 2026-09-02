@@ -10,6 +10,7 @@ import { billingHealth, billingCheckout, billingPortal } from '../api/api';
 import { useStats, useTopics } from '../lib/queries';
 import { track } from '../lib/analytics';
 import { cn } from '../lib/cn';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 // Display price. Wired to your Stripe Price; the number on this page is
 // purely cosmetic — what users actually pay is whatever the linked
@@ -18,6 +19,7 @@ const PRICE_USD = 9;
 
 export default function PricingPage() {
   const { lang } = useLang();
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Цены' : 'Pricing'} — Onsite` });
   const T = usePricingCopy(lang);
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);

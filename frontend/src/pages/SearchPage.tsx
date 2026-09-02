@@ -16,6 +16,7 @@ import { useAdmin, applyDiff } from '../store/admin';
 import { usePrefs, type SearchFacets } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 import { track } from '../lib/analytics';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 type FacetKey = keyof SearchFacets;
 
@@ -50,6 +51,7 @@ export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.search} — Onsite` });
   const c = useSearchCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
 
@@ -254,7 +256,7 @@ export default function SearchPage() {
       <div className="mb-4 flex items-center justify-between gap-3 text-[13px] text-muted">
         <span>
           {t.resultCount(results.length)}
-          {query && <span className="ml-2 text-ink-2">“{query}”</span>}
+          {query && <span className="ml-2 text-ink-2">{c.quoted(query)}</span>}
         </span>
         {hasFacets && (
           <button

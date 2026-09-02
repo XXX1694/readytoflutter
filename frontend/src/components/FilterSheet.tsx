@@ -53,7 +53,7 @@ export default function FilterSheet({
           // nothing owns it. With no description to render we clear the
           // attribute instead, which is the documented opt-out.
           {...(description ? {} : { 'aria-describedby': undefined })}
-          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[88dvh] flex-col"
+          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[88dvh] flex-col lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2"
         >
           {/* Drag handle — vaul renders one too but we hide its default and
               ship our own so the visual matches the page hairlines. */}

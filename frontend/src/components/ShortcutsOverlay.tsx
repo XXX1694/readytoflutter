@@ -50,7 +50,7 @@ const SHORTCUTS: ShortcutGroup[] = [
     { keys: ['K / ↑'], en: 'Previous question', ru: 'Предыдущий вопрос' },
     { keys: ['Space'], en: 'Toggle expand', ru: 'Раскрыть / свернуть' },
   ]},
-  { group: { en: 'Study (SRS)', ru: 'Учить (SRS)' }, items: [
+  { group: { en: 'Session', ru: 'Сессия' }, items: [
     { keys: ['Space'], en: 'Reveal answer', ru: 'Показать ответ' },
     { keys: ['1'],     en: 'Again', ru: 'Снова' },
     { keys: ['2'],     en: 'Hard',  ru: 'Тяжело' },
@@ -164,8 +164,8 @@ export default function ShortcutsOverlay({ defaultOpen = false }: ShortcutsOverl
             <Dialog.Description asChild>
               <p className="border-t border-rule/12 px-5 py-3 text-center text-[13px] text-muted">
                 {isRu ? 'Жми' : 'Press'}{' '}
-                <kbd className={KEYCAP}>?</kbd>{' '}
-                {isRu ? 'чтобы вызвать снова' : 'anywhere to bring this back'}
+                <kbd className={KEYCAP}>?</kbd>
+                {isRu ? ', чтобы вызвать снова' : ' anywhere to bring this back'}
               </p>
             </Dialog.Description>
           </div>

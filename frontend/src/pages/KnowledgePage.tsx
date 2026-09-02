@@ -26,6 +26,7 @@ import FilterSheet from '../components/FilterSheet';
 import { usePrefs } from '../store/prefs';
 import { filterResourcesByPlatform } from '../lib/platform';
 import type { Resource } from '../types/domain';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 interface ResourceCategory {
   key: string;
@@ -48,6 +49,7 @@ const isPlayable = (r: Resource): boolean =>
 export default function KnowledgePage() {
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.sources} — Onsite` });
   const c = useKnowledgeCopy(lang);
   const isRu = lang === 'ru';
   const [searchParams, setSearchParams] = useSearchParams();
@@ -182,7 +184,7 @@ export default function KnowledgePage() {
       <PageHeader
         eyebrow={c.eyebrow}
         title={t.nav.sources}
-        subtitle={c.subtitle(totalCount)}
+        subtitle={platform === 'all' ? c.subtitleAll(totalCount) : c.subtitle(totalCount)}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <ChipGroup ariaLabel={c.categoriesLabel} scroll>
@@ -368,7 +370,7 @@ function SourceRow({ resource: r, c, isRu, saved, visited, onToggleSave, onPlay,
   const meta = [
     r.source,
     r.media_type && (c.mediaLabels[r.media_type] || r.media_type),
-    r.duration,
+    r.duration && c.duration(r.duration),
     r.free === false && c.paid,
     visited && c.opened,
   ].filter(Boolean).join(' · ');

@@ -11,6 +11,7 @@ import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { useTopicCopy } from '../i18n/topicPage';
+import { categoryLabel } from '../i18n/categories';
 import {
   PageShell, PageHeader, Button, Chip, ChipGroup, Meter, EmptyState, OverflowMenu, Skeleton,
 } from '../ui/index';
@@ -60,7 +61,7 @@ export default function TopicPage() {
   // Onsite" so SERPs show topic-specific results instead of the same
   // home title 53 times. Description quotes the topic's own one-liner.
   const metaTitleEn = topic ? `${topic.title} Interview Questions — Onsite` : null;
-  const metaTitleRu = topic ? `${topicTitle(topic)} — вопросы для собеса · Onsite` : null;
+  const metaTitleRu = topic ? `${topicTitle(topic)}: вопросы для собеса — Onsite` : null;
   const metaDescEn = topic
     ? `${topic.description || `Practice ${topic.title} interview questions`}. ${topic.question_count || ''} questions, SRS scheduling, AI-graded answers.`
     : null;
@@ -153,7 +154,7 @@ export default function TopicPage() {
     if (!focusKey) return;
     const id = Number(focusParam);
     const timer = window.setTimeout(() => {
-      refs.current.get(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      refs.current.get(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }, 80);
     return () => window.clearTimeout(timer);
   }, [focusKey, focusParam]);
@@ -206,7 +207,7 @@ export default function TopicPage() {
   // Android), and "Android · Android · Mid-Level" says one thing twice.
   const crumbs = [
     platformMeta ? (t[platformMeta.labelKey as keyof UICopy] as string) : null,
-    topic.category,
+    categoryLabel(lang, topic.category),
     t[topic.level].short,
   ].filter((crumb, i, all): crumb is string =>
     Boolean(crumb) && all.findIndex((other) => other?.toLowerCase() === crumb?.toLowerCase()) === i);

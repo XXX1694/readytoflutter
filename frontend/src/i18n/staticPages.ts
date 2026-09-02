@@ -139,13 +139,13 @@ const contactRu: typeof contactEn = {
 };
 
 const notFoundEn = {
-  docTitle: 'Page not found · Onsite',
+  docTitle: 'Page not found — Onsite',
   title: 'No such page',
   body: 'The link is broken or out of date. Head back to Today, or pick a topic from the catalogue.',
 };
 
 const notFoundRu: typeof notFoundEn = {
-  docTitle: 'Страница не найдена · Onsite',
+  docTitle: 'Страница не найдена — Onsite',
   title: 'Такой страницы нет',
   body: 'Ссылка битая или устарела. Вернись на «Сегодня» или выбери тему в каталоге.',
 };

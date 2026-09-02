@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronDown, PenLine, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import { pickDueQueue, rateCard, getCardState } from '../lib/srs';
+import { buildPlan } from '../lib/plan';
+import { filterTopicsByPlatform } from '../lib/platform';
 import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform } from '../lib/platform';
 import { useLang } from '../i18n/LangContext';
@@ -24,6 +26,7 @@ import { track } from '../lib/analytics';
 import { reportState } from '../lib/push';
 
 import type { Level, Question, Topic } from '../types/domain';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 // Stable empty defaults. A fresh `[]` per render would give `pool` a new
 // identity every time, and the queue below is derived from that identity.
@@ -58,6 +61,7 @@ export default function StudyPage() {
 
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.session} — Onsite` });
   const c = useSessionCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
   const recallMode = usePrefs((s) => s.recallMode);
@@ -97,11 +101,21 @@ export default function StudyPage() {
   // than in an effect keeps it out of a second render pass, and keeps the SRS
   // read to exactly one per pool — a `useMemo` could re-run it mid-session and
   // reshuffle the cards under the user.
+  // Without a scope this is the tab bar's Start: open with today's plan (the
+  // exact set the Today card names), and let "One more set" draw from the
+  // whole stack afterwards.
+  const firstQueue = (): Question[] => {
+    if (hasScope) return pickDueQueue(pool, QUEUE_SIZE);
+    const plan = buildPlan(pool, filterTopicsByPlatform(allTopics, platform));
+    if (plan.ids.length === 0) return pickDueQueue(pool, QUEUE_SIZE);
+    const byId = new Map(pool.map((q) => [q.id, q]));
+    return plan.ids.map((id) => byId.get(id)).filter((q): q is Question => Boolean(q));
+  };
   const [seenPool, setSeenPool] = useState(pool);
-  const [queue, setQueue] = useState<Question[]>(() => pickDueQueue(pool, QUEUE_SIZE));
+  const [queue, setQueue] = useState<Question[]>(firstQueue);
   if (seenPool !== pool) {
     setSeenPool(pool);
-    setQueue(pickDueQueue(pool, QUEUE_SIZE));
+    setQueue(firstQueue());
   }
 
   // ── Run the session ──────────────────────────────────────────────────────

@@ -36,7 +36,7 @@ export default function RoadmapStrip({ rungs, nextId, bandNames, onSelect, class
                     aria-label={`${rungLabel(r, bandNames)} — ${r.completed}/${r.total}`}
                     title={`${rungLabel(r, bandNames)} · ${r.title}`}
                     className={cn(
-                      'flex h-6 min-w-0 flex-1 items-center',
+                      '-my-2 flex h-10 min-w-0 flex-1 items-center',
                       onSelect ? 'cursor-pointer' : 'cursor-default',
                     )}
                   >

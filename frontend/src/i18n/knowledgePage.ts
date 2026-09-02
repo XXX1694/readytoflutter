@@ -3,8 +3,10 @@ import type { Lang } from './LangContext';
 // Copy for /knowledge (Sources). Lives beside the page so the strings ship
 // with the page chunk rather than the entry.
 const en = {
+  duration: (d: string) => d,
   eyebrow: 'Library',
   subtitle: (n: number) => `Docs, articles, videos and courses — ${n} in this stack.`,
+  subtitleAll: (n: number) => `Docs, articles, videos and courses — ${n} across every stack.`,
   searchPlaceholder: 'Search sources',
   categoryAll: 'All',
   categoriesLabel: 'Category',
@@ -53,8 +55,22 @@ const en = {
 };
 
 const ru: typeof en = {
+  duration: (d) => {
+    const words: Record<string, string> = {
+      ongoing: 'постоянно', browse: 'обзор', package: 'пакет', tool: 'инструмент', book: 'книга',
+      weekly: 'еженедельно', reference: 'справочник', live: 'в эфире', repo: 'репозиторий',
+      guide: 'гайд', yearly: 'ежегодно', any: 'любая', varies: 'по-разному', selective: 'выборочно', course: 'курс',
+    };
+    if (words[d]) return words[d];
+    return d
+      .replace(/(\d+)\s*h\b/g, '$1 ч')
+      .replace(/(\d+)\s*min\b/g, '$1 мин')
+      .replace(/(\d+)\s*months?\b/g, '$1 мес.')
+      .replace(/(\d+)\s*lectures\b/g, '$1 лекций');
+  },
   eyebrow: 'Библиотека',
   subtitle: (n) => `Доки, статьи, видео и курсы — ${n} в этом стеке.`,
+  subtitleAll: (n) => `Доки, статьи, видео и курсы — ${n} по всем стекам.`,
   searchPlaceholder: 'Найти материал',
   categoryAll: 'Всё',
   categoriesLabel: 'Категория',
@@ -71,7 +87,7 @@ const ru: typeof en = {
   savedOnly: 'Сохранённое',
   shownOf: (shown, total) => `${shown} из ${total}`,
   loadMore: 'Показать ещё',
-  recent: 'Недавно смотрел',
+  recent: 'Недавно открытые',
   clearRecent: 'Очистить',
   play: (title) => `Смотреть ${title}`,
   open: (title) => `Открыть ${title}`,

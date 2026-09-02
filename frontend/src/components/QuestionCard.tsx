@@ -187,7 +187,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
       ref={ref}
       data-question-id={question.id}
       className={cn(
-        'overflow-hidden transition-colors duration-200',
+        'scroll-mt-20 lg:scroll-mt-6 overflow-hidden transition-colors duration-200',
         // One border level per row: closed rows are separated by a hairline,
         // and only the question you are actually reading becomes a card.
         open ? 'codex-card' : 'border-b border-rule/10',

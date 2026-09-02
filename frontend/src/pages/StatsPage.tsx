@@ -23,6 +23,7 @@ import {
 } from '../lib/platform';
 
 import type { Level, Topic, Question } from '../types/domain';
+import { categoryLabel } from '../i18n/categories';
 
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];
 const NO_TOPICS: Topic[] = [];
@@ -182,7 +183,7 @@ export default function StatsPage() {
         <StatTile label={c.completed} value={totals.completed} of={totals.total} marked />
         <StatTile label={c.dueToday} value={totals.due} />
         <StatTile label={c.streak} value={streaks.current} unit={c.days} />
-        <StatTile label={c.activeDays} value={streaks.totalDays} unit={c.days} />
+        <StatTile label={c.activeDays} value={streaks.totalDays} />
       </section>
 
       <Section title={c.activity(HEATMAP_WEEKS)} subtitle={c.activityHint}>
@@ -281,6 +282,7 @@ interface TopicListProps {
  * replaces painted it *behind* the name — the exact wash DESIGN.md forbids.
  */
 function TopicList({ rows, c, topicTitle }: TopicListProps) {
+  const { lang } = useLang();
   return (
     <List>
       {rows.map((row) => (
@@ -292,9 +294,9 @@ function TopicList({ rows, c, topicTitle }: TopicListProps) {
           meta={
             row.due > 0 ? (
               <>
-                {row.topic.category} · <span className="text-brand">{c.due(row.due)}</span>
+                {categoryLabel(lang, row.topic.category)} · <span className="text-brand">{c.due(row.due)}</span>
               </>
-            ) : row.topic.category
+            ) : categoryLabel(lang, row.topic.category)
           }
           trailing={
             <Meter

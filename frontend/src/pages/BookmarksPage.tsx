@@ -9,6 +9,7 @@ import { Button, EmptyState, PageHeader, PageShell, Skeleton } from '../ui/index
 import QuestionCard from '../components/QuestionCard';
 import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform, PLATFORMS } from '../lib/platform';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /**
  * Saved: the questions flagged for another pass, scoped to the stack chosen
@@ -18,6 +19,7 @@ export default function BookmarksPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
+  useDocumentMeta({ title: `${t.nav.saved} — Onsite` });
   const c = useBookmarksCopy(lang);
   const { data: questions = [], isLoading } = useQuestions();
   const { data: topics = [] } = useTopics();

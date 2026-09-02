@@ -47,7 +47,7 @@ function usePageTitle(): string {
   if (path === '/admin')  return 'Admin';
   if (path === '/login')  return t.nav.signIn;
   if (path === '/signup') return lang === 'ru' ? 'Регистрация' : 'Sign up';
-  if (path === '/reset')  return lang === 'ru' ? 'Восстановление' : 'Recovery';
+  if (path === '/reset')  return lang === 'ru' ? 'Сброс пароля' : 'Reset password';
   if (path === '/pricing') return lang === 'ru' ? 'Цены' : 'Pricing';
   if (path === '/contact') return lang === 'ru' ? 'Контакты' : 'Contact';
   return '';
