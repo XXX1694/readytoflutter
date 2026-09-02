@@ -30,10 +30,8 @@ permissions:
 env:
   NODE_VERSION: '20'
   FRONTEND_NODE_VERSION: '22'
-  # Lint baseline — ratchet downward when we clean up. Set above the current
-  # count so any *significant* new noise still fails CI, but a couple of new
-  # warnings from a feature branch don't force a full backlog cleanup.
-  LINT_MAX_WARNINGS: '80'
+  # The tree lints clean; keep it that way.
+  LINT_MAX_WARNINGS: '0'
 
 jobs:
   # ── Frontend ────────────────────────────────────────────────────────────
@@ -171,7 +169,72 @@ jobs:
           curl -fsS http://localhost:3001/healthz | head -c 200
           kill $SERVER_PID || true
 
+  # ── Route smoke ─────────────────────────────────────────────────────────
+  # Loads every public route of the built app in an anonymous session at
+  # 360px and 1280px, light and dark, EN and RU, and fails on a page error,
+  # a missing <h1>, the ErrorBoundary fallback or horizontal overflow.
+  frontend-smoke:
+    name: Frontend · smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.FRONTEND_NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Serve and smoke
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 1 30); do
+            curl -fsS "http://localhost:4173/${GITHUB_REPOSITORY#*/}/" >/dev/null 2>&1 && break
+            sleep 1
+          done
+          SMOKE_URL=http://localhost:4173 npm run smoke
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: frontend/.smoke
+          retention-days: 7
+          if-no-files-found: ignore
+
   # ── Repo-level invariants ───────────────────────────────────────────────
+  repo-invariants:
+    name: Repo · invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      # The invariants CLAUDE.md describes in prose, as greps. Each one
+      # produced a green local run and a broken deploy at least once.
+      - name: contentRu stays a dynamic import
+        run: |
+          if grep -rn "from './contentRu'" frontend/src --include='*.ts' --include='*.tsx' | grep -v 'i18n/content.ts'; then
+            echo "::error::contentRu.ts must only be imported dynamically from i18n/content.ts"; exit 1; fi
+      - name: every API call lives in api/api.ts
+        run: |
+          if grep -rnE "\bapi\.(get|post|put|patch|delete)\(" frontend/src --include='*.ts' --include='*.tsx' | grep -v 'src/api/api.ts'; then
+            echo "::error::call the backend through api/api.ts (tryRemote) only"; exit 1; fi
+      - name: persistence keys are frozen
+        run: |
+          grep -q "readytoflutter_progress_v1" frontend/src/api/api.ts
+          grep -q "readytoflutter_progress_v1" frontend/src/lib/activity.ts
+          grep -q "'rtf:srs:v1'" frontend/src/lib/srs.ts
+          grep -q "'rtf:bookmarks:v1'" frontend/src/lib/bookmarks.ts
+          grep -q "'rtf:prefs:v1'" frontend/src/store/prefs.ts
+      - name: prerender contract on /roadmap
+        run: grep -q 'id={`rung-' frontend/src/pages/RoadmapPage.tsx
+
   static-data-sync:
     name: Repo · static-data parity
     runs-on: ubuntu-latest
@@ -198,7 +261,9 @@ jobs:
       - frontend-typecheck
       - frontend-test
       - frontend-build
+      - frontend-smoke
       - backend-smoke
+      - repo-invariants
       - static-data-sync
     if: always()
     steps:

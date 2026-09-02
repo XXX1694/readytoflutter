@@ -88,6 +88,7 @@ function buildRouteList(staticData) {
     '/',
     '/flutter', '/ios', '/android', '/kmp',
     '/roadmap',
+    '/topics',
     '/pricing',
     '/contact',
     ...staticData.topics.map((t) => `/topic/${t.slug}`),

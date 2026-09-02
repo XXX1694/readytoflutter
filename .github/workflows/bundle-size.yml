@@ -76,10 +76,16 @@ jobs:
           SHIKI=$(find dist/assets -name 'shiki-*.js' -printf '%s\n' | head -1)
           INDEX_KB=$(( ${INDEX:-0} / 1024 ))
           SHIKI_KB=$(( ${SHIKI:-0} / 1024 ))
-          echo "index=${INDEX_KB} KB; shiki=${SHIKI_KB} KB"
+          INDEX_GZ_KB=$(( $(gzip -c "$(find dist/assets -name 'index-*.js' | head -1)" | wc -c) / 1024 ))
+          echo "index=${INDEX_KB} KB raw / ${INDEX_GZ_KB} KB gzip; shiki=${SHIKI_KB} KB"
           fail=0
           if [[ ${INDEX_KB} -gt 700 ]]; then
             echo "::error::Main entry chunk is ${INDEX_KB} KB (ceiling 700 KB)."
+            fail=1
+          fi
+          # The invariant CLAUDE.md states: the entry stays well under 100 KB gzip.
+          if [[ ${INDEX_GZ_KB} -gt 95 ]]; then
+            echo "::error::Main entry chunk is ${INDEX_GZ_KB} KB gzip (ceiling 95 KB)."
             fail=1
           fi
           if [[ ${SHIKI_KB} -gt 1500 ]]; then

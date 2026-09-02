@@ -100,6 +100,14 @@ chunk should stay well under 100 KB gzip; `npm run build` prints it.
 pre-rename names; changing one silently destroys or orphans real user data and
 needs an explicit migration, not a find-and-replace.
 
+**Pages are built from `src/ui` and named from `lib/routes.ts`.** Every page
+starts with `PageShell` + `PageHeader`; collections are `List`/`ListRow`;
+filters are `Chip`s; destinations and their labels come from `lib/routes.ts`
+and the `nav` block of `i18n/ui.ts` (see `frontend/DESIGN.md`, rules 8–16).
+Page copy goes in `i18n/<page>.ts` (`{ en, ru }` + `useXCopy`), never in
+`ui.ts` (eager chunk) and never as inline `lang === 'ru'` ternaries.
+`npm --prefix frontend run smoke` is the visual safety net; CI runs it.
+
 **Tests are `*.test.ts` next to the module they cover.** Vitest collects
 `src/**/*.test.{ts,tsx,js,jsx}` (`vite.config.js`). Backend tests use the
 built-in `node:test` runner — don't add a test framework dependency.

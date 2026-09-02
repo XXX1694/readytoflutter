@@ -178,6 +178,7 @@ function buildSitemap(topics, siteUrl) {
     { loc: '/', priority: '1.0', changefreq: 'weekly' },
     ...PLATFORM_LANDINGS.map((p) => ({ loc: p, priority: '0.9', changefreq: 'weekly' })),
     { loc: '/roadmap', priority: '0.9', changefreq: 'weekly' },
+    { loc: '/topics', priority: '0.9', changefreq: 'weekly' },
     { loc: '/pricing', priority: '0.6', changefreq: 'monthly' },
     { loc: '/contact', priority: '0.4', changefreq: 'monthly' },
     ...topics.map((t) => ({
