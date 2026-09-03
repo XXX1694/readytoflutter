@@ -122,24 +122,33 @@ const STATIC_DATA_TTL_MS = 60 * 60 * 1000;
 
 let staticDataPromise: Promise<StaticDataPayload> | null = null;
 let staticDataLoadedAt = 0;
+let staticDataLastGood: StaticDataPayload | null = null;
 
 const loadStaticData = (): Promise<StaticDataPayload> => {
-  // A load still in flight (loadedAt is 0 until it resolves) is the freshest
-  // thing there is. Four callers race on boot; treating the in-flight promise
-  // as stale had each start its own download and parse of the 2 MB bundle.
   const fresh = staticDataPromise !== null
-    && (staticDataLoadedAt === 0 || Date.now() - staticDataLoadedAt < STATIC_DATA_TTL_MS);
+    && Date.now() - staticDataLoadedAt < STATIC_DATA_TTL_MS;
   if (fresh && staticDataPromise) return staticDataPromise;
 
+  // Stamp the start time before the fetch: concurrent callers during a stale
+  // refresh then see a recent stamp and share this promise, instead of each
+  // starting its own download and 2 MB parse.
+  staticDataLoadedAt = Date.now();
   staticDataPromise = fetch(STATIC_DATA_URL)
     .then(async (res) => {
       if (!res.ok) throw new Error(`Failed to load static data: ${res.status}`);
       const data = (await res.json()) as StaticDataPayload;
       staticDataLoadedAt = Date.now();
+      staticDataLastGood = data;
       return data;
     })
     .catch((err) => {
-      // Reset on error so the next caller retries instead of memoizing failure.
+      // A failed refresh must not throw away a bundle we already have — that
+      // turned one bad hourly refresh into an app where every read rejects.
+      // Serve the last good copy; a reload or invalidateStaticData retries.
+      if (staticDataLastGood) {
+        staticDataPromise = Promise.resolve(staticDataLastGood);
+        return staticDataLastGood;
+      }
       staticDataPromise = null;
       staticDataLoadedAt = 0;
       throw err;
@@ -153,6 +162,7 @@ const loadStaticData = (): Promise<StaticDataPayload> => {
 export const invalidateStaticData = (): void => {
   staticDataPromise = null;
   staticDataLoadedAt = 0;
+  staticDataLastGood = null;
 };
 
 const readProgress = (): LocalProgressMap => {
@@ -172,7 +182,10 @@ const writeProgress = (progress: LocalProgressMap): void => {
   } catch (error) {
     console.error('Failed to write progress to localStorage:', error);
     if ((error as DOMException).name === 'QuotaExceededError') {
-      alert('Storage quota exceeded. Please clear some browser data.');
+      toast.error(
+        isRu() ? 'Хранилище переполнено' : 'Storage full',
+        { description: isRu() ? 'Очисти данные сайта в браузере.' : 'Clear some browser data.' },
+      );
     }
     throw error;
   }
@@ -420,11 +433,18 @@ export const updateProgress = (
   );
 
 export const resetProgress = (): Promise<{ success: boolean }> =>
-  tryRemote(
-    () => api.delete<{ success: boolean }>('/progress/reset').then((r) => r.data),
-    fallbackResetProgress,
-    { notifyOnWrite: true },
-  );
+  // A signed-in reset must reach the server — if it can't, it rejects so the
+  // caller shows a failure and the local-only SRS schedule is left intact,
+  // rather than reporting success, wiping the schedule, and leaving the
+  // server's rows to reappear on reconnect. Anonymous users have no server,
+  // so their reset legitimately falls back to clearing localStorage.
+  useAuth.getState().token
+    ? api.delete<{ success: boolean }>('/progress/reset').then((r) => r.data)
+    : tryRemote(
+        () => api.delete<{ success: boolean }>('/progress/reset').then((r) => r.data),
+        fallbackResetProgress,
+        { notifyOnWrite: true },
+      );
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 // These don't have static fallbacks — auth is only meaningful with a real
@@ -595,6 +615,22 @@ export const readLocalProgress = (): LocalProgressMap => {
 
 export const clearLocalProgress = (): void => {
   try { localStorage.removeItem(PROGRESS_STORAGE_KEY); } catch { /* ignore */ }
+};
+
+// Push any writes that landed in localStorage while the backend was
+// unreachable up to the server, then clear them. A signed-in user's offline
+// writes used to sit in localStorage forever — the "will sync once you
+// reconnect" toast promised a sync that nothing performed — and the next read
+// returned the server's pre-offline row, reverting their work on screen. Safe
+// to call repeatedly: the server merges by updated_at, and with no token or an
+// empty queue it is a no-op. Runs on boot and on every `online` event (App).
+export const flushLocalProgress = async (): Promise<{ imported: number; skipped: number } | null> => {
+  if (!useAuth.getState().token) return null;
+  const items = serializeLocalProgress(readLocalProgress());
+  if (items.length === 0) return null;
+  const result = await bulkSyncProgress(items);
+  clearLocalProgress();
+  return result;
 };
 
 // Translate localStorage progress shape into the /api/progress/bulk payload.

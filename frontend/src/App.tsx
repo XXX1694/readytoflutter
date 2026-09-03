@@ -7,7 +7,7 @@ import { LangProvider } from './i18n/LangContext';
 import { queryClient } from './lib/queryClient';
 import { FullPageLoader } from './ui/index';
 import { useAuth } from './store/auth';
-import { apiBaseUrl } from './api/api';
+import { apiBaseUrl, flushLocalProgress } from './api/api';
 import { prefetchIdle } from './lib/prefetch';
 import { reportState } from './lib/push';
 import { initAnalytics, pageview, identify } from './lib/analytics';
@@ -87,6 +87,17 @@ export default function App() {
     // server's staleness cutoff and quietly losing their reminders. Self-guards
     // on signed-out / no permission / no subscription and never throws.
     void reportState();
+
+    // Flush writes queued in localStorage while the backend was unreachable —
+    // on boot (a session that ended offline) and whenever the network returns.
+    const flush = () => {
+      void flushLocalProgress()
+        .then((r) => { if (r) queryClient.invalidateQueries(); })
+        .catch(() => { /* still offline / server down — the next event retries */ });
+    };
+    flush();
+    window.addEventListener('online', flush);
+    return () => window.removeEventListener('online', flush);
   }, []);
 
   return (

@@ -59,8 +59,12 @@ function freshCard(): CardState {
   return { ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 };
 }
 
-export function getCardState(id: number | string): CardState {
-  const map = read();
+/** The whole stored card map, for callers that read many cards at once. */
+export function readAll(): CardMap {
+  return read();
+}
+
+export function getCardState(id: number | string, map: CardMap = read()): CardState {
   return map[String(id)] || freshCard();
 }
 
@@ -90,7 +94,9 @@ export function rateCard(
   now: number = Date.now(),
 ): CardState {
   const map = read();
-  const prev = map[String(id)] || freshCard();
+  // Spread over a fresh card so a partial stored object (a missing ease, say)
+  // can't turn into NaN → null through the SM-2 arithmetic and JSON.stringify.
+  const prev = { ...freshCard(), ...(map[String(id)] || {}) };
   if (!RATINGS[rating]) return prev;
 
   const scheduled = step(prev, rating);
@@ -162,7 +168,7 @@ export function pickDueQueue<T extends Pick<Question, 'id'>>(
       fresh.push(q);
       continue;
     }
-    if (s.dueAt <= now) {
+    if (s.dueAt > 0 && s.dueAt <= now) {
       const lateness = now - s.dueAt;
       if (lateness > DAY) overdue.push({ q, lateness });
       else due.push({ q, lateness });
@@ -204,7 +210,7 @@ export function getSrsSummary<T extends Pick<Question, 'id'>>(
     const s = map[String(q.id)];
     if (!s) { fresh += 1; continue; }
     if (s.reps > 0) learned += 1;
-    if (s.dueAt <= now) {
+    if (s.dueAt > 0 && s.dueAt <= now) {
       if (now - s.dueAt > DAY) overdue += 1;
       else due += 1;
     }

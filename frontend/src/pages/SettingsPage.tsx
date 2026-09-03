@@ -545,7 +545,10 @@ function DataFlows({ c, t }: { c: SettingsCopy; t: UICopy }) {
     link.href = url;
     link.download = 'onsite-progress.json';
     link.click();
-    URL.revokeObjectURL(url);
+    // Revoke after the click has a chance to start the download; some browsers
+    // abort it if the object URL is revoked synchronously (exportData.ts does
+    // the same).
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const handleReset = async () => {

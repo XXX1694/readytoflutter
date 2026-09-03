@@ -160,12 +160,13 @@ export const usePrefs = create<PrefsState>()(
 // migrating those users to light/dark. We also write the migrated value
 // back to localStorage so the legacy string never resurfaces.
 if (typeof window !== 'undefined') {
-  const t = initialTheme();
+  // persist hydrates synchronously (localStorage), so the store already holds
+  // the user's saved choice here. Applying `initialTheme()` and setState-ing it
+  // back overwrote that choice with the system preference on every reload —
+  // the legacy 'theme' key it reads is one nothing writes any more. Apply the
+  // hydrated value instead; fall back to the system preference only when there
+  // is nothing persisted.
+  const t = usePrefs.getState().theme || initialTheme();
   applyTheme(t);
-  usePrefs.setState({ theme: t });
-  try {
-    if (localStorage.getItem('theme') === 'sepia') {
-      localStorage.setItem('theme', t);
-    }
-  } catch { /* private mode / quota — fine */ }
+  if (t !== usePrefs.getState().theme) usePrefs.setState({ theme: t });
 }

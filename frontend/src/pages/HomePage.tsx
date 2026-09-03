@@ -55,7 +55,6 @@ export default function HomePage({ landing = null }: HomePageProps) {
   const c = useHomeCopy(lang);
   const platform = usePrefs((s) => s.platform);
   const setPlatform = usePrefs((s) => s.setPlatform);
-  const roadmapTrack = usePrefs((s) => s.roadmapTrack);
   const token = useAuth((s) => s.token);
   const backendAvailable = useAuth((s) => s.backendAvailable);
 
@@ -87,7 +86,11 @@ export default function HomePage({ landing = null }: HomePageProps) {
   // Where you stand: the rung you last passed and the one to work on next, on
   // the track the header's stack control points at. No track (Cross-platform,
   // Mobile, everything) means no orientation line rather than Flutter's.
-  const trackKey = pickTrack(roadmapTrack, platform);
+  // Deliberately NOT the roadmap page's own `roadmapTrack`: one tap there
+  // persists a track forever, which then pinned Today's standing to a stack
+  // the header no longer points at (and showed a standing for Cross-platform /
+  // Mobile, which have no roadmap). The roadmap page keeps its own choice.
+  const trackKey = pickTrack(null, platform);
   const trackMeta = PLATFORMS.find((p) => p.key === trackKey);
   const rungs = useMemo(
     () => (roadmapQ.data && trackKey ? resolveTrack(roadmapQ.data, trackKey, topics, questions, lang) : []),
@@ -95,9 +98,11 @@ export default function HomePage({ landing = null }: HomePageProps) {
   );
   const standing = useMemo(() => computeStanding(rungs), [rungs]);
 
-  // Streaks come from the local progress log, so the figure is the same for a
-  // signed-in and an anonymous user. One localStorage parse per render, and
-  // this page renders rarely — a memo here would only need invalidating.
+  // Streaks come from the local progress log plus the SRS review log. For a
+  // signed-in user the progress map is cleared at login (it now lives on the
+  // server), so the figure reflects study-session activity in this browser
+  // rather than the full account history. One localStorage parse per render,
+  // and this page renders rarely.
   const streak = computeStreaks().current;
 
   // First run: the stack question, asked in place. `picked` is state rather

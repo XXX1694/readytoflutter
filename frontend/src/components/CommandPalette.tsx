@@ -28,9 +28,10 @@ import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import {
-  resetProgress, authLogout, bulkSyncProgress,
+  authLogout, bulkSyncProgress,
   readLocalProgress, serializeLocalProgress, clearLocalProgress,
 } from '../api/api';
+import { useResetProgress } from '../lib/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '../lib/cn';
 import type { Level } from '../types/domain';
@@ -84,6 +85,7 @@ export default function CommandPalette() {
   const { topicTitle } = useContent(lang);
   const { data: topics = [] } = useTopics();
   const qc = useQueryClient();
+  const resetMutation = useResetProgress();
 
   // All keyboard shortcuts now live in `GlobalHotkeys` so they work even
   // before the user opens the palette for the first time (this whole
@@ -102,8 +104,10 @@ export default function CommandPalette() {
   const handleReset = run(async () => {
     if (!window.confirm(t.resetConfirm)) return;
     try {
-      await resetProgress();
-      qc.invalidateQueries();
+      // The same hook Settings uses, so both entry points also reset the SRS
+      // schedule — a palette reset used to leave every card's ease/due date, so
+      // Today kept scheduling reviews for questions just marked unstudied.
+      await resetMutation.mutateAsync();
       toast.success(t.progressReset);
     } catch {
       toast.error(t.failedReset);

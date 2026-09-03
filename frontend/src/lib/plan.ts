@@ -4,7 +4,7 @@
  * ones. Shared by the Today card, which names its size, and the bare /study
  * route (the tab bar's Start), so "Start" means the same set everywhere.
  */
-import { getCardState } from './srs';
+import { getCardState, readAll } from './srs';
 
 import type { Question, Topic, CardState } from '../types/domain';
 
@@ -50,10 +50,12 @@ export function buildPlan(questions: Question[], topics: Topic[], now: number = 
   const dueCards: Array<{ q: Question; lateness: number }> = [];
   const freshCards: Question[] = [];
 
-  // Pre-compute card states once
+  // Pre-compute card states once: one localStorage read + parse for the whole
+  // plan, not one per question (getCardState re-reads the map otherwise).
+  const cardMap = readAll();
   const stateById = new Map<number, CardState>();
   for (const q of questions) {
-    const s = getCardState(q.id);
+    const s = getCardState(q.id, cardMap);
     stateById.set(q.id, s);
     if (s.reps === 0 && !s.lastAt) {
       freshCards.push(q);
