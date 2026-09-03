@@ -230,6 +230,7 @@ function init() {
   migrateProgressToUserScoped();
   migrateUsersBilling();
   migrateUsersRecovery();
+  migrateUsersTokenEpoch();
   seedIfEmpty();
   syncSeedContent();
   bootstrapAdminFromEnv();
@@ -271,6 +272,17 @@ function migrateUsersRecovery() {
     if (!cols.includes(name)) {
       sqlite.exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
     }
+  }
+}
+
+// Idempotent: the per-account token epoch. Signed into every JWT and bumped
+// on a password or email change, so tokens from before the change stop
+// verifying. Defaults to 0, which is also what a token with no claim reads
+// as — nobody is signed out by the column appearing.
+function migrateUsersTokenEpoch() {
+  const cols = sqlite.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+  if (!cols.includes('token_epoch')) {
+    sqlite.exec('ALTER TABLE users ADD COLUMN token_epoch INTEGER NOT NULL DEFAULT 0');
   }
 }
 
@@ -742,10 +754,12 @@ function updateUserName(id, name) {
   return getUserById(id);
 }
 
+// Both credential changes bump the token epoch: every session but the one
+// that receives the fresh token is signed out.
 function updateUserPassword(id, passwordHash) {
   const now = new Date().toISOString();
   sqlite
-    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+    .prepare('UPDATE users SET password_hash = ?, token_epoch = token_epoch + 1, updated_at = ? WHERE id = ?')
     .run(passwordHash, now, Number(id));
   return getUserById(id);
 }
@@ -753,7 +767,7 @@ function updateUserPassword(id, passwordHash) {
 function updateUserEmail(id, email) {
   const now = new Date().toISOString();
   sqlite
-    .prepare('UPDATE users SET email = ?, updated_at = ? WHERE id = ?')
+    .prepare('UPDATE users SET email = ?, token_epoch = token_epoch + 1, updated_at = ? WHERE id = ?')
     .run(String(email).trim().toLowerCase(), now, Number(id));
   return getUserById(id);
 }
@@ -804,8 +818,15 @@ function isUserPro(user) {
   return user.pro_expires_at > new Date().toISOString();
 }
 
+// LIMIT/OFFSET take integers only; `1.5`, `1e999` or anything past 2^53 is a
+// datatype mismatch.
+const pageParams = (limit, offset) => ({
+  limit: Math.min(Math.max(Math.trunc(Number(limit)) || 50, 1), 200),
+  offset: Number.isFinite(Number(offset)) ? Math.min(Math.max(Math.trunc(Number(offset)), 0), 1_000_000_000) : 0,
+});
+
 function listUsers({ limit = 50, offset = 0, search = '' } = {}) {
-  const params = { limit: Math.min(Number(limit) || 50, 200), offset: Number(offset) || 0 };
+  const params = pageParams(limit, offset);
   let where = '';
   if (search) {
     where = 'WHERE LOWER(u.email) LIKE LOWER(@q) OR LOWER(COALESCE(u.name, \'\')) LIKE LOWER(@q)';
@@ -896,7 +917,7 @@ function getContactMessage(id) {
 }
 
 function listContactMessages({ status = null, limit = 50, offset = 0 } = {}) {
-  const params = { limit: Math.min(Number(limit) || 50, 200), offset: Number(offset) || 0 };
+  const params = pageParams(limit, offset);
   let where = '';
   if (status) { where = 'WHERE status = @status'; params.status = status; }
   const rows = sqlite
@@ -1143,8 +1164,10 @@ function getQuestionForGrading(questionId) {
     .get(Number(questionId));
 }
 
+// Health means "can serve the catalogue", not "can run SELECT 1": an empty
+// questions table answered every query with [] while /healthz said ok.
 function ping() {
-  return sqlite.prepare('SELECT 1 AS ok').get().ok === 1;
+  return sqlite.prepare('SELECT COUNT(*) AS c FROM questions').get().c > 0;
 }
 
 function close() {

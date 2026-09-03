@@ -145,9 +145,16 @@ function attach(app) {
 }
 
 async function handleEvent(stripe, event) {
+  // A signed event with no object is nothing to act on. Throwing here made
+  // it a 500, and Stripe retries a 5xx for three days.
+  const object = event?.data?.object;
+  if (!object || typeof object !== 'object') {
+    console.warn('[billing] event without data.object:', event?.type);
+    return;
+  }
   switch (event.type) {
     case 'checkout.session.completed': {
-      const session = event.data.object;
+      const session = object;
       const userId = Number(session.client_reference_id || session.metadata?.user_id);
       if (!userId) {
         console.warn('[billing] checkout.session.completed without user_id:', session.id);
@@ -155,11 +162,15 @@ async function handleEvent(stripe, event) {
       }
       const customerId = session.customer;
       const subId = session.subscription;
-      let expiresAt = null;
-      if (subId) {
-        const sub = await stripe.subscriptions.retrieve(subId);
-        expiresAt = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
+      // Checkout is subscription-mode only, so a completed session without
+      // one is not a purchase we understand — and granting on it would have
+      // meant Pro with no expiry, i.e. lifetime.
+      if (!subId) {
+        console.warn('[billing] checkout.session.completed without subscription:', session.id);
+        return;
       }
+      const sub = await stripe.subscriptions.retrieve(subId);
+      const expiresAt = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
       db.setUserProTier(userId, {
         tier: 'pro',
         expiresAt,
@@ -170,7 +181,7 @@ async function handleEvent(stripe, event) {
       return;
     }
     case 'customer.subscription.updated': {
-      const sub = event.data.object;
+      const sub = object;
       const user = db.getUserByStripeCustomerId(sub.customer);
       if (!user) return;
       const expiresAt = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
@@ -179,7 +190,7 @@ async function handleEvent(stripe, event) {
       return;
     }
     case 'customer.subscription.deleted': {
-      const sub = event.data.object;
+      const sub = object;
       const user = db.getUserByStripeCustomerId(sub.customer);
       if (!user) return;
       db.setUserProTier(user.id, { tier: 'free', expiresAt: null, stripeSubscriptionId: null });

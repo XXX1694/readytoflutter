@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const db = require('./database');
 const { LIMITS, SECURITY } = require('./config');
 
@@ -48,14 +48,35 @@ const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
+  // RFC 5321 caps an address at 254 octets; without a cap the only bound was
+  // the 256 KB body limit, and a 200 KB address registered fine.
+  .max(254, { message: 'Email address too long' })
   .email({ message: 'Invalid email address' });
+
+// The passwords that top every breach list and clear an eight-character
+// bar. Length alone let "12345678" and "password" through, and a 7-day
+// token on such an account is the weakest link in the chain.
+const COMMON_PASSWORDS = new Set([
+  '12345678', '123456789', '1234567890', '12345678910', '123123123', '987654321',
+  '11111111', '00000000', '1q2w3e4r', '1qaz2wsx', 'qwertyuiop', 'qwerty123',
+  'qwerty12345', 'password', 'password1', 'password12', 'password123', 'passw0rd',
+  'p@ssw0rd', 'iloveyou', 'sunshine', 'princess', 'football', 'baseball', 'superman',
+  'welcome1', 'letmein1', 'trustno1', 'whatever', 'computer', 'internet', 'michael',
+  'jennifer', 'abc12345', 'abcd1234', 'asdfghjkl', 'zxcvbnm123', 'aa123456',
+  'admin123', 'administrator', 'changeme', 'flutter123', 'android123',
+]);
+const isWeakPassword = (v) => {
+  const s = v.toLowerCase();
+  return COMMON_PASSWORDS.has(s) || /^(.)\1+$/.test(s);
+};
 
 const passwordSchema = z
   .string()
   .min(8, { message: 'Password must be at least 8 characters' })
   .max(200, { message: 'Password too long' })
   // Reject pure-whitespace strings — users sometimes paste spaces.
-  .refine((v) => v.trim().length >= 8, { message: 'Password must be at least 8 characters' });
+  .refine((v) => v.trim().length >= 8, { message: 'Password must be at least 8 characters' })
+  .refine((v) => !isWeakPassword(v), { message: 'That password is too common' });
 
 const registerSchema = z.object({
   email: emailSchema,
@@ -92,6 +113,7 @@ const sanitizeUser = (user) => {
     has_recovery_code: rest.recovery_code_hash ? 1 : 0,
     recovery_code_hash: undefined,
     recovery_code_set_at: undefined,
+    token_epoch: undefined,
   };
 };
 
@@ -147,8 +169,30 @@ const issueRecoveryCode = async (userId) => {
   return code;
 };
 
+// The token carries the account's epoch; changing the password or the
+// email bumps it, and every token issued before the change stops verifying.
+// That is what makes a recovery reset actually evict whoever held a stolen
+// token — a stateless JWT alone would have kept them signed in for 7 days.
+// Tokens issued before the epoch existed carry no claim and read as 0, so a
+// deploy does not sign anyone out.
 const signToken = (user) =>
-  jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  jwt.sign(
+    { sub: user.id, email: user.email, epoch: user.token_epoch || 0 },
+    JWT_SECRET,
+    { algorithm: 'HS256', expiresIn: JWT_EXPIRES_IN },
+  );
+
+// Verify the signature, then the account: it must still exist and the token
+// must be from its current epoch.
+const verifyToken = (token) => {
+  const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+  const user = db.getUserById(payload.sub);
+  if (!user) return { user: null, reason: 'User no longer exists' };
+  if ((payload.epoch || 0) !== (user.token_epoch || 0)) {
+    return { user: null, reason: 'Invalid or expired token' };
+  }
+  return { user, reason: null };
+};
 
 // Read the bearer token off the Authorization header. Returns null when
 // missing — callers decide whether that's a hard 401 (requireAuth) or just an
@@ -166,9 +210,8 @@ function requireAuth(req, res, next) {
   const token = readToken(req);
   if (!token) return res.status(401).json({ error: 'Authentication required' });
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    const user = db.getUserById(payload.sub);
-    if (!user) return res.status(401).json({ error: 'User no longer exists' });
+    const { user, reason } = verifyToken(token);
+    if (!user) return res.status(401).json({ error: reason });
     req.user = sanitizeUser(user);
     next();
   } catch (err) {
@@ -180,8 +223,7 @@ function optionalAuth(req, res, next) {
   const token = readToken(req);
   if (!token) return next();
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    const user = db.getUserById(payload.sub);
+    const { user } = verifyToken(token);
     if (user) req.user = sanitizeUser(user);
   } catch {
     // Treat invalid tokens as anonymous — the frontend will see 401 on the
@@ -201,12 +243,29 @@ function requireAdmin(req, res, next) {
 
 // ── Rate limiters ────────────────────────────────────────────────────────────
 
+// Signed-in requests are keyed on the account, anonymous ones on the
+// address (with the library's IPv6 /56 folding). Shared with server.js.
+const userOrIpKey = (req) => (req.user ? `u:${req.user.id}` : ipKeyGenerator(req.ip));
+
+// The anonymous routes: register, login, recovery reset. Address-keyed.
 const authLimiter = rateLimit({
   windowMs: LIMITS.AUTH_WINDOW_MS,
   max: LIMITS.AUTH_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many auth attempts. Try again in a few minutes.' },
+});
+
+// The signed-in account changes. Its own instance, behind requireAuth and
+// keyed on the account: eleven unauthenticated PUTs used to lock login and
+// registration for the whole address.
+const accountLimiter = rateLimit({
+  windowMs: LIMITS.ACCOUNT_WINDOW_MS,
+  max: LIMITS.ACCOUNT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: userOrIpKey,
+  message: { error: 'Too many account changes. Try again in a few minutes.' },
 });
 
 // ── Routes ───────────────────────────────────────────────────────────────────
@@ -228,11 +287,24 @@ function attach(app) {
     }
     const { email, password, name } = parsed.data;
 
+    // The 409 is a deliberate trade: a signup form has to say when an
+    // address is taken, so unlike login and the recovery reset this route
+    // does reveal whether an account exists.
     if (db.getUserByEmail(email)) {
       return res.status(409).json({ error: 'Email already registered' });
     }
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = db.createUser({ email, passwordHash, name });
+    let user;
+    try {
+      user = db.createUser({ email, passwordHash, name });
+    } catch (err) {
+      // The check above and the insert are not atomic: a double-clicked
+      // Sign Up races itself into the UNIQUE index.
+      if (/UNIQUE constraint failed: users\.email/.test(err?.message || '')) {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+      throw err;
+    }
     const token = signToken(user);
     // The only response that ever carries a recovery code in the clear. The
     // client is responsible for making the user save it before moving on.
@@ -288,7 +360,7 @@ function attach(app) {
     currentPassword: z.string().min(1),
     newPassword: passwordSchema,
   });
-  app.put('/api/auth/password', authLimiter, requireAuth, async (req, res) => {
+  app.put('/api/auth/password', requireAuth, accountLimiter, async (req, res) => {
     const parsed = passwordChangeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
@@ -305,13 +377,15 @@ function attach(app) {
       return res.status(400).json({ error: 'Password cannot equal email' });
     }
     const newHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_ROUNDS);
-    db.updateUserPassword(req.user.id, newHash);
-    res.json({ ok: true });
+    // Every other session is signed out by the epoch bump; this one gets a
+    // token from the new epoch so the user who made the change stays in.
+    const updated = db.updateUserPassword(req.user.id, newHash);
+    res.json({ ok: true, token: signToken(updated) });
   });
 
   // Issue a replacement recovery code. Gated by the current password so a
   // borrowed session can't quietly mint itself a permanent way back in.
-  app.post('/api/auth/recovery/regenerate', authLimiter, requireAuth, async (req, res) => {
+  app.post('/api/auth/recovery/regenerate', requireAuth, accountLimiter, async (req, res) => {
     const parsed = z.object({ currentPassword: z.string().min(1) }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Current password is required' });
     const fullUser = db.getUserById(req.user.id);
@@ -365,7 +439,7 @@ function attach(app) {
     currentPassword: z.string().min(1),
     newEmail: emailSchema,
   });
-  app.put('/api/auth/email', authLimiter, requireAuth, async (req, res) => {
+  app.put('/api/auth/email', requireAuth, accountLimiter, async (req, res) => {
     const parsed = emailChangeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
@@ -399,4 +473,5 @@ module.exports = {
   optionalAuth,
   requireAdmin,
   sanitizeUser,
+  userOrIpKey,
 };

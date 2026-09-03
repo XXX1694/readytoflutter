@@ -12,7 +12,9 @@ const auth = require('./auth');
 const { LIMITS } = require('./config');
 
 const contactSchema = z.object({
-  name: z.string().trim().max(120).optional().nullable(),
+  // No line breaks: this is the field that becomes a display name in a
+  // mail header the day the inbox is forwarded.
+  name: z.string().trim().max(120).transform((s) => s.replace(/[\r\n]+/g, ' ')).optional().nullable(),
   email: z.string().trim().toLowerCase().email({ message: 'Invalid email' }),
   message: z
     .string()

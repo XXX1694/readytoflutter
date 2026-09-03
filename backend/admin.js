@@ -5,8 +5,22 @@ const { z } = require('zod');
 const db = require('./database');
 const auth = require('./auth');
 
+// Past this the page is empty anyway; keeps the bound parameter an integer.
+const MAX_OFFSET = 1_000_000_000;
+
 function attach(app) {
   const adminGate = [auth.requireAuth, auth.requireAdmin];
+
+  // Whole numbers only: SQLite's LIMIT/OFFSET reject `1.5` and `1e999`, and
+  // an offset past 2^53 stops being an integer in JavaScript at all.
+  const page = (query) => {
+    const limit = Math.trunc(Number(query.limit));
+    const offset = Math.trunc(Number(query.offset));
+    return {
+      limit: Number.isFinite(limit) ? Math.max(1, Math.min(limit, 200)) : 50,
+      offset: Number.isFinite(offset) ? Math.min(Math.max(offset, 0), MAX_OFFSET) : 0,
+    };
+  };
 
   // Snapshot for the admin Overview tab.
   app.get('/api/admin/stats', adminGate, (_req, res) => {
@@ -15,8 +29,7 @@ function attach(app) {
 
   // Paginated user list with progress / last-active aggregates.
   app.get('/api/admin/users', adminGate, (req, res) => {
-    const limit = Math.max(1, Math.min(Number(req.query.limit) || 50, 200));
-    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const { limit, offset } = page(req.query);
     const search = String(req.query.q || '').trim();
     res.json(db.listUsers({ limit, offset, search }));
   });
@@ -60,8 +73,7 @@ function attach(app) {
   // Contact inbox.
   app.get('/api/admin/contact', adminGate, (req, res) => {
     const status = req.query.status === 'resolved' ? 'resolved' : (req.query.status === 'open' ? 'open' : null);
-    const limit = Math.max(1, Math.min(Number(req.query.limit) || 50, 200));
-    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const { limit, offset } = page(req.query);
     res.json(db.listContactMessages({ status, limit, offset }));
   });
 

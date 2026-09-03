@@ -200,6 +200,8 @@ function PasswordBlock({ c }: { c: SettingsCopy }) {
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const user = useAuth((s) => s.user);
+  const setSession = useAuth((s) => s.setSession);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -211,7 +213,10 @@ function PasswordBlock({ c }: { c: SettingsCopy }) {
 
     setSaving(true);
     try {
-      await authChangePassword(current, next);
+      const res = await authChangePassword(current, next);
+      // Other sessions are signed out by the change; this one continues on
+      // the token the server hands back.
+      if (res.token && user) setSession(res.token, user);
       toast.success(c.passwordChanged);
       setCurrent('');
       setNext('');

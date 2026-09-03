@@ -21,16 +21,30 @@ const PORT = process.env.PORT || 3001;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// Render (and most reverse proxies) terminate TLS upstream and set
-// X-Forwarded-* headers. Trust them so req.secure / rate-limit IP detection
-// work correctly without leaking false positives in dev.
-if (IS_PROD) app.set('trust proxy', 1);
+// Which X-Forwarded-For hops to trust is a fact about the deployment, not
+// about NODE_ENV: trusting a hop that isn't there lets any client pick its
+// own rate-limit key with one header, and trusting one hop too few keys
+// every visitor on the proxy's address. TRUST_PROXY is a hop count, `false`,
+// or any express `trust proxy` value. Unset in production falls back to the
+// one hop Render puts in front of the service, with a warning.
+const parseTrustProxy = (raw) => {
+  if (raw === undefined || raw === '') return IS_PROD ? 1 : false;
+  const v = raw.trim().toLowerCase();
+  if (v === 'false' || v === '0') return false;
+  if (v === 'true') return true;
+  return /^\d+$/.test(v) ? Number(v) : raw.trim();
+};
+const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY);
+if (TRUST_PROXY !== false) app.set('trust proxy', TRUST_PROXY);
+if (IS_PROD && (process.env.TRUST_PROXY === undefined || process.env.TRUST_PROXY === '')) {
+  console.warn('[server] TRUST_PROXY is unset; assuming one proxy hop. Set it explicitly for this deployment.');
+}
 
 // Don't advertise the framework version.
 app.disable('x-powered-by');
 
 // Security headers — helmet ships safe defaults: noSniff, X-Frame-Options
-// DENY, X-Content-Type-Options, Cross-Origin-Resource-Policy, etc. We disable
+// SAMEORIGIN, X-Content-Type-Options, Cross-Origin-Resource-Policy, etc. We disable
 // the default CSP since this is a JSON API only (no HTML responses), and
 // turn on HSTS for production HTTPS.
 app.use(
@@ -52,6 +66,9 @@ const allowedOrigins = (FRONTEND_ORIGIN || '')
   .split(',')
   .map((s) => s.trim().toLowerCase())
   .filter(Boolean);
+if (IS_PROD && allowedOrigins.length === 0) {
+  console.warn('[server] FRONTEND_ORIGIN is unset; CORS allows every origin. Set it to the site that serves the app.');
+}
 
 app.use(
   cors({
@@ -66,44 +83,58 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
+// Lightweight request id for log correlation. First, so a body-parser 400
+// or 413 is logged with an id like everything else.
+app.use((req, _res, next) => {
+  req.id = req.headers['x-request-id'] || Math.random().toString(36).slice(2, 10);
+  next();
+});
+
 // Stripe webhook needs the raw body to verify its signature. Mount the
 // billing module BEFORE the JSON parser so its raw-body route wins.
 billing.attach(app);
 
 app.use(express.json({ limit: '256kb' }));
 
-// Lightweight request id for log correlation.
-app.use((req, _res, next) => {
-  req.id = req.headers['x-request-id'] || Math.random().toString(36).slice(2, 10);
-  next();
-});
+// Signed-in requests are keyed on the account, anonymous ones on the
+// address: a NAT full of students shares one address, and one account
+// hammering the API should not lock the others out.
+const { userOrIpKey } = auth;
 
+// Sits after requireAuth on every write route, so a burst of anonymous 401s
+// cannot spend a real user's window.
 const writeLimiter = rateLimit({
   windowMs: LIMITS.WRITE_WINDOW_MS,
   max: LIMITS.WRITE_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: userOrIpKey,
   message: { error: 'Too many requests. Try again in a few minutes.' },
 });
 
-// Read-side limiter — protects unauthenticated /api/topics, /api/questions,
-// /api/stats from cheap scrape loops without hurting normal browsing.
+// Read-side limiter — protects /api/topics, /api/questions, /api/stats from
+// cheap scrape loops without hurting normal browsing. A signed-in user gets
+// a higher ceiling, not a bypass: registration is free and instant, so a
+// bypass was one signup away from unlimited 2 MB pulls.
 const readLimiter = rateLimit({
   windowMs: LIMITS.READ_WINDOW_MS,
-  max: LIMITS.READ_MAX,
+  max: (req) => (req.user ? LIMITS.READ_MAX_AUTH : LIMITS.READ_MAX),
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => !!req.user, // authenticated users bypass
+  keyGenerator: userOrIpKey,
   message: { error: 'Too many requests. Slow down.' },
 });
 
+// Render keeps an instance in rotation while this returns 200, so it has to
+// notice the failure that matters: a database that answers but has no
+// catalogue in it.
 app.get('/healthz', (_req, res) => {
   try {
     const ok = db.ping();
-    if (!ok) throw new Error('db ping returned non-ok');
+    if (!ok) throw new Error('catalogue is empty');
     res.json({ ok: true });
   } catch (err) {
-    console.error('[healthz] db ping failed:', err?.message);
+    console.error('[healthz] failed:', err?.message);
     res.status(503).json({ ok: false, error: 'database unavailable' });
   }
 });
@@ -151,8 +182,13 @@ app.get('/api/questions', auth.optionalAuth, readLimiter, (req, res) => {
 const ALLOWED_STATUS = new Set(['not_started', 'in_progress', 'completed']);
 const { MAX_NOTES_LEN, BULK_MAX_ITEMS } = LIMITS;
 
-app.post('/api/progress/bulk', writeLimiter, auth.requireAuth, (req, res) => {
-  const items = Array.isArray(req.body?.items) ? req.body.items : [];
+app.post('/api/progress/bulk', auth.requireAuth, writeLimiter, (req, res) => {
+  // A payload of the wrong shape is a client bug, and a 200 with
+  // `imported: 0` would hide it — along with the import it was carrying.
+  if (!Array.isArray(req.body?.items)) {
+    return res.status(400).json({ error: 'items must be an array' });
+  }
+  const items = req.body.items;
   if (items.length > BULK_MAX_ITEMS) {
     return res.status(400).json({ error: 'Too many items in a single bulk' });
   }
@@ -177,12 +213,12 @@ app.post('/api/progress/bulk', writeLimiter, auth.requireAuth, (req, res) => {
   res.json({ success: true, ...result });
 });
 
-app.delete('/api/progress/reset', writeLimiter, auth.requireAuth, (req, res) => {
+app.delete('/api/progress/reset', auth.requireAuth, writeLimiter, (req, res) => {
   db.resetProgress(req.user.id);
   res.json({ success: true });
 });
 
-app.post('/api/progress/:questionId', writeLimiter, auth.requireAuth, (req, res) => {
+app.post('/api/progress/:questionId', auth.requireAuth, writeLimiter, (req, res) => {
   const { status, notes } = req.body || {};
   if (!ALLOWED_STATUS.has(status)) {
     return res.status(400).json({ error: 'Invalid status' });

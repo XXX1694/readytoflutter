@@ -186,11 +186,14 @@ const badInput = (res, parsed) =>
 // Subscribe / state / unsubscribe: cheap DB writes, but a client loop
 // shouldn't be able to churn them. State sync fires on app open, so this is
 // deliberately roomy.
+// Behind requireAuth and keyed on the account: anonymous 401s cannot spend
+// a signed-in user's window.
 const pushLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: auth.userOrIpKey,
   message: { error: 'Too many push requests. Try again in a few minutes.', code: 'rate_limited' },
 });
 
@@ -467,7 +470,7 @@ function attach(app) {
     res.json(body);
   });
 
-  app.post('/api/push/subscribe', pushLimiter, auth.requireAuth, (req, res) => {
+  app.post('/api/push/subscribe', auth.requireAuth, pushLimiter, (req, res) => {
     const state = pushState();
     if (!state.enabled) return disabled(res, state.reason);
 
@@ -502,7 +505,7 @@ function attach(app) {
   // Clients should always send both — dropping nextDueAt costs the device its
   // wake-up at T, and it will then only be reminded once dueCount goes above
   // zero and a later sync reports it.
-  app.post('/api/push/state', pushLimiter, auth.requireAuth, (req, res) => {
+  app.post('/api/push/state', auth.requireAuth, pushLimiter, (req, res) => {
     const state = pushState();
     if (!state.enabled) return disabled(res, state.reason);
 
@@ -525,7 +528,7 @@ function attach(app) {
     res.json({ ok: true });
   });
 
-  app.post('/api/push/unsubscribe', pushLimiter, auth.requireAuth, (req, res) => {
+  app.post('/api/push/unsubscribe', auth.requireAuth, pushLimiter, (req, res) => {
     // Deliberately NOT gated on pushState(): a user turning notifications off
     // must always succeed, even if the keys were pulled from the environment
     // after they subscribed.

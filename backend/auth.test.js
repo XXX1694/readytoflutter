@@ -681,6 +681,94 @@ test('changing an email to one already taken is refused', async () => {
   assert.equal(me.body.user.email, mover.email);
 });
 
+// ── Session revocation ───────────────────────────────────────────────────────
+
+test('changing the password signs every other session out and re-issues this one', async () => {
+  // A stolen 7-day token used to survive the victim changing their password.
+  const { password, token } = await register();
+  const other = token; // a second device holding the same account's token
+
+  const changed = await call('PUT', '/api/auth/password', {
+    token,
+    body: { currentPassword: password, newPassword: 'an-entirely-new-password' },
+  });
+  assert.equal(changed.status, 200);
+  assert.ok(changed.body.token, 'the changing session gets a token from the new epoch');
+
+  assert.equal((await call('GET', '/api/auth/me', { token: other })).status, 401, 'the old token is out');
+  assert.equal((await call('GET', '/api/auth/me', { token: changed.body.token })).status, 200);
+});
+
+test('a recovery reset evicts whoever held a token', async () => {
+  // The recovery flow exists so a user who lost control can take the account
+  // back; it is cosmetic if the attacker's token keeps working.
+  const { email, token, recoveryCode } = await register();
+
+  const reset = await call('POST', '/api/auth/recovery/reset', {
+    body: { email, code: recoveryCode, newPassword: 'back-in-my-hands-now' },
+  });
+  assert.equal(reset.status, 200);
+
+  assert.equal((await call('GET', '/api/auth/me', { token })).status, 401);
+  const login = await call('POST', '/api/auth/login', { body: { email, password: 'back-in-my-hands-now' } });
+  assert.equal(login.status, 200);
+});
+
+test('changing the email invalidates the previous token and the response carries a working one', async () => {
+  const { password, token } = await register();
+  const res = await call('PUT', '/api/auth/email', {
+    token,
+    body: { currentPassword: password, newEmail: uniqueEmail() },
+  });
+  assert.equal(res.status, 200);
+  assert.equal((await call('GET', '/api/auth/me', { token })).status, 401);
+  assert.equal((await call('GET', '/api/auth/me', { token: res.body.token })).status, 200);
+});
+
+test('a token signed before the epoch existed still verifies', async () => {
+  // Deploying the epoch must not sign anyone out: a token with no claim reads
+  // as epoch 0, which is what every existing account has.
+  const jwt = require('jsonwebtoken');
+  const { user } = await register();
+  const legacy = jwt.sign({ sub: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  assert.equal((await call('GET', '/api/auth/me', { token: legacy })).status, 200);
+});
+
+test('a token signed with another algorithm is rejected', async () => {
+  const jwt = require('jsonwebtoken');
+  const { user } = await register();
+  const hs512 = jwt.sign({ sub: user.id, email: user.email, epoch: 0 }, process.env.JWT_SECRET, { algorithm: 'HS512', expiresIn: '1h' });
+  assert.equal((await call('GET', '/api/auth/me', { token: hs512 })).status, 401);
+});
+
+// ── Input bounds ─────────────────────────────────────────────────────────────
+
+test('register rejects the passwords that top every breach list', async () => {
+  for (const password of ['12345678', 'password', 'aaaaaaaa', 'Password1', 'qwertyuiop']) {
+    const res = await call('POST', '/api/auth/register', { body: { email: uniqueEmail(), password } });
+    assert.equal(res.status, 400, `${password} must be refused`);
+    assert.match(res.body.error, /too common/i);
+  }
+});
+
+test('register rejects an email address longer than 254 characters', async () => {
+  const email = `${'e'.repeat(250)}@example.test`;
+  const res = await call('POST', '/api/auth/register', { body: { email, password: 'long-email-long-email' } });
+  assert.equal(res.status, 400);
+});
+
+test('an unauthenticated password change does not spend the login window', async () => {
+  // The account limiter sits behind requireAuth, so junk PUTs from an address
+  // cannot lock login and registration for everyone behind it.
+  const ip = '10.200.0.1';
+  for (let i = 0; i < 12; i += 1) {
+    const res = await call('PUT', '/api/auth/password', { ip, body: {} });
+    assert.equal(res.status, 401);
+  }
+  const res = await call('POST', '/api/auth/login', { ip, body: { email: 'nobody@example.test', password: 'whatever-it-is' } });
+  assert.equal(res.status, 401, 'login from that address is still answered, not 429');
+});
+
 // ── Middleware ───────────────────────────────────────────────────────────────
 
 test('requireAuth rejects a valid token whose user has been deleted', async () => {

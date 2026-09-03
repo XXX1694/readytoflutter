@@ -457,11 +457,13 @@ export const authMe = (): Promise<{ user: User }> =>
 export const authUpdateName = (name: string | null): Promise<{ user: User }> =>
   api.put<{ user: User }>('/auth/me', { name }).then((r) => r.data);
 
+// The change signs every other session out; `token` is this session's
+// replacement from the new epoch.
 export const authChangePassword = (
   currentPassword: string,
   newPassword: string,
-): Promise<{ ok: boolean }> =>
-  api.put<{ ok: boolean }>('/auth/password', { currentPassword, newPassword }).then((r) => r.data);
+): Promise<{ ok: boolean; token?: string }> =>
+  api.put<{ ok: boolean; token?: string }>('/auth/password', { currentPassword, newPassword }).then((r) => r.data);
 
 export const authChangeEmail = (
   currentPassword: string,

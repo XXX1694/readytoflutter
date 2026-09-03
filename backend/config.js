@@ -7,13 +7,20 @@ const LIMITS = Object.freeze({
   WRITE_WINDOW_MS: 15 * 60 * 1000,
   WRITE_MAX: 200,
 
-  // Read-side scrape protection. Authenticated users bypass.
+  // Read-side scrape protection. A signed-in user gets a higher ceiling,
+  // keyed on the account rather than the address.
   READ_WINDOW_MS: 60 * 1000,
   READ_MAX: 120,
+  READ_MAX_AUTH: 600,
 
-  // Auth window (consumed by auth.js for /register and /login).
+  // Auth window (consumed by auth.js for /register, /login and the
+  // recovery reset — the anonymous, address-keyed routes).
   AUTH_WINDOW_MS: 15 * 60 * 1000,
   AUTH_MAX: 10,
+  // Signed-in account changes (password, email, recovery code), keyed on
+  // the account. Separate from AUTH_MAX so hammering one cannot lock login.
+  ACCOUNT_WINDOW_MS: 15 * 60 * 1000,
+  ACCOUNT_MAX: 10,
 
   MAX_NOTES_LEN: 1000,
   BULK_MAX_ITEMS: 1000,

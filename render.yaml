@@ -10,9 +10,17 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-      # trust proxy, HSTS and the CORS allowlist are all gated on this.
+      # HSTS and the production warnings are gated on this.
       - key: NODE_ENV
         value: production
+      # Render terminates TLS one hop in front of the service and appends the
+      # real client address to X-Forwarded-For. One hop, no more: trusting a
+      # hop that is not there lets a client pick its own rate-limit key.
+      - key: TRUST_PROXY
+        value: "1"
+      # The site that serves the app. Unset, CORS allowed every origin.
+      - key: FRONTEND_ORIGIN
+        value: https://xxx1694.github.io
       # Set in the Render dashboard (sync:false keeps it out of the YAML).
       # When unset, the AI grading feature stays off; everything else works.
       - key: ANTHROPIC_API_KEY
