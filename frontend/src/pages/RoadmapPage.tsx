@@ -14,6 +14,7 @@ import RoadmapStrip from '../components/RoadmapStrip';
 import InlineMarkdown from '../components/InlineMarkdown';
 import { cn } from '../lib/cn';
 import { PLATFORMS } from '../lib/platform';
+import { StackIcon } from '../lib/stackIcons';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 import { track as trackEvent } from '../lib/analytics';
 import {
@@ -121,7 +122,7 @@ export default function RoadmapPage() {
           {ROADMAP_TRACKS.map((key) => {
             const meta = PLATFORMS.find((p) => p.key === key);
             return (
-              <Chip key={key} active={key === trackKey} onClick={() => setRoadmapTrack(key)}>
+              <Chip key={key} active={key === trackKey} onClick={() => setRoadmapTrack(key)} icon={<StackIcon stack={key} />}>
                 {meta ? copy(t, meta.labelKey) : key}
               </Chip>
             );

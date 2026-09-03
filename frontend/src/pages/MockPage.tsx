@@ -11,6 +11,7 @@ import {
 } from '../ui/index';
 import { usePrefs } from '../store/prefs';
 import { filterQuestionsByPlatform, PLATFORMS } from '../lib/platform';
+import { StackIcon } from '../lib/stackIcons';
 import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerText from '../components/AnswerText';
 import InlineMarkdown from '../components/InlineMarkdown';
@@ -526,6 +527,7 @@ function StackChips({ label, t }: { label: string; t: UICopy }) {
         <Chip
           key={p.key}
           active={platform === p.key}
+          icon={<StackIcon stack={p.key} />}
           onClick={() => {
             // Re-picking the active stack is a no-op, so it sends nothing.
             if (p.key !== platform) track('stack_selected', { stack: p.key, source: 'filter' });

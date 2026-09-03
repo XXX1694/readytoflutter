@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, WifiOff, X } from 'lucide-react';
+import { StackPill } from './StackSwitcher';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
@@ -60,6 +61,10 @@ function usePageTitle(): string {
 const ACTION_CLASS =
   'touch-target tap-feedback inline-flex items-center justify-center rounded-lg text-ink-2 active:text-ink';
 
+// The stack sheet pulls in vaul; it loads on the first tap of the pill so the
+// entry chunk does not carry a drawer nobody has opened yet.
+const StackSheet = lazy(() => import('./StackSheet'));
+
 export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,6 +90,12 @@ export default function MobileHeader() {
   const { direction, atTop } = useScrollDirection(() => mainEl, { threshold: 6 });
   const hidden = direction === 'down' && !atTop;
 
+  // The stack sheet: opened from the pill on Today. `mounted` flips once so
+  // the lazy chunk is only requested after the first tap.
+  const [stackOpen, setStackOpen] = useState(false);
+  const [stackMounted, setStackMounted] = useState(false);
+  const openStack = () => { tapLight(); setStackMounted(true); setStackOpen(true); };
+
   const onBack = () => {
     tapLight();
     goBack(navigate);
@@ -106,10 +117,22 @@ export default function MobileHeader() {
       aria-label={lang === 'ru' ? 'Заголовок' : 'Page header'}
     >
       <div className="relative flex h-14 items-center px-2">
-        {/* Leading slot — the wordmark on home, back everywhere else. */}
-        <div className="flex shrink-0 items-center">
+        {/* Leading slot — the wordmark and the stack pill on home, back
+            everywhere else. */}
+        <div className="flex min-w-0 shrink-0 items-center gap-2.5">
           {isHome ? (
-            <span className="pl-2 font-display text-[17px] font-semibold tracking-[-0.02em] text-ink">Onsite</span>
+            <>
+              <span className="inline-flex items-baseline pl-2 font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
+                Onsite
+                <span className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
+              </span>
+              <StackPill onClick={openStack} />
+              {stackMounted && (
+                <Suspense fallback={null}>
+                  <StackSheet open={stackOpen} onOpenChange={setStackOpen} />
+                </Suspense>
+              )}
+            </>
           ) : (
             <button
               type="button"

@@ -1,11 +1,9 @@
-import { useTopics } from '../lib/queries';
-import { usePrefs } from '../store/prefs';
+import { ArrowRight } from 'lucide-react';
 import { useLang } from '../i18n/LangContext';
-import { useT, type UICopy } from '../i18n/ui';
+import { useT } from '../i18n/ui';
 import { useHomeCopy } from '../i18n/homePage';
-import { List, ListRow } from '../ui/index';
-import { filterTopicsByPlatform, PLATFORMS } from '../lib/platform';
-import { track } from '../lib/analytics';
+import { StackTile } from '../lib/stackIcons';
+import { useChooseStack, useStackOptions } from '../lib/useStack';
 
 import type { PlatformKey } from '../types/domain';
 
@@ -15,14 +13,9 @@ import type { PlatformKey } from '../types/domain';
 export const STACK_PICKER_KEY = 'rtf:stackpicker:v1';
 
 // The three stacks that carry a roadmap. KMP and the mobile-wide topics are
-// reachable through "Browse everything" and the header's stack menu; putting
-// six targets here would make the first screen a settings panel.
+// reachable through "Browse everything" and the stack list; putting six
+// targets here would make the first screen a settings panel.
 const CHOICES: PlatformKey[] = ['flutter', 'ios', 'android'];
-
-const copy = (t: UICopy, key: string): string => {
-  const value = t[key as keyof UICopy];
-  return typeof value === 'string' ? value : '';
-};
 
 export interface StackPickerProps {
   /** Called after a choice so Today can drop the picker without a reload. */
@@ -30,22 +23,19 @@ export interface StackPickerProps {
 }
 
 /**
- * The first question the app asks, asked in place. It used to be a modal over
- * the dashboard 500ms after first paint; it is three ruled rows at the top of
- * Today now — one promise, three targets, one way out.
+ * The first question the app asks, asked in place: three cards, each the
+ * stack's mark on its own colour, its name, what it covers and how many
+ * topics that is. Choosing one paints the app in that colour.
  */
 export default function StackPicker({ onPicked }: StackPickerProps) {
   const { lang } = useLang();
   const t = useT(lang);
   const c = useHomeCopy(lang);
-  const setPlatform = usePrefs((s) => s.setPlatform);
-  const { data: topics = [] } = useTopics();
+  const options = useStackOptions();
+  const chooseStack = useChooseStack('onboarding');
 
   const choose = (key: PlatformKey): void => {
-    // The one event that says which half of the catalogue matters to this
-    // person — nothing else reports the mix.
-    track('stack_selected', { stack: key, source: 'onboarding' });
-    setPlatform(key);
+    chooseStack(key);
     try {
       localStorage.setItem(STACK_PICKER_KEY, '1');
     } catch {
@@ -58,26 +48,35 @@ export default function StackPicker({ onPicked }: StackPickerProps) {
     <section className="mb-10 sm:mb-14" aria-label={c.pickStack}>
       <p className="max-w-xl text-[17px] leading-relaxed text-ink-2">{c.promise}</p>
 
-      <List className="mt-6">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {CHOICES.map((key) => {
-          const meta = PLATFORMS.find((p) => p.key === key);
-          const count = filterTopicsByPlatform(topics, key).length;
+          const o = options.find((x) => x.key === key);
+          if (!o) return null;
           return (
-            <ListRow
+            <button
               key={key}
-              className="min-h-[60px]"
+              type="button"
               onClick={() => choose(key)}
-              title={<span className="text-[17px]">{meta ? copy(t, meta.labelKey) : key}</span>}
-              trailing={count > 0 ? t.topicCount(count) : undefined}
-            />
+              className="codex-card group flex items-start gap-4 p-4 text-left transition-colors hover:border-brand/40 sm:flex-col sm:gap-5 sm:p-5"
+            >
+              <StackTile stack={key} size="xl" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-[18px] font-bold leading-tight text-ink">{o.label}</span>
+                <span className="mt-1 block text-[13px] leading-snug text-muted">{o.desc}</span>
+                <span className="mt-2.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-muted-2 transition-colors group-hover:text-brand">
+                  {o.count > 0 && t.stackPickerCount(o.count)}
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                </span>
+              </span>
+            </button>
           );
         })}
-      </List>
+      </div>
 
       <button
         type="button"
         onClick={() => choose('all')}
-        className="mt-4 rounded-sm text-[13px] text-brand hover:underline"
+        className="mt-4 rounded-sm text-[13px] font-medium text-brand hover:underline"
       >
         {c.browseEverything}
       </button>

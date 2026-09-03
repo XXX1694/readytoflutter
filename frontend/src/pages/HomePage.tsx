@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { useTopics, useStats, useQuestions, useRoadmap } from '../lib/queries';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
@@ -9,7 +10,9 @@ import { useAuth } from '../store/auth';
 import { Button, PageShell, PageHeader, Skeleton } from '../ui/index';
 import TodayPlan from '../components/TodayPlan';
 import StackPicker, { STACK_PICKER_KEY } from '../components/StackPicker';
-import { PLATFORMS } from '../lib/platform';
+import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
+import { stackTileStyle } from '../lib/stackMeta';
+import { routeAt } from '../lib/routes';
 import { computeStreaks } from '../lib/activity';
 import { computeStanding, pickTrack, resolveTrack, rungLabel } from '../lib/roadmap';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
@@ -133,22 +136,21 @@ export default function HomePage({ landing = null }: HomePageProps) {
   // Suppressed on first run — "Not started" under a stack you haven't chosen
   // yet is noise, and the picker is the only thing that should be read there.
   const orientation = !showPicker && rungs.length > 0 && (
-    // Plain inline text rather than a flex row: the tail is the only part long
-    // enough to wrap, and inline wrapping breaks it at a word instead of
-    // orphaning a separator at the end of the first line.
+    // Where you stand, in one line. What comes next is the card under the plan.
     <Link
       to="/roadmap"
       className="rounded-sm text-[15px] leading-relaxed text-ink-2 transition-colors hover:text-ink"
     >
-      <span className="font-medium text-ink">{c.trackLine(trackMeta ? copy(t, trackMeta.labelKey) : trackKey ?? '')}</span>
+      <span className="font-semibold text-brand">{c.trackLine(trackMeta ? copy(t, trackMeta.labelKey) : trackKey ?? '')}</span>
       <span aria-hidden className="text-muted-2"> · </span>
       {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
-      <span aria-hidden className="text-muted-2"> · </span>
-      <span className="text-muted">
-        {next ? `${t.roadmap.nextUp}: ${rungLabel(next, bandNames)} — ${next.title}` : t.roadmap.allPassed}
-      </span>
     </Link>
   );
+
+  const scopedTopics = filterTopicsByPlatform(topics, platform);
+  const scopedQuestions = scopedTopics.reduce((s, tp) => s + (tp.question_count || 0), 0);
+  const roadmapRoute = routeAt('/roadmap');
+  const topicsRoute = routeAt('/topics');
 
   return (
     <PageShell width="app">
@@ -164,12 +166,44 @@ export default function HomePage({ landing = null }: HomePageProps) {
 
       <TodayPlan eyebrow={landingCopy ? t.nav.today : undefined} />
 
-      {/* One line of continuity under the card: how long you've kept it up,
-          and the way into the catalogue. */}
-      <p className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-muted">
-        {streak > 0 && <span>{c.streak(streak)}</span>}
-        <Link to="/topics" className="rounded-sm text-brand hover:underline">{t.nav.browseTopics}</Link>
-      </p>
+      {/* Two quiet cards under the painted one: the next level on the
+          roadmap, and the way into the catalogue. Explicit `grid-cols-1`: an
+          implicit `auto` column will not shrink below the nowrap title's
+          width and pushes the card past 360px. */}
+      {!showPicker && (
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {rungs.length > 0 && roadmapRoute && (
+            <Link to="/roadmap" className="codex-card group flex min-w-0 items-center gap-3.5 p-4 transition-colors hover:border-brand/40">
+              <span className="stack-tile stack-tile--soft h-10 w-10 rounded-[11px]" style={stackTileStyle(platform)}>
+                <roadmapRoute.icon className="h-5 w-5" strokeWidth={1.9} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-medium text-muted">{next ? t.roadmap.nextUp : t.nav.roadmap}</span>
+                <span className="block truncate text-[15px] font-semibold text-ink">
+                  {next ? `${rungLabel(next, bandNames)} — ${next.title}` : t.roadmap.allPassed}
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />
+            </Link>
+          )}
+          {topicsRoute && (
+            <Link to="/topics" className="codex-card group flex min-w-0 items-center gap-3.5 p-4 transition-colors hover:border-brand/40">
+              <span className="stack-tile stack-tile--soft h-10 w-10 rounded-[11px]" style={stackTileStyle(platform)}>
+                <topicsRoute.icon className="h-5 w-5" strokeWidth={1.9} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-medium text-muted">{t.nav.browseTopics}</span>
+                <span className="block truncate text-[15px] font-semibold text-ink">{c.catalogueLine(scopedTopics.length, scopedQuestions)}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />
+            </Link>
+          )}
+        </div>
+      )}
+
+      {streak > 0 && (
+        <p className="mt-5 text-[13px] text-muted">{c.streak(streak)}</p>
+      )}
 
       {backendAvailable === true && !token && (
         <p className="mt-3 text-[13px] leading-relaxed text-muted-2">

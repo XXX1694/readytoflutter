@@ -8,16 +8,18 @@ import type { Level, Difficulty, ProgressStatus } from '../types/domain';
  */
 
 /**
- * Button — flat ink on paper. No gradient, no glow, no lift; the only
- * elevation available is a hairline plus the 1px `shadow-codex-sm` drop.
+ * Button — the primary action is a flat fill in the active stack's colour
+ * (`--brand`), so "Start session" is Flutter blue for a Flutter reader and
+ * Swift orange for an iOS one. No gradient, no glow; elevation is the 1px
+ * `shadow-codex-sm` contact line.
  *
  * Focus is deliberately not styled here: the global `:focus-visible` rule in
- * index.css draws the ink outline on every control, and a local
- * override would give buttons a different focus state from the rest of the UI.
+ * index.css draws the ring on every control, and a local override would give
+ * buttons a different focus state from the rest of the UI.
  */
 
 /** The one filled treatment. Shared so `codex` and `brand` can't drift apart. */
-const solid = ['bg-ink text-paper rounded-lg', 'hover:bg-ink/90 active:bg-ink/80'];
+const solid = ['bg-brand text-on-brand rounded-md shadow-codex-sm', 'hover:bg-brand/90 active:bg-brand/80'];
 
 export const buttonVariants = cva(
   [
@@ -34,11 +36,14 @@ export const buttonVariants = cva(
         // button on the same page are two near-blacks competing for the same
         // job, so the primary action is ink and the name is kept as its alias.
         brand: solid,
+        // On a brand-filled surface (the Today card): the fill and the text
+        // swap places.
+        inverse: ['bg-on-brand text-brand rounded-md shadow-codex', 'hover:bg-on-brand/90 active:bg-on-brand/80'],
         outline: [
-          'bg-paper-2 text-ink rounded-lg border border-rule/12 shadow-codex-sm',
+          'bg-paper-2 text-ink rounded-md border border-rule/12 shadow-codex-sm',
           'hover:border-rule/22',
         ],
-        ghost: ['bg-transparent text-ink-2 rounded-lg', 'hover:bg-rule/8 hover:text-ink'],
+        ghost: ['bg-transparent text-ink-2 rounded-md', 'hover:bg-rule/8 hover:text-ink'],
         link: ['bg-transparent text-brand underline-offset-4 hover:underline rounded-sm p-0'],
       },
       size: {
@@ -84,6 +89,8 @@ export const pillVariants = cva(
         plum:    'bg-plum/10 text-plum',
         // The one solid chip, for a count or flag that has to carry weight.
         ink:     'bg-ink text-paper',
+        // Solid in the stack colour — a "current" marker.
+        solid:   'bg-brand text-on-brand',
         ghost:   'bg-transparent text-muted',
       },
       size: {

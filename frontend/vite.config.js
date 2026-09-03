@@ -34,8 +34,8 @@ export default defineConfig({
         // and the Android system chrome blend with the paper background.
         // The dark variant is exposed via <meta name="theme-color"> in
         // index.html, keyed off prefers-color-scheme.
-        theme_color: '#F9F9F6',
-        background_color: '#F9F9F6',
+        theme_color: '#F6F6F3',
+        background_color: '#F6F6F3',
         display: 'standalone',
         // `window-controls-overlay` lets the desktop PWA pull title-bar
         // real estate; falls back gracefully on browsers that ignore it.

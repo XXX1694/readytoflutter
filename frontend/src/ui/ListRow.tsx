@@ -46,12 +46,12 @@ export function ListRow({ leading, title, meta, trailing, to, onClick, chevron, 
         {meta && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{meta}</span>}
       </span>
       {trailing && <span className="flex shrink-0 items-center gap-3 text-[13px] text-muted">{trailing}</span>}
-      {showChevron && <ChevronRight className="h-4 w-4 shrink-0 text-muted-2" aria-hidden />}
+      {showChevron && <ChevronRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />}
     </>
   );
   const rowClass = cn(
-    'flex min-h-[56px] w-full items-center gap-3 px-1 py-2.5 text-left',
-    interactive && 'transition-colors hover:bg-rule/4',
+    'group flex min-h-[56px] w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left',
+    interactive && 'transition-colors hover:bg-brand/[0.05]',
     className,
   );
 

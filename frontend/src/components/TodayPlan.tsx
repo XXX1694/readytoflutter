@@ -1,15 +1,17 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Timer } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import { buildPlan } from '../lib/plan';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { useHomeCopy } from '../i18n/homePage';
-import { Button, Eyebrow } from '../ui/index';
+import { Button } from '../ui/index';
 import { usePrefs } from '../store/prefs';
 import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform';
-
+import { StackIcon, StackTile } from '../lib/stackIcons';
+import { useCurrentStack } from '../lib/useStack';
 
 const SECONDS_PER_CARD = 60;
 
@@ -22,10 +24,11 @@ export interface TodayPlanProps {
 }
 
 /**
- * The one card on Today. Four lines and one button: what today is, what it is
- * made of, where you are weakest, and the way in. Everything it used to also
- * carry — an SRS-only button, a mock button, an "x / 636 learned" tally — was
- * a second and third answer to a question the page asks once.
+ * The one card on Today, painted in the stack's colour. Four lines and one
+ * button: which stack this is, what today is made of, where you are weakest,
+ * and the way in. The stack's mark sits as a watermark in the corner — this
+ * is the one place the design spends its boldness; everything around it is
+ * ink on paper.
  */
 export default function TodayPlan({ eyebrow }: TodayPlanProps) {
   const navigate = useNavigate();
@@ -36,6 +39,7 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
   const { data: allQuestions = [] } = useQuestions();
   const { data: allTopics = [] } = useTopics();
   const platform = usePrefs((s) => s.platform);
+  const stack = useCurrentStack();
 
   // Scope today's plan to the currently-selected platform so an iOS-focused
   // user doesn't get Flutter cards in their session, and vice versa.
@@ -74,35 +78,61 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
   if (plan.fresh > 0) parts.push(c.fresh(plan.fresh));
 
   return (
-    <div className="codex-card p-5 sm:p-7">
-      {eyebrow && <Eyebrow className="mb-2">{eyebrow}</Eyebrow>}
+    <div className="relative overflow-hidden rounded-3xl bg-brand p-5 text-on-brand shadow-codex-lg sm:p-8">
+      {/* Watermark — the stack's mark, large and faint, clear of the text. */}
+      <StackIcon
+        stack={platform}
+        className="pointer-events-none absolute -right-6 -top-8 h-44 w-44 rotate-[-8deg] opacity-[0.14] sm:-right-4 sm:-top-6 sm:h-60 sm:w-60"
+      />
 
-      <h2 className="font-display text-[26px] font-semibold leading-tight text-ink sm:text-[30px]">
-        {empty ? c.planEmpty : allCaughtUp ? c.planCaughtUp : <span className="num">{c.plan(total, minutes)}</span>}
-      </h2>
+      <div className="relative">
+        {eyebrow && <div className="mb-3 text-[12px] font-semibold text-on-brand/75">{eyebrow}</div>}
 
-      {parts.length > 0 && (
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{parts.join(' · ')}</p>
-      )}
+        <div className="flex items-center gap-2">
+          <StackTile stack={platform} size="xs" className="bg-on-brand/20 text-on-brand shadow-none" />
+          <span className="text-[13px] font-semibold tracking-[-0.005em] text-on-brand/90">{stack.label}</span>
+        </div>
 
-      {weakTopic && (
-        <Link
-          to={`/topic/${weakTopic.slug}`}
-          className="mt-2 inline-block max-w-full truncate rounded-sm text-[13px] text-muted transition-colors hover:text-ink"
-        >
-          {plan.weakUntouched
-            ? c.untouched(topicTitle(weakTopic))
-            : c.weakest(topicTitle(weakTopic), plan.weakMastery ?? 0)}
-        </Link>
-      )}
+        <h2 className="mt-5 font-display text-[36px] font-bold leading-[0.98] tracking-[-0.03em] sm:mt-6 sm:text-[52px]">
+          {empty ? c.planEmpty : allCaughtUp ? c.planCaughtUp : (
+            <>
+              <span className="num">{total}</span>
+              {' '}{c.cardsWord(total)}
+              <span className="ml-3 align-baseline text-[17px] font-semibold tracking-normal text-on-brand/70 sm:text-[20px]">
+                {c.approxMinutes(minutes)}
+              </span>
+            </>
+          )}
+        </h2>
 
-      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 sm:mt-6">
-        <Button variant="brand" size="md" className="w-full sm:w-auto" onClick={start}>
-          {t.nav.startSession}
-        </Button>
-        <Link to="/mock" className="rounded-sm text-[13px] text-brand hover:underline">
-          {t.nav.timed}
-        </Link>
+        {parts.length > 0 && (
+          <p className="mt-3 text-[15px] leading-relaxed text-on-brand/85 sm:mt-4 sm:text-[16px]">{parts.join(' · ')}</p>
+        )}
+
+        {weakTopic && (
+          <Link
+            to={`/topic/${weakTopic.slug}`}
+            className="mt-1.5 inline-block max-w-full truncate rounded-sm text-[13px] text-on-brand/70 transition-colors hover:text-on-brand"
+          >
+            {plan.weakUntouched
+              ? c.untouched(topicTitle(weakTopic))
+              : c.weakest(topicTitle(weakTopic), plan.weakMastery ?? 0)}
+          </Link>
+        )}
+
+        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 sm:mt-8">
+          <Button variant="inverse" size="lg" className="w-full sm:w-auto" onClick={start}>
+            {t.nav.startSession}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Button>
+          <Link
+            to="/mock"
+            className="inline-flex items-center gap-1.5 rounded-sm text-[13.5px] font-medium text-on-brand/85 hover:text-on-brand hover:underline"
+          >
+            <Timer className="h-4 w-4" aria-hidden />
+            {t.nav.timed}
+          </Link>
+        </div>
       </div>
     </div>
   );

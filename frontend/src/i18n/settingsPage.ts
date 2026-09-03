@@ -51,6 +51,8 @@ const en = {
   accountDeleted: 'Account deleted',
 
   // ── Appearance ──────────────────────────────────────────────────────────
+  stackTitle: 'Stack',
+  stackSubtitle: 'What you are preparing for. Today, the roadmap and the topics all follow it.',
   appearanceTitle: 'Appearance',
   appearanceSubtitle: 'Saved on this device. Press T to switch themes from anywhere.',
   themeLabel: 'Theme',
@@ -138,6 +140,8 @@ const ru: typeof en = {
   deleteFinalConfirm: 'Удалить аккаунт? Это действие нельзя отменить.',
   accountDeleted: 'Аккаунт удалён',
 
+  stackTitle: 'Стек',
+  stackSubtitle: 'К чему готовишься. Под него подстраиваются «Сегодня», маршрут и темы.',
   appearanceTitle: 'Внешний вид',
   appearanceSubtitle: 'Сохраняется на этом устройстве. Клавиша T переключает тему откуда угодно.',
   themeLabel: 'Тема',

@@ -21,9 +21,10 @@ const en = {
   pickStack: 'Choose a stack',
   browseEverything: 'Browse everything',
 
-  // The one card.
-  plan: (cards: number, minutes: number) =>
-    `${cards} card${cards === 1 ? '' : 's'} · ~${minutes} min`,
+  // The one card. The figure is set apart from its noun so it can be the
+  // display element.
+  cardsWord: (cards: number): string => (cards === 1 ? 'card' : 'cards'),
+  approxMinutes: (minutes: number) => `~${minutes} min`,
   planEmpty: 'Start with a first pass',
   planCaughtUp: 'Caught up — time to reinforce',
   weak: (n: number) => `${n} from your weakest topic`,
@@ -32,7 +33,8 @@ const en = {
   weakest: (topic: string, pct: number) => `Weakest: ${topic} · ${pct}%`,
   untouched: (topic: string) => `Not started yet: ${topic}`,
 
-  // The line under the card.
+  // The two cards under it, and the line after them.
+  catalogueLine: (topics: number, questions: number) => `${topics} topics · ${questions} questions`,
   streak: (n: number) => `${n}-day streak`,
   localOnly: 'Progress is saved in this browser only',
   localOnlySignIn: 'sign in to keep it',
@@ -44,8 +46,8 @@ const ru: typeof en = {
   pickStack: 'Выбери стек',
   browseEverything: 'Смотреть всё',
 
-  plan: (cards, minutes) =>
-    `${cards} ${plural(cards, ['карточка', 'карточки', 'карточек'])} · ~${minutes} мин`,
+  cardsWord: (cards) => plural(cards, ['карточка', 'карточки', 'карточек']),
+  approxMinutes: (minutes) => `~${minutes} мин`,
   planEmpty: 'Начни с первого прогона',
   planCaughtUp: 'Всё закрыто — дальше закрепление',
   weak: (n) => `${n} из самой слабой темы`,
@@ -54,6 +56,8 @@ const ru: typeof en = {
   weakest: (topic, pct) => `Слабее всего: ${topic} · ${pct}%`,
   untouched: (topic) => `Ещё не начато: ${topic}`,
 
+  catalogueLine: (topics, questions) =>
+    `${topics} ${plural(topics, ['тема', 'темы', 'тем'])} · ${questions} ${plural(questions, ['вопрос', 'вопроса', 'вопросов'])}`,
   streak: (n) => `Серия: ${n} ${plural(n, ['день', 'дня', 'дней'])}`,
   localOnly: 'Прогресс хранится только в этом браузере',
   localOnlySignIn: 'войди, чтобы не потерять',

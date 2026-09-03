@@ -1,9 +1,13 @@
 /* ─────────────────────────────────────────────────────────────────────────────
  * Marginalia — the design system for Onsite.
  *
- * The premise: this is a book you study from, not a dashboard you monitor.
- * Warm paper, warm near-black ink, and one accent — the pen's blue, kept for
- * the things you can act on. Everything else is set in type and spacing.
+ * The premise: this is a book you study from, not a dashboard you monitor —
+ * and the book is bound in the colour of the stack you are preparing for.
+ * Warm paper, warm near-black ink, and one accent: `--brand`, which is not a
+ * fixed hue but the active stack's own colour (Flutter blue, Swift orange,
+ * Android green, Kotlin violet). Switch the stack and every button, link,
+ * tile and progress bar follows. Everything else is set in type and spacing,
+ * and the reading surfaces (answers, questions) stay ink on paper.
  *
  * Three type roles, each earned:
  *   Schibsted Grotesk  UI, navigation, headings — scanned, not read
@@ -24,26 +28,38 @@
 
 @layer base {
   :root {
-    /* Light — warm paper stock, warm near-black ink. */
-    --paper:        249 249 246;   /* #F9F9F6 page */
-    --paper-2:      255 255 253;   /* #FFFFFD sheet */
-    --ink:           26  25  21;   /* #1A1915 warm near-black */
+    /* Light — warm paper stock, a white sheet on it, warm near-black ink.
+       The page sits a step darker than it used to so a white card has an
+       edge without needing a heavy border. */
+    --paper:        246 246 243;   /* #F6F6F3 page */
+    --paper-2:      255 255 255;   /* #FFFFFF sheet */
+    --ink:           24  23  20;   /* #181714 warm near-black */
     --ink-2:         61  59  52;   /* #3D3B34 */
     --ink-3:        107 104  94;   /* #6B685E */
-    --rule:          26  25  21;   /* ink, always used through an alpha */
-    --rule-strong:   26  25  21;
-    --muted:        107 104  94;   /* #6B685E — 4.9:1 on paper */
-    --muted-2:      110 106  95;   /* #6E6A5F — 4.6:1, still body-safe */
+    --rule:          24  23  20;   /* ink, always used through an alpha */
+    --rule-strong:   24  23  20;
+    --muted:        103 100  91;   /* #67645B — 5:1 on paper */
+    --muted-2:      106 103  93;   /* #6A675D — 4.7:1, still body-safe */
 
-    /* The one accent is the pen (--brand, below). The yellow highlighter
-       that used to sit here as a second accent was retired: laid behind
-       text it read as a rendering glitch rather than emphasis. */
+    /* ── Stack colours. Each stack's own hue, from its own world: Flutter's
+       blue, Swift's orange, Android's green, Kotlin's violet, a teal for the
+       mobile-wide topics and the petrol navy for "every stack". Every value
+       clears 4.5:1 as text on the sheet, so a stack colour can be a link,
+       a figure or a filled button without a second "safe" variant. */
+    --stack-flutter:  10  95 194;  /* #0A5FC2 — 6.1:1 */
+    --stack-ios:     198  60  21;  /* #C63C15 — 5.2:1 */
+    --stack-android:  18 122  70;  /* #127A46 — 5.4:1 */
+    --stack-cross:   107  63 224;  /* #6B3FE0 — 6.2:1 */
+    --stack-mobile:   15 122 133;  /* #0F7A85 — 5.1:1 */
+    --stack-all:      27  79 138;  /* #1B4F8A — 8.3:1 */
 
-    /* Interactive: the blue pen. The previous petrol (#22384F) was so close
-       to ink that nothing on the page read as a colour at all. */
-    --brand:         27  79 138;   /* #1B4F8A — 7.9:1 on paper */
-    --brand-ink:     21  62 110;   /* #153E6E pressed */
-    --brand-sky:     58 111 168;   /* #3A6FA8 secondary */
+    /* The accent IS the active stack. `data-stack` on <html> (set by
+       store/prefs) re-points it; nothing else in the app knows which
+       stack is on. `--on-brand` is the text colour on a brand fill. */
+    --brand:         var(--stack-all);
+    --brand-ink:     var(--stack-all);
+    --brand-sky:     var(--stack-all);
+    --on-brand:      255 255 255;
 
     /* Semantics, mixed toward the ink so they read as annotations rather
        than status lights. */
@@ -63,6 +79,14 @@
     color-scheme: light;
   }
 
+  /* The stack in effect re-points the accent. One rule per stack, and the
+     dark values below flow through the same indirection. */
+  :root[data-stack="flutter"] { --brand: var(--stack-flutter); --brand-ink: var(--stack-flutter); --brand-sky: var(--stack-flutter); }
+  :root[data-stack="ios"]     { --brand: var(--stack-ios);     --brand-ink: var(--stack-ios);     --brand-sky: var(--stack-ios); }
+  :root[data-stack="android"] { --brand: var(--stack-android); --brand-ink: var(--stack-android); --brand-sky: var(--stack-android); }
+  :root[data-stack="cross"]   { --brand: var(--stack-cross);   --brand-ink: var(--stack-cross);   --brand-sky: var(--stack-cross); }
+  :root[data-stack="mobile"]  { --brand: var(--stack-mobile);  --brand-ink: var(--stack-mobile);  --brand-sky: var(--stack-mobile); }
+
   .dark {
     /* Dark — the same paper after hours: warm black, warm off-white ink. */
     /* Page and sheet sit 13 levels apart (they were 6): a card needs an
@@ -77,9 +101,15 @@
     --muted:        158 154 143;   /* #9E9A8F — 6.2:1 on the sheet */
     --muted-2:      136 132 122;   /* #88847A — 4.6:1 on the sheet */
 
-    --brand:        126 169 220;   /* #7EA9DC the pen, inverted for dark */
-    --brand-ink:    160 192 235;
-    --brand-sky:    110 158 214;
+    /* The stack colours lift for dark: bright enough to be text on the
+       sheet (all ≥ 7:1), so a filled control takes ink text, not white. */
+    --stack-flutter:  95 184 245;  /* #5FB8F5 */
+    --stack-ios:     255 138 101;  /* #FF8A65 */
+    --stack-android:  61 220 132;  /* #3DDC84 */
+    --stack-cross:   179 157 255;  /* #B39DFF */
+    --stack-mobile:   77 208 219;  /* #4DD0DB */
+    --stack-all:     126 169 220;  /* #7EA9DC */
+    --on-brand:       14  14  13;
 
     --mint:         111 191 149;   /* #6FBF95 */
     --amber:        224 177  92;   /* #E0B15C */
@@ -175,7 +205,7 @@
   h1, h2, h3, h4 { letter-spacing: -0.012em; font-weight: 600; }
   h1 { letter-spacing: -0.018em; font-weight: 600; }
 
-  ::selection { background: rgb(var(--brand) / 0.22); }
+  ::selection { background: rgb(var(--brand) / 0.24); }
 
   /* Sleeker scrollbar */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -188,11 +218,11 @@
   }
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--rule) / 0.32); background-clip: padding-box; }
 
-  /* Focus is an ink outline, offset so it reads on any surface. */
+  /* Focus is a ring in the stack's colour, offset so it reads on any surface. */
   :focus-visible {
-    outline: 2px solid rgb(var(--ink) / 0.85);
+    outline: 2px solid rgb(var(--brand));
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 6px;
   }
 }
 
@@ -224,14 +254,16 @@
     @apply text-[12px] font-medium tracking-normal text-muted;
   }
 
-  /* ── Cards. A sheet on the page: hairline border, barely-there shadow,
-       10px radius. The hover state changes the border only — the 2px lift
-       every card used to do is motion without meaning. */
+  /* ── Cards. A white sheet lifted off the page: a faint hairline, a soft
+       two-layer shadow (a contact line plus a wide, low drop — never a glow)
+       and a 16px radius. Hover deepens the edge; nothing moves. */
   .codex-card {
     background: rgb(var(--paper-2));
-    border: 1px solid rgb(var(--rule) / 0.12);
-    border-radius: 10px;
-    box-shadow: 0 1px 2px 0 rgb(var(--shadow) / 0.04);
+    border: 1px solid rgb(var(--rule) / 0.07);
+    border-radius: 16px;
+    box-shadow:
+      0 1px 2px 0 rgb(var(--shadow) / 0.05),
+      0 8px 24px -8px rgb(var(--shadow) / 0.10);
     transition: border-color 160ms ease, box-shadow 160ms ease;
   }
   /* Hover only where a pointer can hover — matches the `hoverOnlyWhenSupported`
@@ -239,20 +271,41 @@
      card looking hovered. */
   @media (hover: hover) {
     .codex-card:hover {
-      border-color: rgb(var(--rule) / 0.24);
-      box-shadow: 0 1px 3px 0 rgb(var(--shadow) / 0.07);
+      border-color: rgb(var(--rule) / 0.14);
+      box-shadow:
+        0 1px 2px 0 rgb(var(--shadow) / 0.06),
+        0 12px 32px -8px rgb(var(--shadow) / 0.14);
     }
   }
   .dark .codex-card {
-    border-color: rgb(var(--rule) / 0.09);
-    box-shadow: none;
+    border-color: rgb(var(--rule) / 0.10);
+    box-shadow: 0 1px 0 0 rgb(var(--rule) / 0.04) inset;
   }
   @media (hover: hover) {
     .dark .codex-card:hover {
       border-color: rgb(var(--rule) / 0.18);
-      box-shadow: none;
     }
   }
+
+  /* ── Stack tile. A rounded square in a stack's own colour with its logo
+       on it. `--tile` is the stack's RGB triplet, set inline by StackTile.
+       Solid = the tile used as an identity mark (the rail, the picker);
+       soft = the tinted version for a list of topics. */
+  .stack-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: rgb(var(--on-brand));
+    background: rgb(var(--tile));
+    box-shadow: 0 1px 2px 0 rgb(var(--tile) / 0.35), 0 0 0 1px rgb(var(--tile) / 0.12) inset;
+  }
+  .stack-tile--soft {
+    color: rgb(var(--tile));
+    background: rgb(var(--tile) / 0.10);
+    box-shadow: none;
+  }
+  .dark .stack-tile--soft { background: rgb(var(--tile) / 0.16); }
 
   /* ── Figures. Tabular so counters don't jitter as they tick, and set in
        the grotesk rather than the mono — at display sizes a monospace

@@ -19,6 +19,7 @@ import {
   TextField, PasswordField,
 } from '../ui/index';
 import PushReminders from '../components/PushReminders';
+import { StackRows } from '../components/StackSwitcher';
 import { RecoveryCodePanel } from './ResetPasswordPage';
 import { getBookmarkIds } from '../lib/bookmarks';
 import { useQuestions, useResetProgress } from '../lib/queries';
@@ -61,6 +62,10 @@ export default function SettingsPage() {
         ) : (
           <SignedOut c={c} t={t} showButtons={backendAvailable !== false} />
         )}
+      </Section>
+
+      <Section title={c.stackTitle} subtitle={c.stackSubtitle}>
+        <StackRows variant="sheet" source="settings" className="-mx-3" />
       </Section>
 
       <Section title={c.appearanceTitle} subtitle={c.appearanceSubtitle}>

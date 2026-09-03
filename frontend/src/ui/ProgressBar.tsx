@@ -4,7 +4,9 @@ const TONES = {
   brand:    'bg-brand',
   mint:     'bg-mint',
   amber:    'bg-[rgb(var(--amber))]',
-  ink:      'bg-ink',
+  // Progress is drawn in the stack's colour everywhere; `ink` stays as an
+  // alias so older call sites keep working.
+  ink:      'bg-brand',
   // Legacy name from the gradient era — now the same flat brand fill.
   gradient: 'bg-brand',
 } as const;

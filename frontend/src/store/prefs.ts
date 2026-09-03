@@ -52,7 +52,7 @@ const initialTheme = (): Theme => {
 // Mirrors --paper in index.css (and the <meta name="theme-color"> pair in
 // index.html) so the status bar blends with the page instead of a stale grey.
 const THEME_COLORS: Record<Theme, string> = {
-  light: '#F9F9F6',
+  light: '#F6F6F3',
   dark:  '#0E0E0D',
 };
 
@@ -77,6 +77,17 @@ const applyTheme = (theme: Theme): void => {
     document.head.appendChild(meta);
   }
   meta.setAttribute('content', color);
+};
+
+// The accent colour is the active stack's. index.css keys `--brand` off
+// `data-stack` on <html>, so this one attribute recolours every button, link,
+// tile and bar in the app. Anything that changes `platform` — setPlatform,
+// the ?stack= URL sync, rehydration — goes through the subscription below.
+const applyStack = (platform: PlatformKey): void => {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (platform === 'all') delete root.dataset.stack;
+  else root.dataset.stack = platform;
 };
 
 const nextTheme = (current: Theme): Theme => {
@@ -147,10 +158,16 @@ export const usePrefs = create<PrefsState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);
+        if (state?.platform) applyStack(state.platform);
       },
     },
   ),
 );
+
+// Mirror `platform` to <html data-stack> however it changes.
+usePrefs.subscribe((state, prev) => {
+  if (state.platform !== prev.platform) applyStack(state.platform);
+});
 
 // Hydrate theme synchronously on module load so the dark class is applied
 // before React mounts (avoids the FOUC of light → dark on first paint).
@@ -169,4 +186,5 @@ if (typeof window !== 'undefined') {
   const t = usePrefs.getState().theme || initialTheme();
   applyTheme(t);
   if (t !== usePrefs.getState().theme) usePrefs.setState({ theme: t });
+  applyStack(usePrefs.getState().platform);
 }

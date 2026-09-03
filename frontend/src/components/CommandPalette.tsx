@@ -17,11 +17,12 @@ import {
   LogOut,
   UserPlus,
   Cloud,
-  Smartphone,
 } from 'lucide-react';
 import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
+import { StackIcon } from '../lib/stackIcons';
+import { STACK_TEXT } from '../lib/stackMeta';
 import { PALETTE_ROUTES, routeLabel } from '../lib/routes';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
@@ -251,7 +252,7 @@ export default function CommandPalette() {
                 {PLATFORMS.map((p) => (
                   <CmdItem
                     key={p.key}
-                    icon={<Smartphone />}
+                    icon={<StackIcon stack={p.key} className={cn('h-4 w-4', STACK_TEXT[p.key])} />}
                     onSelect={run(() => setPlatform(p.key))}
                     current={platform === p.key}
                   >

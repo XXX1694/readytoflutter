@@ -91,11 +91,11 @@ export default function BottomNav() {
                 {({ isActive }) => (
                   route.tab === 'start' ? (
                     <>
-                      <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-ink text-paper">
+                      <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-on-brand shadow-codex">
                         <route.icon className="h-[19px] w-[19px]" aria-hidden />
                         {hasDue && (
                           <span
-                            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-paper bg-brand"
+                            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-paper bg-coral"
                             aria-label={lang === 'ru' ? 'Есть карточки на повторение' : 'Cards are due'}
                           />
                         )}
@@ -105,10 +105,11 @@ export default function BottomNav() {
                   ) : (
                     <>
                       <route.icon
-                        className={cn('h-[19px] w-[19px]', isActive ? 'text-ink' : 'text-muted')}
+                        className={cn('h-[19px] w-[19px]', isActive ? 'text-brand' : 'text-muted')}
+                        strokeWidth={isActive ? 2.25 : 1.9}
                         aria-hidden
                       />
-                      <span className={cn('leading-[1.4]', isActive ? 'font-semibold text-ink' : 'text-muted')}>
+                      <span className={cn('leading-[1.4]', isActive ? 'font-semibold text-brand' : 'text-muted')}>
                         {label}
                       </span>
                     </>

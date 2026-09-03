@@ -28,13 +28,13 @@ export function Meter({ value, max, label, figure = true, barClassName, classNam
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={label}
-        className={cn('block h-1 w-16 overflow-hidden rounded-full bg-rule/12', barClassName)}
+        className={cn('block h-1.5 w-16 overflow-hidden rounded-full bg-rule/10', barClassName)}
       >
-        <span className={cn('block h-full rounded-full', done ? 'bg-mint' : 'bg-ink')} style={{ width: `${pct}%` }} />
+        <span className={cn('block h-full rounded-full', done ? 'bg-mint' : 'bg-brand')} style={{ width: `${pct}%` }} />
       </span>
       {figure && (
         <span className="num text-[13px] tabular-nums">
-          <span className={done ? 'text-mint' : 'text-ink'}>{value}</span>
+          <span className={done ? 'text-mint' : value > 0 ? 'text-brand' : 'text-ink'}>{value}</span>
           <span className="text-muted"> / {max}</span>
         </span>
       )}

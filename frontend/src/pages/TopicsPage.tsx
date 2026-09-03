@@ -13,6 +13,7 @@ import {
   PageShell, PageHeader, Section, Chip, ChipGroup, List, ListRow, Meter, EmptyState, Skeleton, TopicGlyph,
 } from '../ui/index';
 import { filterTopicsByPlatform, PLATFORMS } from '../lib/platform';
+import { StackTile } from '../lib/stackIcons';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 import type { Level, Question, Topic } from '../types/domain';
@@ -121,9 +122,10 @@ export default function TopicsPage() {
       </PageHeader>
 
       {platform !== 'all' && stackMeta && (
-        <p className="mb-6 text-[13px] text-muted">
-          {c.scopedHint(copy(t, stackMeta.labelKey))}{' '}
-          <button type="button" onClick={() => setPlatform('all')} className="text-brand hover:underline">
+        <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+          <StackTile stack={platform} size="xs" />
+          <span>{c.scopedHint(copy(t, stackMeta.labelKey))}</span>
+          <button type="button" onClick={() => setPlatform('all')} className="font-medium text-brand hover:underline">
             {c.showEveryStack}
           </button>
         </p>

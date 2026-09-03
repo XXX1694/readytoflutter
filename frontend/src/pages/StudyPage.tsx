@@ -270,7 +270,7 @@ export default function StudyPage() {
             className={cn(
               'touch-target inline-flex items-center gap-1.5 rounded-lg px-2.5 text-[13px]',
               'transition-colors duration-150',
-              recallMode ? 'bg-ink text-paper' : 'text-muted hover:bg-rule/8 hover:text-ink',
+              recallMode ? 'bg-brand/12 font-medium text-brand' : 'text-muted hover:bg-rule/8 hover:text-ink',
             )}
           >
             <PenLine className="h-3.5 w-3.5" aria-hidden />

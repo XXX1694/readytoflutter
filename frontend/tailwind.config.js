@@ -23,10 +23,23 @@ export default {
         'muted-2': 'rgb(var(--muted-2) / <alpha-value>)',
         shadow: 'rgb(var(--shadow) / <alpha-value>)',
 
+        // `brand` is the active stack's colour (see [data-stack] in index.css);
+        // `on-brand` is the text that sits on a brand fill. The `stack.*` set
+        // is every stack's own colour, for the places that show several
+        // stacks side by side (the switcher, a mixed topic list).
         brand: {
           DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
           ink: 'rgb(var(--brand-ink) / <alpha-value>)',
           sky: 'rgb(var(--brand-sky) / <alpha-value>)',
+        },
+        'on-brand': 'rgb(var(--on-brand) / <alpha-value>)',
+        stack: {
+          flutter: 'rgb(var(--stack-flutter) / <alpha-value>)',
+          ios:     'rgb(var(--stack-ios) / <alpha-value>)',
+          android: 'rgb(var(--stack-android) / <alpha-value>)',
+          cross:   'rgb(var(--stack-cross) / <alpha-value>)',
+          mobile:  'rgb(var(--stack-mobile) / <alpha-value>)',
+          all:     'rgb(var(--stack-all) / <alpha-value>)',
         },
         mint: 'rgb(var(--mint) / <alpha-value>)',
         amber: 'rgb(var(--amber) / <alpha-value>)',
@@ -82,23 +95,25 @@ export default {
       },
 
       borderRadius: {
-        // Pulled in across the board. Large radii read as "app chrome"; this
-        // is meant to read as paper, where a corner is a cut, not a bubble.
-        DEFAULT: '6px',
-        sm: '4px',
-        md: '8px',
-        lg: '10px',
-        xl: '12px',
+        // Controls are 8–10px, sheets and cards 14–16px: rounded enough to
+        // read as an app, not so round that a card becomes a bubble.
+        DEFAULT: '8px',
+        sm: '6px',
+        md: '10px',
+        lg: '12px',
+        xl: '14px',
+        '2xl': '16px',
+        '3xl': '20px',
       },
 
       boxShadow: {
-        // Paper doesn't glow. Elevation is a hairline plus, at most, a short
-        // warm drop — enough to lift a sheet off the page and no more.
-        'codex-sm': '0 1px 2px 0 rgb(var(--shadow) / 0.04)',
-        'codex':    '0 1px 3px 0 rgb(var(--shadow) / 0.06)',
-        'codex-lg': '0 2px 8px -2px rgb(var(--shadow) / 0.10)',
-        // Keyboard focus on a card: an ink ring, available as a utility.
-        focus: '0 0 0 2px rgb(var(--ink) / 0.60)',
+        // Elevation is a contact line plus a wide, low, warm drop. Never a
+        // coloured glow.
+        'codex-sm': '0 1px 2px 0 rgb(var(--shadow) / 0.05)',
+        'codex':    '0 1px 2px 0 rgb(var(--shadow) / 0.05), 0 4px 12px -4px rgb(var(--shadow) / 0.08)',
+        'codex-lg': '0 2px 4px -1px rgb(var(--shadow) / 0.06), 0 16px 40px -12px rgb(var(--shadow) / 0.18)',
+        // Keyboard focus on a card: a ring in the stack colour.
+        focus: '0 0 0 2px rgb(var(--brand) / 0.70)',
       },
 
       keyframes: {
