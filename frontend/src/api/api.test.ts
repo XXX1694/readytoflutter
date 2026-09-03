@@ -546,3 +546,71 @@ describe('auth calls have no fallback', () => {
     await expect(api.billingHealth()).resolves.toEqual({ enabled: false });
   });
 });
+
+
+describe('resetProgress — a signed-in reset must reach the server', () => {
+  it('rejects (and keeps local data) when the backend is unreachable and a token is set', async () => {
+    const { useAuth } = await import('../store/auth');
+    useAuth.getState().setSession('a-token', FAKE_USER);
+    backendDown();
+    seedProgress({ 10: { status: 'completed', notes: null, updated_at: '2026-01-01T00:00:00.000Z' } });
+
+    // No silent fallback-success: the caller sees the failure and the local-only
+    // SM-2 schedule (wiped by the hook's onSuccess) is left intact.
+    await expect(api.resetProgress()).rejects.toBeTruthy();
+    expect(api.readLocalProgress()).not.toEqual({});
+
+    useAuth.getState().clearSession();
+  });
+
+  it('still clears localStorage for an anonymous user offline, and reports success', async () => {
+    const { useAuth } = await import('../store/auth');
+    useAuth.getState().clearSession();
+    backendDown();
+    seedProgress({ 10: { status: 'completed', notes: null, updated_at: '2026-01-01T00:00:00.000Z' } });
+
+    await expect(api.resetProgress()).resolves.toEqual({ success: true });
+    expect(api.readLocalProgress()).toEqual({});
+  });
+});
+
+describe('flushLocalProgress — push offline writes on reconnect', () => {
+  it('syncs the queued map to the server and clears it for a signed-in user', async () => {
+    const { useAuth } = await import('../store/auth');
+    useAuth.getState().setSession('a-token', FAKE_USER);
+    mocks.axiosInstance.post.mockResolvedValue({ data: { imported: 1, skipped: 0 } });
+    seedProgress({ 10: { status: 'completed', notes: 'n', updated_at: '2026-01-01T00:00:00.000Z' } });
+
+    const result = await api.flushLocalProgress();
+
+    expect(result).toEqual({ imported: 1, skipped: 0 });
+    expect(mocks.axiosInstance.post).toHaveBeenCalledWith(
+      '/progress/bulk',
+      { items: [{ questionId: 10, status: 'completed', notes: 'n', updated_at: '2026-01-01T00:00:00.000Z' }] },
+    );
+    expect(api.readLocalProgress()).toEqual({});
+
+    useAuth.getState().clearSession();
+  });
+
+  it('is a no-op with no token — nothing is sent and the map is left alone', async () => {
+    const { useAuth } = await import('../store/auth');
+    useAuth.getState().clearSession();
+    seedProgress({ 10: { status: 'completed', notes: null, updated_at: '2026-01-01T00:00:00.000Z' } });
+
+    await expect(api.flushLocalProgress()).resolves.toBeNull();
+    expect(mocks.axiosInstance.post).not.toHaveBeenCalled();
+    expect(api.readLocalProgress()).not.toEqual({});
+  });
+
+  it('is a no-op when the queue is empty', async () => {
+    const { useAuth } = await import('../store/auth');
+    useAuth.getState().setSession('a-token', FAKE_USER);
+    localStorage.removeItem(PROGRESS_KEY);
+
+    await expect(api.flushLocalProgress()).resolves.toBeNull();
+    expect(mocks.axiosInstance.post).not.toHaveBeenCalled();
+
+    useAuth.getState().clearSession();
+  });
+});

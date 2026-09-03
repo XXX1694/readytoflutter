@@ -7,6 +7,9 @@ import {
   pickDueQueue,
   getSrsSummary,
   getDueSnapshot,
+  previewInterval,
+  getReviewTimes,
+  readAll,
 } from './srs';
 
 describe('srs.getCardState', () => {
@@ -163,5 +166,98 @@ describe('srs.getDueSnapshot', () => {
       JSON.stringify({ 1: null, 2: { dueAt: 'soon' }, 3: { dueAt: now - 1 } }),
     );
     expect(getDueSnapshot(now)).toEqual({ dueCount: 1, nextDueAt: null });
+  });
+});
+
+
+// ── Wave 2/3 additions: interval preview, the review log, the shared map read,
+//    the dueAt<=0 guard, and partial-card hardening. Each locks in a fix whose
+//    only prior coverage was a throwaway reviewer script. ──
+
+describe('srs.previewInterval', () => {
+  beforeEach(() => resetAll());
+
+  it("matches what rateCard schedules for a fresh card, and doesn't persist", () => {
+    // The grade buttons show this; it must equal the real next interval so the
+    // promise on the button is the one the scheduler keeps.
+    expect(previewInterval(7, 'again')).toBe(1);
+    expect(previewInterval(7, 'hard')).toBe(1);
+    expect(previewInterval(7, 'good')).toBe(1);
+    expect(previewInterval(7, 'easy')).toBe(3);
+    // Reading a preview must not create or mutate a stored card.
+    expect(readAll()).toEqual({});
+  });
+
+  it('reflects a matured card (reps 1 → good is 6 days)', () => {
+    const now = Date.UTC(2026, 0, 1);
+    rateCard(7, 'good', now);
+    expect(previewInterval(7, 'good')).toBe(6);
+    expect(previewInterval(7, 'easy')).toBe(7);
+  });
+});
+
+describe('srs.getReviewTimes', () => {
+  beforeEach(() => resetAll());
+
+  it('returns a lastAt stamp for every rated card and nothing for never-rated', () => {
+    const now = Date.UTC(2026, 0, 1);
+    rateCard(1, 'good', now);
+    rateCard(2, 'again', now + 1000);
+    getCardState(3); // read only — never rated, must not appear
+    const times = getReviewTimes().sort((a, b) => a - b);
+    expect(times).toEqual([now, now + 1000]);
+  });
+
+  it('excludes a stored card whose lastAt is 0', () => {
+    localStorage.setItem('rtf:srs:v1', JSON.stringify({
+      9: { ease: 2.5, interval: 1, reps: 1, dueAt: Date.now() + 1000, lastAt: 0 },
+    }));
+    expect(getReviewTimes()).toEqual([]);
+  });
+});
+
+describe('srs — a stored card with dueAt <= 0 is never treated as due', () => {
+  beforeEach(() => resetAll());
+
+  // freshCard() is dueAt:0; a rated card always gets dueAt = now + interval*day > 0,
+  // so a stored 0 can only arrive from corruption. It must not pin to the queue head.
+  const seedZeroDue = () => localStorage.setItem('rtf:srs:v1', JSON.stringify({
+    5: { ease: 2.5, interval: 0, reps: 1, dueAt: 0, lastAt: 123 },
+  }));
+
+  it('pickDueQueue drops it (neither fresh nor due)', () => {
+    seedZeroDue();
+    // id 5 has a stored state so it is not "fresh"; dueAt 0 must not count as due.
+    expect(pickDueQueue([{ id: 5 }, { id: 6 }])).toEqual([{ id: 6 }]);
+  });
+
+  it('getSrsSummary counts it as learned but not due/overdue', () => {
+    seedZeroDue();
+    const sum = getSrsSummary([{ id: 5 }]);
+    expect(sum).toEqual({ due: 0, overdue: 0, learned: 1, fresh: 0, total: 1 });
+  });
+
+  it('agrees with getDueSnapshot, which already skipped it', () => {
+    seedZeroDue();
+    expect(getDueSnapshot()).toEqual({ dueCount: 0, nextDueAt: null });
+  });
+});
+
+describe('srs.rateCard — partial stored card', () => {
+  beforeEach(() => resetAll());
+
+  it('fills fresh defaults so no field turns into NaN/null', () => {
+    // A card object missing `ease` used to compute Math.max(1.3, undefined+delta)
+    // → NaN, which JSON.stringify writes back as null.
+    localStorage.setItem('rtf:srs:v1', JSON.stringify({ 5: {} }));
+    const now = Date.UTC(2026, 0, 1);
+    const next = rateCard(5, 'good', now);
+    expect(Number.isFinite(next.ease)).toBe(true);
+    expect(next.ease).toBe(2.5);
+    expect(next.interval).toBe(1);
+    expect(next.reps).toBe(1);
+    expect(next.dueAt).toBe(now + 24 * 60 * 60 * 1000);
+    const stored = JSON.parse(localStorage.getItem('rtf:srs:v1'))['5'];
+    for (const v of Object.values(stored)) expect(v).not.toBeNull();
   });
 });
