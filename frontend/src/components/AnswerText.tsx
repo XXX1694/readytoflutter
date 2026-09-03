@@ -25,12 +25,15 @@ const textOf = (node: ReactNode): string => {
  * hanging bullets, mono code spans, Shiki for fenced code.
  */
 const components: Components = {
-  h1: ({ children }) => <h4 className="answer-heading">{children}</h4>,
-  h2: ({ children }) => <h4 className="answer-heading">{children}</h4>,
-  h3: ({ children }) => <h4 className="answer-heading">{children}</h4>,
-  h4: ({ children }) => <h4 className="answer-heading">{children}</h4>,
-  h5: ({ children }) => <h4 className="answer-heading">{children}</h4>,
-  h6: ({ children }) => <h4 className="answer-heading">{children}</h4>,
+  // Rendered as a paragraph, not a heading: these are run-in labels inside a
+  // single answer, and emitting an <h4> under the page's <h1>/<h2> skipped a
+  // level on every answer view (axe heading-order).
+  h1: ({ children }) => <p className="answer-heading">{children}</p>,
+  h2: ({ children }) => <p className="answer-heading">{children}</p>,
+  h3: ({ children }) => <p className="answer-heading">{children}</p>,
+  h4: ({ children }) => <p className="answer-heading">{children}</p>,
+  h5: ({ children }) => <p className="answer-heading">{children}</p>,
+  h6: ({ children }) => <p className="answer-heading">{children}</p>,
   a: ({ href, children }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-brand underline-offset-4 hover:underline">
       {children}

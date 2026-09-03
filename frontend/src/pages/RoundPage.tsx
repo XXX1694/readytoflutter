@@ -125,7 +125,7 @@ export default function RoundPage() {
         {/* Title and close are hidden under sm: the mobile header carries
             both for this route. */}
         <header className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
+          <h1 className="sr-only sm:not-sr-only font-display text-lg font-semibold text-ink sm:block">
             {t.nav.followups}
           </h1>
           <span className="eyebrow">{topicTitle(topic)}</span>
@@ -293,7 +293,7 @@ interface ChainStripProps {
     fill is the grade it earned, and the outlined one is where you are. */
 function ChainStrip({ chain, index, outcomes, c }: ChainStripProps) {
   return (
-    <div className="flex items-end gap-1.5" aria-label={c.chainAria}>
+    <div className="flex items-end gap-1.5" role="img" aria-label={c.chainAria}>
       {chain.map((question, i) => {
         const outcome = outcomes[question.id];
         return (

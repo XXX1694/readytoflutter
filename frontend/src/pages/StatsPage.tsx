@@ -204,11 +204,11 @@ export default function StatsPage() {
 
       {stackBreakdown.length > 0 && (
         <Section title={c.byStack} subtitle={c.byStackHint}>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="group" aria-label={c.byStack}>
             <table className="w-full min-w-[520px] text-left">
               <thead>
                 <tr className="border-b border-rule/12 text-[13px] text-muted">
-                  <th className="py-2 pr-4 font-normal">&nbsp;</th>
+                  <th className="py-2 pr-4 font-normal"><span className="sr-only">{c.colTrack}</span></th>
                   {LEVELS.map((lv) => (
                     <th key={lv} className="px-3 py-2 font-normal">{t[lv].short}</th>
                   ))}

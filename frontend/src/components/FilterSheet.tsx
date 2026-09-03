@@ -44,7 +44,7 @@ export default function FilterSheet({
   closeLabel = 'Close',
 }: FilterSheetProps) {
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground modal autoFocus>
       <Drawer.Portal>
         <Drawer.Overlay data-vaul-overlay className="fixed inset-0 z-50" />
         <Drawer.Content

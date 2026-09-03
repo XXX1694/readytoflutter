@@ -50,7 +50,12 @@ export default function ActivityHeatmap({ weeks = 14 }: ActivityHeatmapProps) {
 
   return (
     <Tooltip.Provider delayDuration={150}>
-      <div className="flex flex-col items-start gap-2.5 overflow-x-auto">
+      <div
+        className="flex flex-col items-start gap-2.5 overflow-x-auto"
+        tabIndex={0}
+        role="group"
+        aria-label={lang === 'ru' ? 'Активность по дням' : 'Activity by day'}
+      >
         <div className="flex gap-[3px]">
           {cols.map((col: Array<HeatmapCell | null>, ci: number) => (
             <div key={ci} className="flex flex-col gap-[3px]">
@@ -59,11 +64,12 @@ export default function ActivityHeatmap({ weeks = 14 }: ActivityHeatmapProps) {
                   <Tooltip.Root key={cell.key}>
                     <Tooltip.Trigger asChild>
                       <span
+                        role="img"
                         className={cn(
                           'h-3 w-3 rounded-sm sm:h-3.5 sm:w-3.5',
                           INTENSITY_CLASS[intensity(cell.count)],
                         )}
-                        aria-label={`${fmt(cell.date)} — ${cell.count}`}
+                        aria-label={`${fmt(cell.date)}: ${cell.count}`}
                       />
                     </Tooltip.Trigger>
                     <Tooltip.Portal>

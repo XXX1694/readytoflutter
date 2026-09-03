@@ -237,8 +237,8 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                   mean anything next to the words that name them. */}
               <div className="flex flex-wrap items-center gap-2 border-b border-rule/12 bg-paper px-4 py-3 sm:px-5">
                 <StatusIcon className={cn('h-4 w-4 shrink-0', STATUS_META[status].accent)} aria-hidden />
-                <span className="eyebrow">{t.markAs}</span>
-                <div className="inline-flex items-center gap-px rounded border border-rule/12 bg-paper-2 p-0.5">
+                <span className="eyebrow" id="mark-as-label">{t.markAs}</span>
+                <div role="group" aria-labelledby="mark-as-label" className="inline-flex items-center gap-px rounded border border-rule/12 bg-paper-2 p-0.5">
                   {STATUS_KEYS.map((key) => {
                     const active = status === key;
                     return (
@@ -445,7 +445,7 @@ function NotesEditor({ questionId, initialNotes, status, topicSlug }: NotesEdito
     <section className="border-t border-rule/12 px-4 py-4 sm:px-5">
       <header className="mb-2 flex items-center justify-between gap-2">
         <span className="eyebrow">{t.myNotes}</span>
-        <span className="inline-flex items-center gap-1 text-[12px] text-muted-2">
+        <span role="status" aria-live="polite" className="inline-flex items-center gap-1 text-[12px] text-muted-2">
           {update.isPending ? (
             t.saving
           ) : saved ? (

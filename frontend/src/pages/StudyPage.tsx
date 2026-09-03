@@ -139,6 +139,14 @@ export default function StudyPage() {
     },
   });
   const { current, revealed, total, draftRef } = session;
+  // In recall mode the draft textarea takes focus after each grade; with it
+  // off there is no textarea, so focus fell to <body> silently. Move it to
+  // the question heading instead — an aria-live region reads the new one out.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (!recallMode && !revealed) headingRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id]);
   const counts = useMemo(() => countOutcomes(session.outcomes), [session.outcomes]);
 
   // What the queue was narrowed to, as a stable machine value. The on-screen
@@ -249,7 +257,7 @@ export default function StudyPage() {
       {/* Title and close are hidden under sm: the mobile header already
           carries both for this route. */}
       <header className="mb-5 flex items-center gap-3">
-        <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
+        <h1 className="sr-only sm:not-sr-only font-display text-lg font-semibold text-ink sm:block">
           {t.nav.session}
         </h1>
         {hasScope && scopeText && <Pill size="xs">{scopeText}</Pill>}
@@ -291,6 +299,7 @@ export default function StudyPage() {
         <span className="num shrink-0 text-[12px] text-muted">{session.index}/{total}</span>
       </div>
 
+      <div className="mb-9 sr-only" aria-live="polite">{`${session.index + 1}/${total}`}</div>
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <Pill tone={difficultyTone[current.difficulty]} size="xs">{difficultyLabel}</Pill>
         <span className="eyebrow">
@@ -299,7 +308,11 @@ export default function StudyPage() {
         </span>
       </div>
 
-      <h2 className="font-display text-[26px] font-semibold leading-[1.18] text-ink sm:text-[34px]">
+      <h2
+        ref={headingRef}
+        tabIndex={-1}
+        className="font-display text-[26px] font-semibold leading-[1.18] text-ink outline-none sm:text-[34px]"
+      >
         <InlineMarkdown text={questionText(current)} />
       </h2>
 

@@ -66,7 +66,7 @@ export default function PrintTopicPage() {
   });
 
   return (
-    <div className="bg-paper text-ink">
+    <main className="bg-paper text-ink">
       {/* On-screen toolbar. `print:hidden` rather than a `.print-hide` class:
           that class was never defined in index.css, so the toolbar used to
           print at the top of page one. */}
@@ -144,6 +144,6 @@ export default function PrintTopicPage() {
           Onsite · {topicTitle(topic)} · {today}
         </footer>
       </article>
-    </div>
+    </main>
   );
 }

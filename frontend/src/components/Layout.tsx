@@ -15,6 +15,9 @@ import { usePrefs } from '../store/prefs';
 
 export default function Layout() {
   const theme = usePrefs((s) => s.theme);
+  const skipToContent = (typeof localStorage !== 'undefined' && localStorage.getItem('lang') === 'ru')
+    ? 'Перейти к содержимому'
+    : 'Skip to content';
   const bottomNavRef = useRef<HTMLDivElement>(null);
 
   // Publish the BottomNav's actual rendered height as a CSS custom property
@@ -51,6 +54,12 @@ export default function Layout() {
     // while still resizing with the keyboard.
     <MotionConfig reducedMotion="user">
       <div className="flex min-h-dvh h-dvh overflow-hidden bg-page text-ink">
+        <a
+          href="#main-content"
+          className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-3 focus-visible:top-3 focus-visible:z-[60] focus-visible:rounded-md focus-visible:bg-ink focus-visible:px-3 focus-visible:py-2 focus-visible:text-sm focus-visible:text-paper"
+        >
+          {skipToContent}
+        </a>
         <Sidebar />
 
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -59,6 +68,7 @@ export default function Layout() {
           {/* Mobile header — fixed overlay under lg, hides on scroll-down */}
           <MobileHeader />
           <main
+            id="main-content"
             // Focus target for route changes (see RouteTransition); the ring is
             // suppressed because a whole page outlined in ink means nothing.
             tabIndex={-1}

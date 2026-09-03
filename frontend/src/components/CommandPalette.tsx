@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Command } from 'cmdk';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -60,6 +60,13 @@ const copy = (t: UICopy, key: string): string => {
 export default function CommandPalette() {
   const open = usePrefs((s) => s.commandOpen);
   const setOpen = usePrefs((s) => s.setCommandOpen);
+  // The palette opens from a Zustand flag, not a Radix trigger, so Radix has
+  // no element to restore focus to on close and drops it on <body>. Remember
+  // what had focus when it opened and hand focus back there.
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (open) opener.current = document.activeElement as HTMLElement | null;
+  }, [open]);
   const theme = usePrefs((s) => s.theme);
   const setTheme = usePrefs((s) => s.setTheme);
   const recallMode = usePrefs((s) => s.recallMode);
@@ -142,7 +149,13 @@ export default function CommandPalette() {
           palette off the screen on a 568pt iPhone with the keyboard up.
           Desktop (sm+): center-ish 16vh as before.
         */}
-        <Dialog.Content className="fixed left-1/2 top-[4vh] sm:top-[16vh] z-50 w-[92vw] max-w-2xl -translate-x-1/2 outline-none data-[state=open]:animate-slide-up">
+        <Dialog.Content
+          onCloseAutoFocus={(e) => {
+            const el = opener.current;
+            if (el && el.isConnected) { e.preventDefault(); el.focus(); }
+          }}
+          className="fixed left-1/2 top-[4vh] sm:top-[16vh] z-50 w-[92vw] max-w-2xl -translate-x-1/2 outline-none data-[state=open]:animate-slide-up"
+        >
           <Dialog.Title className="sr-only">{t.commandPlaceholder}</Dialog.Title>
           <Dialog.Description className="sr-only">{t.commandHint}</Dialog.Description>
           <Command
@@ -158,9 +171,9 @@ export default function CommandPalette() {
                 autoCorrect="off"
                 spellCheck={false}
                 autoCapitalize="off"
-                className="flex-1 bg-transparent text-base sm:text-[15px] text-ink placeholder:text-muted-2 outline-none"
+                className="flex-1 bg-transparent text-base sm:text-[15px] text-ink placeholder:text-muted outline-none"
               />
-              <kbd className="hidden items-center rounded border border-rule/12 px-1.5 py-0.5 font-mono text-[11px] text-muted-2 sm:flex">
+              <kbd className="hidden items-center rounded border border-rule/12 px-1.5 py-0.5 font-mono text-[11px] text-muted sm:flex">
                 Esc
               </kbd>
             </div>
@@ -344,7 +357,7 @@ function CmdItem({ icon, children, trailing, current, onSelect, danger }: CmdIte
         <span className={cn(current && 'font-medium text-ink')}>{children}</span>
       </span>
       {trailing && (
-        <span className="shrink-0 font-mono text-[11px] text-muted-2">{trailing}</span>
+        <span className="shrink-0 font-mono text-[11px] text-muted">{trailing}</span>
       )}
       <ArrowRight
         className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-data-[selected=true]:opacity-100"

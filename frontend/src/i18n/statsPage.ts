@@ -34,6 +34,7 @@ const en = {
   // Stack × level matrix
   byStack: 'By stack',
   byStackHint: 'Rows are stacks, columns are levels. Numbers are completed questions out of the total.',
+  colTrack: 'Stack',
   colTotal: 'Total',
 
   due: (n: number) => `${n} due`,
@@ -60,6 +61,7 @@ const ru: typeof en = {
 
   byStack: 'По стекам',
   byStackHint: 'Строка — стек, колонка — уровень. Цифры — пройдено из всего.',
+  colTrack: 'Стек',
   colTotal: 'Всего',
 
   due: (n) => `${n} на повторение`,

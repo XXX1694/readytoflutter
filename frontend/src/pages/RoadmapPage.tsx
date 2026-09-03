@@ -346,6 +346,7 @@ function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content
             <div className="pb-5">
               <div className="flex items-center gap-3">
                 <ProgressBar
+                  label={`${rung.completed}/${rung.total}`}
                   value={rung.completed}
                   max={rung.total}
                   size="xs"

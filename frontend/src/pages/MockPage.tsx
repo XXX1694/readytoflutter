@@ -248,7 +248,7 @@ export default function MockPage() {
         {/* Title and close are hidden under sm: the mobile header carries
             both for this route. */}
         <header className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="hidden font-display text-lg font-semibold text-ink sm:block">
+          <h1 className="sr-only sm:not-sr-only font-display text-lg font-semibold text-ink sm:block">
             {t.nav.timed}
           </h1>
           <span className="num text-[13px] text-muted">
