@@ -61,7 +61,15 @@ async function seed(page, combo) {
     localStorage.setItem('rtf:welcome:v1', '1');
     localStorage.setItem('rtf:cmdk:hint:dismissed:v1', '1');
     localStorage.setItem('rtf:pwa:visit-count', '5');
-    localStorage.setItem('theme', opts.theme);
+    // The theme lives in the persisted prefs store, not the legacy `theme`
+    // key (which nothing reads any more) — without this the "dark" combos
+    // silently rendered light.
+    const prefsKey = 'rtf:prefs:v1';
+    let prefs;
+    try { prefs = JSON.parse(localStorage.getItem(prefsKey) || ''); } catch { prefs = null; }
+    if (!prefs || typeof prefs !== 'object') prefs = { state: {}, version: 0 };
+    prefs.state = { ...(prefs.state || {}), theme: opts.theme };
+    localStorage.setItem(prefsKey, JSON.stringify(prefs));
     localStorage.setItem('lang', opts.lang);
     // A little progress so progress-dependent states render rather than empty ones.
     const res = await fetch(`${opts.base}/seed/static-data.json`);

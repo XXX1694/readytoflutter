@@ -106,27 +106,39 @@ export default function CheatsheetPage() {
       {/* On-screen toolbar. `print:hidden` rather than a `.print-hide` class:
           that class was never defined in index.css, so the toolbar used to
           print at the top of page one. */}
-      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-rule/12 bg-paper px-4 py-3 print:hidden sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="eyebrow shrink-0">{lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}</span>
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-rule/12 bg-paper px-3 py-2.5 print:hidden sm:gap-3 sm:px-6 sm:py-3">
+        {/* Back leads, as an icon on phones, so the bar stays one row at 360px. */}
+        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/topic/${slug}`)}
+            aria-label={lang === 'ru' ? 'Назад' : 'Back'}
+            className="shrink-0 px-2 sm:px-3"
+          >
+            <ArrowLeft className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden />
+            <span className="hidden sm:inline">{lang === 'ru' ? 'Назад' : 'Back'}</span>
+          </Button>
+          <span className="eyebrow hidden shrink-0 sm:inline">{lang === 'ru' ? 'Шпаргалка' : 'Cheatsheet'}</span>
           <span className="truncate text-sm text-ink-2">{topicTitle(topic)}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleCopy}>
             {copied
               ? <Check className="h-3.5 w-3.5 text-mint" aria-hidden />
               : <ClipboardCopy className="h-3.5 w-3.5" aria-hidden />}
             {copied
               ? (lang === 'ru' ? 'Скопировано' : 'Copied')
-              : (lang === 'ru' ? 'Копировать Markdown' : 'Copy Markdown')}
+              : (
+                <>
+                  <span className="sm:hidden">{lang === 'ru' ? 'Копировать' : 'Copy'}</span>
+                  <span className="hidden sm:inline">{lang === 'ru' ? 'Копировать Markdown' : 'Copy Markdown'}</span>
+                </>
+              )}
           </Button>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-3.5 w-3.5" aria-hidden />
             {lang === 'ru' ? 'Печать' : 'Print'}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/topic/${slug}`)}>
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            {lang === 'ru' ? 'Назад' : 'Back'}
           </Button>
         </div>
       </div>

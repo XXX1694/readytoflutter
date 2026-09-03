@@ -556,13 +556,13 @@ function InlineSelect({ label, value, onChange, options }: InlineSelectProps) {
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer appearance-none rounded-md bg-rule/8 py-1 pl-2.5 pr-7 font-display text-[inherit] font-semibold text-ink outline-none transition-colors hover:bg-rule/14"
+        className="cursor-pointer appearance-none rounded-md bg-brand/10 py-1 pl-2.5 pr-7 font-display text-[inherit] font-semibold text-brand outline-none transition-colors hover:bg-brand/15"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted" aria-hidden />
+      <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-brand/70" aria-hidden />
     </span>
   );
 }

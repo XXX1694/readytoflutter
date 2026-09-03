@@ -179,7 +179,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[12px] font-medium text-muted">{next ? t.roadmap.nextUp : t.nav.roadmap}</span>
-                <span className="block truncate text-[15px] font-semibold text-ink">
+                <span className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">
                   {next ? `${rungLabel(next, bandNames)} — ${next.title}` : t.roadmap.allPassed}
                 </span>
               </span>
@@ -193,7 +193,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[12px] font-medium text-muted">{t.nav.browseTopics}</span>
-                <span className="block truncate text-[15px] font-semibold text-ink">{c.catalogueLine(scopedTopics.length, scopedQuestions)}</span>
+                <span className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">{c.catalogueLine(scopedTopics.length, scopedQuestions)}</span>
               </span>
               <ArrowRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />
             </Link>

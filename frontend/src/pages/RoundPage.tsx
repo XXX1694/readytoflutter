@@ -251,7 +251,7 @@ function FollowUps({ c }: { c: SessionCopy }) {
             className={cn(
               'inline-flex min-h-[36px] items-center rounded-lg border px-3 py-1.5 text-[13px] transition-colors duration-150',
               prompt.key === openKey
-                ? 'border-ink bg-ink text-paper'
+                ? 'border-brand bg-brand text-on-brand'
                 : 'border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
             )}
           >
@@ -303,7 +303,7 @@ function ChainStrip({ chain, index, outcomes, c }: ChainStripProps) {
               'flex-1 rounded-sm',
               DIFFICULTY_HEIGHT[question.difficulty],
               outcome ? OUTCOME_FILL[outcome] : 'bg-rule/10',
-              i === index && 'ring-1 ring-ink ring-offset-2 ring-offset-paper',
+              i === index && 'ring-2 ring-brand ring-offset-2 ring-offset-paper',
             )}
           />
         );

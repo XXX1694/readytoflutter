@@ -34,15 +34,18 @@ export function PageHeader({ eyebrow, title, subtitle, back, actions, children, 
           {back.label}
         </Link>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+      {/* Actions sit beside the title on every width — on a phone they align
+          with the title's top line rather than dropping onto a row of their
+          own under the subtitle, where a lone overflow button looked lost. */}
+      <div className="flex items-start justify-between gap-3 sm:items-end sm:gap-4">
+        <div className="min-w-0 flex-1">
           {eyebrow && <div className="eyebrow font-semibold text-brand">{eyebrow}</div>}
           <h1 className={cn('font-display text-[28px] font-bold leading-[1.1] tracking-[-0.022em] text-ink sm:text-[32px]', eyebrow && 'mt-1.5')}>
             {title}
           </h1>
           {subtitle && <p className="mt-2.5 max-w-2xl text-[15px] leading-relaxed text-ink-2">{subtitle}</p>}
         </div>
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+        {actions && <div className={cn('flex shrink-0 flex-wrap items-center justify-end gap-2', eyebrow && 'mt-5 sm:mt-0')}>{actions}</div>}
       </div>
       {children && <div className="mt-4">{children}</div>}
     </header>
