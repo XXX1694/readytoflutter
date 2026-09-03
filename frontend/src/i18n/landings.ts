@@ -44,7 +44,7 @@ export const LANDINGS: Record<string, LandingConfig> = {
     ru: {
       eyebrow: 'Подготовка · Flutter & Dart',
       title: ['Готов к', 'Flutter-собесу.'],
-      desc: 'SRS-задрочка по Flutter и Dart, mock-интервью и AI-оценка — для тех, у кого через неделю BLoC, виджет-дерево и platform channels.',
+      desc: 'SRS-тренировки по Flutter и Dart, mock-интервью и AI-оценка — для тех, у кого через неделю BLoC, виджет-дерево и platform channels.',
       docTitle: 'Подготовка к Flutter-собесу — Onsite',
       metaDesc: 'Тренируй Flutter и Dart с SRS, mock-интервью и AI-проверкой ответов. 23 темы — виджеты, состояние, async, навигация и больше.',
     },

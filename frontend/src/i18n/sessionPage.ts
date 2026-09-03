@@ -130,7 +130,7 @@ const ru: typeof en = {
   recapTitle: 'Сессия закрыта',
   cardsReviewed: (n) => `${n} ${ruPlural(n, 'карточка повторена', 'карточки повторены', 'карточек повторено')}`,
   questionsCount: (n) => `${n} ${ruPlural(n, 'вопрос', 'вопроса', 'вопросов')}`,
-  skippedCount: (n) => `${n} ${ruPlural(n, 'пропущен', 'пропущено', 'пропущено')}`,
+  skippedCount: (n) => `${n} пропущено`,
   again: 'Ещё подход',
   dashboard: 'На «Сегодня»',
 

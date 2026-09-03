@@ -34,9 +34,9 @@ export default function PrintTopicPage() {
     if (!topic) return;
     const original = document.title;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    document.title = `${safe} — Onsite`;
+    document.title = lang === 'ru' ? `${safe}: печать — Onsite` : `${safe} — Onsite`;
     return () => { document.title = original; };
-  }, [topic, topicTitle]);
+  }, [topic, topicTitle, lang]);
 
   // Fire the print dialog once the content is in the DOM.
   useEffect(() => {

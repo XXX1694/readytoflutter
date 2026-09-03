@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '../store/auth';
 import { useLang, type Lang } from '../i18n/LangContext';
+import { ruPlural } from '../i18n/plural';
 import { Button, Eyebrow, Pill } from '../ui/index';
 import {
   adminGetStats, adminListUsers, adminPatchUser,
@@ -89,8 +90,8 @@ const RU: AdminCopy = {
     email: 'Email', joined: 'Регистрация', last: 'Активность', progress: 'Прогресс',
     tier: 'Тариф', admin: 'Админ', actions: 'Действия',
     makeAdmin: 'Сделать админом', removeAdmin: 'Снять права',
-    promotePro: 'Pro', promoteLifetime: 'Lifetime', demoteFree: 'Free',
-    totalLabel: (n: number) => `${n} пользователей`,
+    promotePro: 'Выдать Pro', promoteLifetime: 'Выдать Lifetime', demoteFree: 'Сделать Free',
+    totalLabel: (n: number) => `${n} ${ruPlural(n, 'пользователь', 'пользователя', 'пользователей')}`,
     loadMore: 'Ещё',
     loadFailed: 'Не удалось загрузить пользователей.',
     updated: 'Сохранено', updateFailed: 'Не удалось сохранить изменение.',
@@ -122,11 +123,12 @@ function fmtDate(s: string | null | undefined, locale: string): string {
 
 function fmtRelative(s: string | null | undefined, locale: string): string {
   if (!s) return '—';
+  const ru = locale.startsWith('ru');
   const d = (Date.now() - new Date(s).getTime()) / 1000;
-  if (d < 60) return 'now';
-  if (d < 3600) return `${Math.floor(d / 60)}m`;
-  if (d < 86400) return `${Math.floor(d / 3600)}h`;
-  if (d < 86400 * 30) return `${Math.floor(d / 86400)}d`;
+  if (d < 60) return ru ? 'сейчас' : 'now';
+  if (d < 3600) return `${Math.floor(d / 60)}${ru ? 'м' : 'm'}`;
+  if (d < 86400) return `${Math.floor(d / 3600)}${ru ? 'ч' : 'h'}`;
+  if (d < 86400 * 30) return `${Math.floor(d / 86400)}${ru ? 'д' : 'd'}`;
   return new Date(s).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 

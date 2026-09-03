@@ -385,7 +385,7 @@ export const UI = {
     platformIos: 'iOS',
     platformAndroid: 'Android',
     platformCross: 'Кросс-платформа',
-    platformMobile: 'Mobile',
+    platformMobile: 'Общее',
     platformEmpty: 'По этому стеку тем пока нет.',
 
     // Mastery breakdown

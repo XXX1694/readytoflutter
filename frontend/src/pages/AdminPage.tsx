@@ -659,13 +659,13 @@ function ExportMenu({ topics, questions, diff, lang }: ExportMenuProps) {
 
   const exportAll = () => {
     exportStaticDataJson(topics, questions, diff);
-    toast.success('static-data.json downloaded');
+    toast.success(isRu ? 'static-data.json скачан' : 'static-data.json downloaded');
     setOpen(false);
   };
 
   const exportTopic = (topic: Topic) => {
     exportTopicJson(topic, questions, diff);
-    toast.success(`${topic.slug}.json downloaded`);
+    toast.success(isRu ? `${topic.slug}.json скачан` : `${topic.slug}.json downloaded`);
     setOpen(false);
   };
 
