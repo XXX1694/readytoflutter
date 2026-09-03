@@ -64,6 +64,26 @@ test('a pre-auth database with progress rows boots and keeps them as the user-0 
   r.close();
 });
 
+test('anonymous reads never surface the user-0 archive as the anon baseline', () => {
+  // The row above (question_id 1, user_id 0, completed) is exactly what a
+  // pre-auth migration parks in the archive. An unauthenticated read defaults
+  // userId to "no user" and must join no progress — reading the archive as the
+  // anonymous baseline was a leak on any migrated instance.
+  db.init();
+  assert.equal(db.getStats().completed, 0, 'getStats() (anon) counts no archive completion');
+  assert.equal(db.getStats(0).completed, 0, 'an explicit 0 does not reach the archive either');
+  const q1 = db.getQuestions().find((q) => q.id === 1);
+  assert.equal(q1.status, 'not_started', 'getQuestions() (anon) shows the archive question as not started');
+  const topic = db.getTopic(db.getTopics()[0].slug);
+  assert.equal(topic.completed_count, 0, 'getTopic() (anon) counts no archive completion');
+  // The archive row itself is untouched — a real (future) user 0 does not exist,
+  // and a genuinely signed-in user still sees their own progress.
+  const archive = reader();
+  assert.ok(archive.prepare('SELECT 1 FROM progress WHERE user_id = 0 AND question_id = 1').get(),
+    'the archive row is preserved, just never read anonymously');
+  archive.close();
+});
+
 test('two topics swapping slugs sync without tripping the UNIQUE index', () => {
   const topics = readTopics();
   const a = topics.find((t) => t.id === 1);

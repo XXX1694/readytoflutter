@@ -16,6 +16,10 @@ const SEED_QUESTIONS_DIR = path.join(SEED_DIR, 'questions');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const sqlite = new BetterSqlite3(DB_FILE);
+// Wait on a held write lock instead of erroring out immediately — a maintenance
+// script, a test, or a backup reader touching the file while the server writes
+// no longer throws SQLITE_BUSY. Set before any other pragma so it covers them.
+sqlite.pragma('busy_timeout = 5000');
 sqlite.pragma('journal_mode = WAL');
 
 function normalizeQuestionAnswer(question, answer) {
@@ -425,7 +429,7 @@ function seedIfEmpty() {
   const tx = sqlite.transaction(() => {
     topics.forEach(topic => insertTopic.run(topic));
     questions
-      .filter(question => question.order_index < 100)
+      .filter(question => question.order_index < 100 && !KNOWN_DUPLICATE_IDS.includes(question.id))
       .forEach(question =>
       insertQuestion.run({
         ...question,
@@ -448,7 +452,7 @@ function seedIfEmpty() {
 function syncSeedContent() {
   const crypto = require('crypto');
   const { topics, questions } = readSeedData();
-  const live = questions.filter((question) => question.order_index < 100);
+  const live = questions.filter((question) => question.order_index < 100 && !KNOWN_DUPLICATE_IDS.includes(question.id));
   const hash = crypto
     .createHash('sha256')
     .update(JSON.stringify({ topics, questions: live }))
@@ -515,7 +519,16 @@ function syncSeedContent() {
 
 // All read functions take a `userId` (default 0 = anonymous, no progress
 // joined). Progress writes always require a real user id.
-function getTopics(level, userId = 0) {
+// Anonymous reads must join no progress. Real user ids start at 1 and the
+// pre-auth archive sits at user_id 0, so mapping an absent / zero / invalid
+// caller to 0 read the archive as the anonymous baseline — a leak. -1 matches
+// no row on either side.
+const readerUid = (userId) => {
+  const n = Number(userId);
+  return Number.isInteger(n) && n > 0 ? n : -1;
+};
+
+function getTopics(level, userId = -1) {
   let sql = `
     SELECT
       t.*,
@@ -526,7 +539,7 @@ function getTopics(level, userId = 0) {
     LEFT JOIN progress p ON p.question_id = q.id AND p.user_id = @userId
   `;
 
-  const params = { userId: Number(userId) || 0 };
+  const params = { userId: readerUid(userId) };
   if (level) {
     sql += ' WHERE t.level = @level';
     params.level = level;
@@ -537,7 +550,7 @@ function getTopics(level, userId = 0) {
   return sqlite.prepare(sql).all(params);
 }
 
-function getTopic(slug, userId = 0) {
+function getTopic(slug, userId = -1) {
   const topic = sqlite.prepare('SELECT * FROM topics WHERE slug = ?').get(slug);
   if (!topic) return null;
 
@@ -552,7 +565,7 @@ function getTopic(slug, userId = 0) {
       WHERE q.topic_id = @topicId
       ORDER BY q.order_index ASC
     `)
-    .all({ topicId: topic.id, userId: Number(userId) || 0 });
+    .all({ topicId: topic.id, userId: readerUid(userId) });
 
   const completedCount = questions.filter((q) => q.status === 'completed').length;
 
@@ -564,9 +577,9 @@ function getTopic(slug, userId = 0) {
   };
 }
 
-function getQuestions({ level, difficulty, search } = {}, userId = 0) {
+function getQuestions({ level, difficulty, search } = {}, userId = -1) {
   const conditions = [];
-  const params = { userId: Number(userId) || 0 };
+  const params = { userId: readerUid(userId) };
 
   if (level) {
     conditions.push('t.level = @level');
@@ -683,8 +696,8 @@ function bulkSetProgress(userId, items) {
   return { imported, skipped };
 }
 
-function getStats(userId = 0) {
-  const uid = Number(userId) || 0;
+function getStats(userId = -1) {
+  const uid = readerUid(userId);
   const totalQuestions = sqlite.prepare('SELECT COUNT(*) AS count FROM questions').get().count;
   const completed = sqlite
     .prepare("SELECT COUNT(*) AS count FROM progress WHERE status = 'completed' AND user_id = ?")
