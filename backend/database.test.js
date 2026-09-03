@@ -57,6 +57,56 @@ const OLD = '2026-01-01T00:00:00.000Z';
 const MID = '2026-06-01T00:00:00.000Z';
 const NEW = '2026-12-01T00:00:00.000Z';
 
+// ── AI grade quota reservation (wave 3) ──────────────────────────────────────
+// Locks the atomic reserve/refund contract behind the concurrent-overrun fix:
+// the count-check and the log insert happen in one transaction, so the cap can
+// never be passed by a stale pre-count, and a failed grade refunds its slot.
+
+test('reserveAiGrade allows exactly `cap` reservations, then refuses', () => {
+  const ip = `10.0.0.${userSeq++}`;
+  const cap = 3;
+  const got = [];
+  for (let i = 0; i < 5; i += 1) got.push(db.reserveAiGrade({ ip, cap }).reserved);
+  assert.deepEqual(got, [true, true, true, false, false]);
+  assert.equal(db.aiGradeCountLast24h({ ip }), 3, 'only the reserved rows are logged');
+});
+
+test('refundAiGrade returns a slot so a failed grade does not bill', () => {
+  const ip = `10.0.1.${userSeq++}`;
+  const cap = 1;
+  const first = db.reserveAiGrade({ ip, cap });
+  assert.equal(first.reserved, true);
+  assert.equal(db.reserveAiGrade({ ip, cap }).reserved, false, 'cap reached');
+  db.refundAiGrade(first.id);
+  assert.equal(db.aiGradeCountLast24h({ ip }), 0, 'the refunded row is gone');
+  assert.equal(db.reserveAiGrade({ ip, cap }).reserved, true, 'the slot is free again');
+});
+
+// ── Push once-per-day claim (wave 3) ─────────────────────────────────────────
+// Locks the compare-and-set that stops two overlapping daily passes from both
+// sending: only the caller holding the value it read wins the claim.
+
+test('claimPushNotification is won by exactly one caller for a given prior value', () => {
+  const user = newUser();
+  db.upsertPushSubscription({
+    userId: user.id,
+    endpoint: `https://push.example/${userSeq++}`,
+    p256dh: 'k', auth: 'a', tzOffsetMinutes: 0, dueCount: 3,
+  });
+  const sub = db.listPushSubscriptionsForUser(user.id)[0];
+  assert.equal(sub.last_notified_at, null);
+
+  const now1 = '2026-06-01T09:00:00.000Z';
+  // Two overlapping passes both read last_notified_at = null.
+  assert.equal(db.claimPushNotification(sub.id, now1, null), true, 'first caller wins');
+  assert.equal(db.claimPushNotification(sub.id, now1, null), false, 'second caller, same prior value, loses');
+
+  // The next day, the prior value is now1; a fresh claim on it wins again.
+  const now2 = '2026-06-02T09:00:00.000Z';
+  assert.equal(db.claimPushNotification(sub.id, now2, now1), true, 'a new day claims against the stored value');
+  assert.equal(db.claimPushNotification(sub.id, now2, now1), false, 'and only once');
+});
+
 test.after(() => {
   reader.close();
   db.close();

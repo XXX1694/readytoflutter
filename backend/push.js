@@ -66,8 +66,8 @@
 //      the offset is captured by the only party that knows it.
 //   3. Overlap — an in-process `running` flag; ticks never interleave.
 // Set PUSH_DAILY_JOB=off and drive POST /api/push/run-daily from an external
-// cron instead; the SQLite guard makes both paths idempotent, so running both
-// is harmless.
+// cron instead; the atomic compare-and-set on last_notified_at (see the daily
+// job) makes both paths idempotent, so running both is harmless.
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { z } = require('zod');
@@ -350,6 +350,16 @@ async function runDailyJob({ now = new Date() } = {}) {
       continue;
     }
 
+    // Claim the day's slot BEFORE sending, with a compare-and-set on the
+    // last_notified_at we read. Two overlapping passes (the in-process timer
+    // and an external cron, or a slow send stretching past the tick) both see
+    // this device as due; only the one that wins the claim delivers. Marking
+    // before the send also means a device whose push service is 500ing isn't
+    // retried every 15 minutes all window — one missed reminder is cheaper.
+    if (!db.claimPushNotification(sub.id, nowIso, sub.last_notified_at)) {
+      summary.skippedToday += 1;
+      continue;
+    }
     // due_count can be 0 while next_due_at has passed — the client told us
     // "one more comes due at T" without telling us how many. Show at least 1.
     const dueCount = Math.max(1, sub.due_count);
@@ -359,11 +369,6 @@ async function runDailyJob({ now = new Date() } = {}) {
       summary.gone += 1;
       continue;
     }
-    // Marked on failure too, deliberately. Without it a device whose push
-    // service is returning 500s would be retried every 15 minutes for the
-    // whole send window — ~50 requests a day at a service that is already
-    // unhappy. One missed reminder is the cheaper failure.
-    db.markPushNotified(sub.id, nowIso);
     if (result === 'sent') summary.sent += 1;
     else summary.failed += 1;
   }

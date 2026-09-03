@@ -157,24 +157,31 @@ async function gradeHandler(req, res) {
   // a tighter ANON_AI_GRADES_PER_DAY so the endpoint isn't a free LLM bot.
   const fullUser = req.user ? db.getUserById(req.user.id) : null;
   const isPro = db.isUserPro(fullUser);
+  // Reserve a slot BEFORE the model call (inside a transaction that re-checks
+  // the count), so a burst of concurrent grades can't all pass the same stale
+  // count and bill past the daily cap. Pro/lifetime users skip the cap; their
+  // grade is still logged after a success for usage accounting.
+  let reservedId = null;
   if (!isPro) {
     const cap = req.user ? TIER_LIMITS.FREE_AI_GRADES_PER_DAY : TIER_LIMITS.ANON_AI_GRADES_PER_DAY;
-    const used = db.aiGradeCountLast24h({
+    const reservation = db.reserveAiGrade({
       userId: req.user?.id || null,
       ip: req.user ? null : req.ip,
+      cap,
     });
-    if (used >= cap) {
+    if (!reservation.reserved) {
       return res.status(402).json({
         error: req.user
           ? 'Daily AI-grade limit reached on the free plan.'
           : 'Sign in or upgrade to keep grading today.',
         code: 'paywall_required',
         reason: req.user ? 'free_quota_exceeded' : 'anon_quota_exceeded',
-        used,
+        used: reservation.used,
         cap,
         tier: req.user ? (fullUser.pro_tier || 'free') : 'anon',
       });
     }
+    reservedId = reservation.id;
   }
 
   const startedAt = Date.now();
@@ -218,9 +225,11 @@ async function gradeHandler(req, res) {
     }
 
     const usage = message.usage || {};
-    // Quota counter ticks ONLY on a successful grade — failed upstream calls
-    // don't burn the user's daily allowance.
-    db.logAiGrade({ userId: req.user?.id || null, ip: req.user ? null : req.ip });
+    // Non-pro grades were already logged by the reservation above; pro grades
+    // aren't capped, so log them here for usage accounting. Either way the
+    // counter only reflects a grade that actually landed — a failed upstream
+    // call refunds its reservation in the catch below.
+    if (isPro) db.logAiGrade({ userId: req.user?.id || null, ip: req.user ? null : req.ip });
     console.log(
       `[ai] grade qid=${questionId} userId=${req.user?.id || 0} tier=${isPro ? 'pro' : 'free'} `
         + `in=${usage.input_tokens || 0} out=${usage.output_tokens || 0} `
@@ -235,6 +244,9 @@ async function gradeHandler(req, res) {
       },
     });
   } catch (err) {
+    // The model call never produced a billable grade — give the reserved slot
+    // back so a failure doesn't cost the user a grade.
+    db.refundAiGrade(reservedId);
     const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 600
       ? err.status
       : 502;

@@ -974,6 +974,30 @@ function logAiGrade({ userId = null, ip = null }) {
     .run(userId ? Number(userId) : null, ip || null, new Date().toISOString());
 }
 
+// Atomically reserve one grade against the daily cap: re-read the 24h count and
+// insert the log row in ONE synchronous transaction, so two requests in flight
+// at once can't both pass the same pre-increment count and both bill the model.
+// Returns { reserved, used, id }. The model call is the real spend; refund the
+// reserved row with refundAiGrade(id) if that call fails.
+function reserveAiGrade({ userId = null, ip = null, cap }) {
+  const tx = sqlite.transaction(() => {
+    const used = aiGradeCountLast24h({ userId, ip });
+    if (used >= cap) return { reserved: false, used };
+    const info = sqlite
+      .prepare('INSERT INTO ai_grade_log (user_id, ip, created_at) VALUES (?, ?, ?)')
+      .run(userId ? Number(userId) : null, ip || null, new Date().toISOString());
+    return { reserved: true, used, id: info.lastInsertRowid };
+  });
+  return tx();
+}
+
+// Undo a reservation whose model call never landed, so a failed grade doesn't
+// burn the user's daily allowance.
+function refundAiGrade(id) {
+  if (id === null || id === undefined) return;
+  sqlite.prepare('DELETE FROM ai_grade_log WHERE id = ?').run(Number(id));
+}
+
 // Counts grades fired in the last 24h by the same identity. Falls back to IP
 // for anonymous users so an unauthed visitor can't loop the endpoint either.
 function aiGradeCountLast24h({ userId = null, ip = null }) {
@@ -1150,6 +1174,18 @@ function markPushNotified(id, at) {
     .run(at || new Date().toISOString(), Number(id));
 }
 
+// Atomically claim today's reminder slot for a device: set last_notified_at to
+// `at` only if it still holds `prev` — the value the caller read before it
+// decided the device was due. Returns true only for the caller that wins, so
+// two overlapping daily passes (the in-process timer and an external cron, say)
+// can never both send to the same device. `IS` handles a null prev correctly.
+function claimPushNotification(id, at, prev) {
+  const info = sqlite
+    .prepare('UPDATE push_subscriptions SET last_notified_at = @at WHERE id = @id AND last_notified_at IS @prev')
+    .run({ id: Number(id), at: at || new Date().toISOString(), prev: prev ?? null });
+  return info.changes === 1;
+}
+
 // ── Lifecycle ───────────────────────────────────────────────────────────────
 
 function questionExists(questionId) {
@@ -1229,4 +1265,7 @@ module.exports = {
   deletePushSubscriptionById,
   listPushSubscriptionsForReminder,
   markPushNotified,
+  claimPushNotification,
+  reserveAiGrade,
+  refundAiGrade,
 };
