@@ -1,14 +1,11 @@
 import { cn } from '../lib/cn';
 
+// Progress is drawn in the stack's colour; mint and amber are for a finished
+// or a partial measure.
 const TONES = {
-  brand:    'bg-brand',
-  mint:     'bg-mint',
-  amber:    'bg-[rgb(var(--amber))]',
-  // Progress is drawn in the stack's colour everywhere; `ink` stays as an
-  // alias so older call sites keep working.
-  ink:      'bg-brand',
-  // Legacy name from the gradient era — now the same flat brand fill.
-  gradient: 'bg-brand',
+  brand: 'bg-brand',
+  mint:  'bg-mint',
+  amber: 'bg-[rgb(var(--amber))]',
 } as const;
 
 const SIZES = {
@@ -32,7 +29,7 @@ export interface ProgressBarProps {
 export function ProgressBar({
   value = 0,
   max = 100,
-  tone = 'gradient',
+  tone = 'brand',
   size = 'sm',
   showLabel = false,
   className,

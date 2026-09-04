@@ -276,7 +276,7 @@ export default function MockPage() {
           value={session.index}
           max={queue.length}
           size="xs"
-          tone="ink"
+          tone="brand"
           className="mb-9"
           label={c.sessionProgress}
         />
@@ -534,7 +534,7 @@ function StackChips({ label, t }: { label: string; t: UICopy }) {
             setPlatform(p.key);
           }}
         >
-          {t[p.labelKey as keyof UICopy] as string}
+          {t[p.labelKey]}
         </Chip>
       ))}
     </ChipGroup>

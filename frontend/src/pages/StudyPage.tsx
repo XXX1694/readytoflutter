@@ -293,7 +293,7 @@ export default function StudyPage() {
           value={session.index}
           max={total}
           size="xs"
-          tone="ink"
+          tone="brand"
           label={c.sessionProgress}
         />
         <span className="num shrink-0 text-[12px] text-muted">{session.index}/{total}</span>

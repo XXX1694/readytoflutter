@@ -4,7 +4,7 @@ import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
-import { ProgressBar } from '../ui/index';
+import { ProgressBar } from '../ui/ProgressBar';
 import { cn } from '../lib/cn';
 import { filterTopicsByPlatform } from '../lib/platform';
 import { RAIL_ROUTES, routeLabel } from '../lib/routes';

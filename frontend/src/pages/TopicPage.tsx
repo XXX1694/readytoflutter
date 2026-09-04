@@ -13,8 +13,9 @@ import { useContent } from '../i18n/content';
 import { useTopicCopy } from '../i18n/topicPage';
 import { categoryLabel } from '../i18n/categories';
 import {
-  PageShell, PageHeader, Button, Chip, ChipGroup, Meter, EmptyState, OverflowMenu, Skeleton,
+  PageShell, PageHeader, Button, Chip, ChipGroup, Meter, EmptyState, Skeleton,
 } from '../ui/index';
+import { OverflowMenu } from '../ui/OverflowMenu';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 import { track } from '../lib/analytics';

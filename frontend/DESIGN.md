@@ -63,9 +63,10 @@ behind text it read as a rendering glitch. Don't bring it back.
 
 Body copy is 15–17px. Answers use `.answer-text` (already serif, 68ch measure).
 Headings get weight and size, not letterspacing. The scale:
-Today's figure 52px · `display-sm` 44px (auth and landings) · page title
-32px bold · section 20px · answers 17px serif · body 15px · meta 13px ·
-eyebrow 12px, plus 12px mono for figures and keys.
+Today's figure 52px · page title 32px bold · section 20px · answers 17px
+serif · body 15px · meta 13px · eyebrow 12px, plus 12px mono for figures
+and keys. There is no separate display size token; the one display figure
+is set inline on the Today card.
 
 ## Colour
 

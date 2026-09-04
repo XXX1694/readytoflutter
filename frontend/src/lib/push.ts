@@ -60,7 +60,7 @@ let lastReport: { body: string; at: number } | null = null;
 
 // ── Capability detection ────────────────────────────────────────────────────
 
-export function isPushSupported(): boolean {
+function isPushSupported(): boolean {
   return typeof window !== 'undefined'
     && typeof navigator !== 'undefined'
     && 'serviceWorker' in navigator
@@ -85,12 +85,12 @@ const isStandalone = (): boolean =>
  * Without this check the user gets an opaque failure instead of the one
  * instruction that would fix it.
  */
-export function needsInstallForPush(): boolean {
+function needsInstallForPush(): boolean {
   return isPushSupported() && isIos() && !isStandalone();
 }
 
 /** `Notification.permission`, or `'default'` where the API doesn't exist. */
-export function getPermission(): NotificationPermission {
+function getPermission(): NotificationPermission {
   if (!isPushSupported()) return 'default';
   return Notification.permission;
 }
@@ -139,7 +139,7 @@ export async function getCurrentSubscription(): Promise<PushSubscription | null>
  * views backed by a `SharedArrayBuffer`, so a bare `Uint8Array` (which widens
  * to `ArrayBufferLike`) will not satisfy `applicationServerKey`.
  */
-export function urlBase64ToUint8Array(base64url: string): Uint8Array<ArrayBuffer> {
+function urlBase64ToUint8Array(base64url: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
   const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(base64);
@@ -182,7 +182,7 @@ function toPayload(sub: PushSubscription): PushSubscriptionPayload | null {
  * `tzOffsetMinutes` is what makes "09:00" mean 09:00 where the user is: the
  * browser is the only party that knows its own offset.
  */
-export function currentStateReport(): PushStateReport {
+function currentStateReport(): PushStateReport {
   const { dueCount, nextDueAt } = getDueSnapshot();
   return {
     dueCount,

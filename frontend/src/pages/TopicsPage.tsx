@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Search } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
-import { getCardState } from '../lib/srs';
+import { getCardState, readAll } from '../lib/srs';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
-import { useT, type UICopy } from '../i18n/ui';
+import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { useTopicsCopy } from '../i18n/topicsPage';
 import { categoryLabel } from '../i18n/categories';
@@ -21,16 +21,13 @@ import type { Level, Question, Topic } from '../types/domain';
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];
 const NO_QUESTIONS: Question[] = [];
 
-const copy = (t: UICopy, key: string): string => {
-  const value = t[key as keyof UICopy];
-  return typeof value === 'string' ? value : '';
-};
-
 /** Cards waiting in the SRS queue, per topic. Module scope keeps the clock read out of render. */
 function countDueByTopic(questions: Question[], now: number = Date.now()): Map<number, number> {
   const map = new Map<number, number>();
+  // One localStorage read + parse for the whole catalogue, not one per question.
+  const cards = readAll();
   for (const q of questions) {
-    const s = getCardState(q.id);
+    const s = getCardState(q.id, cards);
     if (s.reps > 0 && s.dueAt <= now) map.set(q.topic_id, (map.get(q.topic_id) || 0) + 1);
   }
   return map;
@@ -124,7 +121,7 @@ export default function TopicsPage() {
       {platform !== 'all' && stackMeta && (
         <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
           <StackTile stack={platform} size="xs" />
-          <span>{c.scopedHint(copy(t, stackMeta.labelKey))}</span>
+          <span>{c.scopedHint(t[stackMeta.labelKey])}</span>
           <button type="button" onClick={() => setPlatform('all')} className="font-medium text-brand hover:underline">
             {c.showEveryStack}
           </button>

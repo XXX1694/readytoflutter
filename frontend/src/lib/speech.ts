@@ -44,7 +44,7 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-export function isSpeechRecognitionSupported(): boolean {
+function isSpeechRecognitionSupported(): boolean {
   return Boolean(getSpeechRecognitionCtor());
 }
 

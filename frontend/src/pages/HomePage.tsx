@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useTopics, useStats, useQuestions, useRoadmap } from '../lib/queries';
 import { useLang } from '../i18n/LangContext';
-import { useT, type UICopy } from '../i18n/ui';
+import { useT } from '../i18n/ui';
 import { useHomeCopy } from '../i18n/homePage';
 import { usePrefs } from '../store/prefs';
 import { useAuth } from '../store/auth';
@@ -22,11 +22,6 @@ import type { LandingConfig } from '../i18n/landings';
 
 const NO_TOPICS: Topic[] = [];
 const NO_QUESTIONS: Question[] = [];
-
-const copy = (t: UICopy, key: string): string => {
-  const value = t[key as keyof UICopy];
-  return typeof value === 'string' ? value : '';
-};
 
 /** Has the user already answered the stack question? */
 function stackPicked(): boolean {
@@ -141,7 +136,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
       to="/roadmap"
       className="rounded-sm text-[15px] leading-relaxed text-ink-2 transition-colors hover:text-ink"
     >
-      <span className="font-semibold text-brand">{c.trackLine(trackMeta ? copy(t, trackMeta.labelKey) : trackKey ?? '')}</span>
+      <span className="font-semibold text-brand">{c.trackLine(trackMeta ? t[trackMeta.labelKey] : trackKey ?? '')}</span>
       <span aria-hidden className="text-muted-2"> · </span>
       {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
     </Link>

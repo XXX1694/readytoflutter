@@ -3,7 +3,7 @@ import { Search, Sun, Moon, WifiOff } from 'lucide-react';
 import { usePrefs } from '../store/prefs';
 import { useLang, type Lang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
-import { IconButton } from '../ui/index';
+import { IconButton } from '../ui/IconButton';
 import { cn } from '../lib/cn';
 import { useOnlineStatus } from '../lib/useOnlineStatus';
 import AccountMenu from './AccountMenu';

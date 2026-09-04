@@ -73,6 +73,5 @@ const EN = {
 
 export type SignupCopy = typeof EN;
 
-export const signupCopy: { ru: SignupCopy; en: SignupCopy } = { ru: RU, en: EN };
 
 export const useSignupCopy = (lang: 'en' | 'ru'): SignupCopy => (lang === 'ru' ? RU : EN);

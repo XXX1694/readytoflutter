@@ -5,7 +5,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { LangProvider } from './i18n/LangContext';
 import { queryClient } from './lib/queryClient';
-import { FullPageLoader } from './ui/index';
+// Direct file imports in the app shell, not the `ui/index` barrel: an edge
+// to the barrel makes the entry chunk depend on every primitive and drags
+// the shared `ui` chunk (and once, Radix) onto the critical path.
+import { FullPageLoader } from './ui/Spinner';
 import { useAuth } from './store/auth';
 import { apiBaseUrl, flushLocalProgress } from './api/api';
 import { prefetchIdle } from './lib/prefetch';

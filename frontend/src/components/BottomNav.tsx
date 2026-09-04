@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useQuestions } from '../lib/queries';
-import { getCardState } from '../lib/srs';
+import { getCardState, readAll } from '../lib/srs';
 import { tapLight } from '../lib/haptics';
 import { prefetch } from '../lib/prefetch';
 import { cn } from '../lib/cn';
@@ -19,8 +19,9 @@ function useHasDue(): boolean {
     // deriving the badge is the intent, not an accident.
     // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
+    const cards = readAll();
     return questions.some((q) => {
-      const s = getCardState(q.id);
+      const s = getCardState(q.id, cards);
       return s.reps > 0 && s.dueAt <= now;
     });
   }, [questions]);

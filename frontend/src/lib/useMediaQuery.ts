@@ -31,4 +31,3 @@ export function useMediaQuery(query: string): boolean {
 export const useIsMobile = (): boolean => useMediaQuery('(max-width: 767px)');
 // Sidebar drawer / bottom nav are gated at lg (1024px) — anything below is
 // the "compact" layout where the desktop chrome collapses.
-export const useIsCompact = (): boolean => useMediaQuery('(max-width: 1023px)');

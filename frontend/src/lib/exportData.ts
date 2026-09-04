@@ -45,7 +45,7 @@ export interface StaticDataBundle {
   questions: SerializableQuestion[];
 }
 
-export function buildStaticData(topics: Topic[], questions: Question[], diff: AdminDiff): StaticDataBundle {
+function buildStaticData(topics: Topic[], questions: Question[], diff: AdminDiff): StaticDataBundle {
   const merged = applyDiff(questions, diff)
     .map(pickQuestion)
     .sort((a, b) => ((a.topic_id ?? 0) - (b.topic_id ?? 0)) || ((a.order_index ?? 0) - (b.order_index ?? 0)));
@@ -63,12 +63,6 @@ export function exportTopicJson(topic: Topic, questions: Question[], diff: Admin
     .map(pickQuestion)
     .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
   downloadFile(topicFilename(topic), `${JSON.stringify(merged, null, 2)}\n`);
-}
-
-export function exportAllTopicJsons(topics: Topic[], questions: Question[], diff: AdminDiff): void {
-  for (const topic of topics) {
-    exportTopicJson(topic, questions, diff);
-  }
 }
 
 /**

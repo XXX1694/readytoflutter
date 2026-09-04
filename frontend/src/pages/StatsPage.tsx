@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { useTopics, useQuestions } from '../lib/queries';
-import { getCardState } from '../lib/srs';
+import { getCardState, readAll } from '../lib/srs';
 import { computeStreaks } from '../lib/activity';
 import { useLang } from '../i18n/LangContext';
-import { useT, type UICopy } from '../i18n/ui';
+import { useT } from '../i18n/ui';
 import { useContent, type ContentHelpers } from '../i18n/content';
 import { useStatsCopy, type StatsCopy } from '../i18n/statsPage';
 import { PageShell, PageHeader, Section, List, ListRow, Meter, Skeleton, TopicGlyph } from '../ui/index';
@@ -34,12 +34,6 @@ const LIST_MAX = 5;
 /** Under this share completed, a started topic is still worth a review. */
 const REVIEW_THRESHOLD = 0.8;
 
-/** `PLATFORMS` keeps its copy keys as plain strings; resolve them by hand. */
-const copy = (t: UICopy, key: string): string => {
-  const value = t[key as keyof UICopy];
-  return typeof value === 'string' ? value : '';
-};
-
 interface TopicRow {
   topic: Topic;
   total: number;
@@ -66,6 +60,8 @@ interface StackRow {
 
 /** Roll every topic up against its questions and their SRS card state. */
 function buildRows(topics: Topic[], questions: Question[], now: number = Date.now()): TopicRow[] {
+  // One localStorage read + parse for every card, not one per question.
+  const cards = readAll();
   const byTopic = new Map<number, Question[]>();
   for (const q of questions) {
     const list = byTopic.get(q.topic_id);
@@ -79,7 +75,7 @@ function buildRows(topics: Topic[], questions: Question[], now: number = Date.no
     let seen = 0;
     for (const q of items) {
       if (q.status === 'completed') completed += 1;
-      const s = getCardState(q.id);
+      const s = getCardState(q.id, cards);
       if (s.reps > 0) {
         seen += 1;
         if (s.dueAt <= now) due += 1;
@@ -155,7 +151,7 @@ export default function StatsPage() {
   const notStarted = rows.filter((r) => r.total > 0 && r.completed === 0 && r.seen === 0).slice(0, LIST_MAX);
 
   const stackMeta = PLATFORMS.find((p) => p.key === platform);
-  const stackLabel = stackMeta ? copy(t, stackMeta.labelKey) : platform;
+  const stackLabel = stackMeta ? t[stackMeta.labelKey] : platform;
 
   if (topicsQ.isLoading || questionsQ.isLoading) return <StatsSkeleton />;
 
@@ -219,7 +215,7 @@ export default function StatsPage() {
                 {stackBreakdown.map((row) => (
                   <tr key={row.group.key} className="border-b border-rule/8 last:border-b-0">
                     <td className="py-2.5 pr-4 font-display text-[15px] font-medium text-ink">
-                      {copy(t, row.group.labelKey)}
+                      {t[row.group.labelKey]}
                     </td>
                     {LEVELS.map((lv) => {
                       const cell = row.byLevel[lv];

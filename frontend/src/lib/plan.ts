@@ -9,7 +9,7 @@ import { getCardState, readAll } from './srs';
 import type { Question, Topic, CardState } from '../types/domain';
 
 // The three caps add up to the limit, so the headline and the breakdown agree.
-export const PLAN_LIMIT = 20;
+const PLAN_LIMIT = 20;
 const DUE_CAP = 12;
 const WEAK_CAP = 4;
 const FRESH_CAP = 4;

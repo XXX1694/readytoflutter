@@ -33,7 +33,7 @@ export default function BookmarksPage() {
   }, [questions, topics, ids, platform]);
   const setPlatform = usePrefs((s) => s.setPlatform);
   const stackMeta = PLATFORMS.find((p) => p.key === platform);
-  const stackLabel = stackMeta ? (t[stackMeta.labelKey as keyof typeof t] as string) : platform;
+  const stackLabel = stackMeta ? t[stackMeta.labelKey] : platform;
 
   if (isLoading) {
     return (

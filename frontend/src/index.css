@@ -522,7 +522,7 @@ h1, h2, h3 { text-wrap: balance; }
     --shadow:         0   0   0;
     color-scheme: light;
   }
-  .codex-card, .soft-card {
+  .codex-card {
     box-shadow: none !important;
     border: 1px solid rgb(0 0 0 / 0.25) !important;
   }

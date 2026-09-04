@@ -89,8 +89,6 @@ export const pillVariants = cva(
         plum:    'bg-plum/10 text-plum',
         // The one solid chip, for a count or flag that has to carry weight.
         ink:     'bg-ink text-paper',
-        // Solid in the stack colour — a "current" marker.
-        solid:   'bg-brand text-on-brand',
         ghost:   'bg-transparent text-muted',
       },
       size: {

@@ -34,4 +34,6 @@ export { Chip, ChipGroup, type ChipProps, type ChipGroupProps } from './Chip';
 export { List, ListRow, type ListProps, type ListRowProps } from './ListRow';
 export { Meter, type MeterProps } from './Meter';
 export { EmptyState, type EmptyStateProps, type EmptyStateAction } from './EmptyState';
-export { OverflowMenu, type OverflowMenuProps, type OverflowMenuItem } from './OverflowMenu';
+// OverflowMenu is deliberately not re-exported here: it pulls in Radix, and a
+// barrel import from the app shell dragged that whole chunk onto every page's
+// critical path. Import it from './OverflowMenu' where it is actually used.

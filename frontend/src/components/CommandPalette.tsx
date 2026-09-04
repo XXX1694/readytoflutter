@@ -26,7 +26,7 @@ import { STACK_TEXT } from '../lib/stackMeta';
 import { PALETTE_ROUTES, routeLabel } from '../lib/routes';
 import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
-import { useT, type UICopy } from '../i18n/ui';
+import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import {
   authLogout, bulkSyncProgress,
@@ -50,13 +50,6 @@ const PALETTE_SHORTCUTS: Record<string, string> = {
   '/mock': `${modKey}+M`,
   '/bookmarks': `${modKey}+B`,
   '/settings': `${modKey}+,`,
-};
-
-// `PLATFORMS` stores its i18n keys as plain strings — resolve them against the
-// copy table without widening the table to `any`.
-const copy = (t: UICopy, key: string): string => {
-  const value = t[key as keyof UICopy];
-  return typeof value === 'string' ? value : '';
 };
 
 export default function CommandPalette() {
@@ -256,7 +249,7 @@ export default function CommandPalette() {
                     onSelect={run(() => setPlatform(p.key))}
                     current={platform === p.key}
                   >
-                    {copy(t, p.labelKey)}
+                    {t[p.labelKey]}
                   </CmdItem>
                 ))}
               </Command.Group>

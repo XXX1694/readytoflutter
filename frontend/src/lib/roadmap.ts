@@ -25,7 +25,7 @@ export const ROADMAP_BANDS: RoadmapBand[] = ['junior', 'mid', 'senior', 'staff']
 /** A rung counts as passed once this share of its questions is completed. */
 export const PASS_THRESHOLD = 0.8;
 
-export function isRoadmapTrack(key: PlatformKey | null | undefined): key is RoadmapTrackKey {
+function isRoadmapTrack(key: PlatformKey | null | undefined): key is RoadmapTrackKey {
   return key === 'flutter' || key === 'ios' || key === 'android';
 }
 

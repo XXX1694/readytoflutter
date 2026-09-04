@@ -35,12 +35,6 @@ import type { Question } from '../types/domain';
 // renders while the queries are still settling.
 const NO_QUESTIONS: Question[] = [];
 
-/** `PLATFORMS` keeps its copy keys as plain strings; resolve them by hand. */
-const copy = (t: UICopy, key: string): string => {
-  const value = t[key as keyof UICopy];
-  return typeof value === 'string' ? value : '';
-};
-
 const studyUrl = (questions: Question[], label: string): string =>
   `/study?ids=${questions.map((q) => q.id).join(',')}&label=${encodeURIComponent(label)}`;
 
@@ -63,7 +57,7 @@ export default function RoadmapPage() {
   // The chips below make the choice visible, so a default is honest here.
   const trackKey = pickTrack(roadmapTrack, platform) ?? 'flutter';
   const trackMeta = PLATFORMS.find((p) => p.key === trackKey);
-  const trackLabel = trackMeta ? copy(t, trackMeta.labelKey) : trackKey;
+  const trackLabel = trackMeta ? t[trackMeta.labelKey] : trackKey;
 
   const roadmapQ = useRoadmap();
   const topicsQ = useTopics();
@@ -123,7 +117,7 @@ export default function RoadmapPage() {
             const meta = PLATFORMS.find((p) => p.key === key);
             return (
               <Chip key={key} active={key === trackKey} onClick={() => setRoadmapTrack(key)} icon={<StackIcon stack={key} />}>
-                {meta ? copy(t, meta.labelKey) : key}
+                {meta ? t[meta.labelKey] : key}
               </Chip>
             );
           })}
@@ -351,7 +345,7 @@ function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content
                   value={rung.completed}
                   max={rung.total}
                   size="xs"
-                  tone={rung.passed ? 'mint' : 'ink'}
+                  tone={rung.passed ? 'mint' : 'brand'}
                   className="max-w-xs"
                 />
                 <span className="num text-[12px] text-muted">{rung.pct}%</span>

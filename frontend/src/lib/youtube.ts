@@ -26,7 +26,7 @@ const PLAYLIST_PATTERNS: RegExp[] = [
   /playlist\?list=([\w-]{10,})/,
 ];
 
-export function parseYoutubeUrl(input: string | null | undefined): ParsedYoutubeUrl | null {
+function parseYoutubeUrl(input: string | null | undefined): ParsedYoutubeUrl | null {
   if (!input || typeof input !== 'string') return null;
   const url = input.trim();
 

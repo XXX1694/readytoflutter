@@ -22,6 +22,4 @@ export const tapLight = (): void => safe(8);
 // Confirmation — used for committed actions like rating a card.
 export const tapMedium = (): void => safe(14);
 // Negative — used for error states / undo.
-export const tapError = (): void => safe([12, 40, 12]);
 // Success — used for goal completions / streak ticks.
-export const tapSuccess = (): void => safe([10, 30, 18]);

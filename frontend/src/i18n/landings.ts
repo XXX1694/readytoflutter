@@ -108,5 +108,3 @@ export const LANDINGS: Record<string, LandingConfig> = {
     },
   },
 };
-
-export const LANDING_KEYS: string[] = Object.keys(LANDINGS);

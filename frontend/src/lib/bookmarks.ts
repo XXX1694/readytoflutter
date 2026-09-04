@@ -37,10 +37,6 @@ export function isBookmarked(id: number | string): boolean {
   return Boolean(read()[String(id)]);
 }
 
-export function getBookmarks(): BookmarkMap {
-  return read();
-}
-
 export function getBookmarkIds(): number[] {
   return Object.keys(read()).map(Number);
 }
@@ -52,10 +48,6 @@ export function toggleBookmark(id: number | string): boolean {
   else map[key] = { addedAt: Date.now() };
   write(map);
   return Boolean(map[key]);
-}
-
-export function clearAllBookmarks(): void {
-  write({});
 }
 
 /**

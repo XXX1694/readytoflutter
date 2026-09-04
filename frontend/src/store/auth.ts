@@ -83,5 +83,3 @@ export const useAuth = create<AuthState>()(
   ),
 );
 
-// Convenience selectors
-export const isAuthenticated = (): boolean => Boolean(useAuth.getState().token);

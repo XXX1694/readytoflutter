@@ -58,21 +58,6 @@ export default {
         mono:    ['"Spline Sans Mono Variable"', '"Spline Sans Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
 
-      fontSize: {
-        // Display scale. Schibsted has a tall x-height and open counters, so
-        // it needs far less negative tracking than Inter did — the previous
-        // -0.045em at 6.5rem collided the letterforms into a logo.
-        // Two display steps only. The 60/80/104px marketing sizes were used
-        // by one headline that greeted returning users every session; a page
-        // title is 28px (`text-[28px]`), a section 20px.
-        'display-xs': ['2rem',    { lineHeight: '1.08', letterSpacing: '-0.014em', fontWeight: '600' }],
-        'display-sm': ['2.75rem', { lineHeight: '1.05', letterSpacing: '-0.017em', fontWeight: '600' }],
-      },
-
-      letterSpacing: {
-        tightest: '-0.026em',
-      },
-
       // Atlas opacity scale — Tailwind's default skips /8 and /12, but our
       // hairline borders + tinted surfaces lean on those values heavily
       // (e.g. `border-rule/12`, `bg-brand/12`, `from-rule/8`). Without this,

@@ -2,21 +2,31 @@
 // iOS / Android / Cross-Platform / Mobile-wide instead of dumping everything
 // into one list.
 //
-// Adding a new technology (e.g. React Native, KMP-Web, server backend) is a
-// 3-line change here:
-//   1. Push a new entry into `PLATFORMS` with key + dot color + i18n label key.
+// Adding a new technology (e.g. React Native, KMP-Web, server backend):
+//   1. Push a new entry into `PLATFORMS` with its key and i18n label/desc keys
+//      (add those keys to i18n/ui.ts and widen PlatformLabelKey/PlatformDescKey).
 //   2. Add the new topic categories to `CATEGORY_TO_PLATFORM`.
-//   3. Optionally tag knowledge-base resources with `platform: '<key>'`.
+//   3. Give it a colour (`--stack-<key>` in index.css) and a mark (lib/stackIcons).
+//   4. Optionally tag knowledge-base resources with `platform: '<key>'`.
 // PlatformFilter, Sidebar, MockPage, SearchPage, StudyPage and KnowledgePage
 // all consume this list — so the new tech appears everywhere automatically.
 
 import type { PlatformKey, Topic, Question } from '../types/domain.ts';
 
+/**
+ * The copy keys are typed as the exact `i18n/ui.ts` entries, so a page reads
+ * `t[p.labelKey]` directly — no `as keyof UICopy` cast and no local `copy()`
+ * helper. Colour lives in `--stack-*` (index.css) and lib/stackMeta.ts.
+ */
+export type PlatformLabelKey =
+  | 'platformAll' | 'platformFlutter' | 'platformIos' | 'platformAndroid' | 'platformCross' | 'platformMobile';
+export type PlatformDescKey =
+  | 'platformDescAll' | 'platformDescFlutter' | 'platformDescIos' | 'platformDescAndroid' | 'platformDescCross' | 'platformDescMobile';
+
 export interface Platform {
   key: PlatformKey;
-  dot: string;
-  labelKey: string;
-  descKey: string;
+  labelKey: PlatformLabelKey;
+  descKey: PlatformDescKey;
   docsUrl: string;
   docsLabel: string;
 }
@@ -24,7 +34,6 @@ export interface Platform {
 export const PLATFORMS: Platform[] = [
   {
     key: 'all',
-    dot: 'bg-ink',
     labelKey: 'platformAll',
     descKey: 'platformDescAll',
     // The catch-all "All" stack sends the user to the most heavily used set
@@ -35,7 +44,6 @@ export const PLATFORMS: Platform[] = [
   },
   {
     key: 'flutter',
-    dot: 'bg-brand',
     labelKey: 'platformFlutter',
     descKey: 'platformDescFlutter',
     docsUrl: 'https://docs.flutter.dev/',
@@ -43,7 +51,6 @@ export const PLATFORMS: Platform[] = [
   },
   {
     key: 'ios',
-    dot: 'bg-plum',
     labelKey: 'platformIos',
     descKey: 'platformDescIos',
     docsUrl: 'https://developer.apple.com/documentation/',
@@ -51,7 +58,6 @@ export const PLATFORMS: Platform[] = [
   },
   {
     key: 'android',
-    dot: 'bg-mint',
     labelKey: 'platformAndroid',
     descKey: 'platformDescAndroid',
     docsUrl: 'https://developer.android.com/',
@@ -59,7 +65,6 @@ export const PLATFORMS: Platform[] = [
   },
   {
     key: 'cross',
-    dot: 'bg-amber',
     labelKey: 'platformCross',
     descKey: 'platformDescCross',
     docsUrl: 'https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html',
@@ -67,7 +72,6 @@ export const PLATFORMS: Platform[] = [
   },
   {
     key: 'mobile',
-    dot: 'bg-coral',
     labelKey: 'platformMobile',
     descKey: 'platformDescMobile',
     docsUrl: 'https://owasp.org/www-project-mobile-top-10/',

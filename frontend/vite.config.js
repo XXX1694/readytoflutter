@@ -246,6 +246,21 @@ export default defineConfig({
         // Hand-rolled chunking: keep the Shiki payload separate from the main
         // bundle so the dashboard's first paint isn't blocked by it.
         manualChunks: (id) => {
+          // Our own `src/ui` primitives are deliberately left to Rollup. A
+          // manual `ui` chunk was tried twice: it becomes a second entry
+          // point, so react-router, lucide and tailwind-merge migrate into it
+          // and the entry has to preload it anyway — a 29 kB chunk on the
+          // critical path to save a dozen sub-kilobyte requests. And
+          // `experimentalMinChunkSize` folded PricingPage and NotFoundPage
+          // into the shared code, so every visitor downloaded pages they
+          // never opened. Small chunks over HTTP/2 are the cheaper evil.
+          //
+          // React itself gets a named chunk. Without this Rollup filed
+          // `react-dom` (imported by the entry through react-dom/client and by
+          // every Radix primitive through createPortal) into the `radix`
+          // chunk below, and the whole of Radix rode along on every page's
+          // critical path — 71 kB gzipped nobody had opened a menu for.
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
           // Grammars are deliberately NOT forced into the shared chunk —
           // highlighter.ts imports each one dynamically, so leaving them to
           // Rollup gives one chunk per language and a Dart question downloads

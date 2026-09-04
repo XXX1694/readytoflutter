@@ -50,6 +50,5 @@ const EN = {
 
 export type LoginCopy = typeof EN;
 
-export const loginCopy: { ru: LoginCopy; en: LoginCopy } = { ru: RU, en: EN };
 
 export const useLoginCopy = (lang: 'en' | 'ru'): LoginCopy => (lang === 'ru' ? RU : EN);

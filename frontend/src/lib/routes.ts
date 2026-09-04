@@ -37,10 +37,12 @@ export const ROUTES: AppRoute[] = [
   { path: '/roadmap',   labelKey: 'roadmap',  icon: Milestone,  rail: true, tab: 'left',  palette: true, tabRoot: true, load: () => import('../pages/RoadmapPage') },
   { path: '/study',     labelKey: 'session',  icon: Brain,                  tab: 'start', palette: true, tabRoot: true, load: () => import('../pages/StudyPage') },
   { path: '/topics',    labelKey: 'topics',   icon: LayoutGrid, rail: true, tab: 'right', palette: true, tabRoot: true, load: () => import('../pages/TopicsPage') },
+  // The knowledge base is a destination in its own right, so it sits in the
+  // rail next to the catalogue; phones reach it from Topics and Me.
+  { path: '/knowledge', labelKey: 'sources',  icon: Library,    rail: true,               palette: true, tabRoot: true, load: () => import('../pages/KnowledgePage') },
   { path: '/stats',     labelKey: 'progress', icon: TrendingUp, rail: true,               palette: true, tabRoot: true, load: () => import('../pages/StatsPage') },
   { path: '/settings',  labelKey: 'me',       icon: User,       rail: true, tab: 'right', palette: true, tabRoot: true, load: () => import('../pages/SettingsPage') },
   { path: '/bookmarks', labelKey: 'saved',    icon: Bookmark,                             palette: true, tabRoot: true, load: () => import('../pages/BookmarksPage') },
-  { path: '/knowledge', labelKey: 'sources',  icon: Library,                              palette: true, tabRoot: true, load: () => import('../pages/KnowledgePage') },
   { path: '/mock',      labelKey: 'timed',    icon: Timer,                                palette: true, tabRoot: true, load: () => import('../pages/MockPage') },
   { path: '/search',    labelKey: 'search',   icon: Search,                                              tabRoot: true, load: () => import('../pages/SearchPage') },
 ];

@@ -471,9 +471,6 @@ export const authLogin = (email: string, password: string): Promise<AuthResponse
 export const authLogout = (): Promise<{ ok: boolean }> =>
   api.post<{ ok: boolean }>('/auth/logout').then((r) => r.data).catch(() => ({ ok: true }));
 
-export const authMe = (): Promise<{ user: User }> =>
-  api.get<{ user: User }>('/auth/me').then((r) => r.data);
-
 export const authUpdateName = (name: string | null): Promise<{ user: User }> =>
   api.put<{ user: User }>('/auth/me', { name }).then((r) => r.data);
 
