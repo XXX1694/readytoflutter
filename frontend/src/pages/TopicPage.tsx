@@ -48,6 +48,21 @@ function TopicOverflow(props: OverflowMenuProps) {
   const [wanted, setWanted] = useState(false);
   const [openOnLoad, setOpenOnLoad] = useState(false);
   const warm = () => setWanted(true);
+  // Once the page has settled, fetch the menu anyway — on a phone the first
+  // tap otherwise waits ~1 s for the Radix chunk. The stand-in is swapped
+  // for the real trigger in place, closed.
+  useEffect(() => {
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (w.requestIdleCallback && w.cancelIdleCallback) {
+      const id = w.requestIdleCallback(warm);
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = setTimeout(warm, 1500);
+    return () => clearTimeout(id);
+  }, []);
   const standIn = (
     <OverflowTrigger
       label={props.label}

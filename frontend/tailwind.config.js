@@ -110,10 +110,19 @@ export default {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to:   { opacity: '1', transform: 'translateY(0)' },
         },
+        // Route transitions (RouteTransition.tsx): only the incoming page
+        // moves. A light 12% slide on phones so the GPU repaints a strip,
+        // not the screen; a bare fade on desktop.
+        'page-fade':     { from: { opacity: '0' }, to: { opacity: '1' } },
+        'page-in-right': { from: { transform: 'translateX(12%)' }, to: { transform: 'translateX(0)' } },
+        'page-in-left':  { from: { transform: 'translateX(-12%)' }, to: { transform: 'translateX(0)' } },
       },
       animation: {
         'fade-in':  'fade-in 240ms cubic-bezier(0.22, 1, 0.36, 1)',
         'slide-up': 'slide-up 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'page-fade':     'page-fade 100ms ease-out',
+        'page-in-right': 'page-in-right 180ms cubic-bezier(0.32, 0.72, 0, 1)',
+        'page-in-left':  'page-in-left 180ms cubic-bezier(0.32, 0.72, 0, 1)',
       },
     },
   },

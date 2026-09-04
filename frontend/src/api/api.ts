@@ -40,7 +40,7 @@ const apiBaseUrl: string =
 // then fall back to the static data — on every uncached query, so opening a
 // topic paid that wait after its chunk had already arrived. tryRemote skips
 // the round trip entirely in this build; the app is anonymous-only anyway.
-const noBackend: boolean = typeof window !== 'undefined'
+export const noBackend: boolean = typeof window !== 'undefined'
   && onGithubPages && !import.meta.env.VITE_API_BASE_URL && !PROD_API_FALLBACK;
 
 if (noBackend) {

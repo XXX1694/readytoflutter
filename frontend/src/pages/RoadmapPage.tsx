@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { ArrowUpRight, Brain, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useQuestions, useRoadmap, useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
@@ -328,6 +328,9 @@ function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content
         </div>
       </button>
 
+      {/* The shell no longer loads framer, so the OS reduced-motion setting is
+          honoured here rather than in Layout. */}
+      <MotionConfig reducedMotion="user">
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -371,6 +374,7 @@ function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content
           </motion.div>
         )}
       </AnimatePresence>
+      </MotionConfig>
     </li>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { MotionConfig } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import MobileHeader from './MobileHeader';
@@ -43,16 +42,18 @@ export default function Layout() {
   }, []);
 
   return (
-    // `reducedMotion="user"` makes every framer animation below (the drawer
-    // spring, the card expand, the route slide) honour the OS setting in one
-    // place — DESIGN.md rule 5 — instead of each call site remembering to.
+    // No framer-motion in the shell: the route transition is CSS, and the two
+    // components that still animate with framer (QuestionCard, the roadmap
+    // ladder) wrap themselves in `MotionConfig reducedMotion="user"` inside
+    // their own lazy chunks — DESIGN.md rule 5 without 41 kB on the critical
+    // path.
     //
     // Use dynamic viewport units (`100dvh`) so the iOS browser chrome /
     // virtual keyboard correctly shrink the visible area. `h-screen` bakes in
     // the larger `100vh` (max chrome) which clips the bottom of inputs when
     // the keyboard pops up. `min-h-dvh` lets layout grow if a child is huge
     // while still resizing with the keyboard.
-    <MotionConfig reducedMotion="user">
+    <>
       <div className="flex min-h-dvh h-dvh overflow-hidden bg-page text-ink">
         <a
           href="#main-content"
@@ -107,6 +108,6 @@ export default function Layout() {
           }}
         />
       </div>
-    </MotionConfig>
+    </>
   );
 }

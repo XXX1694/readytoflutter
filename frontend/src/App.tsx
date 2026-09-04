@@ -10,7 +10,7 @@ import { queryClient } from './lib/queryClient';
 // the shared `ui` chunk (and once, Radix) onto the critical path.
 import { FullPageLoader } from './ui/Spinner';
 import { useAuth } from './store/auth';
-import { apiBaseUrl, flushLocalProgress } from './api/api';
+import { apiBaseUrl, flushLocalProgress, noBackend } from './api/api';
 import { prefetchIdle } from './lib/prefetch';
 import { reportState } from './lib/push';
 import { initAnalytics, pageview, identify } from './lib/analytics';
@@ -66,7 +66,10 @@ export default function App() {
   // AccountMenu interaction caused a flicker race where backendAvailable
   // was still null at first paint.
   useEffect(() => {
-    useAuth.getState().probeBackend(apiBaseUrl);
+    // A Pages build with no backend wired up: don't spend a request (and a
+    // slot on a 3G connection's queue) asking GitHub for /api/auth/health.
+    if (noBackend) useAuth.setState({ backendAvailable: false });
+    else useAuth.getState().probeBackend(apiBaseUrl);
     // Warm the tab-root chunks once the first screen has its data, so the
     // first tap on a tab doesn't wait on a network round-trip — and started
     // no earlier, or the chunks queue ahead of the seed bundle that screen

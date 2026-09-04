@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo, forwardRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import {
   Bookmark, Check, CheckCircle2, ChevronDown, Circle, CircleDot, EyeOff, Square, Volume2,
 } from 'lucide-react';
@@ -221,6 +221,10 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
         />
       </button>
 
+      {/* `reducedMotion="user"` here rather than in Layout: the shell no
+          longer loads framer, so each animating component honours the OS
+          setting itself. */}
+      <MotionConfig reducedMotion="user">
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -404,6 +408,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
           </motion.div>
         )}
       </AnimatePresence>
+      </MotionConfig>
     </article>
   );
 });
