@@ -19,7 +19,11 @@ import {
 } from '../lib/useQuestionSession';
 import { cn } from '../lib/cn';
 
-import type { Difficulty, Question, Topic } from '../types/domain';
+import type { Difficulty, QuestionSummary as Question, Topic } from '../types/domain';
+import { useAnswer } from '../lib/queries';
+
+/** `useContent(lang).answerText` — takes the id and whatever English body is at hand. */
+type AnswerTextFn = (question: { id: number; answer?: string | null }) => string;
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /** How many questions an interviewer gets through on one thread. */
@@ -35,6 +39,25 @@ const grades = (c: SessionCopy): SelfGradeOption[] => [
 
 const outcomeLabel = (outcome: Outcome, c: SessionCopy): string =>
   (outcome === 'skipped' ? c.skippedShort : c.grades[outcome]);
+
+/** One chain row's reference answer in the recap. */
+function ChainReference({ question, label, answerText }: { question: Question; label: string; answerText: AnswerTextFn }) {
+  const body = useAnswer(question);
+  return (
+    <div>
+      <div className="eyebrow mb-1.5">{label}</div>
+      <AnswerText text={answerText({ id: question.id, answer: body.answer })} />
+      {body.code_example && (
+        <div className="mt-3">
+          <CodeBlock
+            code={body.code_example}
+            language={question.code_language || 'dart'}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 const tagsOf = (question: Question): string[] =>
   (question.tags || '').split(',').map((tag) => tag.trim()).filter(Boolean);
@@ -70,6 +93,9 @@ export default function RoundPage() {
     onExit: leave,
   });
   const { current, revealed, draft, draftRef, outcomes, finished } = session;
+  // The chain is built from the topic's own questions, which carry their
+  // answers; the hook returns them without a fetch.
+  const body = useAnswer(current);
   const counts = useMemo(() => countOutcomes(outcomes), [outcomes]);
   useEffect(() => { finishedRef.current = finished; }, [finished]);
 
@@ -207,11 +233,11 @@ export default function RoundPage() {
               </section>
               <section className="order-1 lg:order-2 lg:border-l lg:border-rule/12 lg:pl-10">
                 <div className="eyebrow mb-2">{c.reference}</div>
-                <AnswerText text={answerText(current)} />
-                {current.code_example && (
+                <AnswerText text={answerText({ id: current.id, answer: body.answer })} />
+                {body.code_example && (
                   <div className="mt-4">
                     <CodeBlock
-                      code={current.code_example}
+                      code={body.code_example}
                       language={current.code_language || 'dart'}
                     />
                   </div>
@@ -347,7 +373,7 @@ interface RecapProps {
   topic: Topic;
   topicTitle: (topic: Topic) => string;
   questionText: (question: Question) => string;
-  answerText: (question: Question) => string;
+  answerText: AnswerTextFn;
   t: UICopy;
   c: SessionCopy;
   onRestart: () => void;
@@ -418,18 +444,7 @@ function Recap({
                     <p className="text-sm italic text-muted-2">{c.nothingWritten}</p>
                   )}
                 </div>
-                <div>
-                  <div className="eyebrow mb-1.5">{c.reference}</div>
-                  <AnswerText text={answerText(question)} />
-                  {question.code_example && (
-                    <div className="mt-3">
-                      <CodeBlock
-                        code={question.code_example}
-                        language={question.code_language || 'dart'}
-                      />
-                    </div>
-                  )}
-                </div>
+                <ChainReference question={question} label={c.reference} answerText={answerText} />
               </div>
             </details>
           ))}

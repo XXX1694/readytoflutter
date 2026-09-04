@@ -194,7 +194,8 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: ({ url }) => url.pathname.endsWith('/seed/static-data.json'),
+            // The catalogue and the per-topic answers files.
+            urlPattern: ({ url }) => url.pathname.includes('/seed/') && url.pathname.endsWith('.json'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'rtf-static-data',

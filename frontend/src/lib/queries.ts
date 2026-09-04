@@ -1,8 +1,9 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient, type UseQueryResult } from '@tanstack/react-query';
 import {
   getTopics,
   getTopic,
   getQuestions,
+  getAnswers,
   getStats,
   getRoadmap,
   updateProgress,
@@ -12,7 +13,9 @@ import {
 import { queryKeys } from './queryClient';
 import { resetAll as resetSrs } from './srs';
 
-import type { Topic, Question, Stats, ProgressStatus, Level, Roadmap } from '../types/domain.ts';
+import type {
+  Topic, Question, QuestionSummary, QuestionAnswer, Stats, ProgressStatus, Level, Roadmap,
+} from '../types/domain.ts';
 
 interface TopicWithQuestions extends Topic {
   questions: Question[];
@@ -40,11 +43,70 @@ export function useStats(): UseQueryResult<Stats> {
   });
 }
 
-export function useQuestions(params?: QuestionFilterParams): UseQueryResult<Question[]> {
+/**
+ * Every question of the catalogue, without answers. Enough for Today, the
+ * roadmap, the topic list, progress and the SRS queue; a screen that shows
+ * an answer reads it through `useAnswer`.
+ */
+export function useQuestions(params?: QuestionFilterParams): UseQueryResult<QuestionSummary[]> {
   return useQuery({
     queryKey: queryKeys.questions(params),
     queryFn: () => getQuestions(params),
   });
+}
+
+// Answers change only with a deploy; once fetched, a topic's file is good
+// for the whole session.
+const ANSWERS_STALE_MS = Infinity;
+
+/** The answers of one topic, keyed by question id. */
+export function useAnswers(slug: string | undefined, enabled = true): UseQueryResult<Record<number, QuestionAnswer>> {
+  return useQuery({
+    queryKey: queryKeys.answers(slug || ''),
+    queryFn: () => getAnswers(slug as string),
+    enabled: Boolean(slug) && enabled,
+    staleTime: ANSWERS_STALE_MS,
+  });
+}
+
+/** Start a topic's answers downloading ahead of the screen that shows them. */
+export function prefetchAnswers(qc: QueryClient, slug: string | undefined): void {
+  if (!slug) return;
+  void qc.prefetchQuery({
+    queryKey: queryKeys.answers(slug),
+    queryFn: () => getAnswers(slug),
+    staleTime: ANSWERS_STALE_MS,
+  });
+}
+
+export interface AnswerState {
+  /** The English answer body, or undefined while it is still on its way. */
+  answer: string | undefined;
+  code_example: string | null;
+  isLoading: boolean;
+}
+
+const hasAnswer = (q: QuestionSummary | Question): q is Question =>
+  typeof (q as Question).answer === 'string';
+
+/**
+ * A question's answer, wherever it comes from: already on the object (a
+ * topic page's questions, or a server that joins answers into every list),
+ * or fetched from the topic's answers file for a question that came out of
+ * the catalogue. `enabled: false` defers the fetch — a closed card has no
+ * reason to download its topic's answers yet.
+ */
+export function useAnswer(question: QuestionSummary | Question | null | undefined, enabled = true): AnswerState {
+  const inline = question && hasAnswer(question) ? question : null;
+  const answers = useAnswers(question?.topic_slug, Boolean(question) && enabled && !inline);
+  if (!question) return { answer: undefined, code_example: null, isLoading: false };
+  if (inline) return { answer: inline.answer, code_example: inline.code_example, isLoading: false };
+  const body = answers.data?.[question.id];
+  return {
+    answer: body?.answer,
+    code_example: body?.code_example ?? null,
+    isLoading: enabled && !answers.data && !answers.error,
+  };
 }
 
 export function useRoadmap(): UseQueryResult<Roadmap> {

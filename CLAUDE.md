@@ -69,7 +69,12 @@ red CI, a broken anonymous mode, or a silent perf regression.**
 only in `backend/data/seed/topics.json`, `backend/data/seed/questions/*.json`
 and `backend/data/seed/roadmap.json`. After any change there, run
 `npm --prefix backend run generate:static-data` — the committed
-`frontend/public/seed/static-data.json` is generated, never hand-edited. The
+`frontend/public/seed/static-data.json` (the catalogue: topics, roadmap and
+every question *without* its answer) and `frontend/public/seed/answers/<slug>.json`
+(one topic's answers and code examples) are generated, never hand-edited.
+The split is deliberate: answers are 92% of the bytes and nothing on the
+first screen reads them, so `useQuestions()` returns `QuestionSummary` and a
+screen that shows an answer goes through `useAnswer(question)`. The
 generator refuses a roadmap with an empty rung, an unknown topic, or a question
 counted twice in one track; `src/lib/roadmap.test.ts` additionally fails if a
 track misses any question of its own stack. **Answers are Markdown** (CommonMark

@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MiniSearch from 'minisearch';
 import { Search as SearchIcon, X } from 'lucide-react';
+import { useQueries, type UseQueryResult } from '@tanstack/react-query';
 import { useQuestions, useTopics } from '../lib/queries';
+import { queryKeys } from '../lib/queryClient';
+import { getAnswers } from '../api/api';
+import type { QuestionAnswer } from '../types/domain';
 import QuestionCard from '../components/QuestionCard';
 import { toPlainText } from '../lib/markdown';
 import { useLang } from '../i18n/LangContext';
@@ -67,6 +71,26 @@ export default function SearchPage() {
   const { data: allTopics = [] } = useTopics();
   const platform = usePrefs((s) => s.platform);
 
+  // The catalogue carries no answer text. This is the one screen that
+  // searches answers, so it loads every topic's answers file here and folds
+  // them into the index as they land; a query typed before they arrive
+  // matches on question text, topic and tags and widens on its own.
+  const answersById = useQueries({
+    queries: allTopics.map((tp) => ({
+      queryKey: queryKeys.answers(tp.slug),
+      queryFn: () => getAnswers(tp.slug),
+      staleTime: Infinity,
+    })),
+    combine: useCallback((results: UseQueryResult<Record<number, QuestionAnswer>>[]) => {
+      const map = new Map<number, string>();
+      for (const r of results) {
+        if (!r.data) continue;
+        for (const [id, body] of Object.entries(r.data)) map.set(Number(id), body.answer);
+      }
+      return map;
+    }, []),
+  });
+
   // Layer admin edits/adds/deletes onto the server data so newly-authored
   // questions appear in search without requiring a backend round-trip.
   const edits = useAdmin((s) => s.edits);
@@ -111,13 +135,13 @@ export default function SearchPage() {
       questions.map((q) => ({
         id: q.id,
         q: toPlainText(questionText(q)),
-        a: toPlainText(answerText(q)),
+        a: toPlainText(answerText({ id: q.id, answer: answersById.get(q.id) })),
         topic: topicTitle({ id: q.topic_id, title: q.topic_title || '' }) || q.topic_title || '',
         tags: q.tags || '',
       })),
     );
     return ms;
-  }, [questions, questionText, answerText, topicTitle]);
+  }, [questions, questionText, answerText, topicTitle, answersById]);
 
   // Run query and apply facets
   const results = useMemo(() => {

@@ -17,7 +17,7 @@ import { computeStreaks } from '../lib/activity';
 import { computeStanding, pickTrack, resolveTrack, rungLabel } from '../lib/roadmap';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
-import type { Question, Topic } from '../types/domain';
+import type { QuestionSummary as Question, Topic } from '../types/domain';
 import type { LandingConfig } from '../i18n/landings';
 
 const NO_TOPICS: Topic[] = [];

@@ -16,6 +16,8 @@ import type {
   AiGrade,
   ProTier,
   Roadmap,
+  QuestionSummary,
+  QuestionAnswer,
 } from '../types/domain.ts';
 
 // Production fallback for GitHub Pages: when we're served from *.github.io
@@ -104,9 +106,12 @@ export { api, apiBaseUrl };
 
 // ── Static-data fallback (anonymous / GitHub Pages) ─────────────────────────
 
+// The catalogue: every question without its answer. Answers live in
+// `seed/answers/<topic slug>.json`, loaded by `loadAnswers` when a topic,
+// session or search needs them — see the generator's header for why.
 interface StaticDataPayload {
   topics: Topic[];
-  questions: Question[];
+  questions: QuestionSummary[];
   roadmap: Roadmap;
 }
 
@@ -171,7 +176,41 @@ export const invalidateStaticData = (): void => {
   staticDataPromise = null;
   staticDataLoadedAt = 0;
   staticDataLastGood = null;
+  answersPromises.clear();
 };
+
+// ── Answers: one file per topic ──────────────────────────────────────────────
+
+type AnswerRow = QuestionAnswer & { id: number };
+
+const answersUrl = (slug: string): string =>
+  `${import.meta.env.BASE_URL}seed/answers/${encodeURIComponent(slug)}.json`;
+
+// One in-flight or settled fetch per topic for the life of the page; the
+// files only change with a deploy, and the service worker keeps them
+// network-first like the catalogue.
+const answersPromises = new Map<string, Promise<AnswerRow[]>>();
+
+const loadAnswers = (slug: string): Promise<AnswerRow[]> => {
+  const cached = answersPromises.get(slug);
+  if (cached) return cached;
+  const pending = fetch(answersUrl(slug))
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`Failed to load answers for ${slug}: ${res.status}`);
+      return (await res.json()) as AnswerRow[];
+    })
+    .catch((err: unknown) => {
+      // Don't memoise a failure — a dropped request shouldn't blank the
+      // topic's answers for the rest of the session.
+      answersPromises.delete(slug);
+      throw err;
+    });
+  answersPromises.set(slug, pending);
+  return pending;
+};
+
+const toAnswerMap = (rows: ReadonlyArray<{ id: number } & QuestionAnswer>): Record<number, QuestionAnswer> =>
+  Object.fromEntries(rows.map((r) => [r.id, { answer: r.answer, code_example: r.code_example }]));
 
 const readProgress = (): LocalProgressMap => {
   try {
@@ -199,7 +238,7 @@ const writeProgress = (progress: LocalProgressMap): void => {
   }
 };
 
-const withProgress = (question: Question, progress: LocalProgressMap): Question => {
+const withProgress = <Q extends QuestionSummary>(question: Q, progress: LocalProgressMap): Q => {
   const p = progress[String(question.id)] || null;
   return {
     ...question,
@@ -210,7 +249,7 @@ const withProgress = (question: Question, progress: LocalProgressMap): Question 
 
 const buildTopicStats = (
   topics: Topic[],
-  questions: Question[],
+  questions: QuestionSummary[],
   progress: LocalProgressMap,
 ): Topic[] => {
   const countByTopic = new Map<number, number>();
@@ -254,10 +293,20 @@ const fallbackGetTopic = async (slug: string): Promise<FallbackTopicWithQuestion
     throw err;
   }
 
-  const topicQuestions = questions
+  // The catalogue carries the topic's questions; their answers are the
+  // topic's own file, merged back by id.
+  const answersById = new Map((await loadAnswers(topic.slug)).map((row) => [row.id, row]));
+  const topicQuestions: Question[] = questions
     .filter((q) => q.topic_id === topic.id)
     .sort((a, b) => a.order_index - b.order_index)
-    .map((q) => withProgress(q, progress));
+    .map((q) => {
+      const body = answersById.get(q.id);
+      return {
+        ...withProgress(q, progress),
+        answer: body?.answer ?? '',
+        code_example: body?.code_example ?? null,
+      };
+    });
 
   const completedCount = topicQuestions.filter((q) => q.status === 'completed').length;
 
@@ -275,7 +324,7 @@ export interface QuestionFilterParams {
   search?: string;
 }
 
-const fallbackGetQuestions = async (params: QuestionFilterParams = {}): Promise<Question[]> => {
+const fallbackGetQuestions = async (params: QuestionFilterParams = {}): Promise<QuestionSummary[]> => {
   const { topics, questions } = await loadStaticData();
   const progress = readProgress();
   const topicById = new Map(topics.map((t) => [t.id, t]));
@@ -283,24 +332,20 @@ const fallbackGetQuestions = async (params: QuestionFilterParams = {}): Promise<
   const search = params.search?.trim().toLowerCase();
 
   return questions
-    .map((q) => {
+    .map((q): QuestionSummary => {
       const topic = topicById.get(q.topic_id);
       return {
         ...withProgress(q, progress),
         topic_title: topic?.title,
         level: topic?.level,
         topic_slug: topic?.slug,
-      } as Question;
+      };
     })
     .filter((q) => (params.level ? q.level === params.level : true))
     .filter((q) => (params.difficulty ? q.difficulty === params.difficulty : true))
-    .filter((q) => {
-      if (!search) return true;
-      return (
-        q.question.toLowerCase().includes(search)
-        || q.answer.toLowerCase().includes(search)
-      );
-    })
+    // The catalogue has no answer text; the Search page indexes answers
+    // itself once it has loaded them per topic.
+    .filter((q) => (search ? q.question.toLowerCase().includes(search) : true))
     .sort((a, b) => {
       const ta = topicById.get(a.topic_id)?.order_index ?? 0;
       const tb = topicById.get(b.topic_id)?.order_index ?? 0;
@@ -411,10 +456,21 @@ export const getTopic = (slug: string): Promise<FallbackTopicWithQuestions> =>
     () => fallbackGetTopic(slug),
   );
 
-export const getQuestions = (params?: QuestionFilterParams): Promise<Question[]> =>
+export const getQuestions = (params?: QuestionFilterParams): Promise<QuestionSummary[]> =>
   tryRemote(
-    () => api.get<Question[]>('/questions', { params }).then((r) => r.data),
+    () => api.get<QuestionSummary[]>('/questions', { params }).then((r) => r.data),
     () => fallbackGetQuestions(params),
+  );
+
+/**
+ * The answers of one topic, keyed by question id. The server's topic route
+ * already carries them; the static bundle keeps them in the topic's own
+ * file, fetched on demand and shared by every card that shows an answer.
+ */
+export const getAnswers = (slug: string): Promise<Record<number, QuestionAnswer>> =>
+  tryRemote(
+    () => api.get<FallbackTopicWithQuestions>(`/topics/${slug}`).then((r) => toAnswerMap(r.data.questions)),
+    () => loadAnswers(slug).then(toAnswerMap),
   );
 
 export const getStats = (): Promise<Stats> =>

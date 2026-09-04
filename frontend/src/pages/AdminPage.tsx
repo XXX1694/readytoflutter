@@ -86,7 +86,13 @@ export default function AdminPage() {
   const [openId, setOpenId] = useState<number | null>(null);
 
   const topics = useMemo(() => topicsQ.data ?? [], [topicsQ.data]);
-  const baseQuestions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
+  // The editor needs answers. This page is dev-only and runs against the
+  // local backend, whose /questions joins every answer in; the guard keeps
+  // the type honest rather than assuming it.
+  const baseQuestions = useMemo(
+    () => (questionsQ.data ?? []).filter((q): q is Question => typeof (q as Question).answer === 'string'),
+    [questionsQ.data],
+  );
 
   const merged = useMemo(() => applyDiff(baseQuestions, diff), [baseQuestions, diff]);
 

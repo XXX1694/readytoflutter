@@ -6,7 +6,7 @@
  */
 import { getCardState, readAll } from './srs';
 
-import type { Question, Topic, CardState } from '../types/domain';
+import type { QuestionSummary as Question, Topic, CardState } from '../types/domain';
 
 // The three caps add up to the limit, so the headline and the breakdown agree.
 const PLAN_LIMIT = 20;

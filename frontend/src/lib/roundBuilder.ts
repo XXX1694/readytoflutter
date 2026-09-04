@@ -15,7 +15,7 @@
  * If the topic has fewer questions than `count`, returns all of them sorted.
  */
 
-import type { Question, Difficulty } from '../types/domain';
+import type { QuestionSummary as Question, Difficulty } from '../types/domain';
 
 const DIFF_ORDER: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2 };
 

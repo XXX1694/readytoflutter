@@ -11,7 +11,7 @@
 import type {
   Difficulty,
   PlatformKey,
-  Question,
+  QuestionSummary as Question,
   Roadmap,
   RoadmapBand,
   RoadmapRung,

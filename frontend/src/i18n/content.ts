@@ -50,7 +50,13 @@ export interface ContentHelpers {
   topicTitle: (topic: Pick<Topic, 'id' | 'title'>) => string;
   topicDesc: (topic: Pick<Topic, 'id' | 'description'>) => string;
   questionText: (question: Pick<Question, 'id' | 'question'>) => string;
-  answerText: (question: Pick<Question, 'id' | 'answer'>) => string;
+  /**
+   * The answer in the reader's language. `answer` is the English body; it may
+   * be absent while `useAnswer` is still fetching it, in which case the
+   * Russian table (if loaded) is the only source and the result is otherwise
+   * an empty string.
+   */
+  answerText: (question: { id: number; answer?: string | null }) => string;
 }
 
 export function useContent(lang: Lang): ContentHelpers {
@@ -81,6 +87,6 @@ export function useContent(lang: Lang): ContentHelpers {
     topicTitle: (topic) => t?.TOPICS_RU[topic.id]?.title || topic.title,
     topicDesc: (topic) => t?.TOPICS_RU[topic.id]?.description || topic.description,
     questionText: (question) => t?.QUESTIONS_RU[question.id]?.question || question.question,
-    answerText: (question) => t?.QUESTIONS_RU[question.id]?.answer || question.answer,
+    answerText: (question) => t?.QUESTIONS_RU[question.id]?.answer || question.answer || '',
   }), [t]);
 }

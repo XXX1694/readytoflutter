@@ -1,19 +1,28 @@
 #!/usr/bin/env node
 //
-// Generate frontend/public/seed/static-data.json from backend seed JSON.
+// Generate the frontend's static seed bundle from backend seed JSON:
 //
-// Why: the GitHub Pages build ships without a backend and reads this file
-// directly. Hand-editing it after every seed change is the single biggest
-// source of dev/prod drift in this repo. Run this after touching anything
-// under backend/data/seed/.
+//   frontend/public/seed/static-data.json     topics, roadmap, and every
+//                                             question WITHOUT its answer and
+//                                             code example (~80 KB raw)
+//   frontend/public/seed/answers/<slug>.json  the answers and code examples
+//                                             of one topic (~40 KB raw each)
+//
+// Why two shapes: the GitHub Pages build ships without a backend and reads
+// these files directly. Answers and code examples are 92% of the bytes and
+// nothing on the first screen needs them, so a phone on 3G was downloading
+// ~650 KB (gzipped) of prose before Today could paint. The catalogue now
+// paints first; a topic's answers arrive when a topic, session or search
+// asks for them. Hand-editing any of this after a seed change is the single
+// biggest source of dev/prod drift in this repo — run this script instead.
 //
 // Usage:
 //   npm --prefix backend run generate:static-data
 //   # or:
 //   node backend/scripts/generate-static-data.js [--check]
 //
-// `--check` exits non-zero if the file would change — used in CI to fail
-// PRs that forget to regenerate.
+// `--check` exits non-zero if any output would change (or a stale answers
+// file is lying around) — used in CI to fail PRs that forget to regenerate.
 
 const fs = require('fs');
 const path = require('path');
@@ -24,6 +33,7 @@ const TOPICS_FILE = path.join(SEED_DIR, 'topics.json');
 const QUESTIONS_DIR = path.join(SEED_DIR, 'questions');
 const ROADMAP_FILE = path.join(SEED_DIR, 'roadmap.json');
 const OUT_FILE = path.join(ROOT, 'frontend', 'public', 'seed', 'static-data.json');
+const ANSWERS_DIR = path.join(ROOT, 'frontend', 'public', 'seed', 'answers');
 const SITEMAP_FILE = path.join(ROOT, 'frontend', 'public', 'sitemap.xml');
 const ROBOTS_FILE = path.join(ROOT, 'frontend', 'public', 'robots.txt');
 
@@ -153,6 +163,49 @@ function format(payload) {
   return JSON.stringify(payload, null, 2) + '\n';
 }
 
+// Split the full payload into the catalogue the app boots from and one
+// answers file per topic. A question keeps everything but `answer` and
+// `code_example` in the catalogue; those two land in the topic's answers
+// file, in the same order, so the frontend can merge them back by id.
+function split(payload) {
+  const slugById = new Map(payload.topics.map((t) => [t.id, t.slug]));
+  const answers = new Map();
+  const questions = payload.questions.map((q) => {
+    const { answer, code_example: codeExample, ...summary } = q;
+    const slug = slugById.get(q.topic_id);
+    if (!slug) throw new Error(`question ${q.id} belongs to unknown topic id ${q.topic_id}`);
+    if (!answers.has(slug)) answers.set(slug, []);
+    answers.get(slug).push({ id: q.id, answer, code_example: codeExample });
+    return summary;
+  });
+  return {
+    catalog: { topics: payload.topics, questions, roadmap: payload.roadmap },
+    answers,
+  };
+}
+
+// Every file the generator owns, as { relativePath: contents }, so writing
+// and checking walk the same list.
+function outputs(payload) {
+  const { catalog, answers } = split(payload);
+  const files = new Map();
+  files.set(OUT_FILE, format(catalog));
+  for (const [slug, rows] of answers) {
+    files.set(path.join(ANSWERS_DIR, `${slug}.json`), format(rows));
+  }
+  return files;
+}
+
+// Answers files for topics that no longer exist would keep shipping stale
+// content; they are removed on write and reported by --check.
+function staleAnswerFiles(files) {
+  if (!fs.existsSync(ANSWERS_DIR)) return [];
+  return fs.readdirSync(ANSWERS_DIR)
+    .filter((n) => n.endsWith('.json'))
+    .map((n) => path.join(ANSWERS_DIR, n))
+    .filter((p) => !files.has(p));
+}
+
 // Resolve the canonical site URL the sitemap will advertise. SITE_URL wins;
 // otherwise derive the GitHub Pages URL from CI env (owner.github.io/repo).
 // Returns null if we cannot guess — in that case we skip sitemap generation
@@ -205,26 +258,34 @@ function buildSitemap(topics, siteUrl) {
 function main() {
   const checkMode = process.argv.includes('--check');
   const payload = build();
-  const next = format(payload);
+  const files = outputs(payload);
+  const stale = staleAnswerFiles(files);
   const siteUrl = resolveSiteUrl();
   const sitemap = siteUrl ? buildSitemap(payload.topics, siteUrl) : null;
 
   if (checkMode) {
-    const current = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : '';
-    if (current !== next) {
+    const drifted = [...files].filter(([file, next]) => {
+      const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+      return current !== next;
+    }).map(([file]) => path.relative(ROOT, file));
+    if (drifted.length || stale.length) {
       console.error(
-        '✗ static-data.json is out of sync with backend/data/seed/.\n' +
+        '✗ the static seed bundle is out of sync with backend/data/seed/.\n' +
+        (drifted.length ? `  changed: ${drifted.slice(0, 5).join(', ')}${drifted.length > 5 ? ` (+${drifted.length - 5} more)` : ''}\n` : '') +
+        (stale.length ? `  stale: ${stale.map((p) => path.relative(ROOT, p)).join(', ')}\n` : '') +
         '  Run: npm --prefix backend run generate:static-data',
       );
       process.exit(1);
     }
-    console.log('✓ static-data.json is up to date');
+    console.log(`✓ static-data.json and ${files.size - 1} answers files are up to date`);
     return;
   }
 
-  fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
-  fs.writeFileSync(OUT_FILE, next);
+  fs.mkdirSync(ANSWERS_DIR, { recursive: true });
+  for (const [file, contents] of files) fs.writeFileSync(file, contents);
+  for (const file of stale) fs.unlinkSync(file);
   console.log(`✓ wrote ${path.relative(ROOT, OUT_FILE)} — ${payload.topics.length} topics, ${payload.questions.length} questions, ${payload.roadmap.tracks.length} roadmap tracks`);
+  console.log(`✓ wrote ${files.size - 1} answers files under ${path.relative(ROOT, ANSWERS_DIR)}/${stale.length ? ` (removed ${stale.length} stale)` : ''}`);
 
   if (sitemap) {
     fs.writeFileSync(SITEMAP_FILE, sitemap);
@@ -239,4 +300,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { build, validateRoadmap };
+module.exports = { build, split, validateRoadmap };

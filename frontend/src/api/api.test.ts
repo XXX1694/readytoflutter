@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import type { Question, Topic, User } from '../types/domain.ts';
+import type { QuestionAnswer, QuestionSummary, Topic, User } from '../types/domain.ts';
 
 const mocks = vi.hoisted(() => ({
   axiosInstance: {
@@ -62,15 +62,16 @@ const TOPICS: Topic[] = [
   },
 ];
 
-const QUESTIONS: Question[] = [
+// The catalogue lists questions without their answers; those sit in one
+// file per topic, exactly as backend/scripts/generate-static-data.js splits
+// them.
+const QUESTIONS: QuestionSummary[] = [
   {
     id: 10,
     topic_id: 1,
     order_index: 2,
     difficulty: 'easy',
     question: 'What is a Future?',
-    answer: 'A Future represents a value available later.',
-    code_example: null,
     code_language: 'dart',
   },
   {
@@ -79,8 +80,6 @@ const QUESTIONS: Question[] = [
     order_index: 1,
     difficulty: 'hard',
     question: 'Explain isolates',
-    answer: 'Isolates are independent workers with their own memory.',
-    code_example: null,
     code_language: 'dart',
   },
   {
@@ -89,13 +88,23 @@ const QUESTIONS: Question[] = [
     order_index: 1,
     difficulty: 'medium',
     question: 'What is a StreamController?',
-    answer: 'It exposes a sink and a broadcast stream.',
-    code_example: null,
     code_language: 'dart',
   },
 ];
 
+const ANSWERS: Record<string, Array<{ id: number } & QuestionAnswer>> = {
+  'dart-basics': [
+    { id: 11, answer: 'Isolates are independent workers with their own memory.', code_example: null },
+    { id: 10, answer: 'A Future represents a value available later.', code_example: 'await f;' },
+  ],
+  streams: [
+    { id: 20, answer: 'It exposes a sink and a broadcast stream.', code_example: null },
+  ],
+};
+
 const STATIC_PAYLOAD = { topics: TOPICS, questions: QUESTIONS };
+const STATIC_URL = `${import.meta.env.BASE_URL}seed/static-data.json`;
+const answersUrl = (slug: string) => `${import.meta.env.BASE_URL}seed/answers/${slug}.json`;
 
 // The key is load-bearing: it predates the rename to Onsite and holds every
 // anonymous user's progress. Renaming it silently wipes them, so the literal
@@ -115,11 +124,16 @@ const FAKE_USER: User = {
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
-const okFetch = () => vi.fn(async () => ({
-  ok: true,
-  status: 200,
-  json: async () => JSON.parse(JSON.stringify(STATIC_PAYLOAD)),
-}));
+// Serves the catalogue and, by slug, each topic's answers file.
+const okFetch = () => vi.fn(async (url: string) => {
+  const match = /\/seed\/answers\/([^/]+)\.json$/.exec(url);
+  const body = match ? (ANSWERS[match[1]] ?? []) : STATIC_PAYLOAD;
+  return {
+    ok: true,
+    status: 200,
+    json: async () => JSON.parse(JSON.stringify(body)),
+  };
+});
 
 const seedProgress = (map: Record<string, unknown>) => {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(map));
@@ -227,9 +241,13 @@ describe('tryRemote — static-data fallback when the backend is unreachable', (
     const topic = await api.getTopic('dart-basics');
 
     expect(topic.questions.map((q) => q.id)).toEqual([11, 10]);
+    // The answers come from the topic's own file, merged back by id.
+    expect(fetchMock).toHaveBeenCalledWith(answersUrl('dart-basics'));
     expect(topic.questions.find((q) => q.id === 10)).toMatchObject({
       status: 'completed',
       notes: 'my note',
+      answer: 'A Future represents a value available later.',
+      code_example: 'await f;',
     });
     // Questions with no stored progress must default, not come back undefined.
     expect(topic.questions.find((q) => q.id === 11)).toMatchObject({
@@ -262,13 +280,45 @@ describe('tryRemote — static-data fallback when the backend is unreachable', (
     expect((await api.getQuestions({ level: 'mid', difficulty: 'hard' }))).toEqual([]);
   });
 
-  it('searches question text and answer text case-insensitively offline', async () => {
+  it('searches question text case-insensitively offline', async () => {
     expect((await api.getQuestions({ search: 'ISOLATES' })).map((q) => q.id)).toEqual([11]);
-    // "broadcast" only appears in an answer.
-    expect((await api.getQuestions({ search: 'broadcast' })).map((q) => q.id)).toEqual([20]);
+    // "broadcast" only appears in an answer, and the catalogue has none —
+    // the Search page indexes answers itself once it has loaded them.
+    expect(await api.getQuestions({ search: 'broadcast' })).toEqual([]);
     expect(await api.getQuestions({ search: 'nothing matches this' })).toEqual([]);
     // A whitespace-only search must not filter everything away.
     expect((await api.getQuestions({ search: '   ' })).map((q) => q.id)).toEqual([20, 11, 10]);
+  });
+
+  it('lists questions without answers, and serves a topic\'s answers from its own file', async () => {
+    const questions = await api.getQuestions();
+    expect(questions.every((q) => !('answer' in q))).toBe(true);
+    // The catalogue alone was enough for the list.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(STATIC_URL);
+
+    const answers = await api.getAnswers('streams');
+    expect(answers).toEqual({ 20: { answer: 'It exposes a sink and a broadcast stream.', code_example: null } });
+    expect(fetchMock).toHaveBeenCalledWith(answersUrl('streams'));
+
+    // A second read of the same topic is served from memory.
+    await api.getAnswers('streams');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('takes a topic\'s answers from the server when it answers, without touching the static files', async () => {
+    mocks.axiosInstance.get.mockResolvedValue({
+      data: {
+        ...TOPICS[0],
+        questions: [{ ...QUESTIONS[0], answer: 'From the server.', code_example: 'x' }],
+      },
+    });
+
+    const answers = await api.getAnswers('dart-basics');
+
+    expect(mocks.axiosInstance.get).toHaveBeenCalledWith('/topics/dart-basics');
+    expect(answers).toEqual({ 10: { answer: 'From the server.', code_example: 'x' } });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('computes stats from the local progress map', async () => {

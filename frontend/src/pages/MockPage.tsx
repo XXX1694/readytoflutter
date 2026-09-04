@@ -26,7 +26,11 @@ import { goBack } from '../lib/navigation';
 import { cn } from '../lib/cn';
 import { track } from '../lib/analytics';
 
-import type { Level, Question, Topic } from '../types/domain';
+import type { Level, QuestionSummary as Question, Topic } from '../types/domain';
+import { useAnswer } from '../lib/queries';
+
+/** `useContent(lang).answerText` — takes the id and whatever English body is at hand. */
+type AnswerTextFn = (question: { id: number; answer?: string | null }) => string;
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 /** Stable empty defaults, so the pool memo isn't invalidated every render. */
@@ -365,13 +369,38 @@ function Clock({ label, seconds, urgent }: { label: string; seconds: number; urg
 interface CompareProps {
   draft: string;
   question: Question;
-  answerText: (question: Question) => string;
+  answerText: AnswerTextFn;
   c: SessionCopy;
+}
+
+interface ReferenceProps {
+  question: Question;
+  label: ReactNode;
+  answerText: AnswerTextFn;
+  className?: string;
+}
+
+/** The reference answer of one question, fetched from its topic's answers
+    file if the question came out of the catalogue. */
+function Reference({ question, label, answerText, className }: ReferenceProps) {
+  const body = useAnswer(question);
+  return (
+    <div className={className}>
+      <div className="eyebrow mb-1.5">{label}</div>
+      <AnswerText text={answerText({ id: question.id, answer: body.answer })} />
+      {body.code_example && (
+        <div className="mt-3">
+          <CodeBlock code={body.code_example} language={question.code_language || 'dart'} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** The user's attempt beside the reference. Mobile puts the reference first —
     that is what you want to see the second you stop writing. */
 function Compare({ draft, question, answerText, c }: CompareProps) {
+  const body = useAnswer(question);
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
       <section className="order-2 lg:order-1">
@@ -384,10 +413,10 @@ function Compare({ draft, question, answerText, c }: CompareProps) {
       </section>
       <section className="order-1 lg:order-2 lg:border-l lg:border-rule/12 lg:pl-10">
         <div className="eyebrow mb-2">{c.reference}</div>
-        <AnswerText text={answerText(question)} />
-        {question.code_example && (
+        <AnswerText text={answerText({ id: question.id, answer: body.answer })} />
+        {body.code_example && (
           <div className="mt-4">
-            <CodeBlock code={question.code_example} language={question.code_language || 'dart'} />
+            <CodeBlock code={body.code_example} language={question.code_language || 'dart'} />
           </div>
         )}
       </section>
@@ -585,7 +614,7 @@ interface RecapProps {
   t: UICopy;
   c: SessionCopy;
   questionText: (question: Question) => string;
-  answerText: (question: Question) => string;
+  answerText: AnswerTextFn;
   onAgain: () => void;
   onHome: () => void;
 }
@@ -642,22 +671,17 @@ function Recap({
                     <p className="text-sm italic text-muted-2">{c.nothingWritten}</p>
                   )}
                 </div>
-                <div>
-                  <div className="eyebrow mb-1.5">
-                    {c.reference}
-                    {' · '}
-                    {{ easy: t.easy, medium: t.medium, hard: t.hard }[question.difficulty]}
-                  </div>
-                  <AnswerText text={answerText(question)} />
-                  {question.code_example && (
-                    <div className="mt-3">
-                      <CodeBlock
-                        code={question.code_example}
-                        language={question.code_language || 'dart'}
-                      />
-                    </div>
-                  )}
-                </div>
+                <Reference
+                  question={question}
+                  answerText={answerText}
+                  label={
+                    <>
+                      {c.reference}
+                      {' · '}
+                      {{ easy: t.easy, medium: t.medium, hard: t.hard }[question.difficulty]}
+                    </>
+                  }
+                />
               </div>
             </details>
           ))}

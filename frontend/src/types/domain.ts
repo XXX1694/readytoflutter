@@ -25,14 +25,19 @@ export interface Topic {
   completed_count?: number;
 }
 
-export interface Question {
+/**
+ * A question as the catalogue lists it: everything but the answer and the
+ * code example. This is what `useQuestions()` returns — the static bundle
+ * ships answers separately, per topic, because they are 92% of its bytes
+ * and nothing on the first screen reads them. `useAnswer(question)` fetches
+ * a question's answer when a card, session or search actually shows it.
+ */
+export interface QuestionSummary {
   id: number;
   topic_id: number;
   order_index: number;
   difficulty: Difficulty;
   question: string;
-  answer: string;
-  code_example: string | null;
   code_language: string;
   // Comma-separated tag list authored in the seed JSON. roundBuilder splits
   // it into a list to score connectedness between questions.
@@ -45,6 +50,18 @@ export interface Question {
   status?: ProgressStatus;
   notes?: string | null;
 }
+
+/** The answer body of one question — what `seed/answers/<slug>.json` holds. */
+export interface QuestionAnswer {
+  answer: string;
+  code_example: string | null;
+}
+
+/**
+ * A question with its answer: what `/api/topics/:slug` and `/api/questions`
+ * return, and what the static fallback assembles for a topic page.
+ */
+export interface Question extends QuestionSummary, QuestionAnswer {}
 
 export interface ProgressRow {
   user_id: number;

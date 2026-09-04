@@ -7,13 +7,13 @@ import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import CodeBlock from './CodeBlock';
 import AnswerText from './AnswerText';
-import { useUpdateProgress } from '../lib/queries';
+import { useAnswer, useUpdateProgress } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { useTopicCopy } from '../i18n/topicPage';
-import { Button } from '../ui/index';
+import { Button, Skeleton } from '../ui/index';
 import { cn } from '../lib/cn';
 import { useBookmark } from '../lib/useBookmark';
 import { speak, stop, subscribe as subscribeTts, isSpeaking, isTtsSupported } from '../lib/tts';
@@ -21,7 +21,7 @@ import { extractHint } from '../lib/hint';
 import { toPlainText } from '../lib/markdown';
 import InlineMarkdown from './InlineMarkdown';
 import { track } from '../lib/analytics';
-import type { ProgressStatus, Question } from '../types/domain';
+import type { ProgressStatus, Question, QuestionSummary } from '../types/domain';
 
 const STATUS_META: Record<ProgressStatus, { icon: LucideIcon; accent: string }> = {
   not_started: { icon: Circle,       accent: 'text-muted' },
@@ -39,7 +39,8 @@ const QUIET_ACTION =
   'transition-colors sm:h-7 sm:min-h-0';
 
 export interface QuestionCardProps {
-  question: Question;
+  /** With its answer (a topic page) or without (search, saved) — the card fetches what it lacks. */
+  question: Question | QuestionSummary;
   index: number;
   /** Controlled open state. Omit to let the card manage its own. */
   expanded?: boolean;
@@ -95,7 +96,11 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
     }
   }
 
-  const fullAnswer = answerText(question);
+  // The answer body: on the object when the card came from a topic page,
+  // fetched from the topic's answers file when it came out of the catalogue
+  // (search, saved) — and only once the card is open.
+  const body = useAnswer(question, open);
+  const fullAnswer = answerText({ id: question.id, answer: body.answer });
   const hintText = useMemo(() => extractHint(fullAnswer), [fullAnswer]);
   const hasHint = Boolean(hintText) && hintText.length < fullAnswer.trim().length - 4;
 
@@ -366,12 +371,18 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                         {lang === 'ru' ? 'Показать ответ' : 'Show answer'}
                       </Button>
                     </div>
+                  ) : body.isLoading && !fullAnswer ? (
+                    <div className="space-y-2.5 py-1" aria-busy="true">
+                      <Skeleton className="h-4 w-11/12" />
+                      <Skeleton className="h-4 w-4/5" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
                   ) : (
                     <AnswerText text={fullAnswer} />
                   )}
 
                   {/* Code — only after full reveal */}
-                  {question.code_example && reveal === 'full' && (
+                  {body.code_example && reveal === 'full' && (
                     <div className="mt-4">
                       <button
                         type="button"
@@ -387,7 +398,7 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
                       </button>
                       {showCode && (
                         <CodeBlock
-                          code={question.code_example}
+                          code={body.code_example}
                           language={question.code_language || 'dart'}
                         />
                       )}

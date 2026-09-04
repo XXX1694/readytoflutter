@@ -29,7 +29,7 @@ import {
   type ResolvedRung,
 } from '../lib/roadmap';
 
-import type { Question } from '../types/domain';
+import type { QuestionSummary as Question } from '../types/domain';
 
 // Stable empty defaults so the resolved ladder keeps its identity between
 // renders while the queries are still settling.

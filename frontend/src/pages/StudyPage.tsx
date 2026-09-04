@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronDown, PenLine, X } from 'lucide-react';
-import { useQuestions, useTopics } from '../lib/queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { prefetchAnswers, useAnswer, useQuestions, useTopics } from '../lib/queries';
 import { pickDueQueue, rateCard, getCardState, previewInterval } from '../lib/srs';
 import { goBack } from '../lib/navigation';
 import { buildPlan } from '../lib/plan';
@@ -12,7 +13,7 @@ import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
 import { useSessionCopy, type SessionCopy } from '../i18n/sessionPage';
-import { Button, PageShell, Pill, ProgressBar, FullPageLoader, difficultyTone } from '../ui/index';
+import { Button, PageShell, Pill, ProgressBar, FullPageLoader, Skeleton, difficultyTone } from '../ui/index';
 import CodeBlock from '../components/CodeBlock';
 import AnswerText from '../components/AnswerText';
 import InlineMarkdown from '../components/InlineMarkdown';
@@ -26,7 +27,7 @@ import { tapMedium } from '../lib/haptics';
 import { track } from '../lib/analytics';
 import { reportState } from '../lib/push';
 
-import type { Level, Question, Topic } from '../types/domain';
+import type { Level, QuestionSummary as Question, Topic } from '../types/domain';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 // Stable empty defaults. A fresh `[]` per render would give `pool` a new
@@ -139,6 +140,14 @@ export default function StudyPage() {
     },
   });
   const { current, revealed, total, draftRef } = session;
+
+  // The current card's answer, and the whole queue's answers files warming
+  // in the background, so a reveal never waits on the network.
+  const body = useAnswer(current);
+  const qc = useQueryClient();
+  useEffect(() => {
+    new Set(queue.map((q) => q.topic_slug)).forEach((slug) => prefetchAnswers(qc, slug));
+  }, [queue, qc]);
   // In recall mode the draft textarea takes focus after each grade; with it
   // off there is no textarea, so focus fell to <body> silently. Move it to
   // the question heading instead — an aria-live region reads the new one out.
@@ -378,9 +387,17 @@ export default function StudyPage() {
           )}
 
           <div className="eyebrow mb-2">{t.answer}</div>
-          <AnswerText text={answerText(current)} />
+          {body.isLoading && !answerText({ id: current.id, answer: body.answer }) ? (
+            <div className="space-y-2.5 py-1" aria-busy="true">
+              <Skeleton className="h-4 w-11/12" />
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          ) : (
+            <AnswerText text={answerText({ id: current.id, answer: body.answer })} />
+          )}
 
-          {current.code_example && (
+          {body.code_example && (
             <details key={current.id} className="group mt-6">
               <summary className="eyebrow inline-flex cursor-pointer list-none items-center gap-1.5 hover:text-ink">
                 <ChevronDown
@@ -392,7 +409,7 @@ export default function StudyPage() {
               </summary>
               <div className="mt-3">
                 <CodeBlock
-                  code={current.code_example}
+                  code={body.code_example}
                   language={current.code_language || 'dart'}
                 />
               </div>

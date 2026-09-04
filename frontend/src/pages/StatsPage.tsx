@@ -22,7 +22,7 @@ import {
   type Platform,
 } from '../lib/platform';
 
-import type { Level, Topic, Question } from '../types/domain';
+import type { Level, Topic, QuestionSummary as Question } from '../types/domain';
 import { categoryLabel } from '../i18n/categories';
 
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];

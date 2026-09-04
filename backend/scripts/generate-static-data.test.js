@@ -4,7 +4,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { build, validateRoadmap } = require('./generate-static-data');
+const { build, split, validateRoadmap } = require('./generate-static-data');
 
 const topics = [
   { id: 1, slug: 'a', order_index: 1 },
@@ -60,6 +60,33 @@ test('rejects an unknown topic slug', () => {
   const r = valid();
   r.tracks[0].rungs.staff.nodes[0].topic = 'nope';
   assert.throws(() => validateRoadmap(r, topics, questions), /unknown topic "nope"/);
+});
+
+test('split keeps every field but the answer in the catalogue and files each answer under its topic', () => {
+  const payload = {
+    topics: [{ id: 1, slug: 'a', order_index: 1 }, { id: 2, slug: 'b', order_index: 2 }],
+    questions: [
+      { id: 10, topic_id: 1, order_index: 1, difficulty: 'easy', question: 'Q10', answer: 'A10', code_example: 'code', code_language: 'dart', tags: 'x' },
+      { id: 20, topic_id: 2, order_index: 1, difficulty: 'hard', question: 'Q20', answer: 'A20', code_example: null, code_language: 'swift' },
+    ],
+    roadmap: { rungs: [], tracks: [] },
+  };
+  const { catalog, answers } = split(payload);
+  assert.deepEqual(catalog.questions, [
+    { id: 10, topic_id: 1, order_index: 1, difficulty: 'easy', question: 'Q10', code_language: 'dart', tags: 'x' },
+    { id: 20, topic_id: 2, order_index: 1, difficulty: 'hard', question: 'Q20', code_language: 'swift' },
+  ]);
+  assert.deepEqual([...answers.keys()], ['a', 'b']);
+  assert.deepEqual(answers.get('a'), [{ id: 10, answer: 'A10', code_example: 'code' }]);
+  assert.deepEqual(answers.get('b'), [{ id: 20, answer: 'A20', code_example: null }]);
+  assert.equal(catalog.roadmap, payload.roadmap);
+});
+
+test('split refuses a question whose topic does not exist', () => {
+  assert.throws(
+    () => split({ topics: [], questions: [{ id: 1, topic_id: 9, answer: '', code_example: null }], roadmap: {} }),
+    /unknown topic id 9/,
+  );
 });
 
 test('the committed seed builds: sixteen rungs, every track full', () => {

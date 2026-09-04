@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import type { Question } from '../types/domain.ts';
+import type { Question, QuestionSummary } from '../types/domain.ts';
 
 /**
  * Admin store — local diff over the read-only base data.
@@ -107,13 +107,16 @@ export const useAdmin = create<AdminState>()(
  * Sort is preserved: existing items stay in their original order; additions
  * append at the end of their topic group sorted by order_index.
  */
-export function applyDiff(base: Question[], diff: AdminDiff): Question[] {
+// Generic over the base row: the search index works from catalogue
+// summaries, the editor from full questions; added questions are always
+// full, so the result is whichever the caller passed, plus those.
+export function applyDiff<Q extends QuestionSummary>(base: Q[], diff: AdminDiff): Array<Q | Question> {
   const deletes = diff.deletes || {};
   const edits = diff.edits || {};
   const adds = diff.adds || [];
   const merged = base
     .filter((q) => !deletes[q.id])
-    .map((q) => (edits[q.id] ? ({ ...q, ...edits[q.id] } as Question) : q));
+    .map((q) => (edits[q.id] ? { ...q, ...edits[q.id] } : q));
   return [...merged, ...adds];
 }
 

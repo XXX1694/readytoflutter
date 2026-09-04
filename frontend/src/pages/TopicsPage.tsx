@@ -16,7 +16,7 @@ import { filterTopicsByPlatform, PLATFORMS } from '../lib/platform';
 import { StackTile } from '../lib/stackIcons';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
-import type { Level, Question, Topic } from '../types/domain';
+import type { Level, QuestionSummary as Question, Topic } from '../types/domain';
 
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];
 const NO_QUESTIONS: Question[] = [];
@@ -26,7 +26,7 @@ const NO_QUESTIONS: Question[] = [];
 const warmTopicPage = (): void => { void import('./TopicPage'); };
 
 /** Cards waiting in the SRS queue, per topic. Module scope keeps the clock read out of render. */
-function countDueByTopic(questions: Question[], now: number = Date.now()): Map<number, number> {
+function countDueByTopic(questions: ReadonlyArray<Pick<Question, 'id' | 'topic_id'>>, now: number = Date.now()): Map<number, number> {
   const map = new Map<number, number>();
   // One localStorage read + parse for the whole catalogue, not one per question.
   const cards = readAll();
