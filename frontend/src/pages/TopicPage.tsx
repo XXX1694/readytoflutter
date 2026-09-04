@@ -119,8 +119,10 @@ export default function TopicPage() {
     canonical: topic ? `/topic/${topic.slug}` : null,
   });
 
-  // Keyboard navigation: which question is "focused" + open
-  const [cursor, setCursor] = useState(0);
+  // Keyboard navigation: which question is "focused" + open. The cursor is
+  // null until j/k or a deep link places it — before that the first row has
+  // nothing to mark, and a ring on it read as a stray border.
+  const [cursor, setCursor] = useState<number | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const refs = useRef(new Map<number, HTMLElement>());
 
@@ -164,7 +166,7 @@ export default function TopicPage() {
 
   // Changing the filter can shrink the list out from under the cursor. Clamping
   // during render keeps it valid without a second commit.
-  const activeCursor = cursor >= filtered.length ? 0 : cursor;
+  const activeCursor = cursor !== null && cursor >= filtered.length ? 0 : cursor;
 
   const scrollIntoView = (id: number) => {
     const el = refs.current.get(id);
@@ -207,7 +209,7 @@ export default function TopicPage() {
   useHotkeys('j, ArrowDown', (e) => {
     e.preventDefault();
     if (!filtered.length) return;
-    const next = Math.min(activeCursor + 1, filtered.length - 1);
+    const next = Math.min((activeCursor ?? -1) + 1, filtered.length - 1);
     setCursor(next);
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
@@ -215,7 +217,7 @@ export default function TopicPage() {
   useHotkeys('k, ArrowUp', (e) => {
     e.preventDefault();
     if (!filtered.length) return;
-    const next = Math.max(activeCursor - 1, 0);
+    const next = Math.max((activeCursor ?? 0) - 1, 0);
     setCursor(next);
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
@@ -227,7 +229,7 @@ export default function TopicPage() {
     if (target?.closest('button, a, [role="button"], [role="menuitem"], summary')) return;
     if (!filtered.length) return;
     e.preventDefault();
-    const q = filtered[activeCursor];
+    const q = filtered[activeCursor ?? 0];
     setOpenId((prev) => (prev === q.id ? null : q.id));
   });
 

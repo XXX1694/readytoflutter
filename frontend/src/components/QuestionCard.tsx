@@ -192,10 +192,12 @@ const QuestionCard = forwardRef<HTMLElement, QuestionCardProps>(function Questio
       ref={ref}
       data-question-id={question.id}
       className={cn(
-        'scroll-mt-20 lg:scroll-mt-6 overflow-hidden transition-colors duration-200',
+        'scroll-mt-20 lg:scroll-mt-6 overflow-hidden transition-[margin,background-color,border-color] duration-200',
         // One border level per row: closed rows are separated by a hairline,
-        // and only the question you are actually reading becomes a card.
-        open ? 'codex-card' : 'border-b border-rule/10',
+        // and only the question you are actually reading becomes a card —
+        // lifted clear of the rows above and below rather than wedged
+        // between their hairlines.
+        open ? 'codex-card my-3' : 'border-b border-rule/10',
         focused && !open && 'rounded-sm shadow-focus',
       )}
     >
