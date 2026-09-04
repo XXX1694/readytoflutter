@@ -167,6 +167,33 @@ function startPreviewServer() {
   });
 }
 
+// The <link rel="modulepreload"> tags the built shell ships with — the
+// entry's static dependencies (react, tanstack, motion). Read once, before
+// the crawl overwrites dist/index.html with the prerendered home page.
+let shellPreloads = null;
+function getShellPreloads() {
+  if (shellPreloads) return shellPreloads;
+  const shell = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+  shellPreloads = new Set(
+    [...shell.matchAll(/<link rel="modulepreload"[^>]*href="([^"]+)"/g)].map((m) => m[1]),
+  );
+  return shellPreloads;
+}
+
+// Vite's runtime appends a <link rel="modulepreload"> to <head> for every
+// chunk a dynamic import pulls in. By the time the crawler snapshots the
+// page, the idle prefetch has warmed every tab root, so the captured HTML
+// carried ~47 of them — Radix, Shiki, the markdown parser, pages nobody
+// opened — and every visitor's browser preloaded the lot on first paint.
+// Keep only the shell's own three.
+function stripRuntimePreloads(html) {
+  const keep = getShellPreloads();
+  return html.replace(/<link rel="modulepreload"[^>]*>/g, (tag) => {
+    const href = tag.match(/href="([^"]+)"/);
+    return href && keep.has(href[1]) ? tag : '';
+  });
+}
+
 function writeHtml(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/+$/, '');
   const outDir = path.join(DIST, cleanRoute);
@@ -175,7 +202,7 @@ function writeHtml(route, html) {
   // og:image attributes (set client-side via window.location.origin) to the
   // production SITE_URL. Without this, crawlers index localhost and Slack
   // unfurls 404.
-  let final = html;
+  let final = stripRuntimePreloads(html);
   if (SITE_URL) {
     // Strip the localhost origin AND any base prefix Vite injected during
     // canonical/og:image construction. We want absolute https URLs that
@@ -232,6 +259,9 @@ async function main() {
     // Sequential prerender (113 routes × ~3s/page) blew past the 10-minute
     // CI job timeout on commit d0ffa3a. With concurrency = 6 the whole
     // batch finishes in ~2 minutes, comfortably inside the budget.
+    // Read the shell's preload set now, while dist/index.html is still the
+    // untouched build output (the "/" route overwrites it below).
+    getShellPreloads();
     const CONCURRENCY = Number(process.env.PRERENDER_CONCURRENCY) || 6;
     const queue = routes.slice();
     let done = 0;
