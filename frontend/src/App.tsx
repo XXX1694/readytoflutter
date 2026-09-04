@@ -107,7 +107,11 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <LangProvider>
         <ErrorBoundary>
-          <BrowserRouter basename={import.meta.env.BASE_URL}>
+          {/* `v7_startTransition` wraps every navigation in React.startTransition,
+              so a tab whose chunk is still downloading keeps the current page
+              on screen until the new one can render — instead of dropping to
+              the full-page spinner for the length of the fetch. */}
+          <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true }}>
             <PageviewTracker />
             <Routes>
               {/* Standalone routes (no app shell) — must come BEFORE the

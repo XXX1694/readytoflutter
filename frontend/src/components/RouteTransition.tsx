@@ -5,19 +5,24 @@ import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useIsMobile } from '../lib/useMediaQuery';
 
 /**
- * Smooth route transitions + scroll handling.
+ * Route transitions + scroll handling.
  *
- * Three navigation tiers, each with a different animation:
+ * Three navigation tiers:
  *
- *   1. **Tab swap** (between bottom-nav roots: /, /study, /bookmarks,
- *      /knowledge, /settings/login) — instant fade. Native iOS/Android
- *      tab bars don't slide between tabs; trying to do so feels laggy
- *      especially with React.lazy chunk loads in between.
- *   2. **Push to detail** (e.g. / → /topic/foo) — short horizontal slide.
- *      The new page enters from the right.
- *   3. **Pop / back** — slide the new page in from the left.
+ *   1. **Tab swap** (between the nav roots: Today, Roadmap, Topics, Sources,
+ *      Progress, Me, Session…) — an instant swap, no animation at all. This
+ *      used to be a fade-out-then-fade-in on desktop (`mode="wait"`): the
+ *      old page dimmed for ~110 ms, then the new one faded up over ~180 ms,
+ *      and every click on the rail read as a 300 ms lag. Native tab bars
+ *      don't animate between tabs, and neither do we.
+ *   2. **Push to detail** (e.g. / → /topic/foo) — on phones a short
+ *      horizontal slide of the incoming page, fully opaque, from the right;
+ *      on desktop a 100 ms fade-in of the incoming page only.
+ *   3. **Pop / back** — the same slide from the left.
  *
- * Desktop keeps a single subtle fade for everything.
+ * The outgoing page never animates: with `popLayout` it is dropped from
+ * flow at once, so the incoming page is laid out and interactive on the
+ * first frame.
  *
  * Scroll: a new page starts at the top; a page reached with Back (or
  * Forward) comes back at the offset it was left at, the way a native stack
@@ -41,41 +46,35 @@ const scrollMemory = new Map<string, number>();
  *  Cached data paints in one or two; a fresh lazy chunk needs a few more. */
 const RESTORE_FRAMES = 30;
 
-const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const EASE_IOS: [number, number, number, number] = [0.32, 0.72, 0, 1];
-const SLIDE = { duration: 0.22, ease: EASE_IOS };
-const FADE = { duration: 0.12, ease: 'easeOut' as const };
+const SLIDE = { duration: 0.18, ease: EASE_IOS };
+const FADE_IN = { duration: 0.1, ease: 'easeOut' as const };
+const NONE = { duration: 0 };
 
-// The page variants take the navigation kind as `custom`. AnimatePresence
-// forwards its own `custom` to the *exiting* child, so the page on its way
-// out moves with the navigation that removed it — a page popped by Back
-// slides right, the same page pushed away slides left — instead of replaying
-// whichever direction it happened to arrive by.
+const isStep = (kind: NavKind): boolean => kind === 'push' || kind === 'pop';
+
+// The page variants take the navigation kind as `custom`. Only a push or a
+// pop animates, and only the incoming page; a tab swap is an instant cut.
 const DESKTOP: Variants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.18, ease: EASE_OUT } },
-  // `wait` holds the new page back until this finishes, so the exit is kept
-  // to a blink — every millisecond here is felt as latency on a click.
-  exit: { opacity: 0, y: -4, transition: { duration: 0.08, ease: 'easeIn' } },
+  initial: (kind: NavKind) => (isStep(kind) ? { opacity: 0 } : { opacity: 1 }),
+  animate: (kind: NavKind) => ({ opacity: 1, transition: isStep(kind) ? FADE_IN : NONE }),
+  exit: { opacity: 0, transition: NONE },
 };
 
-// Mobile push/pop get a *light* slide (16% offset, not 100%) so the GPU only
-// repaints a strip, not the whole screen, and the motion finishes before
-// lazy chunks would otherwise feel sluggish.
+// Mobile push/pop get a *light* slide (12% offset, not 100%) so the GPU only
+// repaints a strip, not the whole screen. The incoming page is opaque from
+// the first frame — an opacity ramp on top of the slide read as sluggish.
 const MOBILE: Variants = {
   initial: (kind: NavKind) =>
-    kind === 'pop' ? { x: '-16%', opacity: 0.4 }
-      : kind === 'push' ? { x: '16%', opacity: 0.4 }
-        : { opacity: 0 },
+    kind === 'pop' ? { x: '-12%' }
+      : kind === 'push' ? { x: '12%' }
+        : { x: 0, opacity: 1 },
   animate: (kind: NavKind) => ({
     x: 0,
     opacity: 1,
-    transition: kind === 'tab' ? FADE : SLIDE,
+    transition: isStep(kind) ? SLIDE : NONE,
   }),
-  exit: (kind: NavKind) =>
-    kind === 'pop' ? { x: '16%', opacity: 0.4, transition: SLIDE }
-      : kind === 'push' ? { x: '-16%', opacity: 0.4, transition: SLIDE }
-        : { opacity: 0, transition: FADE },
+  exit: { opacity: 0, transition: NONE },
 };
 
 export interface RouteTransitionProps {
@@ -125,10 +124,8 @@ export default function RouteTransition({ children }: RouteTransitionProps) {
 
   // On a page change: a fresh page starts at the top; an entry reached with
   // Back/Forward returns to where it was left. The incoming page is found by
-  // its data-route marker, because with `mode="wait"` on desktop it mounts
-  // only after the outgoing one has finished leaving. Layout effect so the
-  // mobile case (mounted synchronously) never paints a frame at the wrong
-  // offset.
+  // its data-route marker. Layout effect so the page never paints a frame at
+  // the wrong offset.
   const lastPath = useRef(location.pathname);
   useLayoutEffect(() => {
     if (lastPath.current === location.pathname) return;
@@ -169,12 +166,10 @@ export default function RouteTransition({ children }: RouteTransitionProps) {
     );
   }
 
-  // Tab swaps and slides run on `popLayout` so the incoming page never waits
-  // for the outgoing one — that is the path every BottomNav tap takes.
-  const mode = isMobile ? 'popLayout' : 'wait';
-
+  // `popLayout` takes the outgoing page out of flow at once, so the incoming
+  // page is laid out on the first frame and never waits for an exit.
   return (
-    <AnimatePresence mode={mode} initial={false} custom={navKind}>
+    <AnimatePresence mode="popLayout" initial={false} custom={navKind}>
       <motion.div
         key={location.pathname}
         data-route={location.pathname}
@@ -186,7 +181,7 @@ export default function RouteTransition({ children }: RouteTransitionProps) {
         className="h-full"
         // GPU hint — tells the browser to allocate a layer so the transform
         // animation runs on the compositor, not the main thread.
-        style={{ willChange: isMobile && navKind !== 'tab' ? 'transform, opacity' : 'opacity' }}
+        style={{ willChange: isMobile && isStep(navKind) ? 'transform' : undefined }}
       >
         {children}
       </motion.div>

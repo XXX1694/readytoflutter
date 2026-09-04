@@ -8,6 +8,7 @@ import { ProgressBar } from '../ui/ProgressBar';
 import { cn } from '../lib/cn';
 import { filterTopicsByPlatform } from '../lib/platform';
 import { RAIL_ROUTES, routeLabel } from '../lib/routes';
+import { prefetch } from '../lib/prefetch';
 import { StackRows } from './StackSwitcher';
 import { useCurrentStack } from '../lib/useStack';
 
@@ -52,7 +53,16 @@ export default function Sidebar() {
 
       <nav className="py-1" aria-label={t.cmdNavigation}>
         {RAIL_ROUTES.map((route) => (
-          <NavLink key={route.path} to={route.path} end={route.end} className={({ isActive }) => navRowClass(isActive)}>
+          <NavLink
+            key={route.path}
+            to={route.path}
+            end={route.end}
+            className={({ isActive }) => navRowClass(isActive)}
+            // The chunk starts downloading on hover / focus, ahead of the
+            // click — the same head start the tab bar takes on pointerdown.
+            onPointerEnter={() => prefetch(route.path)}
+            onFocus={() => prefetch(route.path)}
+          >
             {({ isActive }) => (
               <>
                 <route.icon className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-brand' : 'text-muted')} strokeWidth={isActive ? 2.25 : 1.9} aria-hidden />
