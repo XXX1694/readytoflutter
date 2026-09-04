@@ -48,6 +48,10 @@ export function prefetchIdle(): void {
 
   const run = () => {
     new Set([...TAB_ROUTES, ...RAIL_ROUTES]).forEach((route) => prefetch(route.path));
+    // The topic page is where every catalogue row and Today's "next" card
+    // lead; it is not a registered destination (the path carries a slug),
+    // so it is warmed by hand. Vite pulls QuestionCard in with it.
+    void import('../pages/TopicPage').catch(() => {});
   };
   const w = window as Window & { requestIdleCallback?: (cb: () => void) => void };
   if (w.requestIdleCallback) {

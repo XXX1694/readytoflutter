@@ -35,7 +35,15 @@ const apiBaseUrl: string =
   import.meta.env.VITE_API_BASE_URL
   || (onGithubPages && PROD_API_FALLBACK ? PROD_API_FALLBACK : '/api');
 
-if (typeof window !== 'undefined' && onGithubPages && !import.meta.env.VITE_API_BASE_URL && !PROD_API_FALLBACK) {
+// A Pages build with no backend wired up at all. Every remote call would go
+// to `<site>/api/...`, wait for GitHub's 404 (~600 ms on a phone) and only
+// then fall back to the static data — on every uncached query, so opening a
+// topic paid that wait after its chunk had already arrived. tryRemote skips
+// the round trip entirely in this build; the app is anonymous-only anyway.
+const noBackend: boolean = typeof window !== 'undefined'
+  && onGithubPages && !import.meta.env.VITE_API_BASE_URL && !PROD_API_FALLBACK;
+
+if (noBackend) {
   // One-time soft warning so a Pages deploy without either env doesn't
   // silently swallow auth — visible in the browser console for whoever's
   // wiring up a new fork.
@@ -370,6 +378,7 @@ const tryRemote = async <T>(
   fallbackFn: () => Promise<T>,
   opts: TryRemoteOptions = {},
 ): Promise<T> => {
+  if (noBackend) return fallbackFn();
   try {
     return await fn();
   } catch {
