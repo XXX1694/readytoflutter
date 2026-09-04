@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { TAB_ROOTS } from '../lib/routes';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import { useIsMobile } from '../lib/useMediaQuery';
-import { cn } from '../lib/cn';
 
 /**
  * Route transitions + scroll handling — in CSS, with no animation library
@@ -21,10 +20,15 @@ import { cn } from '../lib/cn';
  *      on desktop a 100 ms fade-in of the incoming page only.
  *   3. **Pop / back** — the same slide from the left.
  *
- * The outgoing page never animates: keying the wrapper on the pathname
- * unmounts it at once, so the incoming page is laid out and interactive on
- * the first frame. The keyframes live in tailwind.config.js; index.css
- * collapses them under `prefers-reduced-motion`, so nothing here has to.
+ * The outgoing page never animates, and the wrapper is deliberately NOT
+ * keyed on the pathname. A keyed wrapper remounts the route's Suspense
+ * boundary on every navigation, and a freshly mounted boundary shows its
+ * fallback even inside React Router's startTransition — so the first visit
+ * to any tab flashed the full-page spinner while its chunk downloaded.
+ * With one stable wrapper the boundary is updated in place and React holds
+ * the current page until the next one can render. The enter animation runs
+ * through the Web Animations API on that same element, and is skipped
+ * under `prefers-reduced-motion`.
  *
  * Scroll: a new page starts at the top; a page reached with Back (or
  * Forward) comes back at the offset it was left at, the way a native stack
@@ -48,11 +52,21 @@ const scrollMemory = new Map<string, number>();
  *  Cached data paints in one or two; a fresh lazy chunk needs a few more. */
 const RESTORE_FRAMES = 30;
 
-/** The incoming page's animation class per navigation kind and device. */
-const enterClass = (kind: NavKind, isMobile: boolean): string | undefined => {
-  if (kind === 'same' || kind === 'tab') return undefined;
-  if (!isMobile) return 'animate-page-fade';
-  return kind === 'pop' ? 'animate-page-in-left' : 'animate-page-in-right';
+const EASE_IOS = 'cubic-bezier(0.32, 0.72, 0, 1)';
+
+/**
+ * The incoming page's enter animation. A light 12% slide on phones so the
+ * GPU repaints a strip, not the screen; a bare 100 ms fade on desktop; nothing
+ * on a tab swap.
+ */
+const enterAnimation = (el: HTMLElement, kind: NavKind, isMobile: boolean): Animation | null => {
+  if (kind === 'same' || kind === 'tab') return null;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+  if (!isMobile) {
+    return el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 100, easing: 'ease-out' });
+  }
+  const from = kind === 'pop' ? 'translateX(-12%)' : 'translateX(12%)';
+  return el.animate([{ transform: from }, { transform: 'translateX(0)' }], { duration: 180, easing: EASE_IOS });
 };
 
 export interface RouteTransitionProps {
@@ -134,14 +148,22 @@ export default function RouteTransition({ children }: RouteTransitionProps) {
     return () => cancelAnimationFrame(frame);
   }, [location.pathname, location.key, navType]);
 
-  // Keyed on the pathname: a new page is a new element, so its enter
-  // animation plays from the first frame and the old one is simply gone.
+  // Play the enter animation once per page, on the commit that brought the
+  // page in — a layout effect, so the first painted frame is already the
+  // animation's first frame.
+  const wrapper = useRef<HTMLDivElement>(null);
+  const animatedFor = useRef(location.pathname);
+  useLayoutEffect(() => {
+    if (animatedFor.current === location.pathname) return;
+    animatedFor.current = location.pathname;
+    const el = wrapper.current;
+    if (!el) return;
+    const anim = enterAnimation(el, navKind, isMobile);
+    return () => anim?.cancel();
+  }, [location.pathname, navKind, isMobile]);
+
   return (
-    <div
-      key={location.pathname}
-      data-route={location.pathname}
-      className={cn('h-full', enterClass(navKind, isMobile))}
-    >
+    <div ref={wrapper} data-route={location.pathname} className="h-full">
       {children}
     </div>
   );
