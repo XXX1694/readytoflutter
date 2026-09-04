@@ -123,6 +123,10 @@ export default function TopicPage() {
   // null until j/k or a deep link places it — before that the first row has
   // nothing to mark, and a ring on it read as a stray border.
   const [cursor, setCursor] = useState<number | null>(null);
+  // The ring that marks the cursor shows only while the keyboard is driving,
+  // the way :focus-visible does: a deep link places the cursor without it,
+  // and a click on any row takes it away again.
+  const [keyboardNav, setKeyboardNav] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
   const refs = useRef(new Map<number, HTMLElement>());
 
@@ -211,6 +215,7 @@ export default function TopicPage() {
     if (!filtered.length) return;
     const next = Math.min((activeCursor ?? -1) + 1, filtered.length - 1);
     setCursor(next);
+    setKeyboardNav(true);
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
 
@@ -219,6 +224,7 @@ export default function TopicPage() {
     if (!filtered.length) return;
     const next = Math.max((activeCursor ?? 0) - 1, 0);
     setCursor(next);
+    setKeyboardNav(true);
     scrollIntoView(filtered[next].id);
   }, { preventDefault: true });
 
@@ -335,8 +341,11 @@ export default function TopicPage() {
               question={q}
               index={questions.indexOf(q)}
               expanded={openId === q.id}
-              onToggleExpand={() => setOpenId((prev) => (prev === q.id ? null : q.id))}
-              focused={activeCursor === i}
+              onToggleExpand={() => {
+                setKeyboardNav(false);
+                setOpenId((prev) => (prev === q.id ? null : q.id));
+              }}
+              focused={keyboardNav && activeCursor === i}
               topicSlug={slug}
             />
           ))}
