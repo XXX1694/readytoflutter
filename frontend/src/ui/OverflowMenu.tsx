@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { MoreHorizontal, type LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { OverflowTrigger } from './OverflowTrigger';
 
 export interface OverflowMenuItem {
   label: string;
@@ -16,27 +17,21 @@ export interface OverflowMenuProps {
   items: OverflowMenuItem[];
   align?: 'start' | 'end';
   className?: string;
+  /** Open on mount — for a lazily loaded menu whose stand-in was already tapped. */
+  defaultOpen?: boolean;
 }
 
 /**
  * The "⋯" that holds a screen's secondary actions so the header can carry
- * one primary button. Radix handles focus, typeahead and Escape.
+ * one primary button. Radix handles focus, typeahead and Escape. This is
+ * the one ui primitive that pulls Radix in, so it is not re-exported from
+ * ui/index; pages import it directly, and TopicPage loads it lazily.
  */
-export function OverflowMenu({ label, items, align = 'end', className }: OverflowMenuProps) {
+export function OverflowMenu({ label, items, align = 'end', className, defaultOpen = false }: OverflowMenuProps) {
   return (
-    <DropdownMenu.Root modal={false}>
+    <DropdownMenu.Root modal={false} defaultOpen={defaultOpen}>
       <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label={label}
-          title={label}
-          className={cn(
-            'inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rule/12 bg-paper-2 text-ink-2 transition-colors hover:border-rule/25 hover:text-ink',
-            className,
-          )}
-        >
-          <MoreHorizontal className="h-4 w-4" aria-hidden />
-        </button>
+        <OverflowTrigger label={label} className={className} />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

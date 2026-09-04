@@ -23,6 +23,8 @@ export interface ListRowProps {
   trailing?: ReactNode;
   to?: string;
   onClick?: () => void;
+  /** Fires on pointerdown, ahead of the click — the place to start a prefetch. */
+  onPointerDown?: () => void;
   /** Draw the chevron; on by default when the row navigates. */
   chevron?: boolean;
   className?: string;
@@ -35,7 +37,7 @@ export interface ListRowProps {
  * somewhere. Fifty of these read as a table of contents; fifty cards read as
  * a monitoring console.
  */
-export function ListRow({ leading, title, meta, trailing, to, onClick, chevron, className, ...aria }: ListRowProps) {
+export function ListRow({ leading, title, meta, trailing, to, onClick, onPointerDown, chevron, className, ...aria }: ListRowProps) {
   const interactive = Boolean(to || onClick);
   const showChevron = chevron ?? interactive;
   const inner = (
@@ -58,9 +60,9 @@ export function ListRow({ leading, title, meta, trailing, to, onClick, chevron, 
   return (
     <li>
       {to ? (
-        <Link to={to} className={rowClass} onClick={onClick} {...aria}>{inner}</Link>
+        <Link to={to} className={rowClass} onClick={onClick} onPointerDown={onPointerDown} {...aria}>{inner}</Link>
       ) : onClick ? (
-        <button type="button" className={rowClass} onClick={onClick} {...aria}>{inner}</button>
+        <button type="button" className={rowClass} onClick={onClick} onPointerDown={onPointerDown} {...aria}>{inner}</button>
       ) : (
         <div className={rowClass}>{inner}</div>
       )}

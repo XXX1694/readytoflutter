@@ -21,6 +21,10 @@ import type { Level, Question, Topic } from '../types/domain';
 const LEVELS: Level[] = ['junior', 'mid', 'senior'];
 const NO_QUESTIONS: Question[] = [];
 
+// A finger on a row starts the topic page's chunk downloading ~100 ms before
+// the click lands. Vite dedupes repeated imports, so this is free to spam.
+const warmTopicPage = (): void => { void import('./TopicPage'); };
+
 /** Cards waiting in the SRS queue, per topic. Module scope keeps the clock read out of render. */
 function countDueByTopic(questions: Question[], now: number = Date.now()): Map<number, number> {
   const map = new Map<number, number>();
@@ -147,6 +151,7 @@ export default function TopicsPage() {
                     <ListRow
                       key={topic.id}
                       to={`/topic/${topic.slug}`}
+                      onPointerDown={warmTopicPage}
                       leading={<TopicGlyph topic={topic} size="sm" />}
                       title={topicTitle(topic)}
                       meta={

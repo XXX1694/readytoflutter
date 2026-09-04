@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Target, Printer, FileText, MessagesSquare } from 'lucide-react';
@@ -15,7 +15,8 @@ import { categoryLabel } from '../i18n/categories';
 import {
   PageShell, PageHeader, Button, Chip, ChipGroup, Meter, EmptyState, Skeleton,
 } from '../ui/index';
-import { OverflowMenu } from '../ui/OverflowMenu';
+import { OverflowTrigger } from '../ui/OverflowTrigger';
+import type { OverflowMenuProps } from '../ui/OverflowMenu';
 import { PLATFORMS, topicPlatform } from '../lib/platform';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 import { track } from '../lib/analytics';
@@ -36,6 +37,34 @@ type Column = 'all' | 'not_started' | 'completed';
  * counts as a new open, which is what it is.
  */
 let lastOpened: string | null = null;
+
+// The "⋯" menu is the only thing on this page that needs Radix (30 kB
+// gzipped). The chunk is requested on the first hover, focus or tap of the
+// button; until then an identical stand-in holds its place, and a tap that
+// arrives before the chunk opens the menu as soon as it lands.
+const OverflowMenuLazy = lazy(() => import('../ui/OverflowMenu').then((m) => ({ default: m.OverflowMenu })));
+
+function TopicOverflow(props: OverflowMenuProps) {
+  const [wanted, setWanted] = useState(false);
+  const [openOnLoad, setOpenOnLoad] = useState(false);
+  const warm = () => setWanted(true);
+  const standIn = (
+    <OverflowTrigger
+      label={props.label}
+      className={props.className}
+      aria-haspopup="menu"
+      onPointerEnter={warm}
+      onFocus={warm}
+      onClick={() => { setWanted(true); setOpenOnLoad(true); }}
+    />
+  );
+  if (!wanted) return standIn;
+  return (
+    <Suspense fallback={standIn}>
+      <OverflowMenuLazy {...props} defaultOpen={openOnLoad} />
+    </Suspense>
+  );
+}
 
 export default function TopicPage() {
   const { slug } = useParams();
@@ -233,10 +262,8 @@ export default function TopicPage() {
             <Button variant="codex" size="md" onClick={startSession} className="hidden sm:inline-flex">
               {t.nav.startSession}
             </Button>
-            <OverflowMenu
+            <TopicOverflow
               label={c.moreActions}
-              // Alone on its row below sm (the primary is the sticky shelf),
-              // so it sits at the right edge instead of floating mid-header.
               className="ml-auto"
               items={[
                 { label: t.nav.timed, icon: Target, onSelect: () => navigate(`/mock?topic=${topic.slug}`) },
