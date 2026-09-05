@@ -223,7 +223,8 @@ function init() {
     CREATE TABLE IF NOT EXISTS srs_cards (
       user_id INTEGER NOT NULL,
       question_id INTEGER NOT NULL,
-      ease REAL NOT NULL,
+      stability REAL NOT NULL,
+      difficulty REAL NOT NULL,
       interval INTEGER NOT NULL,
       reps INTEGER NOT NULL,
       due_at INTEGER NOT NULL,
@@ -255,6 +256,7 @@ function init() {
   `);
 
   migrateProgressToUserScoped();
+  migrateSrsCardsToFsrs();
   migrateUsersBilling();
   migrateUsersRecovery();
   migrateUsersTokenEpoch();
@@ -350,6 +352,56 @@ function runOnce(name, fn) {
       .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
       .run(name, new Date().toISOString());
   })();
+}
+
+// The scheduler moved from SM-2 to FSRS-6, so a card is described by stability
+// and difficulty rather than a single "ease". Idempotent, and a no-op on a
+// database whose srs_cards was created after the switch.
+//
+// `interval` carries straight over to stability — under both schedulers it is
+// the number of days until the card is asked again — so nobody's next review
+// moves. Ease becomes a monotone difficulty anchored on a first "good", the
+// same mapping `fromSm2` applies in the browser; the two constants are FSRS's
+// initial stability and difficulty for that grade.
+function migrateSrsCardsToFsrs() {
+  const cols = sqlite.prepare('PRAGMA table_info(srs_cards)').all().map((c) => c.name);
+  // No table yet on a fresh database — init() above already made the new shape.
+  if (cols.length === 0 || cols.includes('stability')) return;
+
+  // A rebuild-and-rename trips the FK on user_id while the old table is being
+  // dropped, and an earlier migration may already have switched enforcement on
+  // for this connection. Suspend it around the swap and put it back exactly as
+  // it was, rather than leaving the setting changed as a side effect.
+  const fkWasOn = sqlite.pragma('foreign_keys', { simple: true });
+  sqlite.pragma('foreign_keys = OFF');
+  try {
+    sqlite.exec(`
+      CREATE TABLE srs_cards_fsrs (
+        user_id INTEGER NOT NULL,
+        question_id INTEGER NOT NULL,
+        stability REAL NOT NULL,
+        difficulty REAL NOT NULL,
+        interval INTEGER NOT NULL,
+        reps INTEGER NOT NULL,
+        due_at INTEGER NOT NULL,
+        last_at INTEGER NOT NULL,
+        PRIMARY KEY (user_id, question_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      INSERT INTO srs_cards_fsrs
+        (user_id, question_id, stability, difficulty, interval, reps, due_at, last_at)
+        SELECT user_id, question_id,
+               CASE WHEN interval > 0 THEN interval ELSE 2.3065 END,
+               min(max(2.118104 + (2.5 - ease) * 4.0, 1.0), 10.0),
+               interval, reps, due_at, last_at
+        FROM srs_cards;
+      DROP TABLE srs_cards;
+      ALTER TABLE srs_cards_fsrs RENAME TO srs_cards;
+    `);
+  } finally {
+    sqlite.pragma(`foreign_keys = ${fkWasOn ? 'ON' : 'OFF'}`);
+  }
+  console.log('🗓  Migrated srs_cards from SM-2 ease to FSRS stability/difficulty');
 }
 
 // Idempotent: progress used `question_id` as PK; with auth each user gets a
@@ -725,7 +777,7 @@ function listSrsCards(userId) {
   const uid = Number(userId);
   if (!uid) throw new Error('listSrsCards requires a real user id');
   return sqlite
-    .prepare('SELECT question_id, ease, interval, reps, due_at, last_at FROM srs_cards WHERE user_id = ?')
+    .prepare('SELECT question_id, stability, difficulty, interval, reps, due_at, last_at FROM srs_cards WHERE user_id = ?')
     .all(uid);
 }
 
@@ -749,10 +801,13 @@ function bulkSetSrsCards(userId, items) {
   let skipped = 0;
 
   const upsert = sqlite.prepare(`
-    INSERT INTO srs_cards (user_id, question_id, ease, interval, reps, due_at, last_at)
-    VALUES (@user_id, @question_id, @ease, @interval, @reps, @due_at, @last_at)
+    INSERT INTO srs_cards
+      (user_id, question_id, stability, difficulty, interval, reps, due_at, last_at)
+    VALUES
+      (@user_id, @question_id, @stability, @difficulty, @interval, @reps, @due_at, @last_at)
     ON CONFLICT(user_id, question_id) DO UPDATE SET
-      ease = excluded.ease,
+      stability = excluded.stability,
+      difficulty = excluded.difficulty,
       interval = excluded.interval,
       reps = excluded.reps,
       due_at = excluded.due_at,
@@ -771,7 +826,8 @@ function bulkSetSrsCards(userId, items) {
       upsert.run({
         user_id: uid,
         question_id: qid,
-        ease: Number(it.ease),
+        stability: Number(it.stability),
+        difficulty: Number(it.difficulty),
         interval: Number(it.interval),
         reps: Number(it.reps),
         due_at: Number(it.dueAt ?? it.due_at) || 0,

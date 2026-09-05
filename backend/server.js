@@ -251,7 +251,8 @@ const inRange = (value, min, max) => {
 app.get('/api/srs', auth.requireAuth, readLimiter, (req, res) => {
   const cards = db.listSrsCards(req.user.id).map((r) => ({
     questionId: r.question_id,
-    ease: r.ease,
+    stability: r.stability,
+    difficulty: r.difficulty,
     interval: r.interval,
     reps: r.reps,
     dueAt: r.due_at,
@@ -272,9 +273,11 @@ app.post('/api/srs/bulk', auth.requireAuth, writeLimiter, (req, res) => {
   }
   const now = Date.now();
   for (const card of cards) {
-    // 1.3 is SM-2's ease floor and nothing legitimate climbs past 5; the
-    // window is wide on purpose, it only has to exclude a broken client.
-    if (!inRange(card?.ease, 1, 10)
+    // Stability is a number of days and difficulty is FSRS's 1..10 scale.
+    // Both windows are wide on purpose: they only have to exclude a broken
+    // client, not second-guess the scheduler.
+    if (!inRange(card?.stability, 0, LIMITS.SRS_MAX_INTERVAL_DAYS)
+      || !inRange(card?.difficulty, 0, 10)
       || !inRange(card?.interval, 0, LIMITS.SRS_MAX_INTERVAL_DAYS)
       || !inRange(card?.reps, 0, 100_000)
       || !inRange(card?.lastAt ?? card?.last_at, 0, Number.MAX_SAFE_INTEGER)

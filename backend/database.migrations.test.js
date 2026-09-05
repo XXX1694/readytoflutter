@@ -38,6 +38,23 @@ const dbFile = path.join(tmpDir, 'interview.db');
     );
     INSERT INTO progress (question_id, status, notes, updated_at)
       VALUES (1, 'completed', 'kept', '2025-01-01T00:00:00.000Z');
+
+    -- And an srs_cards from the SM-2 scheduler: one "ease" column, no memory
+    -- state. init() has to rebuild it for FSRS without moving a review date.
+    CREATE TABLE srs_cards (
+      user_id INTEGER NOT NULL,
+      question_id INTEGER NOT NULL,
+      ease REAL NOT NULL,
+      interval INTEGER NOT NULL,
+      reps INTEGER NOT NULL,
+      due_at INTEGER NOT NULL,
+      last_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, question_id)
+    );
+    INSERT INTO srs_cards (user_id, question_id, ease, interval, reps, due_at, last_at) VALUES
+      (7, 1, 2.5, 45, 6, 1800000000000, 1790000000000),
+      (7, 2, 1.3, 1, 0, 1780000000000, 1779000000000),
+      (7, 3, 2.5, 0, 1, 0, 1779500000000);
   `);
   legacy.close();
 }
@@ -134,4 +151,45 @@ test('a bulk import skips a question that has left the catalogue instead of fail
 test.after(() => {
   db.close();
   fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('an SM-2 srs_cards is rebuilt for FSRS without moving a single review date', () => {
+  // The scheduler switch must be invisible to anyone mid-schedule. `interval`
+  // is the same quantity under both — days until the card is asked again — so
+  // it carries across as stability and due_at is left exactly where it was.
+  db.init();
+  const r = reader();
+  const cols = r.prepare('PRAGMA table_info(srs_cards)').all().map((c) => c.name);
+  assert.ok(cols.includes('stability'), 'srs_cards has FSRS memory state');
+  assert.ok(cols.includes('difficulty'));
+  assert.ok(!cols.includes('ease'), 'the SM-2 column is gone');
+
+  const rows = r.prepare('SELECT * FROM srs_cards WHERE user_id = 7 ORDER BY question_id').all();
+  assert.equal(rows.length, 3, 'every card survived the rebuild');
+
+  const [mature, struggling, noInterval] = rows;
+  assert.equal(mature.stability, 45, 'the earned interval becomes stability');
+  assert.equal(mature.interval, 45);
+  assert.equal(mature.due_at, 1800000000000, 'the next review did not move');
+  assert.equal(mature.reps, 6);
+
+  // Ease maps monotonically onto difficulty: the 1.3 card is the harder one.
+  assert.ok(struggling.difficulty > mature.difficulty);
+  for (const row of rows) {
+    assert.ok(row.difficulty >= 1 && row.difficulty <= 10, `difficulty in range: ${row.difficulty}`);
+    assert.ok(row.stability > 0, `stability is usable: ${row.stability}`);
+  }
+  // A rated card with no interval still needs a stability to schedule from.
+  assert.ok(noInterval.stability > 0);
+  r.close();
+});
+
+test('the FSRS rebuild is idempotent across reboots', () => {
+  db.init();
+  db.init();
+  const r = reader();
+  const rows = r.prepare('SELECT * FROM srs_cards WHERE user_id = 7').all();
+  assert.equal(rows.length, 3);
+  assert.equal(rows.find((x) => x.question_id === 1).stability, 45);
+  r.close();
 });

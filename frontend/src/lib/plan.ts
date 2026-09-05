@@ -30,9 +30,9 @@ interface TopicRollup {
   topic: Topic;
   total: number;
   completed: number;
-  easeSum: number;
-  easeCount: number;
-  gapQuestions: Array<{ q: Question; ease: number; reps: number }>;
+  difficultySum: number;
+  difficultyCount: number;
+  gapQuestions: Array<{ q: Question; difficulty: number; reps: number }>;
 }
 
 /**
@@ -72,7 +72,7 @@ export function buildPlan(questions: Question[], topics: Topic[], now: number = 
   const perTopic = new Map<number, TopicRollup>();
   for (const topic of topics) {
     perTopic.set(topic.id, {
-      topic, total: 0, completed: 0, easeSum: 0, easeCount: 0, gapQuestions: [],
+      topic, total: 0, completed: 0, difficultySum: 0, difficultyCount: 0, gapQuestions: [],
     });
   }
   for (const q of questions) {
@@ -82,20 +82,22 @@ export function buildPlan(questions: Question[], topics: Topic[], now: number = 
     if (q.status === 'completed') row.completed += 1;
     const s = stateById.get(q.id)!;
     if (s.reps > 0) {
-      row.easeSum += s.ease;
-      row.easeCount += 1;
+      row.difficultySum += s.difficulty;
+      row.difficultyCount += 1;
     }
     // Question is a "gap" if it's not completed and isn't already in the due list
     if (q.status !== 'completed') {
-      row.gapQuestions.push({ q, ease: s.ease, reps: s.reps });
+      row.gapQuestions.push({ q, difficulty: s.difficulty, reps: s.reps });
     }
   }
 
   const masteryFor = (row: TopicRollup): number => {
     if (row.total === 0) return 100;
     const compScore = (row.completed / row.total) * 100;
-    if (row.easeCount === 0) return Math.round(compScore);
-    const easeScore = Math.max(0, Math.min(100, ((row.easeSum / row.easeCount - 1.3) / 1.7) * 100));
+    if (row.difficultyCount === 0) return Math.round(compScore);
+    // FSRS difficulty runs 1 (easy) to 10 (hard); mastery wants the opposite.
+    const meanDifficulty = row.difficultySum / row.difficultyCount;
+    const easeScore = Math.max(0, Math.min(100, ((10 - meanDifficulty) / 9) * 100));
     return Math.round(compScore * 0.6 + easeScore * 0.4);
   };
 
@@ -109,11 +111,11 @@ export function buildPlan(questions: Question[], topics: Topic[], now: number = 
   if (weakRow) {
     weakChosen = weakRow.gapQuestions
       .filter((g) => !dueSet.has(g.q.id))
-      // Prefer cards with low ease (=struggling); fall back to fresh
+      // Prefer the cards this person struggles with; fall back to fresh
       .sort((a, b) => {
         if (a.reps === 0 && b.reps > 0) return -1;
         if (b.reps === 0 && a.reps > 0) return 1;
-        return a.ease - b.ease;
+        return b.difficulty - a.difficulty;
       })
       .slice(0, WEAK_CAP)
       .map((g) => g.q);
@@ -136,7 +138,7 @@ export function buildPlan(questions: Question[], topics: Topic[], now: number = 
     weakMastery: weakRow ? Math.round((weakRow.completed / weakRow.total) * 100) : null,
     // "Weakest" is a claim about practice. A topic nobody has opened is not
     // weak, it is untouched — and saying "0%" about it reads as a failure.
-    weakUntouched: weakRow ? weakRow.completed === 0 && weakRow.easeCount === 0 : false,
+    weakUntouched: weakRow ? weakRow.completed === 0 && weakRow.difficultyCount === 0 : false,
   };
 }
 

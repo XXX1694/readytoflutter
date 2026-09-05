@@ -378,7 +378,7 @@ test('getStats counts only the requested user progress after a bulk import', () 
 // starts asking them things they learned months ago.
 
 const readCard = (userId, questionId) => reader
-  .prepare('SELECT user_id, question_id, ease, interval, reps, due_at, last_at FROM srs_cards WHERE user_id = ? AND question_id = ?')
+  .prepare('SELECT user_id, question_id, stability, difficulty, interval, reps, due_at, last_at FROM srs_cards WHERE user_id = ? AND question_id = ?')
   .get(userId, questionId);
 
 const OLD_MS = Date.UTC(2026, 0, 1);
@@ -386,19 +386,23 @@ const NEW_MS = Date.UTC(2026, 11, 1);
 
 // A card as lib/srs.ts stores it, with the fields a test cares about overridden.
 const card = (questionId, lastAt, extra = {}) => ({
-  questionId, ease: 2.5, interval: 6, reps: 3, dueAt: lastAt + 6 * 86400_000, lastAt, ...extra,
+  questionId, stability: 6, difficulty: 5, interval: 6, reps: 3,
+  dueAt: lastAt + 6 * 86400_000, lastAt, ...extra,
 });
 
 test('bulkSetSrsCards inserts a card when the user has no server-side schedule yet', () => {
   const user = newUser();
 
-  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], MID_MS, { ease: 2.36, interval: 4, reps: 2 })]);
+  const result = db.bulkSetSrsCards(user.id, [
+    card(QIDS[0], MID_MS, { stability: 4.25, difficulty: 3.5, interval: 4, reps: 2 }),
+  ]);
 
   assert.deepEqual(result, { imported: 1, skipped: 0 });
   assert.deepEqual(readCard(user.id, QIDS[0]), {
     user_id: user.id,
     question_id: QIDS[0],
-    ease: 2.36,
+    stability: 4.25,
+    difficulty: 3.5,
     interval: 4,
     reps: 2,
     due_at: MID_MS + 6 * 86400_000,
@@ -408,13 +412,16 @@ test('bulkSetSrsCards inserts a card when the user has no server-side schedule y
 
 test('bulkSetSrsCards applies a client card rated later than the server copy', () => {
   const user = newUser();
-  db.bulkSetSrsCards(user.id, [card(QIDS[0], OLD_MS, { ease: 2.5, interval: 1, reps: 1 })]);
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], OLD_MS, { stability: 1, interval: 1, reps: 1 })]);
 
-  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { ease: 2.8, interval: 15, reps: 4 })]);
+  const result = db.bulkSetSrsCards(user.id, [
+    card(QIDS[0], NEW_MS, { stability: 15.5, difficulty: 2.2, interval: 15, reps: 4 }),
+  ]);
 
   assert.deepEqual(result, { imported: 1, skipped: 0 });
   const row = readCard(user.id, QIDS[0]);
-  assert.equal(row.ease, 2.8);
+  assert.equal(row.stability, 15.5);
+  assert.equal(row.difficulty, 2.2);
   assert.equal(row.interval, 15);
   assert.equal(row.reps, 4);
   assert.equal(row.last_at, NEW_MS);
@@ -425,9 +432,9 @@ test('bulkSetSrsCards refuses a stale client card — a newer schedule is never 
   // for a month pushes a card the desktop has since rated up to a 30-day
   // interval. Invert the comparison and the desktop's schedule resets.
   const user = newUser();
-  db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { ease: 2.9, interval: 30, reps: 6 })]);
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { stability: 30, interval: 30, reps: 6 })]);
 
-  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], OLD_MS, { ease: 2.5, interval: 1, reps: 1 })]);
+  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], OLD_MS, { stability: 1, interval: 1, reps: 1 })]);
 
   assert.deepEqual(result, { imported: 0, skipped: 1 });
   const row = readCard(user.id, QIDS[0]);
@@ -457,7 +464,7 @@ test('bulkSetSrsCards lets a rated server card beat a never-rated client card', 
   db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { interval: 21, reps: 5 })]);
 
   const result = db.bulkSetSrsCards(user.id, [
-    { questionId: QIDS[0], ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 },
+    { questionId: QIDS[0], stability: 0, difficulty: 0, interval: 0, reps: 0, dueAt: 0, lastAt: 0 },
   ]);
 
   assert.deepEqual(result, { imported: 0, skipped: 1 });
@@ -498,7 +505,7 @@ test('bulkSetSrsCards accepts both the camelCase and snake_case client spellings
   const user = newUser();
 
   const result = db.bulkSetSrsCards(user.id, [
-    { question_id: QIDS[0], ease: 2.5, interval: 6, reps: 3, due_at: 99, last_at: MID_MS },
+    { question_id: QIDS[0], stability: 6, difficulty: 5, interval: 6, reps: 3, due_at: 99, last_at: MID_MS },
   ]);
 
   assert.deepEqual(result, { imported: 1, skipped: 0 });

@@ -125,12 +125,14 @@ export interface ContactMessage {
   user_name?: string | null;
 }
 
-// SuperMemo SM-2 card state, persisted in localStorage by lib/srs.ts under
-// `rtf:srs:v1`. Field names match the legacy persisted shape so a TS
-// migration doesn't reset every existing user's review schedule.
+// FSRS-6 card state, persisted in localStorage by lib/srs.ts under
+// `rtf:srs:v1`. Cards written by the earlier SM-2 scheduler carry `ease`
+// instead of stability/difficulty and are migrated on read, so the key keeps
+// its name and nobody's schedule resets.
 export interface CardState {
-  ease: number;       // 1.3+ — SM-2 easiness factor
-  interval: number;   // days until next review
+  stability: number;  // days until recall decays to 90%; 0 = never rated
+  difficulty: number; // 1..10, how fast this card decays for this person
+  interval: number;   // days until next review, derived from stability
   reps: number;       // consecutive successful reps
   dueAt: number;      // ms epoch — when this card is next due
   lastAt: number;     // ms epoch of the last rating, or 0 for never

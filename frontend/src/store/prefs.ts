@@ -40,6 +40,13 @@ export interface PrefsState {
   recallMode: boolean;
   setRecallMode: (recallMode: boolean) => void;
   toggleRecallMode: () => void;
+
+  // The interview being prepared for, as a plain `YYYY-MM-DD` date, or null
+  // when none is set. It is what turns the roadmap from a catalogue of levels
+  // into a plan: `lib/readiness.ts` runs every card's forgetting curve to this
+  // day and reports what will have decayed by then.
+  targetDate: string | null;
+  setTargetDate: (targetDate: string | null) => void;
 }
 
 const initialTheme = (): Theme => {
@@ -101,7 +108,12 @@ interface PersistedPrefs {
   recallMode: boolean;
   platform: PlatformKey;
   roadmapTrack: RoadmapTrackKey | null;
+  targetDate: string | null;
 }
+
+/** Only a plain calendar date is storable; anything else clears the target. */
+const cleanDate = (value: string | null): string | null =>
+  (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null);
 
 export const usePrefs = create<PrefsState>()(
   persist(
@@ -144,6 +156,11 @@ export const usePrefs = create<PrefsState>()(
       recallMode: false,
       setRecallMode: (recallMode) => set({ recallMode }),
       toggleRecallMode: () => set((s) => ({ recallMode: !s.recallMode })),
+
+      // The date being prepared for. Cleaned on the way in so a stray value
+      // cannot reach the forecast, which parses it into a moment.
+      targetDate: null,
+      setTargetDate: (targetDate) => set({ targetDate: cleanDate(targetDate) }),
     }),
     {
       name: 'rtf:prefs:v1',
@@ -155,10 +172,14 @@ export const usePrefs = create<PrefsState>()(
         recallMode: s.recallMode,
         platform: s.platform,
         roadmapTrack: s.roadmapTrack,
+        targetDate: s.targetDate,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);
         if (state?.platform) applyStack(state.platform);
+        // A date persisted by an older build (or hand-edited) must not reach
+        // the forecast unparsed.
+        if (state) state.targetDate = cleanDate(state.targetDate);
       },
     },
   ),

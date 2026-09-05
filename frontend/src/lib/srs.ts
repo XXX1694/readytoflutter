@@ -1,12 +1,16 @@
 /**
- * Lightweight SuperMemo SM-2 spaced repetition.
+ * Spaced repetition, scheduled by FSRS-6 (`lib/fsrs.ts` holds the model).
  *
  * Per-question state is stored in localStorage under `rtf:srs:v1` as:
- *   { [questionId]: { ease, interval, reps, dueAt, lastAt } }
+ *   { [questionId]: { stability, difficulty, interval, reps, dueAt, lastAt } }
+ *
+ * Cards written by the previous SM-2 scheduler carry `ease` instead of the two
+ * memory fields and are migrated on read — see `migrate` below. The key keeps
+ * its name: it holds real users' schedules.
  *
  * Public API:
  *   getCardState(id)      — reads (or returns a fresh card state)
- *   rateCard(id, rating)  — applies SM-2 with rating in {again,hard,good,easy}
+ *   rateCard(id, rating)  — applies FSRS with rating in {again,hard,good,easy}
  *                           and returns the new state
  *   previewInterval(id, rating) — the interval rateCard would schedule, in days
  *   getReviewTimes()      — every card's last-rated timestamp, for the activity log
@@ -21,6 +25,8 @@
  *   getSyncedAt/setSyncedAt — the high-water mark that delta is measured from
  */
 
+import { fromSm2, intervalForRetention, nextMemory, retrievability, type Grade } from './fsrs';
+
 import type { CardState, Rating, Question, SrsCard } from '../types/domain.ts';
 
 const KEY = 'rtf:srs:v1';
@@ -33,25 +39,67 @@ const KEY = 'rtf:srs:v1';
 const SYNCED_KEY = 'rtf:srs:synced:v1';
 const DAY = 24 * 60 * 60 * 1000;
 
-interface RatingMeta {
-  quality: number;
-  easeDelta: number;
-  forceReset: boolean;
-}
+/**
+ * The recall probability a scheduled review aims for. 0.9 is the FSRS default
+ * and the one its parameters were fitted at: at this target a card is asked
+ * again exactly one stability after it was last seen.
+ */
+export const TARGET_RETENTION = 0.9;
 
-const RATINGS: Record<Rating, RatingMeta> = {
-  again: { quality: 0, easeDelta: -0.2,  forceReset: true  },
-  hard:  { quality: 2, easeDelta: -0.15, forceReset: false },
-  good:  { quality: 3, easeDelta:  0,    forceReset: false },
-  easy:  { quality: 4, easeDelta:  0.15, forceReset: false },
-};
+/** The app's four words as FSRS grades. */
+const GRADE: Record<Rating, Grade> = { again: 1, hard: 2, good: 3, easy: 4 };
 
 type CardMap = Record<string, CardState>;
+
+/** A card stored by the SM-2 scheduler this replaced. */
+interface LegacyCard extends Partial<CardState> {
+  ease?: number;
+}
+
+/**
+ * Bring a stored card up to the FSRS shape. SM-2 cards carry `ease` and no
+ * memory state; `fromSm2` maps them across without moving anyone's next review
+ * date, so the switch is invisible to a user mid-schedule.
+ *
+ * Idempotent, and returns null when there was nothing to do — `read` uses that
+ * to write the migrated map back exactly once instead of on every parse.
+ */
+function migrate(map: CardMap): CardMap | null {
+  let touched = false;
+  const out: CardMap = {};
+  for (const [id, raw] of Object.entries(map)) {
+    const card = (raw || {}) as LegacyCard;
+    if (typeof card.stability === 'number' && typeof card.difficulty === 'number') {
+      out[id] = card as CardState;
+      continue;
+    }
+    // Nothing was ever rated here — a blank or corrupt entry. Giving it a
+    // stability would tell FSRS the card had been answered once, so it stays a
+    // fresh card instead.
+    const rated = Boolean(card.lastAt) || Boolean(card.reps) || Boolean(card.interval);
+    const memory = rated ? fromSm2(card.ease ?? 2.5, card.interval ?? 0) : { stability: 0, difficulty: 0 };
+    out[id] = {
+      ...memory,
+      interval: card.interval ?? 0,
+      reps: card.reps ?? 0,
+      dueAt: card.dueAt ?? 0,
+      lastAt: card.lastAt ?? 0,
+    };
+    touched = true;
+  }
+  return touched ? out : null;
+}
 
 function read(): CardMap {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as CardMap) : {};
+    const parsed = raw ? (JSON.parse(raw) as CardMap) : {};
+    const migrated = migrate(parsed);
+    if (migrated) {
+      write(migrated);
+      return migrated;
+    }
+    return parsed;
   } catch {
     return {};
   }
@@ -65,8 +113,9 @@ function write(map: CardMap): void {
   }
 }
 
+/** Never rated: zero stability is the sentinel `nextMemory` reads as "first". */
 function freshCard(): CardState {
-  return { ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 };
+  return { stability: 0, difficulty: 0, interval: 0, reps: 0, dueAt: 0, lastAt: 0 };
 }
 
 /** The whole stored card map, for callers that read many cards at once. */
@@ -78,24 +127,28 @@ export function getCardState(id: number | string, map: CardMap = read()): CardSt
   return map[String(id)] || freshCard();
 }
 
-/** One SM-2 step: where a rating moves `prev`, before anything is stored. */
-function step(prev: CardState, rating: Rating): Pick<CardState, 'ease' | 'interval' | 'reps'> {
-  const r = RATINGS[rating];
-  let { ease, interval, reps } = prev;
-
-  // SM-2 ease adjustment
-  ease = Math.max(1.3, ease + r.easeDelta);
-
-  if (r.forceReset) {
-    reps = 0;
-    interval = 1;
-  } else {
-    if (reps === 0) interval = rating === 'easy' ? 3 : 1;
-    else if (reps === 1) interval = rating === 'easy' ? 7 : 6;
-    else interval = Math.max(1, Math.round(interval * ease));
-    reps += 1;
-  }
-  return { ease, interval, reps };
+/**
+ * One FSRS step: where a rating moves `prev`, before anything is stored.
+ *
+ * The elapsed time since the last review is an input, not a detail — the same
+ * "good" is worth far more stability after three weeks than after a day, and
+ * that difference is the whole reason for the switch away from SM-2.
+ */
+function step(
+  prev: CardState,
+  rating: Rating,
+  now: number,
+): Pick<CardState, 'stability' | 'difficulty' | 'interval' | 'reps'> {
+  const elapsedDays = prev.lastAt > 0 ? Math.max(0, (now - prev.lastAt) / DAY) : 0;
+  const had = prev.stability > 0 ? { stability: prev.stability, difficulty: prev.difficulty } : null;
+  const memory = nextMemory(had, GRADE[rating], elapsedDays);
+  return {
+    ...memory,
+    interval: intervalForRetention(memory.stability, TARGET_RETENTION),
+    // A lapse sends the card back to the start of its run, exactly as it reads
+    // on the stats page: "reps" is the streak, not a lifetime count.
+    reps: rating === 'again' ? 0 : prev.reps + 1,
+  };
 }
 
 export function rateCard(
@@ -104,12 +157,12 @@ export function rateCard(
   now: number = Date.now(),
 ): CardState {
   const map = read();
-  // Spread over a fresh card so a partial stored object (a missing ease, say)
-  // can't turn into NaN → null through the SM-2 arithmetic and JSON.stringify.
+  // Spread over a fresh card so a partial stored object (a missing stability,
+  // say) can't turn into NaN → null through the arithmetic and JSON.stringify.
   const prev = { ...freshCard(), ...(map[String(id)] || {}) };
-  if (!RATINGS[rating]) return prev;
+  if (!GRADE[rating]) return prev;
 
-  const scheduled = step(prev, rating);
+  const scheduled = step(prev, rating, now);
   const next: CardState = {
     ...scheduled,
     dueAt: now + scheduled.interval * DAY,
@@ -126,8 +179,22 @@ export function rateCard(
  * The grade buttons show it, so the promise on the button is the one the
  * scheduler keeps: a fresh card's "Good" is tomorrow, not in six days.
  */
-export function previewInterval(id: number | string, rating: Rating): number {
-  return step(getCardState(id), rating).interval;
+export function previewInterval(
+  id: number | string,
+  rating: Rating,
+  now: number = Date.now(),
+): number {
+  return step(getCardState(id), rating, now).interval;
+}
+
+/**
+ * The odds of recalling this card at `at`, 0..1 — FSRS's forgetting curve run
+ * forward. A card that has never been rated reads 0: not "unknown", but "will
+ * not be recalled", which is the honest input to a readiness forecast.
+ */
+export function recallAt(card: CardState, at: number): number {
+  if (!(card.stability > 0) || !(card.lastAt > 0)) return 0;
+  return retrievability((at - card.lastAt) / DAY, card.stability);
 }
 
 /** When each card was last rated (epoch ms), never-rated cards excluded. */
@@ -275,7 +342,8 @@ export function mergeCards(rows: readonly SrsCard[]): number {
     const mine = map[String(id)];
     if (mine && mine.lastAt >= lastAt) continue;
     map[String(id)] = {
-      ease: Number(row.ease),
+      stability: Number(row.stability),
+      difficulty: Number(row.difficulty),
       interval: Number(row.interval),
       reps: Number(row.reps),
       dueAt: Number(row.dueAt),
