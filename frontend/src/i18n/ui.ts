@@ -79,7 +79,7 @@ export const UI = {
     roadmap: {
       title: 'Roadmap',
       subtitle: 'From Junior 1 to Staff',
-      intro: 'Sixteen levels, each a set of questions from the catalogue. Open a level to see its topics and questions, practice them, and mark what you know. A level counts as passed at 80% completed.',
+      intro: 'Sixteen levels, each a set of questions from the catalogue. A level counts as passed at 80%.',
       track: 'Track',
       band: { junior: 'Junior', mid: 'Middle', senior: 'Senior', staff: 'Staff' } as Record<string, string>,
       bandDesc: {
@@ -193,7 +193,7 @@ export const UI = {
     // First-launch stack picker
     stackPickerEyebrow: 'Welcome',
     stackPickerTitle: 'Which stack are you preparing for?',
-    stackPickerSubtitle: 'Pick one to focus the catalog. You can switch any time from the dashboard or Cmd+K.',
+    stackPickerSubtitle: 'Pick one — Today, the roadmap and the topics follow it. Change it any time from here or in Me.',
     stackPickerLater: 'Decide later',
     stackPickerCount: (n: number) => `${n} topic${n === 1 ? '' : 's'}`,
     platformDescAll: 'See every topic across every stack — good for browsing.',
@@ -285,7 +285,7 @@ export const UI = {
     roadmap: {
       title: 'Маршрут',
       subtitle: 'От Junior 1 до Staff',
-      intro: 'Шестнадцать уровней, каждый — набор вопросов из базы. Открой уровень, чтобы увидеть его темы и вопросы, пройти их и отметить, что знаешь. Уровень считается пройденным на 80%.',
+      intro: 'Шестнадцать уровней, каждый — набор вопросов из базы. Уровень считается пройденным на 80%.',
       track: 'Трек',
       band: { junior: 'Junior', mid: 'Middle', senior: 'Senior', staff: 'Staff' } as Record<string, string>,
       bandDesc: {
@@ -399,7 +399,7 @@ export const UI = {
     // First-launch stack picker
     stackPickerEyebrow: 'Привет',
     stackPickerTitle: 'Какой стек готовишь?',
-    stackPickerSubtitle: 'Выбери один — каталог свернётся под него. Поменять можно в любой момент с дашборда или из Cmd+K.',
+    stackPickerSubtitle: 'Выбери один — под него подстроятся «Сегодня», маршрут и темы. Поменять можно здесь или в «Профиле».',
     stackPickerLater: 'Позже',
     stackPickerCount: (n: number) => `${n} ${ruPlural(n, 'тема', 'темы', 'тем')}`,
     platformDescAll: 'Все темы по всем стекам — для общего обзора.',

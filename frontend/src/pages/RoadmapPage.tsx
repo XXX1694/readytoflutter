@@ -152,7 +152,9 @@ export default function RoadmapPage() {
                     <Brain className="h-4 w-4" aria-hidden />
                     {t.roadmap.drillNext}
                   </Button>
-                  <Button variant="outline" size="md" onClick={() => jumpTo(next.id)}>
+                  {/* A jump down the page, not a menu: ghost, so the box
+                      does not read as a select beside the one solid button. */}
+                  <Button variant="ghost" size="md" onClick={() => jumpTo(next.id)}>
                     {rungLabel(next, bandNames)}
                     <ChevronDown className="h-3.5 w-3.5" aria-hidden />
                   </Button>

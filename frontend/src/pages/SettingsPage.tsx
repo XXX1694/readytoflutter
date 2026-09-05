@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ExternalLink } from 'lucide-react';
+import { ChevronDown, ExternalLink } from 'lucide-react';
 import { useAuth } from '../store/auth';
 import {
   authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
@@ -172,7 +172,7 @@ function ProfileBlock({ user, token, c }: { user: User; token: string; c: Settin
   };
 
   return (
-    <Block title={c.profileTitle} subtitle={c.profileSubtitle}>
+    <Block title={c.profileTitle} subtitle={c.profileSubtitle} defaultOpen>
       <form onSubmit={save} className="space-y-5">
         <TextField
           label={c.name}
@@ -610,13 +610,23 @@ function About({ c }: { c: SettingsCopy }) {
 }
 
 // ── Reusable bits ──────────────────────────────────────────────────────────
-function Block({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+/**
+ * One account flow, folded: five forms in a column made Me a 4,000px page
+ * on a phone, and the one you came for was never the first. The name field
+ * stays open; a password, code, email or deletion opens when it is wanted.
+ */
+function Block({ title, subtitle, defaultOpen = false, children }: { title: string; subtitle?: string; defaultOpen?: boolean; children: ReactNode }) {
   return (
-    <div className="border-t border-rule/12 pt-6 first:border-0 first:pt-0">
-      <h3 className="font-display text-[15px] font-semibold text-ink">{title}</h3>
-      {subtitle && <p className="mt-1 text-[13px] leading-relaxed text-muted">{subtitle}</p>}
-      <div className="mt-4">{children}</div>
-    </div>
+    <details open={defaultOpen} className="group border-t border-rule/12 first:border-0">
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center gap-3 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-[15px] font-semibold text-ink">{title}</span>
+          {subtitle && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{subtitle}</span>}
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="pb-6 pt-1">{children}</div>
+    </details>
   );
 }
 

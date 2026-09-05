@@ -191,7 +191,7 @@ export default function CommandPalette() {
                     key={route.path}
                     icon={<route.icon />}
                     onSelect={run(() => navigate(route.path))}
-                    trailing={PALETTE_SHORTCUTS[route.path]}
+                    shortcut={PALETTE_SHORTCUTS[route.path]}
                   >
                     {route.path === '/study' ? t.nav.startSession : routeLabel(t, route)}
                   </CmdItem>
@@ -203,7 +203,7 @@ export default function CommandPalette() {
                   <CmdItem
                     icon={<Pencil />}
                     onSelect={run(() => navigate('/admin'))}
-                    trailing={`${modKey}+E`}
+                    shortcut={`${modKey}+E`}
                   >
                     {lang === 'ru' ? 'Редактор вопросов' : 'Question editor'}
                   </CmdItem>
@@ -329,19 +329,22 @@ interface CmdItemProps {
   icon: ReactNode;
   children: ReactNode;
   onSelect: () => void;
-  /** Trailing hint — a keyboard shortcut, a count, an account email. */
+  /** Trailing hint — a count, an account email, the value in effect. */
   trailing?: ReactNode;
+  /** A keyboard shortcut; shown from `sm` up only. */
+  shortcut?: string;
   /** This row is the value currently in effect (stack, theme, recall mode). */
   current?: boolean;
   danger?: boolean;
 }
 
-function CmdItem({ icon, children, trailing, current, onSelect, danger }: CmdItemProps) {
+function CmdItem({ icon, children, trailing, shortcut, current, onSelect, danger }: CmdItemProps) {
   return (
     <Command.Item
       onSelect={onSelect}
       className={cn(
-        'group flex cursor-pointer items-center gap-3 rounded px-2.5 py-2 text-sm text-ink-2',
+        // 44px rows under sm — the palette is tapped there, not arrowed.
+        'group flex cursor-pointer items-center gap-3 rounded px-2.5 py-2.5 text-[15px] text-ink-2 sm:py-2 sm:text-sm',
         'data-[selected=true]:bg-rule/8 data-[selected=true]:text-ink',
         danger && 'data-[selected=true]:!bg-coral/12 data-[selected=true]:!text-coral',
       )}
@@ -356,6 +359,10 @@ function CmdItem({ icon, children, trailing, current, onSelect, danger }: CmdIte
       </span>
       {trailing && (
         <span className="shrink-0 font-mono text-[11px] text-muted">{trailing}</span>
+      )}
+      {/* A shortcut means nothing on a phone; a count or an email still does. */}
+      {shortcut && (
+        <span className="hidden shrink-0 font-mono text-[11px] text-muted sm:inline">{shortcut}</span>
       )}
       <ArrowRight
         className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-data-[selected=true]:opacity-100"
