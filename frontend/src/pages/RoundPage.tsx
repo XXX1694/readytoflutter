@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, X } from 'lucide-react';
 import { useTopic } from '../lib/queries';
 import { buildRound, chainConcepts } from '../lib/roundBuilder';
+import { rateCard } from '../lib/srs';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent } from '../i18n/content';
@@ -18,6 +19,8 @@ import {
   useQuestionSession, countOutcomes, type Outcome, type OutcomeCounts,
 } from '../lib/useQuestionSession';
 import { cn } from '../lib/cn';
+import { tapMedium } from '../lib/haptics';
+import { reportState } from '../lib/push';
 
 import type { Difficulty, QuestionSummary as Question, Topic } from '../types/domain';
 import { useAnswer } from '../lib/queries';
@@ -91,13 +94,22 @@ export default function RoundPage() {
     queue: chain,
     revealHotkey: 'mod+enter',
     onExit: leave,
+    onGrade: (question, rating) => {
+      tapMedium();
+      rateCard(question.id, rating);
+    },
   });
   const { current, revealed, draft, draftRef, outcomes, finished } = session;
   // The chain is built from the topic's own questions, which carry their
   // answers; the hook returns them without a fetch.
   const body = useAnswer(current);
   const counts = useMemo(() => countOutcomes(outcomes), [outcomes]);
-  useEffect(() => { finishedRef.current = finished; }, [finished]);
+  useEffect(() => {
+    finishedRef.current = finished;
+    // A finished round has moved SM-2 due dates exactly as a study session
+    // does, so the push snapshot the server schedules from has to be resent.
+    if (finished) void reportState();
+  }, [finished]);
 
   if (isLoading) return <FullPageLoader />;
 

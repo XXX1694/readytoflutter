@@ -198,8 +198,9 @@ export default function StudyPage() {
           ? Math.round((Date.now() - startedAtRef.current) / 1000)
           : 0,
       });
-      // Finishing a session is the only moment the due snapshot actually
-      // changes, and the server schedules reminders from what we report — it
+      // Finishing a session is when the due snapshot changes (the timed
+      // session and the round report at their own end for the same reason),
+      // and the server schedules reminders from what we report — it
       // cannot compute due dates itself, since SM-2 state lives in this
       // browser. Deliberately not next to rateCard: that runs per card, and
       // twenty snapshots a session would burn the server's rate limit.

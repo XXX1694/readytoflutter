@@ -22,9 +22,12 @@ import AnswerGrader, {
 import {
   useQuestionSession, countOutcomes, type Outcome, type OutcomeCounts,
 } from '../lib/useQuestionSession';
+import { rateCard } from '../lib/srs';
 import { goBack } from '../lib/navigation';
 import { cn } from '../lib/cn';
+import { tapMedium } from '../lib/haptics';
 import { track } from '../lib/analytics';
+import { reportState } from '../lib/push';
 
 import type { Level, QuestionSummary as Question, Topic } from '../types/domain';
 import { useAnswer } from '../lib/queries';
@@ -165,6 +168,10 @@ export default function MockPage() {
     // The per-question timer running out shows the answer, exactly as if the
     // user had asked for it — the grade hotkeys have to work from there too.
     autoRevealed: timedOut,
+    onGrade: (question, rating) => {
+      tapMedium();
+      rateCard(question.id, rating);
+    },
     onAdvance: () => setQuestionStartedAt(Date.now()),
     onExit: () => {
       if (!started) goBack(navigate);
@@ -206,6 +213,11 @@ export default function MockPage() {
       elapsed_sec: sessionStartedAt ? Math.floor((Date.now() - sessionStartedAt) / 1000) : 0,
       ...counts,
     });
+    // The grades above moved SM-2 due dates, and the server schedules
+    // reminders from the snapshot the client reports — one report per
+    // session, not one per card. Self-guards on signed-out / no
+    // subscription and never throws.
+    void reportState();
   }, [session.finished, queue.length, sessionStartedAt, counts]);
 
   if (isLoading) return <FullPageLoader />;
