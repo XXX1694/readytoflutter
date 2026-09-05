@@ -33,9 +33,11 @@ function useHasDue(): boolean {
  * the auth pages, the print/cheatsheet routes).
  *
  * Five slots: Today · Roadmap · Start · Topics · Me. Start is the one filled
- * control on the bar because it is the one action the product exists for.
- * The active tab is marked the way the rail marks its rows: ink icon and a
- * semibold ink label.
+ * control on the bar because it is the one action the product exists for —
+ * a brand capsule with its own name inside, so it reads as a button among
+ * destinations rather than a sixth place to go. The tab you are on is
+ * marked the way the rail marks its row: a tint of the stack colour behind
+ * the icon and the label set in it.
  */
 export default function BottomNav() {
   const { lang } = useLang();
@@ -71,46 +73,60 @@ export default function BottomNav() {
     <nav
       className={cn(
         'lg:hidden',
-        'sticky bottom-0 z-30 shrink-0 border-t border-rule/12 bg-paper/95 backdrop-blur',
+        // In flow under <main>, so nothing ever scrolls beneath it — plain
+        // paper and a hairline are the whole surface.
+        'sticky bottom-0 z-30 shrink-0 border-t border-rule/12 bg-paper',
         'pb-[env(safe-area-inset-bottom,0px)]',
       )}
       aria-label={lang === 'ru' ? 'Нижняя навигация' : 'Bottom navigation'}
     >
-      <ul className="grid grid-cols-5">
+      {/* The capsule takes the width its name needs; the four destinations
+          share the rest evenly. */}
+      <ul className="grid grid-cols-[1fr_1fr_auto_1fr_1fr] items-center px-1">
         {TAB_ROUTES.map((route) => {
-          const label = route.tab === 'start' ? t.nav.start : routeLabel(t, route);
+          const isStart = route.tab === 'start';
+          const label = isStart ? t.nav.start : routeLabel(t, route);
           return (
-            <li key={route.path}>
+            <li key={route.path} className="flex justify-center">
               <NavLink
                 to={route.path}
                 end={route.end}
                 onClick={() => tapLight()}
                 onPointerDown={() => prefetch(route.path)}
                 onTouchStart={() => prefetch(route.path)}
-                className="flex min-h-[56px] flex-col items-center justify-center gap-1 py-1.5 text-[11px]"
+                className={
+                  isStart
+                    ? 'relative mx-2 inline-flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-[13px] font-semibold text-on-brand transition-transform active:scale-[0.96]'
+                    : 'flex min-h-[56px] w-full flex-col items-center justify-center gap-0.5 pb-1 pt-1.5 text-[12px] leading-4 transition-opacity active:opacity-70'
+                }
               >
                 {({ isActive }) => (
-                  route.tab === 'start' ? (
+                  isStart ? (
                     <>
-                      <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-on-brand shadow-codex">
-                        <route.icon className="h-[19px] w-[19px]" aria-hidden />
-                        {hasDue && (
-                          <span
-                            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-paper bg-coral"
-                            aria-label={lang === 'ru' ? 'Есть карточки на повторение' : 'Cards are due'}
-                          />
-                        )}
-                      </span>
-                      <span className="font-semibold leading-[1.4] text-ink">{label}</span>
+                      <route.icon className="h-[18px] w-[18px]" aria-hidden />
+                      {label}
+                      {hasDue && (
+                        <span
+                          className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-paper bg-coral"
+                          aria-label={lang === 'ru' ? 'Есть карточки на повторение' : 'Cards are due'}
+                        />
+                      )}
                     </>
                   ) : (
                     <>
-                      <route.icon
-                        className={cn('h-[19px] w-[19px]', isActive ? 'text-brand' : 'text-muted')}
-                        strokeWidth={isActive ? 2.25 : 1.9}
-                        aria-hidden
-                      />
-                      <span className={cn('leading-[1.4]', isActive ? 'font-semibold text-brand' : 'text-muted')}>
+                      <span
+                        className={cn(
+                          'inline-flex h-7 w-11 items-center justify-center rounded-full transition-colors',
+                          isActive && 'bg-brand/10',
+                        )}
+                      >
+                        <route.icon
+                          className={cn('h-5 w-5', isActive ? 'text-brand' : 'text-muted')}
+                          strokeWidth={isActive ? 2.25 : 1.9}
+                          aria-hidden
+                        />
+                      </span>
+                      <span className={isActive ? 'font-semibold text-brand' : 'font-medium text-muted'}>
                         {label}
                       </span>
                     </>
