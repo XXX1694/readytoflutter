@@ -63,6 +63,9 @@ export type AnalyticsEvent =
   | 'study_session_complete'
   | 'mock_session_start'
   | 'mock_complete'
+  | 'live_task_dealt'
+  | 'live_task_submitted'
+  | 'live_review_used'
   | 'ai_grade_used'
   // Revenue
   | 'paywall_hit'

@@ -1,0 +1,11 @@
+{
+  "solution": "import 'dart:async';\n\nStream<T> throttle<T>(Stream<T> source, Duration window) {\n  final controller = StreamController<T>();\n  StreamSubscription<T>? subscription;\n  DateTime? lastEmit;\n\n  controller.onListen = () {\n    subscription = source.listen(\n      (event) {\n        final now = DateTime.now();\n        if (lastEmit != null && now.difference(lastEmit!) < window) return;\n        lastEmit = now;\n        controller.add(event);\n      },\n      onError: controller.addError,\n      onDone: controller.close,\n      cancelOnError: false,\n    );\n  };\n  controller.onCancel = () async {\n    await subscription?.cancel();\n    subscription = null;\n  };\n\n  return controller.stream;\n}",
+  "rubric": [
+    "The first event of the source is emitted immediately",
+    "Events inside the window are dropped, and emission resumes after it",
+    "Errors and done are forwarded to the returned stream",
+    "The source subscription is cancelled when the returned stream is cancelled",
+    "The controller is closed so the stream terminates"
+  ],
+  "notes": "The interesting part is not the timing arithmetic — it is the plumbing. A transformer that leaks its source subscription is the bug that keeps a screen alive after it is popped.\n\nTraps:\n\n- **Subscribing eagerly** instead of in `onListen`. A stream you never listened to should not be pulling events (and for a single-subscription source it throws the moment a second caller listens).\n- **Forgetting `onCancel`.** Cancelling the returned stream must cancel the source, or the upstream keeps producing forever.\n- **Never closing.** Without `onDone: controller.close`, an `await for` over the throttled stream hangs after the source finishes.\n- A `Timer`-based version (\"ignore until the timer fires\") is equally valid — the rubric is about behaviour, not about `DateTime` vs `Timer`. Just make sure the timer is cancelled in `onCancel` too."
+}

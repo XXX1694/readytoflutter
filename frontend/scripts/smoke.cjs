@@ -36,7 +36,7 @@ const BASE_PATH = detectBasePath().replace(/\/$/, '');
 
 const ROUTES = [
   '/', '/roadmap', '/topics', '/topic/dart-basics', '/topic/dart-basics?q=3',
-  '/study', '/mock', '/round/dart-basics', '/knowledge', '/stats', '/bookmarks',
+  '/study', '/mock', '/live', '/round/dart-basics', '/knowledge', '/stats', '/bookmarks',
   '/search?q=widget', '/settings', '/login', '/signup', '/reset', '/pricing', '/contact',
   '/flutter', '/nope', '/topic/dart-basics/cheatsheet', '/topic/dart-basics/print',
 ];

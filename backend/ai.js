@@ -14,6 +14,8 @@
 // - Cost guards are layered: empty/short rejected before the API call,
 //   per-IP rate limit (30/hour) on top, length cap on `userAnswer` to
 //   bound prompt size.
+const fs = require('fs');
+const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { z } = require('zod');
 const db = require('./database');
@@ -33,6 +35,8 @@ try {
 const MODEL = 'claude-haiku-4-5';
 const MAX_USER_ANSWER_CHARS = 4000;
 const MIN_USER_ANSWER_CHARS = 15;
+const MAX_USER_CODE_CHARS = 6000;
+const MIN_USER_CODE_CHARS = 40;
 
 function buildClient() {
   if (!AnthropicCtor) return null;
@@ -258,6 +262,231 @@ async function gradeHandler(req, res) {
   }
 }
 
+// ── Live-coding review endpoint ────────────────────────────────────────────
+// Reviews the code a user wrote against a /live task, under the same rules as
+// the answer grader: the reference never comes from the client, the quota is
+// reserved before the model call and refunded on failure, and the response is
+// a forced tool call so its shape is guaranteed.
+
+const TASKS_FILE = path.join(__dirname, 'data', 'seed', 'tasks.json');
+
+// Indexed once at module scope — the file ships with the server and only
+// changes with a deploy. A missing or unreadable file must not stop the
+// server booting; the endpoint then 404s every slug, exactly as it would for
+// an unknown one.
+const TASKS_BY_SLUG = (() => {
+  try {
+    const rows = JSON.parse(fs.readFileSync(TASKS_FILE, 'utf8'));
+    return new Map(rows.map((t) => [t.slug, t]));
+  } catch (err) {
+    console.error('[ai] could not read live-coding tasks:', err?.message || err);
+    return new Map();
+  }
+})();
+
+const reviewSchema = z.object({
+  taskSlug: z.string().min(1).max(120),
+  code: z.string().max(MAX_USER_CODE_CHARS),
+  lang: z.enum(['ru', 'en']).default('en'),
+});
+
+const REVIEW_SYSTEM = `You are a senior mobile engineer reviewing code a candidate wrote during an interview, under a clock of about 12 minutes.
+You will be given the task prompt, the rubric the interviewer grades against, a reference solution, and the candidate's code.
+Use the submit_review tool to return your review.
+
+Grade against the RUBRIC, not against similarity to the reference. Idiomatic code that satisfies every rubric point is a "great" even if it is structured completely differently, uses different names, or solves it with another API. The reference is one correct answer, not the correct answer.
+
+Verdict scale:
+- great: every rubric point met; the code would pass the round
+- good: the shape is right, one rubric point missed or done loosely
+- rough: real progress in the right direction, several rubric points missing, or unfinished but heading somewhere correct
+- off: does not address the task, or the approach cannot work
+
+Score band (0-100) must roughly match the verdict: 85-100 great, 65-84 good, 35-64 rough, 0-34 off.
+Unfinished-but-correct-direction is "rough", never "off". Under a clock, missing imports, a missing build() body or a TODO left in place are not defects worth marking.
+rubric: return one entry per rubric point, in the order given, with the point copied verbatim, a strict boolean for whether it is met, and a note of at most 120 characters saying where in the code it is met or what is missing.
+strengths and gaps: up to 3 short concrete bullets each, drawn from the code the candidate actually wrote.
+suggestion: one actionable next step.
+followUp: the question a real interviewer would ask next given THIS code — under 100 characters, self-contained.
+Respond in the language requested by the user (ru or en). Keep the verbatim rubric points in their original English.`;
+
+const REVIEW_TOOL = {
+  name: 'submit_review',
+  description: 'Return a structured review of the candidate code for a live-coding task.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      verdict: { type: 'string', enum: ['great', 'good', 'rough', 'off'] },
+      score: { type: 'integer', minimum: 0, maximum: 100 },
+      rubric: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            point: { type: 'string' },
+            met: { type: 'boolean' },
+            note: { type: 'string' },
+          },
+          required: ['point', 'met', 'note'],
+          additionalProperties: false,
+        },
+      },
+      strengths: { type: 'array', items: { type: 'string' }, maxItems: 3 },
+      gaps: { type: 'array', items: { type: 'string' }, maxItems: 3 },
+      suggestion: { type: 'string' },
+      followUp: { type: 'string', description: 'One short interviewer follow-up question, given this code.' },
+    },
+    required: ['verdict', 'score', 'rubric', 'strengths', 'gaps', 'suggestion', 'followUp'],
+    additionalProperties: false,
+  },
+};
+
+function buildReviewPrompt({ task, lang }, code) {
+  return [
+    `Language for response: ${lang === 'ru' ? 'Russian' : 'English'}`,
+    `Task: ${task.title} (${task.difficulty}, ${task.minutes} minute budget)`,
+    `Language of the code: ${task.code_language}`,
+    '',
+    'TASK PROMPT:',
+    task.prompt,
+    '',
+    'RUBRIC (grade against these, in this order):',
+    ...task.rubric.map((point, i) => `${i + 1}. ${point}`),
+    '',
+    'REFERENCE SOLUTION (one correct answer, not the only one):',
+    '```',
+    task.solution,
+    '```',
+    '',
+    'CANDIDATE CODE:',
+    '```',
+    code,
+    '```',
+  ].join('\n');
+}
+
+async function reviewHandler(req, res) {
+  const client = buildClient();
+  if (!client) {
+    return res.status(503).json({
+      error: 'AI review is not configured on this server.',
+      code: 'ai_disabled',
+    });
+  }
+
+  const parsed = reviewSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Invalid input',
+      code: 'bad_input',
+      details: parsed.error.issues,
+    });
+  }
+  const { taskSlug, code, lang } = parsed.data;
+  const trimmed = code.trim();
+  if (trimmed.length < MIN_USER_CODE_CHARS) {
+    return res.status(400).json({
+      error: 'Too little code to review.',
+      code: 'too_short',
+    });
+  }
+
+  const task = TASKS_BY_SLUG.get(taskSlug);
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found', code: 'not_found' });
+  }
+
+  // Same daily allowance as the answer grader — one honest budget for every
+  // model call the app makes on a user's behalf.
+  const fullUser = req.user ? db.getUserById(req.user.id) : null;
+  const isPro = db.isUserPro(fullUser);
+  let reservedId = null;
+  if (!isPro) {
+    const cap = req.user ? TIER_LIMITS.FREE_AI_GRADES_PER_DAY : TIER_LIMITS.ANON_AI_GRADES_PER_DAY;
+    const reservation = db.reserveAiGrade({
+      userId: req.user?.id || null,
+      ip: req.user ? null : req.ip,
+      cap,
+    });
+    if (!reservation.reserved) {
+      return res.status(402).json({
+        error: req.user
+          ? 'Daily AI limit reached on the free plan.'
+          : 'Sign in or upgrade to keep reviewing today.',
+        code: 'paywall_required',
+        reason: req.user ? 'free_quota_exceeded' : 'anon_quota_exceeded',
+        used: reservation.used,
+        cap,
+        tier: req.user ? (fullUser.pro_tier || 'free') : 'anon',
+      });
+    }
+    reservedId = reservation.id;
+  }
+
+  const startedAt = Date.now();
+  try {
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1500,
+      system: [
+        { type: 'text', text: REVIEW_SYSTEM, cache_control: { type: 'ephemeral' } },
+      ],
+      tools: [REVIEW_TOOL],
+      tool_choice: { type: 'tool', name: 'submit_review' },
+      messages: [
+        { role: 'user', content: buildReviewPrompt({ task, lang }, trimmed) },
+      ],
+    });
+
+    const block = (message.content || []).find(
+      (b) => b.type === 'tool_use' && b.name === 'submit_review',
+    );
+    if (!block || !block.input) {
+      throw new Error('Model did not return a submit_review tool_use block');
+    }
+    // A truncated or malformed tool call is not a review — do not bill it.
+    const review = block.input;
+    const VERDICTS = new Set(['great', 'good', 'rough', 'off']);
+    if (
+      message.stop_reason === 'max_tokens'
+      || !VERDICTS.has(review.verdict)
+      || typeof review.score !== 'number' || review.score < 0 || review.score > 100
+      || !Array.isArray(review.rubric)
+      || review.rubric.length !== task.rubric.length
+      || review.rubric.some((r) => !r || typeof r.point !== 'string' || typeof r.met !== 'boolean')
+      || !Array.isArray(review.strengths) || !Array.isArray(review.gaps)
+    ) {
+      throw new Error(`Model returned an incomplete review (stop_reason=${message.stop_reason})`);
+    }
+
+    const usage = message.usage || {};
+    if (isPro) db.logAiGrade({ userId: req.user?.id || null, ip: req.user ? null : req.ip });
+    console.log(
+      `[ai] review task=${taskSlug} userId=${req.user?.id || 0} tier=${isPro ? 'pro' : 'free'} `
+        + `in=${usage.input_tokens || 0} out=${usage.output_tokens || 0} `
+        + `cacheR=${usage.cache_read_input_tokens || 0} ms=${Date.now() - startedAt}`,
+    );
+    res.json({
+      review,
+      usage: {
+        input_tokens: usage.input_tokens || 0,
+        output_tokens: usage.output_tokens || 0,
+        cache_read_input_tokens: usage.cache_read_input_tokens || 0,
+      },
+    });
+  } catch (err) {
+    db.refundAiGrade(reservedId);
+    const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 600
+      ? err.status
+      : 502;
+    console.error(`[ai] review error status=${status}:`, err?.message || err);
+    res.status(status).json({
+      error: 'AI review failed. Please try again.',
+      code: 'upstream_error',
+    });
+  }
+}
+
 // ── Draft-question endpoint ────────────────────────────────────────────────
 // Generates a draft Flutter/Dart interview question + reference answer from
 // a one-line prompt. Used by the in-app admin so the author has a starting
@@ -384,6 +613,9 @@ function attach(app) {
   // optionalAuth: we don't require sign-in to grade (the user wants
   // friction-free study), but we log the user_id when present.
   app.post('/api/ai/grade', aiLimiter, auth.optionalAuth, gradeHandler);
+  // Same contract as /grade: no sign-in required, the user id is logged when
+  // there is one, and the daily allowance is shared with it.
+  app.post('/api/ai/review-code', aiLimiter, auth.optionalAuth, reviewHandler);
   // The question editor is dev-only; drafting spends the project's API key,
   // so it takes an admin session, not an optional one.
   app.post('/api/ai/draft-question', aiLimiter, auth.requireAuth, auth.requireAdmin, draftHandler);

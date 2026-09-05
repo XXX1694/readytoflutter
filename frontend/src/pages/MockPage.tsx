@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import { useLang } from '../i18n/LangContext';
@@ -507,6 +507,13 @@ function Setup({ config, onChange, onStart, available, t, c, showStack }: SetupP
           {empty ? c.noneMatch : c.availableOf(Math.min(config.count, available), available)}
         </p>
       </div>
+
+      {/* Live coding is the same idea with an editor instead of a textarea;
+          it has no rail or tab-bar slot, so this is one of its two doors. */}
+      <p className="mt-4 text-[13px] text-muted">
+        {c.liveInvite}{' '}
+        <Link to="/live" className="rounded-sm font-medium text-brand hover:underline">{t.nav.live}</Link>
+      </p>
 
       <details className="group mt-10 border-t border-rule/12 pt-5">
         <summary className="eyebrow inline-flex cursor-pointer list-none items-center gap-1.5 hover:text-ink">

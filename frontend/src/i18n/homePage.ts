@@ -38,6 +38,7 @@ const en = {
   streak: (n: number) => `${n}-day streak`,
   localOnly: 'Progress is saved in this browser only',
   localOnlySignIn: 'sign in to keep it',
+  liveHook: 'one task, one clock, one honest review',
 };
 
 const ru: typeof en = {
@@ -61,6 +62,7 @@ const ru: typeof en = {
   streak: (n) => `Серия: ${n} ${plural(n, ['день', 'дня', 'дней'])}`,
   localOnly: 'Прогресс хранится только в этом браузере',
   localOnlySignIn: 'войди, чтобы не потерять',
+  liveHook: 'одна задача, один таймер, один честный разбор',
 };
 
 export type HomeCopy = typeof en;

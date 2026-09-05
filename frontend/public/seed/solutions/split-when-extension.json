@@ -1,0 +1,10 @@
+{
+  "solution": "fun <T> Iterable<T>.splitWhen(predicate: (T) -> Boolean): List<List<T>> {\n    val groups = mutableListOf<List<T>>()\n    var current = mutableListOf<T>()\n\n    for (element in this) {\n        if (predicate(element) && current.isNotEmpty()) {\n            groups += current\n            current = mutableListOf()\n        }\n        current += element\n    }\n    if (current.isNotEmpty()) groups += current\n\n    return groups\n}\n\nfun main() {\n    println(listOf(1, 2, 10, 3, 10, 20).splitWhen { it >= 10 })\n}",
+  "rubric": [
+    "An empty receiver returns an empty list, not a list holding one empty group",
+    "No empty group is ever emitted — two adjacent matches do not produce a gap",
+    "The final group is flushed after the loop ends",
+    "The receiver is iterated exactly once (no index-based re-traversal of an Iterable)"
+  ],
+  "notes": "A five-line function with three edge cases in it — which is exactly why it gets asked. The interviewer is watching whether you enumerate the edges *before* writing the loop.\n\nTraps:\n\n- **The empty input.** Starting with `groups = mutableListOf(mutableListOf<T>())` gives `[[]]` for an empty receiver. The fix is to flush at the end rather than seed at the start.\n- **Two matches in a row.** `10, 20` must give `[10], [20]`, not `[10], [], [20]`. The `current.isNotEmpty()` guard is doing that work — cutting on a match only when there is something to cut.\n- **Losing the last group.** Every \"split on a delimiter\" loop needs the flush after it. Forgetting it is the classic off-by-one.\n- **`Iterable`, not `List`.** The receiver may be a one-shot `Sequence`-backed iterable, so `size`/`get` are off the table and a second pass is wrong even where it compiles."
+}

@@ -196,6 +196,16 @@ export default function HomePage({ landing = null }: HomePageProps) {
         </div>
       )}
 
+      {/* Live coding has no rail or tab-bar slot — DESIGN rule 10 — so Today
+          is where it is discovered, as a line rather than a third card. */}
+      {!showPicker && (
+        <p className="mt-4 text-[13px] text-muted">
+          <Link to="/live" className="rounded-sm font-medium text-brand hover:underline">{t.nav.live}</Link>
+          {' — '}
+          {c.liveHook}
+        </p>
+      )}
+
       {streak > 0 && (
         <p className="mt-5 text-[13px] text-muted">{c.streak(streak)}</p>
       )}

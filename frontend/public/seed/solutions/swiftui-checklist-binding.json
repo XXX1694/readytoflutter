@@ -1,0 +1,10 @@
+{
+  "solution": "import SwiftUI\n\nstruct Item: Identifiable {\n    let id = UUID()\n    var title: String\n    var done: Bool\n}\n\nstruct ChecklistView: View {\n    @State private var items: [Item] = [\n        Item(title: \"Book the room\", done: false),\n        Item(title: \"Send the agenda\", done: true),\n    ]\n\n    var body: some View {\n        List($items) { $item in\n            ItemRow(item: $item)\n        }\n    }\n}\n\nstruct ItemRow: View {\n    @Binding var item: Item\n\n    var body: some View {\n        Toggle(item.title, isOn: $item.done)\n    }\n}",
+  "rubric": [
+    "ItemRow declares @Binding var item: Item and owns no @State copy of it",
+    "The parent produces a per-element binding (List($items) or $items[index]) rather than passing a copy",
+    "The Toggle is bound to $item.done, so flipping it mutates the parent array",
+    "items stays @State in the parent and is not duplicated in the child"
+  ],
+  "notes": "One question, asked precisely: do you know the difference between a value and a *write path* to a value?\n\nTraps:\n\n- **`@State private var item: Item` in the row.** It compiles, the toggle animates, and nothing is saved — the row is flipping its own copy. This is the single most common SwiftUI bug in review.\n- **`ForEach(items) { item in ... }`.** `item` there is a copy; there is no binding to hand down. You need `List($items)`, `ForEach($items)`, or an index-based `$items[index]`.\n- **Indexing by position when the array can be reordered or filtered.** `$items[index]` is safe here, but the `Identifiable`-driven `$`-binding is what survives a sort.\n- If asked to go further: `Binding(get:set:)` written by hand is the honest explanation of what `$item.done` desugars to — a getter and a setter, not a stored value."
+}

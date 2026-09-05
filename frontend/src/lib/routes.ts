@@ -1,5 +1,5 @@
 import {
-  Bookmark, Brain, Home, LayoutGrid, Library, Milestone, Search, Timer, TrendingUp, User,
+  Bookmark, Brain, Code2, Home, LayoutGrid, Library, Milestone, Search, Timer, TrendingUp, User,
   type LucideIcon,
 } from 'lucide-react';
 import type { UICopy } from '../i18n/ui';
@@ -12,7 +12,7 @@ import type { UICopy } from '../i18n/ui';
  *
  * Only the label key lives here — copy stays in i18n/ui.ts under `nav`.
  */
-export type NavLabelKey = 'today' | 'roadmap' | 'topics' | 'progress' | 'me' | 'saved' | 'sources' | 'search' | 'session' | 'timed';
+export type NavLabelKey = 'today' | 'roadmap' | 'topics' | 'progress' | 'me' | 'saved' | 'sources' | 'search' | 'session' | 'timed' | 'live';
 
 export interface AppRoute {
   path: string;
@@ -44,6 +44,10 @@ export const ROUTES: AppRoute[] = [
   { path: '/settings',  labelKey: 'me',       icon: User,       rail: true, tab: 'right', palette: true, tabRoot: true, load: () => import('../pages/SettingsPage') },
   { path: '/bookmarks', labelKey: 'saved',    icon: Bookmark,                             palette: true, tabRoot: true, load: () => import('../pages/BookmarksPage') },
   { path: '/mock',      labelKey: 'timed',    icon: Timer,                                palette: true, tabRoot: true, load: () => import('../pages/MockPage') },
+  // Live coding is a full-screen timed flow like /mock, and reached the same
+  // ways: the palette, Today, and a link on the timed-session setup. The rail
+  // and the tab bar are full — one name per destination, not one row each.
+  { path: '/live',      labelKey: 'live',     icon: Code2,                                palette: true, tabRoot: true, load: () => import('../pages/LivePage') },
   { path: '/search',    labelKey: 'search',   icon: Search,                                              tabRoot: true, load: () => import('../pages/SearchPage') },
 ];
 
@@ -64,6 +68,7 @@ export const TAB_ROOTS: string[] = [...ROUTES.filter((r) => r.tabRoot).map((r) =
 export const HIDE_BOTTOM_NAV: RegExp[] = [
   /^\/study(\/|$)/,
   /^\/mock(\/|$)/,
+  /^\/live(\/|$)/,
   /^\/round(\/|$)/,
   /^\/login(\/|$)/,
   /^\/signup(\/|$)/,
@@ -72,7 +77,7 @@ export const HIDE_BOTTOM_NAV: RegExp[] = [
 ];
 
 /** Routes whose mobile header shows Close instead of Search. */
-export const FOCUS_ROUTES: RegExp[] = [/^\/study(\/|$)/, /^\/mock(\/|$)/, /^\/round(\/|$)/, /^\/login(\/|$)/, /^\/signup(\/|$)/];
+export const FOCUS_ROUTES: RegExp[] = [/^\/study(\/|$)/, /^\/mock(\/|$)/, /^\/live(\/|$)/, /^\/round(\/|$)/, /^\/login(\/|$)/, /^\/signup(\/|$)/];
 
 export const routeLabel = (t: UICopy, route: Pick<AppRoute, 'labelKey'>): string => t.nav[route.labelKey];
 

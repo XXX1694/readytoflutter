@@ -1,0 +1,10 @@
+{
+  "solution": "import 'dart:async';\n\nFuture<T> retry<T>(\n  Future<T> Function() action, {\n  int attempts = 3,\n  Duration delay = const Duration(milliseconds: 200),\n}) async {\n  var wait = delay;\n  for (var attempt = 1; ; attempt++) {\n    try {\n      return await action();\n    } catch (error, stackTrace) {\n      if (attempt >= attempts) {\n        Error.throwWithStackTrace(error, stackTrace);\n      }\n      await Future<void>.delayed(wait);\n      wait *= 2;\n    }\n  }\n}",
+  "rubric": [
+    "action runs at most `attempts` times, and exactly once when attempts is 1",
+    "No delay is awaited after the final attempt",
+    "The delay doubles between attempts",
+    "The last error is rethrown (not swallowed, and not a new generic error)"
+  ],
+  "notes": "A tiny function that separates people who have written production networking code from people who have not.\n\nTraps:\n\n- **Sleeping after the last failure.** The loop must fail fast: `attempts: 3` waits twice, not three times.\n- **Losing the stack trace.** A bare `rethrow` inside the `catch` is fine; `throw error` is not — it resets the stack to this line. `Error.throwWithStackTrace` is the explicit version when you cannot `rethrow` (here you can, so `rethrow` in an `if` is equally good).\n- **Retrying everything.** Worth saying out loud: in real code you retry idempotent requests and 5xx/timeouts, not a 400. An interviewer will usually ask about it next.\n- Using `await` inside the `try` matters — `return action()` without `await` returns the future before it can fail, and the `catch` never runs."
+}

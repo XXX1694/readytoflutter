@@ -34,6 +34,7 @@ const TopicPage = lazy(() => import('./pages/TopicPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const StudyPage = lazy(() => import('./pages/StudyPage'));
 const MockPage = lazy(() => import('./pages/MockPage'));
+const LivePage = lazy(() => import('./pages/LivePage'));
 const BookmarksPage = lazy(() => import('./pages/BookmarksPage'));
 // Production admin dashboard — server-data driven (users, contact inbox,
 // stats). Always mounted; the page itself gates on `user.is_admin`, so
@@ -195,6 +196,14 @@ export default function App() {
                   element={
                     <Suspense fallback={<FullPageLoader />}>
                       <MockPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="live"
+                  element={
+                    <Suspense fallback={<FullPageLoader />}>
+                      <LivePage />
                     </Suspense>
                   }
                 />

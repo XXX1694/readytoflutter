@@ -5,7 +5,8 @@ import { ruPlural } from './plural';
 // session) and /round/:slug (Follow-ups). One dictionary, because the three
 // screens deliberately share a vocabulary: the same grade words, the same
 // draft prompt, the same recap. Lives beside the pages so the strings ship
-// with those chunks rather than the entry.
+// with those chunks rather than the entry. /live borrows the grade scale and
+// the runner chrome from here too, and keeps its own copy in livePage.ts.
 
 /** One inline control in the timed-session setup sentence. */
 export type SetupSlot = 'count' | 'level' | 'timer';
@@ -88,6 +89,8 @@ const en = {
   clockTotal: 'Total',
   clockLeft: 'Left',
   questionByQuestion: 'Question by question',
+  /** The way across to /live, which has no rail or tab-bar slot of its own. */
+  liveInvite: 'Rather write code?',
 
   // ── Follow-ups (/round/:slug) ───────────────────────────────────────────
   digDeeper: 'Dig deeper',
@@ -163,6 +166,7 @@ const ru: typeof en = {
   clockTotal: 'Всего',
   clockLeft: 'Осталось',
   questionByQuestion: 'По вопросам',
+  liveInvite: 'Хочешь вместо этого писать код?',
 
   digDeeper: 'Копни глубже',
   followUps: [

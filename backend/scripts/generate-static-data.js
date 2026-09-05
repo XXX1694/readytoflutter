@@ -7,6 +7,9 @@
 //                                             code example (~80 KB raw)
 //   frontend/public/seed/answers/<slug>.json  the answers and code examples
 //                                             of one topic (~40 KB raw each)
+//   frontend/public/seed/solutions/<slug>.json one live-coding task's
+//                                             reference solution, rubric and
+//                                             notes
 //
 // Why two shapes: the GitHub Pages build ships without a backend and reads
 // these files directly. Answers and code examples are 92% of the bytes and
@@ -15,6 +18,9 @@
 // paints first; a topic's answers arrive when a topic, session or search
 // asks for them. Hand-editing any of this after a seed change is the single
 // biggest source of dev/prod drift in this repo — run this script instead.
+// Live-coding tasks follow the same split for the same reason: the catalogue
+// carries the prompt and the starter, and nothing downloads a solution until
+// a user has finished writing their own.
 //
 // Usage:
 //   npm --prefix backend run generate:static-data
@@ -32,8 +38,10 @@ const SEED_DIR = path.join(__dirname, '..', 'data', 'seed');
 const TOPICS_FILE = path.join(SEED_DIR, 'topics.json');
 const QUESTIONS_DIR = path.join(SEED_DIR, 'questions');
 const ROADMAP_FILE = path.join(SEED_DIR, 'roadmap.json');
+const TASKS_FILE = path.join(SEED_DIR, 'tasks.json');
 const OUT_FILE = path.join(ROOT, 'frontend', 'public', 'seed', 'static-data.json');
 const ANSWERS_DIR = path.join(ROOT, 'frontend', 'public', 'seed', 'answers');
+const SOLUTIONS_DIR = path.join(ROOT, 'frontend', 'public', 'seed', 'solutions');
 const SITEMAP_FILE = path.join(ROOT, 'frontend', 'public', 'sitemap.xml');
 const ROBOTS_FILE = path.join(ROOT, 'frontend', 'public', 'robots.txt');
 
@@ -116,6 +124,53 @@ function validateRoadmap(roadmap, topics, questions) {
   if (platforms.size === 0) fail('no tracks defined');
 }
 
+// Live-coding tasks: one "write this" card each, with the reference solution
+// and the grading rubric that go with it. The file is meant to grow to a few
+// hundred cards, so everything that would only show up as a broken screen —
+// a topic slug that no longer exists, a task counted twice, a rubric too thin
+// to grade against — has to fail here instead.
+const TASK_MIN_MINUTES = 5;
+const TASK_MAX_MINUTES = 20;
+const TASK_MIN_RUBRIC_POINTS = 3;
+
+function validateTasks(tasks, topics) {
+  const fail = (msg) => { throw new Error(`tasks.json: ${msg}`); };
+
+  if (!Array.isArray(tasks)) fail('expected an array of tasks');
+
+  const topicSlugs = new Set(topics.map((t) => t.slug));
+  const ids = new Set();
+  const slugs = new Set();
+
+  tasks.forEach((task, i) => {
+    const where = task.slug ? `task "${task.slug}"` : `tasks[${i}]`;
+
+    if (!Number.isInteger(task.id) || task.id < 1) fail(`${where} needs a positive integer id`);
+    if (ids.has(task.id)) fail(`duplicate task id ${task.id} (${where})`);
+    ids.add(task.id);
+
+    if (!task.slug || typeof task.slug !== 'string') fail(`${where} has no slug`);
+    if (slugs.has(task.slug)) fail(`duplicate task slug "${task.slug}"`);
+    slugs.add(task.slug);
+
+    if (!topicSlugs.has(task.topic_slug)) fail(`${where} references unknown topic "${task.topic_slug}"`);
+    if (!DIFFICULTIES.includes(task.difficulty)) fail(`${where} has unknown difficulty "${task.difficulty}"`);
+    if (!Number.isInteger(task.minutes) || task.minutes < TASK_MIN_MINUTES || task.minutes > TASK_MAX_MINUTES) {
+      fail(`${where} needs minutes between ${TASK_MIN_MINUTES} and ${TASK_MAX_MINUTES}, got ${task.minutes}`);
+    }
+    if (!task.title || typeof task.title !== 'string') fail(`${where} has no title`);
+    if (!task.prompt || typeof task.prompt !== 'string') fail(`${where} has an empty prompt`);
+    if (!task.solution || typeof task.solution !== 'string') fail(`${where} has an empty solution`);
+    if (!Array.isArray(task.rubric) || task.rubric.length === 0) fail(`${where} has an empty rubric`);
+    if (task.rubric.length < TASK_MIN_RUBRIC_POINTS) {
+      fail(`${where} has ${task.rubric.length} rubric points — at least ${TASK_MIN_RUBRIC_POINTS} are needed to grade against`);
+    }
+    if (task.rubric.some((point) => !point || typeof point !== 'string')) {
+      fail(`${where} has an empty rubric point`);
+    }
+  });
+}
+
 function build() {
   if (!fs.existsSync(TOPICS_FILE)) {
     throw new Error(`Missing seed topics: ${TOPICS_FILE}`);
@@ -156,17 +211,22 @@ function build() {
   const roadmap = readJson(ROADMAP_FILE);
   validateRoadmap(roadmap, topics, questions);
 
-  return { topics, questions, roadmap };
+  const tasks = readJson(TASKS_FILE);
+  validateTasks(tasks, topics);
+
+  return { topics, questions, roadmap, tasks };
 }
 
 function format(payload) {
   return JSON.stringify(payload, null, 2) + '\n';
 }
 
-// Split the full payload into the catalogue the app boots from and one
-// answers file per topic. A question keeps everything but `answer` and
-// `code_example` in the catalogue; those two land in the topic's answers
-// file, in the same order, so the frontend can merge them back by id.
+// Split the full payload into the catalogue the app boots from, one answers
+// file per topic and one solution file per live-coding task. A question keeps
+// everything but `answer` and `code_example` in the catalogue; those two land
+// in the topic's answers file, in the same order, so the frontend can merge
+// them back by id. A task splits the same way: the prompt and the starter stay
+// in the catalogue, the solution, rubric and notes go to its own file.
 function split(payload) {
   const slugById = new Map(payload.topics.map((t) => [t.id, t.slug]));
   const answers = new Map();
@@ -178,31 +238,45 @@ function split(payload) {
     answers.get(slug).push({ id: q.id, answer, code_example: codeExample });
     return summary;
   });
+
+  const solutions = new Map();
+  const tasks = (payload.tasks || []).map((t) => {
+    const { solution, rubric, notes, ...card } = t;
+    solutions.set(t.slug, { solution, rubric, notes: notes || '' });
+    return card;
+  });
+
   return {
-    catalog: { topics: payload.topics, questions, roadmap: payload.roadmap },
+    catalog: { topics: payload.topics, questions, roadmap: payload.roadmap, tasks },
     answers,
+    solutions,
   };
 }
 
 // Every file the generator owns, as { relativePath: contents }, so writing
 // and checking walk the same list.
 function outputs(payload) {
-  const { catalog, answers } = split(payload);
+  const { catalog, answers, solutions } = split(payload);
   const files = new Map();
   files.set(OUT_FILE, format(catalog));
   for (const [slug, rows] of answers) {
     files.set(path.join(ANSWERS_DIR, `${slug}.json`), format(rows));
   }
+  for (const [slug, body] of solutions) {
+    files.set(path.join(SOLUTIONS_DIR, `${slug}.json`), format(body));
+  }
   return files;
 }
 
-// Answers files for topics that no longer exist would keep shipping stale
-// content; they are removed on write and reported by --check.
-function staleAnswerFiles(files) {
-  if (!fs.existsSync(ANSWERS_DIR)) return [];
-  return fs.readdirSync(ANSWERS_DIR)
-    .filter((n) => n.endsWith('.json'))
-    .map((n) => path.join(ANSWERS_DIR, n))
+// Answers files for topics that no longer exist — and solution files for
+// deleted tasks — would keep shipping stale content; they are removed on
+// write and reported by --check.
+function staleFiles(files) {
+  return [ANSWERS_DIR, SOLUTIONS_DIR]
+    .filter((dir) => fs.existsSync(dir))
+    .flatMap((dir) => fs.readdirSync(dir)
+      .filter((n) => n.endsWith('.json'))
+      .map((n) => path.join(dir, n)))
     .filter((p) => !files.has(p));
 }
 
@@ -255,11 +329,13 @@ function buildSitemap(topics, siteUrl) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
 }
 
+const countIn = (files, dir) => [...files.keys()].filter((f) => path.dirname(f) === dir).length;
+
 function main() {
   const checkMode = process.argv.includes('--check');
   const payload = build();
   const files = outputs(payload);
-  const stale = staleAnswerFiles(files);
+  const stale = staleFiles(files);
   const siteUrl = resolveSiteUrl();
   const sitemap = siteUrl ? buildSitemap(payload.topics, siteUrl) : null;
 
@@ -277,15 +353,16 @@ function main() {
       );
       process.exit(1);
     }
-    console.log(`✓ static-data.json and ${files.size - 1} answers files are up to date`);
+    console.log(`✓ static-data.json, ${countIn(files, ANSWERS_DIR)} answers files and ${countIn(files, SOLUTIONS_DIR)} solution files are up to date`);
     return;
   }
 
   fs.mkdirSync(ANSWERS_DIR, { recursive: true });
+  fs.mkdirSync(SOLUTIONS_DIR, { recursive: true });
   for (const [file, contents] of files) fs.writeFileSync(file, contents);
   for (const file of stale) fs.unlinkSync(file);
-  console.log(`✓ wrote ${path.relative(ROOT, OUT_FILE)} — ${payload.topics.length} topics, ${payload.questions.length} questions, ${payload.roadmap.tracks.length} roadmap tracks`);
-  console.log(`✓ wrote ${files.size - 1} answers files under ${path.relative(ROOT, ANSWERS_DIR)}/${stale.length ? ` (removed ${stale.length} stale)` : ''}`);
+  console.log(`✓ wrote ${path.relative(ROOT, OUT_FILE)} — ${payload.topics.length} topics, ${payload.questions.length} questions, ${payload.roadmap.tracks.length} roadmap tracks, ${payload.tasks.length} live tasks`);
+  console.log(`✓ wrote ${countIn(files, ANSWERS_DIR)} answers files and ${countIn(files, SOLUTIONS_DIR)} solution files${stale.length ? ` (removed ${stale.length} stale)` : ''}`);
 
   if (sitemap) {
     fs.writeFileSync(SITEMAP_FILE, sitemap);
@@ -300,4 +377,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { build, split, validateRoadmap };
+module.exports = { build, split, validateRoadmap, validateTasks };

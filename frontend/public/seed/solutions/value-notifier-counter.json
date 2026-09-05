@@ -1,0 +1,10 @@
+{
+  "solution": "import 'package:flutter/material.dart';\n\nclass CounterScreen extends StatefulWidget {\n  const CounterScreen({super.key});\n\n  @override\n  State<CounterScreen> createState() => _CounterScreenState();\n}\n\nclass _CounterScreenState extends State<CounterScreen> {\n  final _count = ValueNotifier<int>(0);\n\n  @override\n  void dispose() {\n    _count.dispose();\n    super.dispose();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('Counter')),\n      body: Center(\n        child: ValueListenableBuilder<int>(\n          valueListenable: _count,\n          builder: (context, value, _) => Text('$value'),\n        ),\n      ),\n      floatingActionButton: FloatingActionButton(\n        onPressed: () => _count.value++,\n        child: const Icon(Icons.add),\n      ),\n    );\n  }\n}",
+  "rubric": [
+    "A ValueNotifier<int> holds the count instead of a setState-driven field",
+    "Only the Text is wrapped in a ValueListenableBuilder — the Scaffold is outside it",
+    "The notifier is disposed in dispose()",
+    "The button mutates notifier.value rather than calling setState"
+  ],
+  "notes": "The point of the exercise is the *scope* of the rebuild, not the API. `build` now runs once; only the builder closure re-runs.\n\nTraps:\n\n- **Wrapping the whole `Scaffold` in the `ValueListenableBuilder`.** That is exactly the `setState` you were asked to remove, with extra ceremony.\n- **Not disposing.** `ValueNotifier` is a `ChangeNotifier`; an undisposed one keeps its listener list alive and the analyzer will not warn you.\n- A good answer often mentions that `ValueNotifier` compares with `==`, so assigning an equal value notifies nobody — which is why it is a poor fit for mutable lists."
+}

@@ -19,6 +19,9 @@ import type {
   QuestionSummary,
   QuestionAnswer,
   SrsCard,
+  LiveTask,
+  LiveTaskSolution,
+  AiCodeReview,
 } from '../types/domain.ts';
 
 // Production fallback for GitHub Pages: when we're served from *.github.io
@@ -114,6 +117,7 @@ interface StaticDataPayload {
   topics: Topic[];
   questions: QuestionSummary[];
   roadmap: Roadmap;
+  tasks: LiveTask[];
 }
 
 interface LocalProgressEntry {
@@ -178,6 +182,7 @@ export const invalidateStaticData = (): void => {
   staticDataLoadedAt = 0;
   staticDataLastGood = null;
   answersPromises.clear();
+  solutionPromises.clear();
 };
 
 // ── Answers: one file per topic ──────────────────────────────────────────────
@@ -212,6 +217,31 @@ const loadAnswers = (slug: string): Promise<AnswerRow[]> => {
 
 const toAnswerMap = (rows: ReadonlyArray<{ id: number } & QuestionAnswer>): Record<number, QuestionAnswer> =>
   Object.fromEntries(rows.map((r) => [r.id, { answer: r.answer, code_example: r.code_example }]));
+
+// ── Live-coding solutions: one file per task ─────────────────────────────────
+
+const solutionUrl = (slug: string): string =>
+  `${import.meta.env.BASE_URL}seed/solutions/${encodeURIComponent(slug)}.json`;
+
+// Same one-promise-per-slug memo the answers loader uses: a solution only
+// changes with a deploy, and the review screen may ask for it twice.
+const solutionPromises = new Map<string, Promise<LiveTaskSolution>>();
+
+const loadSolution = (slug: string): Promise<LiveTaskSolution> => {
+  const cached = solutionPromises.get(slug);
+  if (cached) return cached;
+  const pending = fetch(solutionUrl(slug))
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`Failed to load solution for ${slug}: ${res.status}`);
+      return (await res.json()) as LiveTaskSolution;
+    })
+    .catch((err: unknown) => {
+      solutionPromises.delete(slug);
+      throw err;
+    });
+  solutionPromises.set(slug, pending);
+  return pending;
+};
 
 const readProgress = (): LocalProgressMap => {
   try {
@@ -472,6 +502,28 @@ export const getAnswers = (slug: string): Promise<Record<number, QuestionAnswer>
   tryRemote(
     () => api.get<FallbackTopicWithQuestions>(`/topics/${slug}`).then((r) => toAnswerMap(r.data.questions)),
     () => loadAnswers(slug).then(toAnswerMap),
+  );
+
+/**
+ * The live-coding catalogue: every task without its solution or rubric.
+ *
+ * There is no `/api/tasks` route and there does not need to be — the tasks are
+ * curated seed content with no per-user state, so both arms read the same
+ * static bundle the frontend already ships. The `tryRemote` wrapper is what
+ * keeps this honest if a server route ever appears: only the first argument
+ * changes, and anonymous mode keeps working untouched.
+ */
+export const getLiveTasks = (): Promise<LiveTask[]> =>
+  tryRemote(
+    () => loadStaticData().then((d) => d.tasks || []),
+    () => loadStaticData().then((d) => d.tasks || []),
+  );
+
+/** One task's reference solution, rubric and notes. */
+export const getLiveTaskSolution = (slug: string): Promise<LiveTaskSolution> =>
+  tryRemote(
+    () => loadSolution(slug),
+    () => loadSolution(slug),
   );
 
 export const getStats = (): Promise<Stats> =>
@@ -757,6 +809,24 @@ export interface AiGradeResponse {
 
 export const aiGradeAnswer = ({ questionId, userAnswer, lang }: AiGradeArgs): Promise<AiGradeResponse> =>
   api.post<AiGradeResponse>('/ai/grade', { questionId, userAnswer, lang }, { timeout: AI_TIMEOUT_MS }).then((r) => r.data);
+
+export interface AiReviewArgs {
+  taskSlug: string;
+  code: string;
+  lang: 'en' | 'ru';
+}
+
+export interface AiReviewResponse {
+  review: AiCodeReview;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens: number;
+  };
+}
+
+export const aiReviewCode = ({ taskSlug, code, lang }: AiReviewArgs): Promise<AiReviewResponse> =>
+  api.post<AiReviewResponse>('/ai/review-code', { taskSlug, code, lang }, { timeout: AI_TIMEOUT_MS }).then((r) => r.data);
 
 export interface AiDraftArgs {
   prompt: string;

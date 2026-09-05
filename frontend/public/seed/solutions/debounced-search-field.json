@@ -1,0 +1,11 @@
+{
+  "solution": "import 'dart:async';\nimport 'package:flutter/material.dart';\n\nclass SearchField extends StatefulWidget {\n  const SearchField({super.key, required this.onSearch});\n\n  final void Function(String) onSearch;\n\n  @override\n  State<SearchField> createState() => _SearchFieldState();\n}\n\nclass _SearchFieldState extends State<SearchField> {\n  static const _window = Duration(milliseconds: 400);\n\n  final _controller = TextEditingController();\n  Timer? _debounce;\n  String _lastEmitted = '';\n\n  void _onChanged(String value) {\n    _debounce?.cancel();\n    _debounce = Timer(_window, () {\n      final query = value.trim();\n      if (query == _lastEmitted) return;\n      _lastEmitted = query;\n      widget.onSearch(query);\n    });\n  }\n\n  @override\n  void dispose() {\n    _debounce?.cancel();\n    _controller.dispose();\n    super.dispose();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return TextField(\n      controller: _controller,\n      onChanged: _onChanged,\n      decoration: const InputDecoration(hintText: 'Search'),\n    );\n  }\n}",
+  "rubric": [
+    "A pending Timer is cancelled before a new one is scheduled",
+    "The timer is cancelled in dispose()",
+    "The TextEditingController is disposed (or the field is left uncontrolled)",
+    "onSearch fires once per pause, not once per keystroke",
+    "An unchanged query does not fire onSearch again"
+  ],
+  "notes": "The interviewer is watching for two things: that you know a debounce is a *cancel-and-reschedule*, not a delay, and that you clean up.\n\nTraps:\n\n- **Scheduling without cancelling.** `Timer(_window, ...)` on every keystroke fires once per keystroke, 400 ms late. The cancel is the whole feature.\n- **Forgetting dispose.** A timer that survives the widget calls `widget.onSearch` after the element is unmounted; if the callback touches state you get \"setState() called after dispose()\". The controller leaks too.\n- Reading the text from `_controller.text` inside the timer instead of capturing `value` is fine here, but say why — it is the latest value either way because the timer only survives the last keystroke."
+}

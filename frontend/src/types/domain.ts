@@ -203,11 +203,64 @@ export interface Roadmap {
   tracks: RoadmapTrack[];
 }
 
+/**
+ * A live-coding task as the catalogue lists it: the prompt, the starter and
+ * the metadata, but not the reference solution. This is what `useLiveTasks()`
+ * returns — `seed/solutions/<slug>.json` holds the other half, fetched by
+ * `useLiveSolution(slug)` once the attempt is over, so nothing about the
+ * answer ships before the user has written theirs. The same split the
+ * `QuestionSummary` / `QuestionAnswer` pair uses.
+ */
+export interface LiveTask {
+  id: number;
+  /** Unique, stable, kebab — the solution filename and the analytics key. */
+  slug: string;
+  topic_slug: string;
+  difficulty: Difficulty;
+  /** The honest budget for this task, in minutes. */
+  minutes: number;
+  title: string;
+  /** Markdown. Self-contained: the user cannot ask a clarifying question. */
+  prompt: string;
+  /** The boilerplate the editor opens with, so the clock goes on the idea. */
+  starter: string;
+  code_language: string;
+  /** Comma-separated, same convention as a question's. */
+  tags?: string;
+}
+
+/** The graded half of a task — what `seed/solutions/<slug>.json` holds. */
+export interface LiveTaskSolution {
+  solution: string;
+  /** Binary, checkable points. The honest grading key, in order. */
+  rubric: string[];
+  /** Markdown: why the task is shaped this way, and the usual traps. */
+  notes: string;
+}
+
 // AI grader result schema — mirrors the submit_grade tool in backend/ai.js.
 export interface AiGrade {
   verdict: 'great' | 'good' | 'rough' | 'off';
   score: number; // 0..100
   summary: string;
+  strengths: string[];
+  gaps: string[];
+  suggestion: string;
+  followUp: string;
+}
+
+// AI code-review result — mirrors the submit_review tool in backend/ai.js.
+// One `rubric` entry per point of the task's rubric, in the same order.
+export interface AiRubricVerdict {
+  point: string;
+  met: boolean;
+  note: string;
+}
+
+export interface AiCodeReview {
+  verdict: 'great' | 'good' | 'rough' | 'off';
+  score: number; // 0..100
+  rubric: AiRubricVerdict[];
   strengths: string[];
   gaps: string[];
   suggestion: string;

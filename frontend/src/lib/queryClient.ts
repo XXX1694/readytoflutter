@@ -24,4 +24,6 @@ export const queryKeys = {
   questions: (params?: QuestionFilterParams) => ['questions', params || {}] as const,
   answers: (slug: string) => ['answers', slug] as const,
   roadmap: () => ['roadmap'] as const,
+  liveTasks: () => ['liveTasks'] as const,
+  liveSolution: (slug: string) => ['liveSolution', slug] as const,
 };

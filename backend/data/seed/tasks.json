@@ -1,0 +1,290 @@
+[
+  {
+    "id": 1,
+    "slug": "debounced-search-field",
+    "topic_slug": "basic-widgets",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "Debounced search field",
+    "prompt": "Build a `StatefulWidget` with a `TextField` that calls `onSearch(String)` at most once every 400 ms after the user stops typing. Cancel any pending call on dispose, and do not fire for a query identical to the last one you emitted.",
+    "starter": "import 'dart:async';\nimport 'package:flutter/material.dart';\n\nclass SearchField extends StatefulWidget {\n  const SearchField({super.key, required this.onSearch});\n\n  final void Function(String) onSearch;\n\n  @override\n  State<SearchField> createState() => _SearchFieldState();\n}\n\nclass _SearchFieldState extends State<SearchField> {\n  // your code here\n\n  @override\n  Widget build(BuildContext context) {\n    // your code here\n    throw UnimplementedError();\n  }\n}",
+    "code_language": "dart",
+    "tags": "widgets,timers,lifecycle",
+    "rubric": [
+      "A pending Timer is cancelled before a new one is scheduled",
+      "The timer is cancelled in dispose()",
+      "The TextEditingController is disposed (or the field is left uncontrolled)",
+      "onSearch fires once per pause, not once per keystroke",
+      "An unchanged query does not fire onSearch again"
+    ],
+    "solution": "import 'dart:async';\nimport 'package:flutter/material.dart';\n\nclass SearchField extends StatefulWidget {\n  const SearchField({super.key, required this.onSearch});\n\n  final void Function(String) onSearch;\n\n  @override\n  State<SearchField> createState() => _SearchFieldState();\n}\n\nclass _SearchFieldState extends State<SearchField> {\n  static const _window = Duration(milliseconds: 400);\n\n  final _controller = TextEditingController();\n  Timer? _debounce;\n  String _lastEmitted = '';\n\n  void _onChanged(String value) {\n    _debounce?.cancel();\n    _debounce = Timer(_window, () {\n      final query = value.trim();\n      if (query == _lastEmitted) return;\n      _lastEmitted = query;\n      widget.onSearch(query);\n    });\n  }\n\n  @override\n  void dispose() {\n    _debounce?.cancel();\n    _controller.dispose();\n    super.dispose();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return TextField(\n      controller: _controller,\n      onChanged: _onChanged,\n      decoration: const InputDecoration(hintText: 'Search'),\n    );\n  }\n}",
+    "notes": "The interviewer is watching for two things: that you know a debounce is a *cancel-and-reschedule*, not a delay, and that you clean up.\n\nTraps:\n\n- **Scheduling without cancelling.** `Timer(_window, ...)` on every keystroke fires once per keystroke, 400 ms late. The cancel is the whole feature.\n- **Forgetting dispose.** A timer that survives the widget calls `widget.onSearch` after the element is unmounted; if the callback touches state you get \"setState() called after dispose()\". The controller leaks too.\n- Reading the text from `_controller.text` inside the timer instead of capturing `value` is fine here, but say why — it is the latest value either way because the timer only survives the last keystroke."
+  },
+  {
+    "id": 2,
+    "slug": "value-notifier-counter",
+    "topic_slug": "basic-state",
+    "difficulty": "easy",
+    "minutes": 10,
+    "title": "Counter without setState",
+    "prompt": "Rewrite this counter so the `Text` rebuilds when the count changes but the surrounding `Scaffold` does not. Use a `ValueNotifier<int>` and a `ValueListenableBuilder`. The notifier must be disposed.",
+    "starter": "import 'package:flutter/material.dart';\n\nclass CounterScreen extends StatefulWidget {\n  const CounterScreen({super.key});\n\n  @override\n  State<CounterScreen> createState() => _CounterScreenState();\n}\n\nclass _CounterScreenState extends State<CounterScreen> {\n  int _count = 0;\n\n  @override\n  Widget build(BuildContext context) {\n    // Rebuilds the whole Scaffold on every tap. Fix that.\n    return Scaffold(\n      appBar: AppBar(title: const Text('Counter')),\n      body: Center(child: Text('$_count')),\n      floatingActionButton: FloatingActionButton(\n        onPressed: () => setState(() => _count++),\n        child: const Icon(Icons.add),\n      ),\n    );\n  }\n}",
+    "code_language": "dart",
+    "tags": "state,rebuilds,lifecycle",
+    "rubric": [
+      "A ValueNotifier<int> holds the count instead of a setState-driven field",
+      "Only the Text is wrapped in a ValueListenableBuilder — the Scaffold is outside it",
+      "The notifier is disposed in dispose()",
+      "The button mutates notifier.value rather than calling setState"
+    ],
+    "solution": "import 'package:flutter/material.dart';\n\nclass CounterScreen extends StatefulWidget {\n  const CounterScreen({super.key});\n\n  @override\n  State<CounterScreen> createState() => _CounterScreenState();\n}\n\nclass _CounterScreenState extends State<CounterScreen> {\n  final _count = ValueNotifier<int>(0);\n\n  @override\n  void dispose() {\n    _count.dispose();\n    super.dispose();\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('Counter')),\n      body: Center(\n        child: ValueListenableBuilder<int>(\n          valueListenable: _count,\n          builder: (context, value, _) => Text('$value'),\n        ),\n      ),\n      floatingActionButton: FloatingActionButton(\n        onPressed: () => _count.value++,\n        child: const Icon(Icons.add),\n      ),\n    );\n  }\n}",
+    "notes": "The point of the exercise is the *scope* of the rebuild, not the API. `build` now runs once; only the builder closure re-runs.\n\nTraps:\n\n- **Wrapping the whole `Scaffold` in the `ValueListenableBuilder`.** That is exactly the `setState` you were asked to remove, with extra ceremony.\n- **Not disposing.** `ValueNotifier` is a `ChangeNotifier`; an undisposed one keeps its listener list alive and the analyzer will not warn you.\n- A good answer often mentions that `ValueNotifier` compares with `==`, so assigning an equal value notifies nobody — which is why it is a poor fit for mutable lists."
+  },
+  {
+    "id": 3,
+    "slug": "retry-with-backoff",
+    "topic_slug": "async-futures",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "Retry with exponential backoff",
+    "prompt": "Implement `Future<T> retry<T>(Future<T> Function() action, {int attempts = 3, Duration delay = const Duration(milliseconds: 200)})`. It runs `action`, and on failure waits `delay`, then `delay * 2`, then `delay * 4`… between attempts. After the last attempt it rethrows the error from that attempt. A caller passing `attempts: 1` gets exactly one call and no delay.",
+    "starter": "import 'dart:async';\n\nFuture<T> retry<T>(\n  Future<T> Function() action, {\n  int attempts = 3,\n  Duration delay = const Duration(milliseconds: 200),\n}) async {\n  // your code here\n  throw UnimplementedError();\n}",
+    "code_language": "dart",
+    "tags": "async,futures,error-handling",
+    "rubric": [
+      "action runs at most `attempts` times, and exactly once when attempts is 1",
+      "No delay is awaited after the final attempt",
+      "The delay doubles between attempts",
+      "The last error is rethrown (not swallowed, and not a new generic error)"
+    ],
+    "solution": "import 'dart:async';\n\nFuture<T> retry<T>(\n  Future<T> Function() action, {\n  int attempts = 3,\n  Duration delay = const Duration(milliseconds: 200),\n}) async {\n  var wait = delay;\n  for (var attempt = 1; ; attempt++) {\n    try {\n      return await action();\n    } catch (error, stackTrace) {\n      if (attempt >= attempts) {\n        Error.throwWithStackTrace(error, stackTrace);\n      }\n      await Future<void>.delayed(wait);\n      wait *= 2;\n    }\n  }\n}",
+    "notes": "A tiny function that separates people who have written production networking code from people who have not.\n\nTraps:\n\n- **Sleeping after the last failure.** The loop must fail fast: `attempts: 3` waits twice, not three times.\n- **Losing the stack trace.** A bare `rethrow` inside the `catch` is fine; `throw error` is not — it resets the stack to this line. `Error.throwWithStackTrace` is the explicit version when you cannot `rethrow` (here you can, so `rethrow` in an `if` is equally good).\n- **Retrying everything.** Worth saying out loud: in real code you retry idempotent requests and 5xx/timeouts, not a 400. An interviewer will usually ask about it next.\n- Using `await` inside the `try` matters — `return action()` without `await` returns the future before it can fail, and the `catch` never runs."
+  },
+  {
+    "id": 4,
+    "slug": "throttle-stream-transformer",
+    "topic_slug": "streams",
+    "difficulty": "hard",
+    "minutes": 15,
+    "title": "Throttle a stream",
+    "prompt": "Implement `Stream<T> throttle<T>(Stream<T> source, Duration window)`. It emits the first event immediately, then drops every event that arrives within `window` of the last emitted one, and resumes emitting after the window. Forward errors and the done event, and cancel the source subscription when the returned stream is cancelled.",
+    "starter": "import 'dart:async';\n\nStream<T> throttle<T>(Stream<T> source, Duration window) {\n  // your code here\n  throw UnimplementedError();\n}",
+    "code_language": "dart",
+    "tags": "streams,async,backpressure",
+    "rubric": [
+      "The first event of the source is emitted immediately",
+      "Events inside the window are dropped, and emission resumes after it",
+      "Errors and done are forwarded to the returned stream",
+      "The source subscription is cancelled when the returned stream is cancelled",
+      "The controller is closed so the stream terminates"
+    ],
+    "solution": "import 'dart:async';\n\nStream<T> throttle<T>(Stream<T> source, Duration window) {\n  final controller = StreamController<T>();\n  StreamSubscription<T>? subscription;\n  DateTime? lastEmit;\n\n  controller.onListen = () {\n    subscription = source.listen(\n      (event) {\n        final now = DateTime.now();\n        if (lastEmit != null && now.difference(lastEmit!) < window) return;\n        lastEmit = now;\n        controller.add(event);\n      },\n      onError: controller.addError,\n      onDone: controller.close,\n      cancelOnError: false,\n    );\n  };\n  controller.onCancel = () async {\n    await subscription?.cancel();\n    subscription = null;\n  };\n\n  return controller.stream;\n}",
+    "notes": "The interesting part is not the timing arithmetic — it is the plumbing. A transformer that leaks its source subscription is the bug that keeps a screen alive after it is popped.\n\nTraps:\n\n- **Subscribing eagerly** instead of in `onListen`. A stream you never listened to should not be pulling events (and for a single-subscription source it throws the moment a second caller listens).\n- **Forgetting `onCancel`.** Cancelling the returned stream must cancel the source, or the upstream keeps producing forever.\n- **Never closing.** Without `onDone: controller.close`, an `await for` over the throttled stream hangs after the source finishes.\n- A `Timer`-based version (\"ignore until the timer fires\") is equally valid — the rubric is about behaviour, not about `DateTime` vs `Timer`. Just make sure the timer is cancelled in `onCancel` too."
+  },
+  {
+    "id": 5,
+    "slug": "generated-route-parser",
+    "topic_slug": "navigation-routing",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "Parse a route with an id",
+    "prompt": "Write `Route<dynamic>? onGenerateRoute(RouteSettings settings)` for an app with `/` (HomeScreen), `/product/:id` (ProductScreen, which takes an `int id`) and nothing else. A malformed or unknown path must return the `NotFoundScreen` route rather than null, and `/product/abc` counts as malformed.",
+    "starter": "import 'package:flutter/material.dart';\n\nclass HomeScreen extends StatelessWidget {\n  const HomeScreen({super.key});\n  @override\n  Widget build(BuildContext context) => const Placeholder();\n}\n\nclass ProductScreen extends StatelessWidget {\n  const ProductScreen({super.key, required this.id});\n  final int id;\n  @override\n  Widget build(BuildContext context) => const Placeholder();\n}\n\nclass NotFoundScreen extends StatelessWidget {\n  const NotFoundScreen({super.key});\n  @override\n  Widget build(BuildContext context) => const Placeholder();\n}\n\nRoute<dynamic>? onGenerateRoute(RouteSettings settings) {\n  // your code here\n  throw UnimplementedError();\n}",
+    "code_language": "dart",
+    "tags": "navigation,routing,parsing",
+    "rubric": [
+      "The path is split into segments rather than matched with a startsWith / substring",
+      "/product/:id parses the id and passes it to ProductScreen as an int",
+      "A non-numeric id falls through to NotFoundScreen",
+      "Unknown paths return a NotFoundScreen route, never null",
+      "Each branch returns a Route (MaterialPageRoute or equivalent) carrying the original settings"
+    ],
+    "solution": "import 'package:flutter/material.dart';\n\nclass HomeScreen extends StatelessWidget {\n  const HomeScreen({super.key});\n  @override\n  Widget build(BuildContext context) => const Placeholder();\n}\n\nclass ProductScreen extends StatelessWidget {\n  const ProductScreen({super.key, required this.id});\n  final int id;\n  @override\n  Widget build(BuildContext context) => const Placeholder();\n}\n\nclass NotFoundScreen extends StatelessWidget {\n  const NotFoundScreen({super.key});\n  @override\n  Widget build(BuildContext context) => const Placeholder();\n}\n\nRoute<dynamic>? onGenerateRoute(RouteSettings settings) {\n  Route<dynamic> page(Widget child) =>\n      MaterialPageRoute<dynamic>(builder: (_) => child, settings: settings);\n\n  final uri = Uri.parse(settings.name ?? '/');\n  final segments = uri.pathSegments;\n\n  if (segments.isEmpty) return page(const HomeScreen());\n\n  if (segments.length == 2 && segments.first == 'product') {\n    final id = int.tryParse(segments[1]);\n    if (id != null) return page(ProductScreen(id: id));\n  }\n\n  return page(const NotFoundScreen());\n}",
+    "notes": "`onGenerateRoute` is the one place a Flutter app parses untrusted input — a deep link, a push payload, a web URL. It should read like a parser, not like string surgery.\n\nTraps:\n\n- **`settings.name!.startsWith('/product/')`.** It matches `/product/` with an empty id, and it explodes on a null name. `Uri.parse` plus `pathSegments` handles the trailing slash, the query string and the empty path for you.\n- **`int.parse`.** A malformed deep link then throws inside the navigator instead of showing your 404. `int.tryParse` is the whole difference.\n- **Returning `null`.** Null means \"I do not handle this\", and the navigator falls through to `onUnknownRoute` — which most apps never set, so the user gets a black screen. Returning the 404 route is the deliberate choice; say which one you are making.\n- Passing `settings` down keeps the route name in `ModalRoute.of(context).settings`, which is what analytics and `RouteObserver` read."
+  },
+  {
+    "id": 6,
+    "slug": "resubscribe-on-widget-update",
+    "topic_slug": "flutter-fundamentals",
+    "difficulty": "hard",
+    "minutes": 15,
+    "title": "Re-subscribe when the widget changes",
+    "prompt": "Finish `_TickerViewState` so the widget shows the latest value of `widget.source`. It must subscribe on init, cancel and re-subscribe in `didUpdateWidget` when the parent hands it a *different* stream (and not when the stream is the same object), and cancel on dispose. Show `—` until the first event arrives, and the error's message if the stream errors.",
+    "starter": "import 'dart:async';\nimport 'package:flutter/material.dart';\n\nclass TickerView extends StatefulWidget {\n  const TickerView({super.key, required this.source});\n\n  final Stream<int> source;\n\n  @override\n  State<TickerView> createState() => _TickerViewState();\n}\n\nclass _TickerViewState extends State<TickerView> {\n  StreamSubscription<int>? _subscription;\n  int? _value;\n  Object? _error;\n\n  // your code here\n\n  @override\n  Widget build(BuildContext context) {\n    if (_error != null) return Text('$_error');\n    return Text(_value?.toString() ?? '—');\n  }\n}",
+    "code_language": "dart",
+    "tags": "lifecycle,streams,widgets",
+    "rubric": [
+      "The subscription is created in initState",
+      "didUpdateWidget compares oldWidget.source with widget.source and only re-subscribes when they differ",
+      "The old subscription is cancelled before the new one is created",
+      "dispose cancels the subscription",
+      "Both the data and the error path call setState, and the error path clears (or supersedes) the stale value"
+    ],
+    "solution": "import 'dart:async';\nimport 'package:flutter/material.dart';\n\nclass TickerView extends StatefulWidget {\n  const TickerView({super.key, required this.source});\n\n  final Stream<int> source;\n\n  @override\n  State<TickerView> createState() => _TickerViewState();\n}\n\nclass _TickerViewState extends State<TickerView> {\n  StreamSubscription<int>? _subscription;\n  int? _value;\n  Object? _error;\n\n  @override\n  void initState() {\n    super.initState();\n    _subscribe();\n  }\n\n  @override\n  void didUpdateWidget(covariant TickerView oldWidget) {\n    super.didUpdateWidget(oldWidget);\n    if (oldWidget.source != widget.source) {\n      _unsubscribe();\n      setState(() {\n        _value = null;\n        _error = null;\n      });\n      _subscribe();\n    }\n  }\n\n  @override\n  void dispose() {\n    _unsubscribe();\n    super.dispose();\n  }\n\n  void _subscribe() {\n    _subscription = widget.source.listen(\n      (value) => setState(() {\n        _value = value;\n        _error = null;\n      }),\n      onError: (Object error) => setState(() {\n        _error = error;\n        _value = null;\n      }),\n    );\n  }\n\n  void _unsubscribe() {\n    _subscription?.cancel();\n    _subscription = null;\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    if (_error != null) return Text('$_error');\n    return Text(_value?.toString() ?? '—');\n  }\n}",
+    "notes": "This is `StreamBuilder` written by hand, and that is the point: the interviewer wants to know you understand why `didUpdateWidget` exists at all.\n\nThe mental model: a `State` object outlives the `Widget` that configured it. When the parent rebuilds with a new `TickerView`, Flutter reuses this `State` and hands you the old widget. Anything derived from `widget.*` — a subscription, a controller, an animation — has to be reconciled there.\n\nTraps:\n\n- **Re-subscribing unconditionally.** Without the `oldWidget.source != widget.source` guard, every parent rebuild tears down and rebuilds the subscription; on a broadcast stream that silently drops events, and on a single-subscription stream it throws.\n- **Subscribing in `build`.** `build` can run many times per frame; it must stay free of side effects.\n- **`setState` after `dispose`.** Cancelling in `dispose` is what prevents it; the framework asserts on it in debug and it is the classic red screen in review."
+  },
+  {
+    "id": 7,
+    "slug": "actor-image-cache",
+    "topic_slug": "swift-concurrency",
+    "difficulty": "hard",
+    "minutes": 15,
+    "title": "De-duplicating image cache",
+    "prompt": "Implement `ImageLoader.image(for:)` so that two concurrent calls for the same URL result in exactly one network request, and a finished image is served from memory afterwards. Use the actor you are given. A failed load must not be cached — a later call retries.",
+    "starter": "import Foundation\nimport UIKit\n\nactor ImageLoader {\n    private let download: (URL) async throws -> UIImage\n\n    init(download: @escaping (URL) async throws -> UIImage) {\n        self.download = download\n    }\n\n    // your code here\n\n    func image(for url: URL) async throws -> UIImage {\n        // your code here\n        fatalError(\"unimplemented\")\n    }\n}",
+    "code_language": "swift",
+    "tags": "concurrency,actors,caching",
+    "rubric": [
+      "In-flight work is stored as a Task (or equivalent) keyed by URL, not just the finished image",
+      "A second caller for the same URL awaits the existing Task instead of starting a second download",
+      "A finished image is returned from the cache without awaiting anything",
+      "A thrown error removes the entry so the next call retries"
+    ],
+    "solution": "import Foundation\nimport UIKit\n\nactor ImageLoader {\n    private enum Entry {\n        case inFlight(Task<UIImage, Error>)\n        case ready(UIImage)\n    }\n\n    private var cache: [URL: Entry] = [:]\n    private let download: (URL) async throws -> UIImage\n\n    init(download: @escaping (URL) async throws -> UIImage) {\n        self.download = download\n    }\n\n    func image(for url: URL) async throws -> UIImage {\n        switch cache[url] {\n        case .ready(let image):\n            return image\n        case .inFlight(let task):\n            return try await task.value\n        case nil:\n            break\n        }\n\n        let task = Task { try await download(url) }\n        cache[url] = .inFlight(task)\n\n        do {\n            let image = try await task.value\n            cache[url] = .ready(image)\n            return image\n        } catch {\n            // Don't cache a failure — the next caller gets a fresh attempt.\n            cache[url] = nil\n            throw error\n        }\n    }\n}",
+    "notes": "The classic \"explain actor re-entrancy\" question, asked as code.\n\nThe trap the whole task is built around: an actor guarantees that only one task runs *your code* at a time, but every `await` is a suspension point where another task can enter. So this is broken:\n\n    if let image = cache[url] { return image }\n    let image = try await download(url)   // <- two callers are both here\n    cache[url] = image\n\nBoth callers pass the cache check before either reaches the assignment, and you get two downloads. Storing the `Task` *before* the first `await` closes the window — the second caller finds it synchronously and awaits the same value.\n\nOther things being watched for:\n\n- **Caching the failure.** `cache[url] = .ready` in a `defer`, or leaving the failed `Task` in the dictionary, means a flaky connection permanently poisons that URL.\n- **`NSCache` instead of a dictionary** is a fine answer for the memory story, but it does not solve de-duplication on its own — you still need the in-flight entry.\n- Cancellation is the natural follow-up: with `Task.value` shared between callers, one caller cancelling affects everyone, which is usually why real implementations count references."
+  },
+  {
+    "id": 8,
+    "slug": "profile-row-autolayout",
+    "topic_slug": "uikit-layout",
+    "difficulty": "easy",
+    "minutes": 10,
+    "title": "A profile row in code",
+    "prompt": "Lay out `ProfileRowView` with Auto Layout in code: a 44×44 avatar pinned to the leading edge and vertically centred, a title and a subtitle stacked to its right, and 12 pt of padding all round. The row must size itself from its content (no fixed height), and a long title must truncate rather than push the avatar off-screen.",
+    "starter": "import UIKit\n\nfinal class ProfileRowView: UIView {\n    let avatarView = UIImageView()\n    let titleLabel = UILabel()\n    let subtitleLabel = UILabel()\n\n    override init(frame: CGRect) {\n        super.init(frame: frame)\n        setUp()\n    }\n\n    required init?(coder: NSCoder) { fatalError(\"init(coder:) has not been implemented\") }\n\n    private func setUp() {\n        // your code here\n    }\n}",
+    "code_language": "swift",
+    "tags": "uikit,autolayout,views",
+    "rubric": [
+      "translatesAutoresizingMaskIntoConstraints is set to false on every view added in code",
+      "The avatar has explicit 44×44 constraints and is pinned to the leading edge",
+      "Constraints pin the labels to the trailing edge as well as the leading one, so the row has a full horizontal chain",
+      "Vertical constraints reach the bottom edge, so the view derives its intrinsic height from its content",
+      "The title label truncates instead of expanding — via numberOfLines and/or compression resistance"
+    ],
+    "solution": "import UIKit\n\nfinal class ProfileRowView: UIView {\n    let avatarView = UIImageView()\n    let titleLabel = UILabel()\n    let subtitleLabel = UILabel()\n\n    override init(frame: CGRect) {\n        super.init(frame: frame)\n        setUp()\n    }\n\n    required init?(coder: NSCoder) { fatalError(\"init(coder:) has not been implemented\") }\n\n    private func setUp() {\n        let text = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])\n        text.axis = .vertical\n        text.spacing = 2\n\n        for view in [avatarView, text] {\n            view.translatesAutoresizingMaskIntoConstraints = false\n            addSubview(view)\n        }\n\n        avatarView.layer.cornerRadius = 22\n        avatarView.clipsToBounds = true\n        avatarView.contentMode = .scaleAspectFill\n\n        titleLabel.numberOfLines = 1\n        titleLabel.lineBreakMode = .byTruncatingTail\n        subtitleLabel.numberOfLines = 1\n        subtitleLabel.textColor = .secondaryLabel\n\n        // The labels must yield before the avatar does, or a long title\n        // stretches the row instead of truncating.\n        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)\n\n        NSLayoutConstraint.activate([\n            avatarView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),\n            avatarView.centerYAnchor.constraint(equalTo: centerYAnchor),\n            avatarView.widthAnchor.constraint(equalToConstant: 44),\n            avatarView.heightAnchor.constraint(equalToConstant: 44),\n\n            text.leadingAnchor.constraint(equalTo: avatarView.trailingAnchor, constant: 12),\n            text.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),\n            text.topAnchor.constraint(equalTo: topAnchor, constant: 12),\n            text.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),\n\n            avatarView.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 12),\n            bottomAnchor.constraint(greaterThanOrEqualTo: avatarView.bottomAnchor, constant: 12),\n        ])\n    }\n}",
+    "notes": "A warm-up, but it separates people who have actually written constraints from people who have only dragged them.\n\nTraps:\n\n- **Forgetting `translatesAutoresizingMaskIntoConstraints = false`.** The single most common Auto Layout bug: the system generates constraints from the frame, they fight yours, and the console fills with a conflict log.\n- **A half-open chain.** Leading + width for the labels looks fine until the title is long. Pinning both leading *and* trailing is what makes truncation possible at all.\n- **A hardcoded height.** Asked for a self-sizing row, `heightAnchor.constraint(equalToConstant: 68)` gets you a row that breaks the moment Dynamic Type is turned up.\n- Reaching for a `UIStackView` for the text column is the expected move — say that the outer layout is still explicit constraints because the avatar is fixed and the text is flexible."
+  },
+  {
+    "id": 9,
+    "slug": "swiftui-checklist-binding",
+    "topic_slug": "swiftui-state",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "A checklist that actually writes back",
+    "prompt": "Finish `ChecklistView` so each row's `Toggle` writes back into the parent's `items` array. `ItemRow` must not own the data — it takes a `Binding<Item>`. `Item` is a struct. Do not add a view model or a reference type.",
+    "starter": "import SwiftUI\n\nstruct Item: Identifiable {\n    let id = UUID()\n    var title: String\n    var done: Bool\n}\n\nstruct ChecklistView: View {\n    @State private var items: [Item] = [\n        Item(title: \"Book the room\", done: false),\n        Item(title: \"Send the agenda\", done: true),\n    ]\n\n    var body: some View {\n        // your code here\n        EmptyView()\n    }\n}\n\nstruct ItemRow: View {\n    // your code here\n\n    var body: some View {\n        // your code here\n        EmptyView()\n    }\n}",
+    "code_language": "swift",
+    "tags": "swiftui,state,bindings",
+    "rubric": [
+      "ItemRow declares @Binding var item: Item and owns no @State copy of it",
+      "The parent produces a per-element binding (List($items) or $items[index]) rather than passing a copy",
+      "The Toggle is bound to $item.done, so flipping it mutates the parent array",
+      "items stays @State in the parent and is not duplicated in the child"
+    ],
+    "solution": "import SwiftUI\n\nstruct Item: Identifiable {\n    let id = UUID()\n    var title: String\n    var done: Bool\n}\n\nstruct ChecklistView: View {\n    @State private var items: [Item] = [\n        Item(title: \"Book the room\", done: false),\n        Item(title: \"Send the agenda\", done: true),\n    ]\n\n    var body: some View {\n        List($items) { $item in\n            ItemRow(item: $item)\n        }\n    }\n}\n\nstruct ItemRow: View {\n    @Binding var item: Item\n\n    var body: some View {\n        Toggle(item.title, isOn: $item.done)\n    }\n}",
+    "notes": "One question, asked precisely: do you know the difference between a value and a *write path* to a value?\n\nTraps:\n\n- **`@State private var item: Item` in the row.** It compiles, the toggle animates, and nothing is saved — the row is flipping its own copy. This is the single most common SwiftUI bug in review.\n- **`ForEach(items) { item in ... }`.** `item` there is a copy; there is no binding to hand down. You need `List($items)`, `ForEach($items)`, or an index-based `$items[index]`.\n- **Indexing by position when the array can be reordered or filtered.** `$items[index]` is safe here, but the `Identifiable`-driven `$`-binding is what survives a sort.\n- If asked to go further: `Binding(get:set:)` written by hand is the honest explanation of what `$item.done` desugars to — a getter and a setter, not a stored value."
+  },
+  {
+    "id": 10,
+    "slug": "debounced-search-flow",
+    "topic_slug": "kotlin-coroutines",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "Search as a Flow pipeline",
+    "prompt": "Expose `results: StateFlow<List<String>>` from `SearchViewModel`. It must debounce the query by 300 ms, ignore repeated identical queries, cancel an in-flight `repository.search()` when a newer query arrives, emit an empty list for a blank query without calling the repository, and never crash the collector when `search` throws.",
+    "starter": "import androidx.lifecycle.ViewModel\nimport androidx.lifecycle.viewModelScope\nimport kotlinx.coroutines.flow.*\n\ninterface SearchRepository {\n    suspend fun search(query: String): List<String>\n}\n\nclass SearchViewModel(private val repository: SearchRepository) : ViewModel() {\n\n    private val query = MutableStateFlow(\"\")\n\n    fun onQueryChanged(value: String) {\n        query.value = value\n    }\n\n    // your code here\n}",
+    "code_language": "kotlin",
+    "tags": "coroutines,flow,viewmodel",
+    "rubric": [
+      "debounce(300) is applied to the query flow",
+      "distinctUntilChanged() drops repeated identical queries",
+      "flatMapLatest (or transformLatest/mapLatest) cancels the previous search when a new query arrives",
+      "A blank query short-circuits to an empty list without hitting the repository",
+      "Failures are caught inside the pipeline so the StateFlow keeps collecting",
+      "The flow is converted with stateIn(viewModelScope, ...) rather than collected into a var"
+    ],
+    "solution": "import androidx.lifecycle.ViewModel\nimport androidx.lifecycle.viewModelScope\nimport kotlinx.coroutines.flow.*\n\ninterface SearchRepository {\n    suspend fun search(query: String): List<String>\n}\n\nclass SearchViewModel(private val repository: SearchRepository) : ViewModel() {\n\n    private val query = MutableStateFlow(\"\")\n\n    fun onQueryChanged(value: String) {\n        query.value = value\n    }\n\n    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)\n    val results: StateFlow<List<String>> = query\n        .debounce(300)\n        .distinctUntilChanged()\n        .flatMapLatest { text ->\n            if (text.isBlank()) {\n                flowOf(emptyList())\n            } else {\n                flow { emit(repository.search(text)) }\n                    .catch { emit(emptyList()) }\n            }\n        }\n        .stateIn(\n            scope = viewModelScope,\n            started = SharingStarted.WhileSubscribed(5_000),\n            initialValue = emptyList(),\n        )\n}",
+    "notes": "The canonical Android interview pipeline. Every operator in it is there for a reason, and the interviewer will ask you which.\n\nTraps:\n\n- **`map` instead of `flatMapLatest`.** `map` waits for the slow request to finish before starting the next one, so results arrive out of order and the last one wins by luck. `flatMapLatest` cancels the previous `search` — that is the whole reason this is a Flow and not a callback.\n- **`catch` outside the inner flow.** `catch` on the outer chain terminates the whole pipeline after the first failure: one network error and the screen is dead until the ViewModel is recreated. Keep it around the call that can fail.\n- **`debounce` after `flatMapLatest`.** Then you have already fired the request you were trying to avoid.\n- **`SharingStarted.Eagerly`** keeps the upstream alive while the app is backgrounded; `WhileSubscribed(5_000)` is the idiom because it survives a configuration change but not a real unsubscribe.\n- A loading state is the natural follow-up — wrap the emissions in a sealed `UiState` and `onStart { emit(Loading) }` inside the `flatMapLatest` block."
+  },
+  {
+    "id": 11,
+    "slug": "compose-stepper-row",
+    "topic_slug": "compose-state",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "A stateless stepper",
+    "prompt": "Write `StepperRow`: a label, a minus button, the current value and a plus button. It must be a *stateless* composable — the caller owns the value — clamped to `range`, with the buttons disabled at the ends. Then write `StepperScreen` showing how a caller holds the state so it survives a configuration change.",
+    "starter": "import androidx.compose.runtime.*\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.material3.*\nimport androidx.compose.ui.Modifier\n\n@Composable\nfun StepperRow(\n    label: String,\n    value: Int,\n    onValueChange: (Int) -> Unit,\n    modifier: Modifier = Modifier,\n    range: IntRange = 0..10,\n) {\n    // your code here\n}\n\n@Composable\nfun StepperScreen() {\n    // your code here\n}",
+    "code_language": "kotlin",
+    "tags": "compose,state-hoisting,recomposition",
+    "rubric": [
+      "StepperRow holds no remember/mutableStateOf of its own — value comes in, changes go out through onValueChange",
+      "The caller holds the state with rememberSaveable so it survives a configuration change",
+      "The new value is clamped to range before onValueChange is called",
+      "The minus/plus buttons are disabled at the bounds of the range",
+      "The modifier parameter is applied to the root layout of the composable"
+    ],
+    "solution": "import androidx.compose.runtime.*\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.material3.*\nimport androidx.compose.ui.Alignment\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.unit.dp\n\n@Composable\nfun StepperRow(\n    label: String,\n    value: Int,\n    onValueChange: (Int) -> Unit,\n    modifier: Modifier = Modifier,\n    range: IntRange = 0..10,\n) {\n    Row(\n        modifier = modifier.fillMaxWidth(),\n        verticalAlignment = Alignment.CenterVertically,\n        horizontalArrangement = Arrangement.spacedBy(8.dp),\n    ) {\n        Text(text = label, modifier = Modifier.weight(1f))\n\n        IconButton(\n            onClick = { onValueChange((value - 1).coerceIn(range)) },\n            enabled = value > range.first,\n        ) { Text(\"-\") }\n\n        Text(text = value.toString())\n\n        IconButton(\n            onClick = { onValueChange((value + 1).coerceIn(range)) },\n            enabled = value < range.last,\n        ) { Text(\"+\") }\n    }\n}\n\n@Composable\nfun StepperScreen() {\n    // rememberSaveable, not remember: the value has to outlive a rotation.\n    var guests by rememberSaveable { mutableStateOf(2) }\n\n    StepperRow(\n        label = \"Guests\",\n        value = guests,\n        onValueChange = { guests = it },\n    )\n}",
+    "notes": "State hoisting, asked as a diff rather than a definition. The shape to reach for automatically is `value: T, onValueChange: (T) -> Unit` — the same signature `TextField` and `Checkbox` use.\n\nTraps:\n\n- **`var value by remember { mutableStateOf(initial) }` inside `StepperRow`.** Now the component has a second source of truth: the caller cannot reset it, cannot read it, and passing a new `initial` does nothing (`remember` ignores its lambda after the first composition). This is the mistake the task exists to catch.\n- **`remember` in the caller instead of `rememberSaveable`.** Rotate the device and the count is back to 2. `rememberSaveable` writes through `SavedStateHandle`'s bundle; for anything richer than a primitive you need a `Saver` — worth mentioning.\n- **Clamping in the display instead of before the callback.** Then the hoisted state drifts out of range and the caller stores something it can never show.\n- **Dropping `modifier`.** A composable that ignores its `Modifier` cannot be padded, sized or clicked by its parent; the convention is a single `modifier: Modifier = Modifier` applied to the root, first among the optional parameters."
+  },
+  {
+    "id": 12,
+    "slug": "split-when-extension",
+    "topic_slug": "kotlin-basics",
+    "difficulty": "easy",
+    "minutes": 10,
+    "title": "Split a list on a predicate",
+    "prompt": "Write `fun <T> Iterable<T>.splitWhen(predicate: (T) -> Boolean): List<List<T>>`. It cuts the sequence *before* every element matching `predicate`, so the matching element starts the next group. An empty input gives an empty list, and no group in the result is ever empty. Iterate the receiver once.",
+    "starter": "fun <T> Iterable<T>.splitWhen(predicate: (T) -> Boolean): List<List<T>> {\n    // your code here\n    TODO()\n}\n\nfun main() {\n    // listOf(1, 2, 10, 3, 10, 20) with { it >= 10 } gives\n    // [[1, 2], [10, 3], [10], [20]]\n    println(listOf(1, 2, 10, 3, 10, 20).splitWhen { it >= 10 })\n}",
+    "code_language": "kotlin",
+    "tags": "collections,generics,extensions",
+    "rubric": [
+      "An empty receiver returns an empty list, not a list holding one empty group",
+      "No empty group is ever emitted — two adjacent matches do not produce a gap",
+      "The final group is flushed after the loop ends",
+      "The receiver is iterated exactly once (no index-based re-traversal of an Iterable)"
+    ],
+    "solution": "fun <T> Iterable<T>.splitWhen(predicate: (T) -> Boolean): List<List<T>> {\n    val groups = mutableListOf<List<T>>()\n    var current = mutableListOf<T>()\n\n    for (element in this) {\n        if (predicate(element) && current.isNotEmpty()) {\n            groups += current\n            current = mutableListOf()\n        }\n        current += element\n    }\n    if (current.isNotEmpty()) groups += current\n\n    return groups\n}\n\nfun main() {\n    println(listOf(1, 2, 10, 3, 10, 20).splitWhen { it >= 10 })\n}",
+    "notes": "A five-line function with three edge cases in it — which is exactly why it gets asked. The interviewer is watching whether you enumerate the edges *before* writing the loop.\n\nTraps:\n\n- **The empty input.** Starting with `groups = mutableListOf(mutableListOf<T>())` gives `[[]]` for an empty receiver. The fix is to flush at the end rather than seed at the start.\n- **Two matches in a row.** `10, 20` must give `[10], [20]`, not `[10], [], [20]`. The `current.isNotEmpty()` guard is doing that work — cutting on a match only when there is something to cut.\n- **Losing the last group.** Every \"split on a delimiter\" loop needs the flush after it. Forgetting it is the classic off-by-one.\n- **`Iterable`, not `List`.** The receiver may be a one-shot `Sequence`-backed iterable, so `size`/`get` are off the table and a second pass is wrong even where it compiles."
+  },
+  {
+    "id": 13,
+    "slug": "expect-actual-key-value-store",
+    "topic_slug": "kmp",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "expect / actual key-value store",
+    "prompt": "Declare `KeyValueStore` in `commonMain` — `expect class` with `get(key: String): String?` and `put(key: String, value: String)` — and write the Android `actual` backed by `SharedPreferences`. `commonMain` must not reference any Android or iOS type, and the Android constructor needs a `Context` the common code cannot supply. Show how you resolve that.",
+    "starter": "// ── commonMain/kotlin/storage/KeyValueStore.kt ──────────────────────────\npackage storage\n\n// your code here\n\n// ── androidMain/kotlin/storage/KeyValueStore.android.kt ─────────────────\npackage storage\n\nimport android.content.Context\n\n// your code here",
+    "code_language": "kotlin",
+    "tags": "kmp,expect-actual,storage",
+    "rubric": [
+      "The expect declaration has no body and no platform imports in commonMain",
+      "The actual class matches the expect signature exactly — same name, same members, same parameter types",
+      "The Android Context is supplied outside commonMain (a factory, an expect-less constructor, or DI) rather than leaking into the common declaration",
+      "The Android implementation reads and writes through SharedPreferences correctly, returning null for a missing key"
+    ],
+    "solution": "// ── commonMain/kotlin/storage/KeyValueStore.kt ──────────────────────────\npackage storage\n\nexpect class KeyValueStore {\n    fun get(key: String): String?\n    fun put(key: String, value: String)\n}\n\n// commonMain code takes the store as a dependency; it never constructs one.\nclass SessionRepository(private val store: KeyValueStore) {\n    var token: String?\n        get() = store.get(\"token\")\n        set(value) { store.put(\"token\", value ?: \"\") }\n}\n\n// ── androidMain/kotlin/storage/KeyValueStore.android.kt ─────────────────\npackage storage\n\nimport android.content.Context\nimport android.content.SharedPreferences\n\nactual class KeyValueStore(private val prefs: SharedPreferences) {\n    actual fun get(key: String): String? = prefs.getString(key, null)\n\n    actual fun put(key: String, value: String) {\n        prefs.edit().putString(key, value).apply()\n    }\n}\n\n// The Context stays on the Android side of the boundary: the app module\n// builds the store and hands it to the shared code.\nfun KeyValueStore(context: Context): KeyValueStore =\n    KeyValueStore(context.getSharedPreferences(\"app\", Context.MODE_PRIVATE))",
+    "notes": "`expect`/`actual` is easy to describe and easy to get wrong the first time you write it, because the constructor is part of the contract.\n\nTraps:\n\n- **Putting `Context` in the `expect`.** `expect class KeyValueStore(context: Context)` does not compile in `commonMain` — there is no `Context` there. The Android-only dependency has to enter through an Android-only entry point: a secondary constructor, a top-level factory (as above), or your DI graph.\n- **Signatures that \"nearly\" match.** The `actual` must mirror the `expect` member for member — a default argument declared on both sides, a differing nullability, an extra public method with the same name: all compile errors, and confusing ones.\n- **Reaching for `expect` when an interface would do.** An interface in `commonMain` plus a platform implementation is often the better design — it is testable with a fake and it does not need the compiler's matching rules. `expect`/`actual` earns its place when you want the *same type name* on both sides with no indirection.\n- On iOS the `actual` would wrap `NSUserDefaults`; the common code never learns which."
+  },
+  {
+    "id": 14,
+    "slug": "shared-empty-state",
+    "topic_slug": "compose-multiplatform",
+    "difficulty": "medium",
+    "minutes": 12,
+    "title": "A composable that compiles on every target",
+    "prompt": "Write `EmptyState(title: String, message: String, actionLabel: String? = null, onAction: (() -> Unit)? = null, modifier: Modifier = Modifier)` for `commonMain` in a Compose Multiplatform module. It renders the title, the message and — only when both action parameters are present — a button. Every import must be available on Android, iOS and desktop.",
+    "starter": "// commonMain/kotlin/ui/EmptyState.kt\npackage ui\n\nimport androidx.compose.runtime.Composable\nimport androidx.compose.ui.Modifier\n\n@Composable\nfun EmptyState(\n    title: String,\n    message: String,\n    actionLabel: String? = null,\n    onAction: (() -> Unit)? = null,\n    modifier: Modifier = Modifier,\n) {\n    // your code here\n}",
+    "code_language": "kotlin",
+    "tags": "compose-multiplatform,kmp,ui",
+    "rubric": [
+      "Only multiplatform imports are used — nothing from android.*, androidx.compose.ui.platform.LocalContext, or androidx.compose.ui.res",
+      "The button renders only when actionLabel and onAction are both non-null",
+      "The modifier parameter is applied to the root layout",
+      "Text and layout come from the Compose Multiplatform artifacts (foundation/material3 + runtime), so the file compiles unchanged on iOS and desktop"
+    ],
+    "solution": "// commonMain/kotlin/ui/EmptyState.kt\npackage ui\n\nimport androidx.compose.foundation.layout.Arrangement\nimport androidx.compose.foundation.layout.Column\nimport androidx.compose.foundation.layout.fillMaxWidth\nimport androidx.compose.foundation.layout.padding\nimport androidx.compose.material3.Button\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.material3.Text\nimport androidx.compose.runtime.Composable\nimport androidx.compose.ui.Alignment\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.text.style.TextAlign\nimport androidx.compose.ui.unit.dp\n\n@Composable\nfun EmptyState(\n    title: String,\n    message: String,\n    actionLabel: String? = null,\n    onAction: (() -> Unit)? = null,\n    modifier: Modifier = Modifier,\n) {\n    Column(\n        modifier = modifier.fillMaxWidth().padding(24.dp),\n        horizontalAlignment = Alignment.CenterHorizontally,\n        verticalArrangement = Arrangement.spacedBy(8.dp),\n    ) {\n        Text(\n            text = title,\n            style = MaterialTheme.typography.titleMedium,\n            textAlign = TextAlign.Center,\n        )\n        Text(\n            text = message,\n            style = MaterialTheme.typography.bodyMedium,\n            textAlign = TextAlign.Center,\n        )\n        if (actionLabel != null && onAction != null) {\n            Button(onClick = onAction) { Text(actionLabel) }\n        }\n    }\n}",
+    "notes": "Nothing here is hard Compose; the question is whether you know where the multiplatform boundary runs.\n\nTraps:\n\n- **`stringResource(R.string.empty_title)`.** `R` is generated by the Android Gradle plugin and does not exist in `commonMain`. Strings either come in as parameters (as here) or through the `compose.components.resources` artifact and its generated `Res` object — not `androidx.compose.ui.res`.\n- **`LocalContext.current`.** Android-only. The multiplatform equivalents are `LocalDensity`, `LocalLayoutDirection` and friends; anything genuinely platform-specific goes behind an `expect` function.\n- **`painterResource(R.drawable.…)`** and `Toast` — same story.\n- **A nullable lambda you invoke without checking.** `onAction?.invoke()` inside a button you always render gives the user a dead control; gating on both parameters is the honest version.\n- Worth saying out loud: `androidx.compose.foundation`, `material3`, `runtime` and `ui` are all published for iOS and desktop by JetBrains' Compose Multiplatform, which is why the layout code itself needs no `expect`/`actual` at all."
+  }
+]

@@ -6,6 +6,8 @@ import {
   getAnswers,
   getStats,
   getRoadmap,
+  getLiveTasks,
+  getLiveTaskSolution,
   updateProgress,
   resetProgress,
   type QuestionFilterParams,
@@ -15,6 +17,7 @@ import { resetAll as resetSrs } from './srs';
 
 import type {
   Topic, Question, QuestionSummary, QuestionAnswer, Stats, ProgressStatus, Level, Roadmap,
+  LiveTask, LiveTaskSolution,
 } from '../types/domain.ts';
 
 interface TopicWithQuestions extends Topic {
@@ -114,6 +117,31 @@ export function useRoadmap(): UseQueryResult<Roadmap> {
     queryKey: queryKeys.roadmap(),
     queryFn: () => getRoadmap(),
     // Baked into the build; nothing a refetch could change mid-session.
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * The live-coding catalogue: every task without its solution. Curated seed
+ * content, so it changes only with a deploy.
+ */
+export function useLiveTasks(): UseQueryResult<LiveTask[]> {
+  return useQuery({
+    queryKey: queryKeys.liveTasks(),
+    queryFn: () => getLiveTasks(),
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * One task's reference solution, rubric and notes. `enabled: false` keeps it
+ * off the wire while the user is still writing — the whole point of the split.
+ */
+export function useLiveSolution(slug: string | undefined, enabled = true): UseQueryResult<LiveTaskSolution> {
+  return useQuery({
+    queryKey: queryKeys.liveSolution(slug || ''),
+    queryFn: () => getLiveTaskSolution(slug as string),
+    enabled: Boolean(slug) && enabled,
     staleTime: Infinity,
   });
 }
