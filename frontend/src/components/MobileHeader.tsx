@@ -87,8 +87,13 @@ export default function MobileHeader() {
     const id = requestAnimationFrame(find);
     return () => cancelAnimationFrame(id);
   }, [location.pathname]);
-  const { direction, atTop } = useScrollDirection(() => mainEl, { threshold: 6 });
+  // `topGuard` is where the h1 has just left the viewport: below it the bar
+  // holds nothing but Back and Search, so the page's own title is the only
+  // one on screen; past it the bar's copy fades in to take over. On a focus
+  // flow there is no h1 under the bar, so the title stays put.
+  const { direction, atTop } = useScrollDirection(() => mainEl, { threshold: 6, topGuard: 64 });
   const hidden = direction === 'down' && !atTop;
+  const titleShown = isFocus || !atTop;
 
   // The stack sheet: opened from the pill on Today. `mounted` flips once so
   // the lazy chunk is only requested after the first tap.
@@ -148,7 +153,14 @@ export default function MobileHeader() {
         {/* Title — absolutely centred so it doesn't shift when actions
             change. Truncates beyond 60% width to keep edges clear. */}
         {!isHome && (
-          <span className="pointer-events-none absolute left-1/2 top-1/2 max-w-[60%] -translate-x-1/2 -translate-y-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink">
+          <span
+            aria-hidden={!titleShown}
+            className={cn(
+              'pointer-events-none absolute left-1/2 top-1/2 max-w-[60%] -translate-x-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink',
+              'transition-[opacity,transform] duration-200 ease-out',
+              titleShown ? '-translate-y-1/2 opacity-100' : '-translate-y-1/4 opacity-0',
+            )}
+          >
             {title}
           </span>
         )}

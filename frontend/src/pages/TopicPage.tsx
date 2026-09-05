@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Target, Printer, FileText, MessagesSquare } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -271,7 +270,7 @@ export default function TopicPage() {
     window.open(`${import.meta.env.BASE_URL}topic/${topic.slug}/${suffix}`, '_blank', 'noopener');
 
   return (
-    <PageShell width="reading" padBottom>
+    <PageShell width="reading">
       <PageHeader
         eyebrow={crumbs.join(' · ')}
         title={topicTitle(topic)}
@@ -307,6 +306,10 @@ export default function TopicPage() {
           />
           <span className="text-[13px] text-muted">{c.percent(pct)}</span>
         </div>
+        {/* The same primary, full width, where a thumb finds it on a phone. */}
+        <Button variant="codex" size="lg" onClick={startSession} className="mt-4 w-full sm:hidden">
+          {t.nav.startSession}
+        </Button>
       </PageHeader>
 
       <ChipGroup ariaLabel={c.statusFilters} scroll className="mb-6">
@@ -355,40 +358,13 @@ export default function TopicPage() {
       <div className="mt-12">
         <TopicSources topic={topic} />
       </div>
-
-      {/* Sticky mobile CTA — rendered through a portal into <body> so the
-          `transform` framer-motion sets on the route-transition wrapper
-          doesn't trap the fixed element inside its containing block.
-          Without the portal, `position: fixed` here would be measured
-          against the moving slide layer, leaving the panel ~64px above
-          where it should sit. Hidden at sm+. */}
-      {typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-x-0 z-30 sm:hidden"
-          style={{ bottom: 'var(--bottom-nav-h, 56px)' }}
-        >
-          {/* A 16px scrim so the last row dissolves into the shelf instead of
-              being sliced by its hairline. */}
-          <div
-            aria-hidden
-            className="h-4"
-            style={{ background: 'linear-gradient(to top, rgb(var(--paper)), rgb(var(--paper) / 0))' }}
-          />
-          <div className="border-t border-rule/12 bg-paper-2 px-4 pb-2 pt-3">
-            <Button variant="codex" size="lg" className="w-full" onClick={startSession}>
-              {t.nav.startSession}
-            </Button>
-          </div>
-        </div>,
-        document.body,
-      )}
     </PageShell>
   );
 }
 
 function TopicSkeleton() {
   return (
-    <PageShell width="reading" padBottom>
+    <PageShell width="reading">
       <div className="mb-6 border-b border-rule/12 pb-5 sm:mb-8 sm:pb-6">
         <Skeleton className="h-3 w-40" />
         <Skeleton className="mt-3 h-8 w-3/5" />
