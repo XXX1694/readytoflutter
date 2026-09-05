@@ -11,6 +11,7 @@ import {
   clearLocalProgress,
   serializeLocalProgress,
 } from '../api/api';
+import { syncSrs } from '../lib/srsSync';
 import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useLoginCopy, type LoginCopy } from '../i18n/loginPage';
@@ -98,6 +99,11 @@ export default function LoginPage() {
         // Sync failure is non-fatal — the local data stays in place and the
         // user can retry by signing out and back in.
       }
+
+      // Pull the account's review schedule down and push this browser's up.
+      // Anonymous study before signing in is kept: the merge is per card, and
+      // the later rating wins on both sides.
+      await syncSrs();
 
       // Invalidate all queries so subsequent fetches go out with the new
       // Authorization header and reflect the user's server-side progress.

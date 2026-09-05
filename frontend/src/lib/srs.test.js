@@ -10,6 +10,10 @@ import {
   previewInterval,
   getReviewTimes,
   readAll,
+  mergeCards,
+  cardsRatedSince,
+  getSyncedAt,
+  setSyncedAt,
 } from './srs';
 
 describe('srs.getCardState', () => {
@@ -259,5 +263,127 @@ describe('srs.rateCard — partial stored card', () => {
     expect(next.dueAt).toBe(now + 24 * 60 * 60 * 1000);
     const stored = JSON.parse(localStorage.getItem('rtf:srs:v1'))['5'];
     for (const v of Object.values(stored)) expect(v).not.toBeNull();
+  });
+});
+
+// ── Cross-device sync ───────────────────────────────────────────────────────
+// The merge decides whose schedule survives when two browsers hold a different
+// copy of the same card. Get it backwards and a phone that has been closed for
+// a month silently resets intervals the user spent that month earning.
+
+const OLD = Date.UTC(2026, 0, 1);
+const NEW = Date.UTC(2026, 11, 1);
+const card = (questionId, lastAt, extra = {}) => ({
+  questionId, ease: 2.5, interval: 6, reps: 3, dueAt: lastAt + 6 * 86400000, lastAt, ...extra,
+});
+
+describe('srs.mergeCards', () => {
+  beforeEach(() => { resetAll(); setSyncedAt(0); });
+
+  it('takes a server card this browser has never seen', () => {
+    expect(mergeCards([card(7, NEW, { interval: 30 })])).toBe(1);
+    expect(getCardState(7).interval).toBe(30);
+    expect(getCardState(7).lastAt).toBe(NEW);
+  });
+
+  it('keeps the local card when it was rated later', () => {
+    rateCard(7, 'easy', NEW);
+    const mine = getCardState(7);
+
+    expect(mergeCards([card(7, OLD, { interval: 1 })])).toBe(0);
+    expect(getCardState(7)).toEqual(mine);
+  });
+
+  it('takes the server card when it was rated later', () => {
+    rateCard(7, 'again', OLD);
+
+    expect(mergeCards([card(7, NEW, { ease: 2.8, interval: 21, reps: 4 })])).toBe(1);
+    expect(getCardState(7)).toEqual({
+      ease: 2.8, interval: 21, reps: 4, dueAt: NEW + 6 * 86400000, lastAt: NEW,
+    });
+  });
+
+  it('keeps the local card on an exact tie, rather than churning it', () => {
+    rateCard(7, 'good', NEW);
+    expect(mergeCards([card(7, NEW, { interval: 99 })])).toBe(0);
+    expect(getCardState(7).interval).toBe(1);
+  });
+
+  it('never lets a card with no rating overwrite a real one', () => {
+    // What makes pushing a fresh browser's map safe in the other direction.
+    rateCard(7, 'easy', NEW);
+    expect(mergeCards([card(7, 0, { ease: 2.5, interval: 0, reps: 0 })])).toBe(0);
+    expect(getCardState(7).reps).toBe(1);
+  });
+
+  it('skips malformed rows instead of writing a broken card', () => {
+    expect(mergeCards([
+      { questionId: 0, lastAt: NEW },
+      { questionId: 8, lastAt: 'yesterday' },
+      card(9, NEW),
+    ])).toBe(1);
+    expect(getCardState(9).lastAt).toBe(NEW);
+    expect(getCardState(8).reps).toBe(0);
+  });
+
+  it('writes nothing when every row loses', () => {
+    rateCard(7, 'easy', NEW);
+    const before = localStorage.getItem('rtf:srs:v1');
+    expect(mergeCards([card(7, OLD)])).toBe(0);
+    expect(localStorage.getItem('rtf:srs:v1')).toBe(before);
+  });
+
+  it('treats an empty list as a no-op', () => {
+    expect(mergeCards([])).toBe(0);
+  });
+});
+
+describe('srs.cardsRatedSince', () => {
+  beforeEach(() => { resetAll(); setSyncedAt(0); });
+
+  it('returns every rated card when nothing has been synced yet', () => {
+    rateCard(1, 'good', OLD);
+    rateCard(2, 'good', NEW);
+    expect(cardsRatedSince(0).map((c) => c.questionId).sort()).toEqual([1, 2]);
+  });
+
+  it('carries the card state alongside the id', () => {
+    rateCard(1, 'easy', NEW);
+    expect(cardsRatedSince(0)).toEqual([
+      { questionId: 1, ease: 2.65, interval: 3, reps: 1, dueAt: NEW + 3 * 86400000, lastAt: NEW },
+    ]);
+  });
+
+  it('excludes cards rated at or before the high-water mark', () => {
+    // The delta a finished session pushes: re-sending the whole map every time
+    // would be the difference between a handful of rows and every card ever.
+    rateCard(1, 'good', OLD);
+    rateCard(2, 'good', NEW);
+    expect(cardsRatedSince(OLD).map((c) => c.questionId)).toEqual([2]);
+    expect(cardsRatedSince(NEW)).toEqual([]);
+  });
+});
+
+describe('srs.getSyncedAt / setSyncedAt', () => {
+  beforeEach(() => { resetAll(); localStorage.removeItem('rtf:srs:synced:v1'); });
+
+  it('reads 0 for a browser that has never synced', () => {
+    expect(getSyncedAt()).toBe(0);
+  });
+
+  it('round-trips a mark', () => {
+    setSyncedAt(NEW);
+    expect(getSyncedAt()).toBe(NEW);
+  });
+
+  it('reads 0 rather than NaN when the stored value is junk', () => {
+    localStorage.setItem('rtf:srs:synced:v1', 'soon');
+    expect(getSyncedAt()).toBe(0);
+  });
+
+  it('is not cleared by resetAll — the card map and the mark are separate keys', () => {
+    setSyncedAt(NEW);
+    resetAll();
+    expect(getSyncedAt()).toBe(NEW);
   });
 });

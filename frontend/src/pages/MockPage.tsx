@@ -16,9 +16,7 @@ import VoiceInputButton from '../components/VoiceInputButton';
 import AnswerText from '../components/AnswerText';
 import InlineMarkdown from '../components/InlineMarkdown';
 import CodeBlock from '../components/CodeBlock';
-import AnswerGrader, {
-  SelfGrade, useAiHealth, type SelfGradeOption,
-} from '../components/AnswerGrader';
+import AnswerGrader, { SelfGrade, gradeOptions, useAiHealth } from '../components/AnswerGrader';
 import {
   useQuestionSession, countOutcomes, type Outcome, type OutcomeCounts,
 } from '../lib/useQuestionSession';
@@ -28,6 +26,7 @@ import { cn } from '../lib/cn';
 import { tapMedium } from '../lib/haptics';
 import { track } from '../lib/analytics';
 import { reportState } from '../lib/push';
+import { pushSrs } from '../lib/srsSync';
 
 import type { Level, QuestionSummary as Question, Topic } from '../types/domain';
 import { useAnswer } from '../lib/queries';
@@ -69,13 +68,6 @@ const timerOptions = (c: SessionCopy): Array<{ seconds: number; label: string }>
 ];
 
 /** One scale everywhere: the same four words the session and the follow-ups use. */
-const grades = (c: SessionCopy): SelfGradeOption[] => [
-  { rating: 'again', label: c.grades.again },
-  { rating: 'hard', label: c.grades.hard },
-  { rating: 'good', label: c.grades.good },
-  { rating: 'easy', label: c.grades.easy },
-];
-
 const outcomeLabel = (outcome: Outcome, c: SessionCopy): string =>
   (outcome === 'skipped' ? c.skippedShort : c.grades[outcome]);
 
@@ -180,6 +172,9 @@ export default function MockPage() {
   });
   const { current, revealed, draft, draftRef } = session;
   const counts = useMemo(() => countOutcomes(session.outcomes), [session.outcomes]);
+  // The four buttons read the card's scheduled intervals, which means parsing
+  // the stored card map; built once per card rather than on every render.
+  const gradeButtons = useMemo(() => gradeOptions(c, current?.id ?? 0), [c, current?.id]);
 
   // Nothing about a running timed session is persisted, so a reload or a
   // closed tab throws away every answer and the clock. The browser asks first.
@@ -218,6 +213,7 @@ export default function MockPage() {
     // session, not one per card. Self-guards on signed-out / no
     // subscription and never throws.
     void reportState();
+    void pushSrs();
   }, [session.finished, queue.length, sessionStartedAt, counts]);
 
   if (isLoading) return <FullPageLoader />;
@@ -358,7 +354,7 @@ export default function MockPage() {
 
             <div className="mt-10 border-t border-rule/12 pt-5">
               <p className="eyebrow mb-2">{c.howDidThatGo}</p>
-              <SelfGrade options={grades(c)} onGrade={session.grade} />
+              <SelfGrade options={gradeButtons} onGrade={session.grade} />
             </div>
           </div>
         )}

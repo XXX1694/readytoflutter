@@ -136,6 +136,11 @@ export interface CardState {
   lastAt: number;     // ms epoch of the last rating, or 0 for never
 }
 
+/** A CardState with the question it belongs to — one row of the sync payload. */
+export interface SrsCard extends CardState {
+  questionId: number;
+}
+
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
 
 // Knowledge-base resource (frontend/public/seed/resources.json).

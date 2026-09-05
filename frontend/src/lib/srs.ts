@@ -16,11 +16,21 @@
  *                           overdue first, then fresh cards (never seen)
  *   getDueSnapshot()      — { dueCount, nextDueAt } over the whole stored map,
  *                           for the push-reminder state report
+ *   mergeCards(rows)      — folds a server copy of the schedule into this map
+ *   cardsRatedSince(t)    — the rows a delta push has to carry
+ *   getSyncedAt/setSyncedAt — the high-water mark that delta is measured from
  */
 
-import type { CardState, Rating, Question } from '../types/domain.ts';
+import type { CardState, Rating, Question, SrsCard } from '../types/domain.ts';
 
 const KEY = 'rtf:srs:v1';
+/**
+ * The `lastAt` of the newest card this browser has pushed to the server.
+ * A separate key, deliberately: `rtf:srs:v1` holds real user data and must
+ * keep its shape, and a browser that has never synced simply reads 0 here and
+ * pushes everything.
+ */
+const SYNCED_KEY = 'rtf:srs:synced:v1';
 const DAY = 24 * 60 * 60 * 1000;
 
 interface RatingMeta {
@@ -240,6 +250,68 @@ export interface DueSnapshot {
  * `dueAt <= 0` is the never-scheduled sentinel from `freshCard()`, not a card
  * that came due in 1970 — it is skipped on both counts.
  */
+/* ── Cross-device sync ──────────────────────────────────────────────────────
+   localStorage stays the working copy — every read above is synchronous and an
+   anonymous visitor has nowhere else to store a schedule. The server holds a
+   per-account copy that these three functions reconcile against, so signing in
+   on a second browser inherits the schedule instead of starting at day one. */
+
+/**
+ * Fold the server's cards into this browser's map. Per question the later
+ * rating wins, which is the same rule the server applies in the other
+ * direction — so the two copies converge no matter which side syncs first.
+ * A card this browser has never rated has `lastAt` 0 and loses to anything.
+ *
+ * Returns how many cards actually changed; nothing is written when that is 0.
+ */
+export function mergeCards(rows: readonly SrsCard[]): number {
+  if (!rows.length) return 0;
+  const map = read();
+  let changed = 0;
+  for (const row of rows) {
+    const id = Number(row?.questionId);
+    const lastAt = Number(row?.lastAt);
+    if (!id || !Number.isFinite(lastAt)) continue;
+    const mine = map[String(id)];
+    if (mine && mine.lastAt >= lastAt) continue;
+    map[String(id)] = {
+      ease: Number(row.ease),
+      interval: Number(row.interval),
+      reps: Number(row.reps),
+      dueAt: Number(row.dueAt),
+      lastAt,
+    };
+    changed += 1;
+  }
+  if (changed > 0) write(map);
+  return changed;
+}
+
+/** Every card rated after `since` — what a push has to carry, and no more. */
+export function cardsRatedSince(since: number): SrsCard[] {
+  const out: SrsCard[] = [];
+  for (const [id, state] of Object.entries(read())) {
+    const questionId = Number(id);
+    if (!questionId || !state) continue;
+    if (!(state.lastAt > since)) continue;
+    out.push({ questionId, ...state });
+  }
+  return out;
+}
+
+export function getSyncedAt(): number {
+  try {
+    const raw = Number(localStorage.getItem(SYNCED_KEY));
+    return Number.isFinite(raw) && raw > 0 ? raw : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setSyncedAt(at: number): void {
+  try { localStorage.setItem(SYNCED_KEY, String(at)); } catch { /* quota — silent */ }
+}
+
 export function getDueSnapshot(now: number = Date.now()): DueSnapshot {
   const map = read();
   let dueCount = 0;

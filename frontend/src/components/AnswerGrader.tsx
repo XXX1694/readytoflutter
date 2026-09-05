@@ -5,10 +5,12 @@ import { Button, Pill, type PillTone } from '../ui/index';
 import { aiHealth, aiGradeAnswer, type AiHealthResponse } from '../api/api';
 import { track } from '../lib/analytics';
 import { RATING_ORDER } from '../lib/useQuestionSession';
+import { previewInterval } from '../lib/srs';
 import { cn } from '../lib/cn';
 
 import type { AiGrade, Rating } from '../types/domain';
 import type { Lang } from '../i18n/LangContext';
+import type { SessionCopy } from '../i18n/sessionPage';
 
 // Module-level cache for the /ai/health probe. We only need to ask the
 // backend once per page load — the result doesn't change without a server
@@ -104,6 +106,24 @@ export function SelfGrade({ options, onGrade, className }: SelfGradeProps) {
       ))}
     </div>
   );
+}
+
+/**
+ * The four buttons for one card. The interval is what makes a grade mean
+ * anything — "Good" is a promise about when the card comes back — so each
+ * button carries the one the scheduler would actually set for this card.
+ * Shared by the study session, the timed session and the round: all three
+ * grade on the same scale and all three write to the same schedule.
+ */
+// Exported alongside the components it serves; moving it out would only shift
+// the fast-refresh boundary, not remove it.
+// eslint-disable-next-line react-refresh/only-export-components
+export function gradeOptions(c: SessionCopy, questionId: number): SelfGradeOption[] {
+  return RATING_ORDER.map((rating) => ({
+    rating,
+    label: c.grades[rating],
+    hint: c.intervalHint(previewInterval(questionId, rating)),
+  }));
 }
 
 /* ── AI grade ───────────────────────────────────────────────────────────── */

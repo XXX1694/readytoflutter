@@ -25,6 +25,11 @@ const LIMITS = Object.freeze({
   MAX_NOTES_LEN: 1000,
   BULK_MAX_ITEMS: 1000,
 
+  // SRS sync: an interval longer than a lifetime is a broken client, not a
+  // schedule. Bounds both the stored interval and how far ahead a due date
+  // is allowed to sit.
+  SRS_MAX_INTERVAL_DAYS: 365 * 50,
+
   // Contact form: max length and a soft per-IP rate cap (5 messages / day).
   CONTACT_MAX_MESSAGE_LEN: 4000,
   CONTACT_MAX_PER_IP_PER_DAY: 5,

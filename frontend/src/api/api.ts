@@ -18,6 +18,7 @@ import type {
   Roadmap,
   QuestionSummary,
   QuestionAnswer,
+  SrsCard,
 } from '../types/domain.ts';
 
 // Production fallback for GitHub Pages: when we're served from *.github.io
@@ -706,6 +707,19 @@ export const serializeLocalProgress = (progress: LocalProgressMap | null | undef
       updated_at: value?.updated_at || new Date().toISOString(),
     }))
     .filter((p) => p.questionId && p.status);
+
+// ── SRS schedule sync ───────────────────────────────────────────────────────
+// Auth-only, and deliberately not wrapped in tryRemote: there is no fallback
+// to run, because localStorage *is* the working copy. A failure here only
+// means the account's copy is stale, and lib/srsSync.ts retries on the next
+// boot or `online` event.
+export const getSrsCards = (): Promise<SrsCard[]> =>
+  api.get<{ cards: SrsCard[] }>('/srs').then((r) => r.data?.cards || []);
+
+export const bulkSyncSrsCards = (
+  cards: SrsCard[],
+): Promise<{ imported: number; skipped: number }> =>
+  api.post<{ imported: number; skipped: number }>('/srs/bulk', { cards }).then((r) => r.data);
 
 // ── AI grader ───────────────────────────────────────────────────────────────
 // Server-side feature: the Anthropic API key lives on the backend, the

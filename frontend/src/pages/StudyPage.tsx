@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronDown, PenLine, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { prefetchAnswers, useAnswer, useQuestions, useTopics } from '../lib/queries';
-import { pickDueQueue, rateCard, getCardState, previewInterval } from '../lib/srs';
+import { pickDueQueue, rateCard, getCardState } from '../lib/srs';
 import { goBack } from '../lib/navigation';
 import { buildPlan } from '../lib/plan';
 import { filterTopicsByPlatform } from '../lib/platform';
@@ -18,14 +18,13 @@ import CodeBlock from '../components/CodeBlock';
 import AnswerText from '../components/AnswerText';
 import InlineMarkdown from '../components/InlineMarkdown';
 import VoiceInputButton from '../components/VoiceInputButton';
-import AnswerGrader, {
-  SelfGrade, useAiHealth, type SelfGradeOption,
-} from '../components/AnswerGrader';
-import { useQuestionSession, countOutcomes, RATING_ORDER, type OutcomeCounts } from '../lib/useQuestionSession';
+import AnswerGrader, { SelfGrade, gradeOptions, useAiHealth } from '../components/AnswerGrader';
+import { useQuestionSession, countOutcomes, type OutcomeCounts } from '../lib/useQuestionSession';
 import { cn } from '../lib/cn';
 import { tapMedium } from '../lib/haptics';
 import { track } from '../lib/analytics';
 import { reportState } from '../lib/push';
+import { pushSrs } from '../lib/srsSync';
 
 import type { Level, QuestionSummary as Question, Topic } from '../types/domain';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
@@ -44,15 +43,6 @@ const GIST_LIMIT = 280;
 const LEVELS: readonly string[] = ['junior', 'mid', 'senior'];
 const isLevel = (value: string | null): value is Level =>
   value !== null && LEVELS.includes(value);
-
-/** The interval is what makes a grade meaningful, so each button shows the
-    one the scheduler would actually set for this card. */
-const grades = (c: SessionCopy, questionId: number): SelfGradeOption[] =>
-  RATING_ORDER.map((rating) => ({
-    rating,
-    label: c.grades[rating],
-    hint: c.intervalHint(previewInterval(questionId, rating)),
-  }));
 
 export default function StudyPage() {
   const navigate = useNavigate();
@@ -207,6 +197,9 @@ export default function StudyPage() {
       // reportState() self-guards on signed-out / no permission / no
       // subscription and never throws, so it needs no await or catch.
       void reportState();
+      // And carry the ratings themselves to the account, so the schedule is
+      // waiting on the user's other device. Signed-out is a no-op.
+      void pushSrs();
     }
   }, [session.finished, total, counts, scopeKind, topicScope, recallMode]);
 
@@ -419,7 +412,7 @@ export default function StudyPage() {
 
           <div className="mt-10 border-t border-rule/12 pt-5">
             <p className="eyebrow mb-2">{c.howDidThatGo}</p>
-            <SelfGrade options={grades(c, current.id)} onGrade={session.grade} />
+            <SelfGrade options={gradeOptions(c, current.id)} onGrade={session.grade} />
           </div>
         </div>
       )}

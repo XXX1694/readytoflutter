@@ -13,6 +13,7 @@ import { useAuth } from './store/auth';
 import { apiBaseUrl, flushLocalProgress, noBackend } from './api/api';
 import { prefetchIdle } from './lib/prefetch';
 import { reportState } from './lib/push';
+import { syncSrs } from './lib/srsSync';
 import { initAnalytics, pageview, identify } from './lib/analytics';
 import { LANDINGS } from './i18n/landings';
 import './store/prefs'; // side-effect: hydrate theme before paint
@@ -100,6 +101,11 @@ export default function App() {
       void flushLocalProgress()
         .then((r) => { if (r) queryClient.invalidateQueries(); })
         .catch(() => { /* still offline / server down — the next event retries */ });
+      // Reconcile the SM-2 schedule with the account's copy in the same two
+      // moments. It never rejects; a pull that changed something has to
+      // recompute what is already on screen (today's plan, the mastery map),
+      // and those read the card map during render.
+      void syncSrs().then((merged) => { if (merged > 0) queryClient.invalidateQueries(); });
     };
     flush();
     window.addEventListener('online', flush);

@@ -12,6 +12,7 @@ import {
   serializeLocalProgress,
   type BulkProgressItem,
 } from '../api/api';
+import { syncSrs } from '../lib/srsSync';
 import { track, identify } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useSignupCopy, type SignupCopy } from '../i18n/signupPage';
@@ -118,6 +119,10 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       const result = await bulkSyncProgress(pendingImport);
+      // The review schedule rides along with the import rather than going up
+      // silently on signup: it is the same anonymous study history, and this
+      // is where the user says yes to carrying it into the account.
+      await syncSrs();
       clearLocalProgress();
       markSynced();
       qc.invalidateQueries();

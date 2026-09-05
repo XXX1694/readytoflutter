@@ -53,6 +53,8 @@ const newUser = () => db.createUser({
 const QIDS = db.getQuestions().slice(0, 5).map((q) => q.id);
 assert.ok(QIDS.length === 5, 'seed must provide at least 5 questions for these tests');
 
+const MID_MS = Date.UTC(2026, 5, 1);
+
 const OLD = '2026-01-01T00:00:00.000Z';
 const MID = '2026-06-01T00:00:00.000Z';
 const NEW = '2026-12-01T00:00:00.000Z';
@@ -365,4 +367,187 @@ test('getStats counts only the requested user progress after a bulk import', () 
   assert.equal(stats.inProgress, 1);
   assert.equal(db.getStats(bob.id).completed, 1);
   assert.ok(stats.totalQuestions > 0);
+});
+
+// ── SRS card merge ───────────────────────────────────────────────────────────
+// The same shape as the progress merge above, and the same stakes: this is how
+// a user's review schedule survives moving between devices. Keyed on `last_at`
+// (ms epoch) rather than an ISO string, because that is the stamp the
+// scheduler itself writes. Getting the comparison wrong doesn't lose a note —
+// it resets intervals to day one, and the user only finds out when the app
+// starts asking them things they learned months ago.
+
+const readCard = (userId, questionId) => reader
+  .prepare('SELECT user_id, question_id, ease, interval, reps, due_at, last_at FROM srs_cards WHERE user_id = ? AND question_id = ?')
+  .get(userId, questionId);
+
+const OLD_MS = Date.UTC(2026, 0, 1);
+const NEW_MS = Date.UTC(2026, 11, 1);
+
+// A card as lib/srs.ts stores it, with the fields a test cares about overridden.
+const card = (questionId, lastAt, extra = {}) => ({
+  questionId, ease: 2.5, interval: 6, reps: 3, dueAt: lastAt + 6 * 86400_000, lastAt, ...extra,
+});
+
+test('bulkSetSrsCards inserts a card when the user has no server-side schedule yet', () => {
+  const user = newUser();
+
+  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], MID_MS, { ease: 2.36, interval: 4, reps: 2 })]);
+
+  assert.deepEqual(result, { imported: 1, skipped: 0 });
+  assert.deepEqual(readCard(user.id, QIDS[0]), {
+    user_id: user.id,
+    question_id: QIDS[0],
+    ease: 2.36,
+    interval: 4,
+    reps: 2,
+    due_at: MID_MS + 6 * 86400_000,
+    last_at: MID_MS,
+  });
+});
+
+test('bulkSetSrsCards applies a client card rated later than the server copy', () => {
+  const user = newUser();
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], OLD_MS, { ease: 2.5, interval: 1, reps: 1 })]);
+
+  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { ease: 2.8, interval: 15, reps: 4 })]);
+
+  assert.deepEqual(result, { imported: 1, skipped: 0 });
+  const row = readCard(user.id, QIDS[0]);
+  assert.equal(row.ease, 2.8);
+  assert.equal(row.interval, 15);
+  assert.equal(row.reps, 4);
+  assert.equal(row.last_at, NEW_MS);
+});
+
+test('bulkSetSrsCards refuses a stale client card — a newer schedule is never clobbered', () => {
+  // The data-loss case this table exists to survive: a phone that was offline
+  // for a month pushes a card the desktop has since rated up to a 30-day
+  // interval. Invert the comparison and the desktop's schedule resets.
+  const user = newUser();
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { ease: 2.9, interval: 30, reps: 6 })]);
+
+  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], OLD_MS, { ease: 2.5, interval: 1, reps: 1 })]);
+
+  assert.deepEqual(result, { imported: 0, skipped: 1 });
+  const row = readCard(user.id, QIDS[0]);
+  assert.equal(row.interval, 30);
+  assert.equal(row.reps, 6);
+  assert.equal(row.last_at, NEW_MS);
+});
+
+test('bulkSetSrsCards skips a card whose last_at ties the server row', () => {
+  // Equal stamps mean both sides already hold the same rating; rewriting would
+  // churn the row, and a "client wins" tie-break would let a same-millisecond
+  // stale copy through.
+  const user = newUser();
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], MID_MS, { interval: 12 })]);
+
+  const result = db.bulkSetSrsCards(user.id, [card(QIDS[0], MID_MS, { interval: 1 })]);
+
+  assert.deepEqual(result, { imported: 0, skipped: 1 });
+  assert.equal(readCard(user.id, QIDS[0]).interval, 12);
+});
+
+test('bulkSetSrsCards lets a rated server card beat a never-rated client card', () => {
+  // What makes signing in on a fresh browser safe: that browser's cards have
+  // last_at 0, and if 0 won the merge every one of them would wipe a real
+  // schedule the moment the empty map was pushed.
+  const user = newUser();
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], NEW_MS, { interval: 21, reps: 5 })]);
+
+  const result = db.bulkSetSrsCards(user.id, [
+    { questionId: QIDS[0], ease: 2.5, interval: 0, reps: 0, dueAt: 0, lastAt: 0 },
+  ]);
+
+  assert.deepEqual(result, { imported: 0, skipped: 1 });
+  assert.equal(readCard(user.id, QIDS[0]).interval, 21);
+});
+
+test('bulkSetSrsCards resolves duplicate ids within one batch by last_at, not array order', () => {
+  // The payload is not de-duplicated. Compare each item against the pre-batch
+  // snapshot instead of what the batch just wrote and the stale duplicate wins
+  // simply for arriving second.
+  const user = newUser();
+
+  const result = db.bulkSetSrsCards(user.id, [
+    card(QIDS[0], NEW_MS, { interval: 40 }),
+    card(QIDS[0], OLD_MS, { interval: 1 }),
+  ]);
+
+  assert.deepEqual(result, { imported: 1, skipped: 1 });
+  assert.equal(readCard(user.id, QIDS[0]).interval, 40);
+  assert.equal(readCard(user.id, QIDS[0]).last_at, NEW_MS);
+});
+
+test('bulkSetSrsCards skips a card whose question has left the catalogue', () => {
+  // Browsers keep their SM-2 map indefinitely, so a retired question's card
+  // outlives the question. One orphan must not fail the whole batch.
+  const user = newUser();
+
+  const result = db.bulkSetSrsCards(user.id, [
+    card(999999, MID_MS),
+    card(QIDS[1], MID_MS),
+  ]);
+
+  assert.deepEqual(result, { imported: 1, skipped: 1 });
+  assert.ok(readCard(user.id, QIDS[1]));
+});
+
+test('bulkSetSrsCards accepts both the camelCase and snake_case client spellings', () => {
+  const user = newUser();
+
+  const result = db.bulkSetSrsCards(user.id, [
+    { question_id: QIDS[0], ease: 2.5, interval: 6, reps: 3, due_at: 99, last_at: MID_MS },
+  ]);
+
+  assert.deepEqual(result, { imported: 1, skipped: 0 });
+  assert.equal(readCard(user.id, QIDS[0]).last_at, MID_MS);
+});
+
+test('bulkSetSrsCards writes only inside the given user scope', () => {
+  const alice = newUser();
+  const bob = newUser();
+
+  db.bulkSetSrsCards(alice.id, [card(QIDS[0], MID_MS, { interval: 9 })]);
+
+  assert.equal(readCard(alice.id, QIDS[0]).interval, 9);
+  assert.equal(readCard(bob.id, QIDS[0]), undefined);
+});
+
+test('bulkSetSrsCards refuses to write when the user id is missing or zero', () => {
+  // An anonymous caller reaching this function would land every browser's
+  // cards in one shared row set.
+  assert.throws(() => db.bulkSetSrsCards(0, [card(QIDS[0], MID_MS)]), /real user id/);
+  assert.throws(() => db.bulkSetSrsCards(undefined, [card(QIDS[0], MID_MS)]), /real user id/);
+});
+
+test('bulkSetSrsCards treats an empty or non-array payload as a no-op', () => {
+  const user = newUser();
+  assert.deepEqual(db.bulkSetSrsCards(user.id, []), { imported: 0, skipped: 0 });
+  assert.deepEqual(db.bulkSetSrsCards(user.id, null), { imported: 0, skipped: 0 });
+});
+
+test('listSrsCards returns only the calling user cards', () => {
+  const alice = newUser();
+  const bob = newUser();
+  db.bulkSetSrsCards(alice.id, [card(QIDS[0], MID_MS), card(QIDS[1], MID_MS)]);
+  db.bulkSetSrsCards(bob.id, [card(QIDS[2], MID_MS)]);
+
+  const rows = db.listSrsCards(alice.id);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map((r) => r.question_id).sort((a, b) => a - b), [QIDS[0], QIDS[1]].sort((a, b) => a - b));
+  assert.equal(db.listSrsCards(bob.id).length, 1);
+});
+
+test('deleteUser removes the account SRS cards', () => {
+  // foreign_keys is not enabled on this connection, so ON DELETE CASCADE does
+  // not fire — the rows have to go explicitly or they outlive the account.
+  const user = newUser();
+  db.bulkSetSrsCards(user.id, [card(QIDS[0], MID_MS)]);
+  assert.ok(readCard(user.id, QIDS[0]));
+
+  db.deleteUser(user.id);
+
+  assert.equal(readCard(user.id, QIDS[0]), undefined);
 });

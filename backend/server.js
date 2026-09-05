@@ -237,6 +237,60 @@ app.post('/api/progress/:questionId', auth.requireAuth, writeLimiter, (req, res)
   res.json({ success: true, ...result });
 });
 
+// ── SRS schedule (sync only — the browser stays the working copy) ───────────
+// SM-2 state lives in localStorage: it is read synchronously on every render
+// and an anonymous visitor never has an account to store it under. These two
+// routes exist so a signed-in user's schedule follows them to a second device
+// instead of starting from zero there.
+const SRS_MAX_DUE_AHEAD_MS = LIMITS.SRS_MAX_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
+const inRange = (value, min, max) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max;
+};
+
+app.get('/api/srs', auth.requireAuth, readLimiter, (req, res) => {
+  const cards = db.listSrsCards(req.user.id).map((r) => ({
+    questionId: r.question_id,
+    ease: r.ease,
+    interval: r.interval,
+    reps: r.reps,
+    dueAt: r.due_at,
+    lastAt: r.last_at,
+  }));
+  res.json({ cards });
+});
+
+app.post('/api/srs/bulk', auth.requireAuth, writeLimiter, (req, res) => {
+  // A payload of the wrong shape is a client bug; a 200 with `imported: 0`
+  // would hide it along with the schedule it was carrying.
+  if (!Array.isArray(req.body?.cards)) {
+    return res.status(400).json({ error: 'cards must be an array' });
+  }
+  const cards = req.body.cards;
+  if (cards.length > BULK_MAX_ITEMS) {
+    return res.status(400).json({ error: 'Too many cards in a single bulk' });
+  }
+  const now = Date.now();
+  for (const card of cards) {
+    // 1.3 is SM-2's ease floor and nothing legitimate climbs past 5; the
+    // window is wide on purpose, it only has to exclude a broken client.
+    if (!inRange(card?.ease, 1, 10)
+      || !inRange(card?.interval, 0, LIMITS.SRS_MAX_INTERVAL_DAYS)
+      || !inRange(card?.reps, 0, 100_000)
+      || !inRange(card?.lastAt ?? card?.last_at, 0, Number.MAX_SAFE_INTEGER)
+      || !inRange(card?.dueAt ?? card?.due_at, 0, Number.MAX_SAFE_INTEGER)) {
+      return res.status(400).json({ error: 'Invalid card in bulk payload' });
+    }
+    // A client clock cannot claim the future: a card "rated tomorrow" would
+    // win every merge from here on. A due date ahead of now is the whole
+    // point of a scheduler, so that one is only bounded against nonsense.
+    card.lastAt = Math.min(Number(card.lastAt ?? card.last_at), now);
+    card.dueAt = Math.min(Number(card.dueAt ?? card.due_at), now + SRS_MAX_DUE_AHEAD_MS);
+  }
+  const result = db.bulkSetSrsCards(req.user.id, cards);
+  res.json({ success: true, ...result });
+});
+
 // ── Stats (per-user when authenticated) ──────────────────────────────────────
 app.get('/api/stats', auth.optionalAuth, readLimiter, (req, res) => {
   res.json(db.getStats(req.user?.id || 0));

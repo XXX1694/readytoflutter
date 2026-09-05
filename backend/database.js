@@ -209,6 +209,29 @@ function init() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    -- SM-2 card state, one row per (user, question).
+    --
+    -- The browser stays the working copy: lib/srs.ts reads its map
+    -- synchronously on every render and an anonymous visitor never leaves
+    -- localStorage at all. This table is the merge point between one user's
+    -- devices, not the source of truth — sign in on a second browser and the
+    -- schedule follows, rather than starting from zero.
+    --
+    -- Timestamps are ms epoch (the client's own clock, the same unit
+    -- localStorage stores) rather than ISO strings, so no conversion sits
+    -- between the two copies. Merged last-write-wins on last_at.
+    CREATE TABLE IF NOT EXISTS srs_cards (
+      user_id INTEGER NOT NULL,
+      question_id INTEGER NOT NULL,
+      ease REAL NOT NULL,
+      interval INTEGER NOT NULL,
+      reps INTEGER NOT NULL,
+      due_at INTEGER NOT NULL,
+      last_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, question_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_topics_level ON topics(level);
     CREATE INDEX IF NOT EXISTS idx_topics_order ON topics(order_index);
     CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic_id);
@@ -696,6 +719,75 @@ function bulkSetProgress(userId, items) {
   return { imported, skipped };
 }
 
+// ── SRS cards ────────────────────────────────────────────────────────────────
+
+function listSrsCards(userId) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('listSrsCards requires a real user id');
+  return sqlite
+    .prepare('SELECT question_id, ease, interval, reps, due_at, last_at FROM srs_cards WHERE user_id = ?')
+    .all(uid);
+}
+
+// Merge a browser's SM-2 map into the user's server copy. Same contract as
+// bulkSetProgress — last write wins per (user_id, question_id) — but keyed on
+// `last_at`, the moment the card was rated, because that is the only stamp the
+// scheduler has. A card the client has never rated (last_at 0) therefore loses
+// to any rated server row, which is what makes a fresh browser safe to sync:
+// its empty cards cannot wipe a real schedule.
+function bulkSetSrsCards(userId, items) {
+  const uid = Number(userId);
+  if (!uid) throw new Error('bulkSetSrsCards requires a real user id');
+  if (!Array.isArray(items) || items.length === 0) return { imported: 0, skipped: 0 };
+
+  const existing = sqlite
+    .prepare('SELECT question_id, last_at FROM srs_cards WHERE user_id = ?')
+    .all(uid);
+  const existingMap = new Map(existing.map((r) => [r.question_id, r.last_at]));
+
+  let imported = 0;
+  let skipped = 0;
+
+  const upsert = sqlite.prepare(`
+    INSERT INTO srs_cards (user_id, question_id, ease, interval, reps, due_at, last_at)
+    VALUES (@user_id, @question_id, @ease, @interval, @reps, @due_at, @last_at)
+    ON CONFLICT(user_id, question_id) DO UPDATE SET
+      ease = excluded.ease,
+      interval = excluded.interval,
+      reps = excluded.reps,
+      due_at = excluded.due_at,
+      last_at = excluded.last_at
+  `);
+
+  const tx = sqlite.transaction(() => {
+    for (const it of items) {
+      const qid = Number(it.questionId ?? it.question_id);
+      // A card left over from a question that has since left the catalogue —
+      // the browser keeps its map indefinitely — must not fail the batch.
+      if (!qid || !questionExists(qid)) { skipped += 1; continue; }
+      const incomingAt = Number(it.lastAt ?? it.last_at) || 0;
+      const serverAt = existingMap.get(qid);
+      if (serverAt !== undefined && serverAt >= incomingAt) { skipped += 1; continue; }
+      upsert.run({
+        user_id: uid,
+        question_id: qid,
+        ease: Number(it.ease),
+        interval: Number(it.interval),
+        reps: Number(it.reps),
+        due_at: Number(it.dueAt ?? it.due_at) || 0,
+        last_at: incomingAt,
+      });
+      // The payload is not de-duplicated: a stale duplicate later in the array
+      // must lose to the row we just wrote, not to the pre-batch snapshot.
+      existingMap.set(qid, incomingAt);
+      imported += 1;
+    }
+  });
+  tx();
+
+  return { imported, skipped };
+}
+
 function getStats(userId = -1) {
   const uid = readerUid(userId);
   const totalQuestions = sqlite.prepare('SELECT COUNT(*) AS count FROM questions').get().count;
@@ -792,6 +884,7 @@ function deleteUser(id) {
   // reason progress is — a leftover row would keep pushing to a device whose
   // account no longer exists.
   sqlite.prepare('DELETE FROM push_subscriptions WHERE user_id = ?').run(Number(id));
+  sqlite.prepare('DELETE FROM srs_cards WHERE user_id = ?').run(Number(id));
   sqlite.prepare('DELETE FROM users WHERE id = ?').run(Number(id));
 }
 
@@ -1234,6 +1327,8 @@ module.exports = {
   getQuestionForGrading,
   setProgress,
   bulkSetProgress,
+  listSrsCards,
+  bulkSetSrsCards,
   getStats,
   resetProgress,
   createUser,
