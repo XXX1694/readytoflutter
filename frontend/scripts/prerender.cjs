@@ -297,17 +297,31 @@ async function main() {
           const url = route === '/'
             ? `${HOST}${BASE_PATH}`
             : `${HOST}${BASE_NO_TRAIL}${route}`;
-          try {
-            await page.goto(url, { waitUntil: 'domcontentloaded' });
-            await waitForReady(page, route);
-            const html = await page.content();
-            writeHtml(route, html);
-            done += 1;
-            console.log(`✓ ${route}  (${done}/${total})`);
-          } catch (err) {
-            done += 1;
+          // One retry before a route counts as failed. Six pages share a
+          // preview server on a two-core runner, so a single slow paint can
+          // miss the readiness timeout while the page itself is perfectly
+          // fine — and one miss fails the whole deploy, since the artifact is
+          // never uploaded. A second attempt costs seconds and changes
+          // nothing for a route that is genuinely broken.
+          let html = null;
+          let lastError = null;
+          for (let attempt = 1; attempt <= 2 && html === null; attempt += 1) {
+            try {
+              await page.goto(url, { waitUntil: 'domcontentloaded' });
+              await waitForReady(page, route);
+              html = await page.content();
+            } catch (err) {
+              lastError = err;
+              if (attempt === 1) console.warn(`↻ ${route}: ${err.message} — retrying`);
+            }
+          }
+          done += 1;
+          if (html === null) {
             failures.push(route);
-            console.warn(`✗ ${route}: ${err.message}  (${done}/${total})`);
+            console.warn(`✗ ${route}: ${lastError.message}  (${done}/${total})`);
+          } else {
+            writeHtml(route, html);
+            console.log(`✓ ${route}  (${done}/${total})`);
           }
         }
       } finally {
