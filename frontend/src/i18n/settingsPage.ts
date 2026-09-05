@@ -80,7 +80,7 @@ const en = {
 
   // ── About ───────────────────────────────────────────────────────────────
   aboutTitle: 'About',
-  aboutBody: 'Every topic, every question, spaced repetition and timed sessions are free; AI checks are capped per day.',
+  aboutBody: 'Every topic, every question, spaced repetition and timed sessions are free.',
   pricing: 'Pricing',
   contact: 'Contact',
 
@@ -165,7 +165,7 @@ const ru: typeof en = {
   exportEmpty: 'Пока нечего скачивать',
 
   aboutTitle: 'О проекте',
-  aboutBody: 'Все темы, все вопросы, интервальное повторение и сессии на время — бесплатно; число AI-проверок в день ограничено.',
+  aboutBody: 'Все темы, все вопросы, интервальное повторение и сессии на время — бесплатно.',
   pricing: 'Цены',
   contact: 'Контакты',
 

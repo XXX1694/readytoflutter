@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
@@ -7,7 +7,7 @@ import { useT } from '../i18n/ui';
 import { ProgressBar } from '../ui/ProgressBar';
 import { cn } from '../lib/cn';
 import { filterTopicsByPlatform } from '../lib/platform';
-import { RAIL_ROUTES, routeLabel } from '../lib/routes';
+import { FOCUS_ROUTES, RAIL_ROUTES, routeLabel } from '../lib/routes';
 import { prefetch } from '../lib/prefetch';
 import { StackRows } from './StackSwitcher';
 import { useCurrentStack } from '../lib/useStack';
@@ -19,16 +19,24 @@ import { useCurrentStack } from '../lib/useStack';
  */
 const navRowClass = (isActive: boolean): string =>
   cn(
-    'mx-3 flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13.5px] transition-colors',
+    'pressable mx-3 flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13.5px]',
     isActive ? 'bg-brand/10 font-semibold text-brand' : 'font-medium text-ink-2 hover:bg-rule/6 hover:text-ink',
   );
 
 /**
+ * `/login` and `/signup` are focus routes as well, but neither renders a way
+ * out of its own — the rail is their exit, so it stays.
+ */
+const AUTH_ROUTE = /^\/(login|signup)(\/|$)/;
+
+/**
  * The desktop rail: the wordmark, five destinations, the stack list and the
  * one progress figure. It is not a catalogue — the 53 topics live on /topics
- * — and it does not exist under `lg`, where the tab bar does its job.
+ * — and it does not exist under `lg`, where the tab bar does its job, nor on
+ * a running session, where the phone already hides the tab bar.
  */
 export default function Sidebar() {
+  const { pathname } = useLocation();
   const { lang } = useLang();
   const t = useT(lang);
   const { data: topics = [] } = useTopics();
@@ -39,6 +47,11 @@ export default function Sidebar() {
   const total = scoped.reduce((s, tp) => s + (tp.question_count || 0), 0);
   const completed = scoped.reduce((s, tp) => s + (tp.completed_count || 0), 0);
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  // A session owns the whole window, on desktop as on the phone: /study,
+  // /mock, /round and /live each carry their own ✕ to leave by, so the rail
+  // beside a single question card is chrome competing with the flow.
+  if (FOCUS_ROUTES.some((re) => re.test(pathname)) && !AUTH_ROUTE.test(pathname)) return null;
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-rule/8 bg-paper lg:flex">
@@ -84,7 +97,7 @@ export default function Sidebar() {
 
       {/* The one figure: completed over total in the active stack. */}
       {total > 0 && (
-        <NavLink to="/stats" className="block border-t border-rule/8 px-5 py-4 transition-colors hover:bg-rule/4">
+        <NavLink to="/stats" className="pressable pressable-lg block border-t border-rule/8 px-5 py-4 hover:bg-rule/4">
           <div className="flex items-baseline justify-between gap-2">
             <span className="eyebrow truncate">{t.nav.progress} · {current.label}</span>
             <span className="num shrink-0 text-[15px] text-brand">{pct}%</span>

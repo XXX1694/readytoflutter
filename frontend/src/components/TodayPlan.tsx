@@ -112,11 +112,17 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
         {weakTopic && (
           <Link
             to={`/topic/${weakTopic.slug}`}
-            className="mt-1.5 inline-block max-w-full truncate rounded-sm text-[13px] text-on-brand/70 transition-colors hover:text-on-brand"
+            // `py-1` lifts the hit box past the 24px WCAG 2.2 minimum; the
+            // halved top margin and the negative bottom margin keep the text
+            // exactly where it sat before the padding was added.
+            className="group -mb-1 mt-0.5 flex w-fit max-w-full items-center gap-1 rounded-sm py-1 text-[13px] text-on-brand/70 transition-colors hover:text-on-brand"
           >
-            {plan.weakUntouched
-              ? c.untouched(topicTitle(weakTopic))
-              : c.weakest(topicTitle(weakTopic), plan.weakMastery ?? 0)}
+            <span className="truncate underline-offset-[3px] group-hover:underline">
+              {plan.weakUntouched
+                ? c.untouched(topicTitle(weakTopic))
+                : c.weakest(topicTitle(weakTopic), plan.weakMastery ?? 0)}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
           </Link>
         )}
 
@@ -127,7 +133,8 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
           </Button>
           <Link
             to="/mock"
-            className="inline-flex items-center gap-1.5 rounded-sm text-[13.5px] font-medium text-on-brand/85 hover:text-on-brand hover:underline"
+            // `py-1 -my-1` grows the hit box past 24px without growing the row.
+            className="-my-1 inline-flex items-center gap-1.5 rounded-sm py-1 text-[13.5px] font-medium text-on-brand/85 hover:text-on-brand hover:underline"
           >
             <Timer className="h-4 w-4" aria-hidden />
             {t.nav.timed}

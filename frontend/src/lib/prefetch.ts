@@ -6,10 +6,10 @@
  *
  * BottomNav fires `prefetch(path)` on pointerdown so the chunk starts
  * downloading before the click handler runs (~50-150ms of headstart on
- * touch devices). `prefetchIdle()` warms the tab roots once the first screen
- * has its data and the main thread has a moment to spare.
+ * touch devices). `prefetchIdle()` warms the likeliest next tap once the
+ * first screen has its data and the main thread has a moment to spare.
  */
-import { RAIL_ROUTES, ROUTES, TAB_ROUTES } from './routes';
+import { ROUTES } from './routes';
 
 const REGISTRY: Record<string, () => Promise<unknown>> = Object.fromEntries(
   ROUTES.map((r) => [r.path, r.load]),
@@ -32,22 +32,36 @@ export function prefetch(path: string): void {
 }
 
 /**
- * Warm every destination the chrome shows — the phone's tabs and the
- * desktop rail — during genuine browser idle, no timeout forcing the
- * callback while the thread is busy. Anything else is reached from a menu
- * or the palette, where pointer prefetch covers the latency; warming all
- * ten routes put 22 chunk requests ahead of the seed bundle the first screen
- * was waiting on. Skipped on slow connections (Save-Data / 2G) to avoid
- * burning the user's data plan.
+ * The two destinations a first visit actually goes to next: Start — the one
+ * action the product exists for, and the centre of the tab bar — and the
+ * catalogue.
+ */
+const WARM_PATHS = ['/study', '/topics'];
+
+/**
+ * Warm the next tap during genuine browser idle, no timeout forcing the
+ * callback while the thread is busy.
+ *
+ * Warming every chrome destination (the phone's tabs plus the desktop rail,
+ * eight in all) pulled their transitive chunks — Radix, Shiki, the markdown
+ * parser — with them: 54 JS requests and ~1.25 MB on a cold first load, all
+ * queued behind the seed bundle the first screen is waiting on. An earlier,
+ * broader version put 22 chunk requests ahead of it. So the warm-up is the
+ * two destinations above plus the topic page, and everything else — Roadmap,
+ * Sources, Progress, Me — is left to the pointerdown/hover prefetch, which
+ * already covers tap latency on the rail and the tab bar.
+ *
+ * Skipped on slow connections (Save-Data / 2G / 3G): there the queue is the
+ * cost, not the bytes, and the pointer prefetch still does its job.
  */
 export function prefetchIdle(): void {
   if (typeof window === 'undefined') return;
   const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection;
   if (conn?.saveData) return;
-  if (conn?.effectiveType && /^(slow-2g|2g)$/.test(conn.effectiveType)) return;
+  if (conn?.effectiveType && /^(slow-2g|2g|3g)$/.test(conn.effectiveType)) return;
 
   const run = () => {
-    new Set([...TAB_ROUTES, ...RAIL_ROUTES]).forEach((route) => prefetch(route.path));
+    WARM_PATHS.forEach(prefetch);
     // The topic page is where every catalogue row and Today's "next" card
     // lead; it is not a registered destination (the path carries a slug),
     // so it is warmed by hand. Vite pulls QuestionCard in with it.

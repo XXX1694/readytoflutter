@@ -49,8 +49,8 @@ const isPlayable = (r: Resource): boolean =>
 export default function KnowledgePage() {
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.sources} — Onsite` });
   const c = useKnowledgeCopy(lang);
+  useDocumentMeta({ title: c.metaTitle, description: c.metaDescription, canonical: '/knowledge/' });
   const isRu = lang === 'ru';
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -118,6 +118,18 @@ export default function KnowledgePage() {
     [data, platform],
   );
   const counts = useMemo(() => countByCategory(allResources), [allResources]);
+  // A category with nothing in the active stack gets no chip: "Courses 0" is
+  // a focusable route to an empty list.
+  const visibleCategories = useMemo(
+    () => categories.filter((cat) => (counts[cat.key] || 0) > 0),
+    [categories, counts],
+  );
+  // Switching stacks can empty the category in hand — its chip disappears, so
+  // the selection falls back to All rather than stranding the user on a
+  // filter nothing on the page still shows.
+  if (categories.length > 0 && category !== 'all' && !counts[category]) {
+    setCategory('all');
+  }
 
   // Media options come from the data rather than a hand-kept list, so the
   // sheet never offers a filter that matches nothing.
@@ -191,7 +203,7 @@ export default function KnowledgePage() {
             <Chip active={category === 'all'} onClick={() => setCategory('all')} count={totalCount}>
               {c.categoryAll}
             </Chip>
-            {categories.map((cat) => (
+            {visibleCategories.map((cat) => (
               <Chip
                 key={cat.key}
                 active={category === cat.key}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ClipboardCopy, Check, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { cn } from '../lib/cn';
 import AnswerText from '../components/AnswerText';
 import InlineMarkdown from '../components/InlineMarkdown';
 import { extractHint, shortenCode } from '../lib/hint';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 import type { Difficulty, Question } from '../types/domain';
 
 /**
@@ -31,14 +32,18 @@ export default function CheatsheetPage() {
   const { data: topic, isLoading, error } = useTopic(slug);
   const [copied, setCopied] = useState(false);
 
-  // Set document title — affects PDF filename if user prints
-  useEffect(() => {
-    if (!topic) return;
-    const original = document.title;
+  // The title doubles as the PDF filename if the user prints. The canonical
+  // carries the trailing slash Pages serves this prerendered route under.
+  const metaTitle = useMemo(() => {
+    if (!topic) return null;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    document.title = lang === 'ru' ? `${safe}: шпаргалка — Onsite` : `${safe} cheatsheet — Onsite`;
-    return () => { document.title = original; };
+    return lang === 'ru' ? `${safe}: шпаргалка — Onsite` : `${safe} cheatsheet — Onsite`;
   }, [topic, topicTitle, lang]);
+  useDocumentMeta({
+    title: metaTitle,
+    description: topic ? topicDesc(topic) : null,
+    canonical: slug ? `/topic/${slug}/cheatsheet/` : null,
+  });
 
   const items = useMemo(() => {
     if (!topic?.questions) return [];

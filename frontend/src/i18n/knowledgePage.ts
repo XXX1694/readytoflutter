@@ -4,6 +4,8 @@ import type { Lang } from './LangContext';
 // with the page chunk rather than the entry.
 const en = {
   duration: (d: string) => d,
+  metaTitle: 'Sources — Flutter, iOS, Android & KMP — Onsite',
+  metaDescription: 'A curated library for mobile developers: official docs, articles, videos, courses, books, podcasts, communities and tools — filtered to your stack.',
   eyebrow: 'Library',
   subtitle: (n: number) => `Docs, articles, videos and courses — ${n} in this stack.`,
   subtitleAll: (n: number) => `Docs, articles, videos and courses — ${n} across every stack.`,
@@ -68,6 +70,8 @@ const ru: typeof en = {
       .replace(/(\d+)\s*months?\b/g, '$1 мес.')
       .replace(/(\d+)\s*lectures\b/g, '$1 лекций');
   },
+  metaTitle: 'Источники — Flutter, iOS, Android и KMP — Onsite',
+  metaDescription: 'Отобранная библиотека для мобильных разработчиков: доки, статьи, видео, курсы, книги, подкасты, сообщества и инструменты — с фильтром по твоему стеку.',
   eyebrow: 'Библиотека',
   subtitle: (n) => `Доки, статьи, видео и курсы — ${n} в этом стеке.`,
   subtitleAll: (n) => `Доки, статьи, видео и курсы — ${n} по всем стекам.`,

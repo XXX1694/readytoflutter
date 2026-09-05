@@ -649,11 +649,13 @@ export interface PushStateReport {
 }
 
 export const pushHealth = (): Promise<PushHealth> =>
-  api.get<PushHealth>('/push/health').then((r) => r.data)
-    .catch(() => ({
+  tryRemote(
+    () => api.get<PushHealth>('/push/health').then((r) => r.data),
+    async () => ({
       enabled: false, reason: 'unreachable', publicKey: null,
       sendHourLocal: 9, quietHourLocal: 22, staleDays: 30,
-    }));
+    }),
+  );
 
 export const pushSubscribe = (
   subscription: PushSubscriptionPayload,
@@ -790,7 +792,10 @@ export interface AiHealthResponse {
 }
 
 export const aiHealth = (): Promise<AiHealthResponse> =>
-  api.get<AiHealthResponse>('/ai/health').then((r) => r.data).catch(() => ({ enabled: false }));
+  tryRemote(
+    () => api.get<AiHealthResponse>('/ai/health').then((r) => r.data),
+    async () => ({ enabled: false }),
+  );
 
 export interface AiGradeArgs {
   questionId: number;
@@ -858,7 +863,10 @@ export interface BillingHealthResponse {
 }
 
 export const billingHealth = (): Promise<BillingHealthResponse> =>
-  api.get<BillingHealthResponse>('/billing/health').then((r) => r.data).catch(() => ({ enabled: false }));
+  tryRemote(
+    () => api.get<BillingHealthResponse>('/billing/health').then((r) => r.data),
+    async () => ({ enabled: false }),
+  );
 
 export const billingCheckout = (): Promise<{ url: string }> =>
   api.post<{ url: string }>('/billing/checkout').then((r) => r.data);

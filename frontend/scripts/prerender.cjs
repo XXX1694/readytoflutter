@@ -7,8 +7,8 @@
 // The script:
 //   1. Spins up `vite preview` in the background on port 4173.
 //   2. Crawls a curated list of public routes with Puppeteer (home, the four
-//      platform landings, /pricing, /contact, every /topic/<slug>, every
-//      /topic/<slug>/cheatsheet).
+//      platform landings, /roadmap, /topics, /knowledge, /pricing, /contact,
+//      every /topic/<slug>, every /topic/<slug>/cheatsheet).
 //   3. Captures the post-hydration HTML and writes it to
 //      dist/<route>/index.html so GitHub Pages serves a fully-rendered page
 //      to crawlers — Google's bot does run JS, but Twitter / Slack / LinkedIn
@@ -20,8 +20,10 @@
 //   - /admin and /admin/authoring (auth-gated; the prerender output would be
 //     a "not authorized" panel, which leaks nothing useful for SEO and
 //     pollutes the index).
-//   - /search, /study, /mock, /round, /bookmarks, /stats — interactive app
-//     surfaces, no SEO value, and they rely on user state.
+//   - /search, /study, /mock, /round, /bookmarks, /stats, /live — interactive
+//     app surfaces, no SEO value, and they rely on user state.
+//     (/knowledge is not one of them: it is a public, curated library that
+//     reads only public/seed/resources.json, so it prerenders like /topics.)
 //   - /login, /signup — auth flows; deliberately ephemeral.
 //
 // Hydration mismatch is acceptable: the prerendered DOM gives the crawler the
@@ -89,6 +91,7 @@ function buildRouteList(staticData) {
     '/flutter', '/ios', '/android', '/kmp',
     '/roadmap',
     '/topics',
+    '/knowledge',
     '/pricing',
     '/contact',
     ...staticData.topics.map((t) => `/topic/${t.slug}`),
@@ -210,6 +213,18 @@ function writeHtml(route, html) {
     // The runtime canonical already carries the base path, and SITE_URL
     // does too — swap the whole "origin + base" prefix, not just the origin.
     final = final.split(`http://localhost:${PORT}${BASE_NO_TRAIL}`).join(SITE_URL);
+    // index.html ships og:image / twitter:image as `%BASE_URL%og.png`, which
+    // Vite expands to a root-relative path. Open Graph requires an absolute
+    // URL — Facebook, X, LinkedIn, Slack, Telegram and WhatsApp all drop the
+    // image otherwise — so absolutise those two tags when they still carry a
+    // base-relative value. Pages that set their own absolute ogImage are
+    // already https and don't match.
+    final = final.replace(/<meta[^>]*>/g, (tag) => {
+      if (!/property="og:image"|name="twitter:image"/.test(tag)) return tag;
+      return tag.replace(/content="(\/[^"]*)"/, (whole, value) => (
+        value.startsWith(BASE_PATH) ? `content="${SITE_URL}${value.slice(BASE_NO_TRAIL.length)}"` : whole
+      ));
+    });
   }
   fs.writeFileSync(path.join(outDir, 'index.html'), final);
 }

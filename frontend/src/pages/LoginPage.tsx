@@ -42,6 +42,7 @@ export default function LoginPage() {
   const location = useLocation();
   const setSession = useAuth((s) => s.setSession);
   const markSynced = useAuth((s) => s.markSynced);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
   const qc = useQueryClient();
   const { lang } = useLang();
   useDocumentMeta({ title: `${lang === 'ru' ? 'Войти' : 'Sign in'} — Onsite` });
@@ -111,15 +112,44 @@ export default function LoginPage() {
       toast.success(isRu ? `С возвращением, ${user.name || user.email}` : `Welcome back, ${user.name || user.email}`);
       navigate(safeRedirect((location.state as { from?: unknown } | null)?.from), { replace: true });
     } catch (err) {
-      const code = (err as { response?: { status?: number } })?.response?.status;
-      const apiErr = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      if (code === 401) setErrors({ form: 'invalid_credentials' });
+      const response = (err as { response?: { status?: number; data?: { error?: string } } })?.response;
+      const code = response?.status;
+      const apiErr = response?.data?.error;
+      // No response at all — the request never reached a server, which is a
+      // different problem from a rejected password.
+      if (!response) setErrors({ form: 'network_error' });
+      else if (code === 401) setErrors({ form: 'invalid_credentials' });
       else if (code === 429) setErrors({ form: 'rate_limited' });
       else setErrors({ form: apiErr ?? 'unknown_error' });
     } finally {
       setSubmitting(false);
     }
   };
+
+  // No backend on this deploy (the GitHub Pages build): a sign-in form here
+  // could only ever fail, so say what is actually true and point back into
+  // the app. `null` means the probe is still out — the form stays until we
+  // know, so a real deploy never flashes this state.
+  if (backendAvailable === false) {
+    return (
+      <PageShell width="narrow" centered>
+        <PageHeader
+          eyebrow={T.unavailable.eyebrow}
+          title={T.unavailable.title}
+          subtitle={T.unavailable.body}
+          back={{ to: '/', label: T.back }}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="codex">
+            <Link to="/">{T.unavailable.toHome}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/settings">{T.unavailable.toSettings}</Link>
+          </Button>
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell width="narrow" centered>

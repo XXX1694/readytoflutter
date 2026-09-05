@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import axios from 'axios';
 
+import { noBackend } from '../api/api';
 import type { User } from '../types/domain.ts';
 
 /**
@@ -61,6 +62,16 @@ export const useAuth = create<AuthState>()(
       // ── Probes / actions ──────────────────────────────────────────────────
       // Fired once on app boot so we know whether to show auth UI at all.
       probeBackend: async (apiBase) => {
+        // A build with no backend wired up: the request would resolve against
+        // the origin root (`/api/auth/health`), spend a slot in the connection
+        // queue and come back 404. The guard lives here rather than in a
+        // caller's effect because AccountMenu mounts *inside* App and React
+        // runs child effects first — a guard in App fires after the probe has
+        // already gone out.
+        if (noBackend) {
+          set({ backendAvailable: false });
+          return false;
+        }
         if (get().probing) return get().backendAvailable;
         set({ probing: true });
         try {

@@ -162,8 +162,19 @@ export default defineConfig({
                   // (workbox#1796), so the request itself is rebuilt with
                   // `no-cache`: a conditional request, answered with 304 when
                   // nothing changed and with the new document when it did.
+                  // `redirect` must be copied over: a navigation request the
+                  // browser made carries `redirect: 'manual'`, and rebuilding
+                  // it resets that to `'follow'`. Pages 301s every no-slash
+                  // URL to its directory form, so the worker would follow the
+                  // redirect itself and hand back a `redirected` response —
+                  // which the spec forbids for a navigation, killing the
+                  // navigation with ERR_FAILED.
                   requestWillFetch: async ({ request }) =>
-                    new globalThis.Request(request.url, { cache: 'no-cache', credentials: 'same-origin' }),
+                    new globalThis.Request(request.url, {
+                      cache: 'no-cache',
+                      credentials: 'same-origin',
+                      redirect: request.redirect,
+                    }),
                 },
                 {
                   // Offline, on a path this cache has never seen — a home

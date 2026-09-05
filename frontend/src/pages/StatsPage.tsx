@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useTopics, useQuestions } from '../lib/queries';
 import { getCardState, readAll } from '../lib/srs';
 import { computeStreaks } from '../lib/activity';
@@ -168,7 +168,7 @@ export default function StatsPage() {
         actions={
           <Link to="/roadmap" className="inline-flex items-center gap-1 text-[13px] text-brand hover:underline">
             {t.nav.roadmap}
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         }
       />

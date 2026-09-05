@@ -236,6 +236,11 @@ jobs:
           grep -q "'rtf:prefs:v1'" frontend/src/store/prefs.ts
       - name: prerender contract on /roadmap
         run: grep -q 'id={`rung-' frontend/src/pages/RoadmapPage.tsx
+      - name: the worker keeps a navigation request's redirect mode
+        run: |
+          if grep -A 8 'requestWillFetch' frontend/vite.config.js | grep -q 'new globalThis.Request' \
+             && ! grep -A 8 'requestWillFetch' frontend/vite.config.js | grep -q 'redirect: request.redirect'; then
+            echo "::error::a rebuilt navigation Request must carry redirect: request.redirect — it defaults to 'follow', and a redirected response is invalid for a navigation"; exit 1; fi
 
   static-data-sync:
     name: Repo · static-data parity

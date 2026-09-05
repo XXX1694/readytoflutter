@@ -28,11 +28,20 @@ const RU = {
   syncing: 'Импортирую…',
   syncSkip: 'Пропустить',
   syncNote: 'Можно сделать позже из меню аккаунта',
+  // Shown instead of the form when there is no backend on this deploy.
+  unavailable: {
+    eyebrow: 'Только локально',
+    title: 'Регистрация здесь недоступна.',
+    body: 'Эта сборка работает без сервера, поэтому регистрироваться не нужно. Всё, что ты изучаешь, сохраняется в этом браузере.',
+    toHome: 'Продолжить учиться',
+    toSettings: 'Где хранится прогресс',
+  },
   errors: {
     invalid_email: 'Некорректный email',
     password_too_short: 'Минимум 8 символов',
     email_taken: 'Этот email уже зарегистрирован',
     rate_limited: 'Слишком много попыток. Подожди немного.',
+    network_error: 'Не удаётся связаться с сервером. Проверь соединение и попробуй ещё раз.',
     unknown_error: 'Что-то пошло не так. Попробуй ещё раз.',
   },
 };
@@ -62,11 +71,20 @@ const EN = {
   syncing: 'Importing…',
   syncSkip: 'Skip',
   syncNote: 'You can do this later from the account menu',
+  // Shown instead of the form when there is no backend on this deploy.
+  unavailable: {
+    eyebrow: 'Local only',
+    title: 'Accounts are not available here.',
+    body: 'This build runs without a server, so there is nothing to sign up for. Everything you study is saved in this browser — no account needed.',
+    toHome: 'Keep studying',
+    toSettings: 'How your progress is stored',
+  },
   errors: {
     invalid_email: 'Invalid email address',
     password_too_short: 'At least 8 characters',
     email_taken: 'This email is already registered',
     rate_limited: 'Too many attempts. Slow down for a bit.',
+    network_error: 'Cannot reach the server. Check your connection and try again.',
     unknown_error: 'Something went wrong. Try again.',
   },
 };

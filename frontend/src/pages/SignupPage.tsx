@@ -34,6 +34,7 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const setSession = useAuth((s) => s.setSession);
   const markSynced = useAuth((s) => s.markSynced);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
   const qc = useQueryClient();
   const { lang } = useLang();
   useDocumentMeta({ title: `${lang === 'ru' ? 'Регистрация' : 'Create account'} — Onsite` });
@@ -103,9 +104,13 @@ export default function SignupPage() {
         navigate('/', { replace: true });
       }
     } catch (err) {
-      const code = (err as { response?: { status?: number } })?.response?.status;
-      const apiErr = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      if (code === 409) setErrors({ form: 'email_taken' });
+      const response = (err as { response?: { status?: number; data?: { error?: string } } })?.response;
+      const code = response?.status;
+      const apiErr = response?.data?.error;
+      // No response at all — the request never reached a server, which is a
+      // different problem from a rejected email or password.
+      if (!response) setErrors({ form: 'network_error' });
+      else if (code === 409) setErrors({ form: 'email_taken' });
       else if (code === 429) setErrors({ form: 'rate_limited' });
       else if (apiErr?.toLowerCase().includes('password')) setErrors({ password: 'password_too_short' });
       else setErrors({ form: apiErr ?? 'unknown_error' });
@@ -185,6 +190,30 @@ export default function SignupPage() {
         </div>
 
         <p className="mt-5 text-[13px] text-muted-2">{T.syncNote}</p>
+      </PageShell>
+    );
+  }
+
+  // No backend on this deploy (the GitHub Pages build): there is no account to
+  // create, so offer the truth and a way back instead of a dead form. `null`
+  // means the probe is still out — the form stays until we know.
+  if (backendAvailable === false) {
+    return (
+      <PageShell width="narrow" centered>
+        <PageHeader
+          eyebrow={T.unavailable.eyebrow}
+          title={T.unavailable.title}
+          subtitle={T.unavailable.body}
+          back={{ to: '/', label: T.back }}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="codex">
+            <Link to="/">{T.unavailable.toHome}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/settings">{T.unavailable.toSettings}</Link>
+          </Button>
+        </div>
       </PageShell>
     );
   }

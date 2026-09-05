@@ -7,6 +7,7 @@ import { useLang } from '../i18n/LangContext';
 import { usePricingCopy } from '../i18n/staticPages';
 import { Button, buttonVariants, PageHeader, PageShell } from '../ui/index';
 import { billingHealth, billingCheckout, billingPortal } from '../api/api';
+import { useAiHealth } from '../components/AnswerGrader';
 import { useStats, useTopics } from '../lib/queries';
 import { track } from '../lib/analytics';
 import { cn } from '../lib/cn';
@@ -19,8 +20,14 @@ const PRICE_USD = 9;
 
 export default function PricingPage() {
   const { lang } = useLang();
-  useDocumentMeta({ title: `${lang === 'ru' ? 'Цены' : 'Pricing'} — Onsite` });
   const T = usePricingCopy(lang);
+  useDocumentMeta({
+    title: `${lang === 'ru' ? 'Цены' : 'Pricing'} — Onsite`,
+    description: T.metaDescription,
+    // Trailing slash: the form GitHub Pages serves with a 200, and the form
+    // the sitemap lists. The no-slash path is a 301.
+    canonical: '/pricing/',
+  });
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
   const token = useAuth((s) => s.token);
@@ -37,6 +44,11 @@ export default function PricingPage() {
   // rather than rejecting, so there is nothing to catch here.
   const [billingEnabled, setBillingEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Same fail-closed probe the grader itself runs, off the same module-level
+  // cache. A build with no backend has no AI grading, so the page must not
+  // list it — this page used to sell it unconditionally.
+  const aiEnabled = useAiHealth().enabled;
 
   useEffect(() => {
     if (backendAvailable === false) return;
@@ -104,7 +116,11 @@ export default function PricingPage() {
   // server). An existing subscriber still sees their plan and the portal —
   // hiding it would leave them no way to cancel.
   const showPro = billingEnabled || isPro;
-  const freeFeatures = [T.catalogue(topics.length, stats?.totalQuestions ?? 0), ...T.freeFeatures];
+  const freeFeatures = [
+    T.catalogue(topics.length, stats?.totalQuestions ?? 0),
+    ...T.freeFeatures,
+    ...(aiEnabled ? [T.aiFeature] : []),
+  ];
 
   return (
     <PageShell width="reading">
@@ -145,7 +161,7 @@ export default function PricingPage() {
         )}
       </div>
 
-      {!showPro && (
+      {!showPro && aiEnabled && (
         <p className="mt-8 max-w-2xl text-[15px] leading-relaxed text-muted">{T.aiNote}</p>
       )}
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Search } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import { useQuestions, useTopics } from '../lib/queries';
 import { getCardState, readAll } from '../lib/srs';
 import { usePrefs } from '../store/prefs';
@@ -58,7 +58,7 @@ export default function TopicsPage() {
 
   useDocumentMeta({
     title: lang === 'ru' ? 'Темы — Onsite' : 'Topics — Onsite',
-    canonical: '/topics',
+    canonical: '/topics/',
   });
 
   const dueByTopic = useMemo(() => countDueByTopic(questionsQ.data ?? NO_QUESTIONS), [questionsQ.data]);
@@ -97,7 +97,7 @@ export default function TopicsPage() {
         actions={
           <Link to="/knowledge" className="inline-flex items-center gap-1 text-[13px] text-brand hover:underline">
             {c.sources}
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         }
       >

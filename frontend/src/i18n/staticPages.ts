@@ -17,6 +17,7 @@ const plural = (n: number, one: string, few: string, many: string): string => {
 const pricingEn = {
   eyebrow: 'Pricing',
   back: 'Back to home',
+  metaDescription: 'What Onsite costs. Every topic, every question, spaced repetition, timed sessions and the cheatsheets are free, with no account required.',
   title: 'Pay if it pays you back.',
   subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading — the part that earns its keep when interview week is three days out.',
   // Shown instead of the above while Pro is withdrawn.
@@ -36,8 +37,11 @@ const pricingEn = {
     'Spaced repetition and write-it-first recall',
     'Timed sessions with self-grading',
     'Cheatsheets, saved questions, English and Russian',
-    '10 AI-graded answers per day',
   ],
+  // Appended to the free list, and `aiNote` shown, only when the grader
+  // actually answers its health probe — a build with no backend has no AI
+  // grading at all, and this page used to sell it regardless.
+  aiFeature: '10 AI-graded answers per day',
   proLede: 'Everything in free, plus',
   // Only what actually exists. This list previously advertised deeper stats
   // and early access to question packs; neither was ever built, and StatsPage
@@ -62,6 +66,7 @@ const pricingEn = {
 const pricingRu: typeof pricingEn = {
   eyebrow: 'Цены',
   back: 'На главную',
+  metaDescription: 'Сколько стоит Onsite. Все темы и вопросы, интервальное повторение, сессии на время и шпаргалки — бесплатно и без аккаунта.',
   title: 'Платишь, если окупается.',
   subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку — то, что окупается, когда интервью через три дня.',
   titleFree: 'Всё бесплатно.',
@@ -79,8 +84,8 @@ const pricingRu: typeof pricingEn = {
     'SRS-планирование и активное припоминание',
     'Сессии на время с самооценкой',
     'Шпаргалки, сохранённые вопросы, английский и русский',
-    '10 AI-проверок в день',
   ],
+  aiFeature: '10 AI-проверок в день',
   proLede: 'Всё из Free, плюс',
   proFeatures: [
     'Безлимитная AI-проверка',
@@ -101,8 +106,15 @@ const pricingRu: typeof pricingEn = {
 const contactEn = {
   eyebrow: 'Contact',
   back: 'Back to home',
+  metaDescription: 'How to reach the people behind Onsite: report a bug, suggest a question, or ask about a team plan.',
   title: 'Drop us a line',
   subtitle: 'Bugs, feature ideas, partnerships — a real person reads every message.',
+  // Shown instead of the form when there is no backend to post it to. The
+  // promise above ("a real person reads every message") is one this build
+  // cannot keep, so the no-backend state points at the issue tracker instead.
+  issuesSub: 'Bugs, feature ideas, questions — they all land in the GitHub issue tracker, and it is read.',
+  issuesBody: 'There is no message server behind this build, so the form has nowhere to post. Open an issue instead: it is public, it is monitored, and your report ends up where the fix happens.',
+  issuesCta: 'Open an issue on GitHub',
   name: 'Name', namePh: 'Optional',
   email: 'Email', emailPh: 'you@example.com',
   message: 'Message', messagePh: 'Tell us what is on your mind…',
@@ -114,6 +126,7 @@ const contactEn = {
     too_short: 'Add a bit more detail — at least 10 characters.',
     too_long: 'That message is over 4000 characters. Trim it down.',
     rate_limited: 'Too many messages just now. Try again in a few minutes.',
+    unreachable: 'Could not reach the server, so nothing was sent. Check your connection — if it stays down, open an issue on GitHub instead.',
     generic: 'Could not send your message. Try again in a moment.',
   },
 };
@@ -121,8 +134,12 @@ const contactEn = {
 const contactRu: typeof contactEn = {
   eyebrow: 'Контакты',
   back: 'На главную',
+  metaDescription: 'Как связаться с командой Onsite: сообщить о баге, предложить вопрос или спросить про командный тариф.',
   title: 'Напиши нам',
   subtitle: 'Баги, идеи, партнёрство — каждое сообщение читает живой человек.',
+  issuesSub: 'Баги, идеи, вопросы — всё это идёт в issue-трекер на GitHub, и его читают.',
+  issuesBody: 'За этой сборкой нет сервера, которому форма могла бы отправить сообщение. Заведи issue — он публичный, его читают, и твоё сообщение окажется там же, где будет правка.',
+  issuesCta: 'Открыть issue на GitHub',
   name: 'Имя', namePh: 'Необязательно',
   email: 'Email', emailPh: 'you@example.com',
   message: 'Сообщение', messagePh: 'Расскажи, что у тебя…',
@@ -134,6 +151,7 @@ const contactRu: typeof contactEn = {
     too_short: 'Добавь деталей — хотя бы 10 символов.',
     too_long: 'Сообщение длиннее 4000 символов. Сократи его.',
     rate_limited: 'Слишком много сообщений подряд. Попробуй через несколько минут.',
+    unreachable: 'Сервер недоступен, сообщение не отправлено. Проверь соединение — если не поможет, заведи issue на GitHub.',
     generic: 'Не удалось отправить сообщение. Попробуй ещё раз.',
   },
 };

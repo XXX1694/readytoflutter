@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import { ArrowUpRight, Brain, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Brain, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useQuestions, useRoadmap, useTopics } from '../lib/queries';
 import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useContent, type ContentHelpers } from '../i18n/content';
+import { useRoadmapCopy } from '../i18n/roadmapPage';
 import {
-  Button, Chip, ChipGroup, Eyebrow, PageHeader, PageShell, ProgressBar, Section, Skeleton, TopicGlyph,
+  Button, Chip, ChipGroup, EmptyState, Eyebrow, PageHeader, PageShell, ProgressBar, Section, Skeleton, TopicGlyph,
 } from '../ui/index';
 import RoadmapStrip from '../components/RoadmapStrip';
 import ReadinessCard from '../components/ReadinessCard';
@@ -30,7 +31,7 @@ import {
   type ResolvedRung,
 } from '../lib/roadmap';
 
-import type { QuestionSummary as Question } from '../types/domain';
+import type { QuestionSummary as Question, RoadmapTrackKey } from '../types/domain';
 
 // Stable empty defaults so the resolved ladder keeps its identity between
 // renders while the queries are still settling.
@@ -51,33 +52,33 @@ export default function RoadmapPage() {
   const { lang } = useLang();
   const t = useT(lang);
   const content = useContent(lang);
+  const c = useRoadmapCopy(lang);
 
   const platform = usePrefs((s) => s.platform);
   const roadmapTrack = usePrefs((s) => s.roadmapTrack);
   const setRoadmapTrack = usePrefs((s) => s.setRoadmapTrack);
-  // The chips below make the choice visible, so a default is honest here.
-  const trackKey = pickTrack(roadmapTrack, platform) ?? 'flutter';
-  const trackMeta = PLATFORMS.find((p) => p.key === trackKey);
-  const trackLabel = trackMeta ? t[trackMeta.labelKey] : trackKey;
+  // Null for Cross-Platform and Mobile: they have no ladder of their own, and
+  // showing another stack's would be a lie. The page names the stack instead.
+  const trackKey = pickTrack(roadmapTrack, platform);
+  const stackMeta = PLATFORMS.find((p) => p.key === (trackKey ?? platform));
+  const stackLabel = stackMeta ? t[stackMeta.labelKey] : platform;
 
   const roadmapQ = useRoadmap();
   const topicsQ = useTopics();
   const questionsQ = useQuestions();
 
   useDocumentMeta({
-    title: lang === 'ru'
-      ? `Маршрут ${trackLabel} — Onsite`
-      : `${trackLabel} roadmap — Onsite`,
+    title: trackKey ? c.metaTitle(stackLabel) : c.metaTitleNoTrack,
     description: t.roadmap.metaDesc,
-    canonical: '/roadmap',
+    canonical: '/roadmap/',
   });
 
   useEffect(() => {
-    trackEvent('roadmap_opened', { track: trackKey });
+    if (trackKey) trackEvent('roadmap_opened', { track: trackKey });
   }, [trackKey]);
 
   const rungs = useMemo(
-    () => (roadmapQ.data && topicsQ.data
+    () => (roadmapQ.data && topicsQ.data && trackKey
       ? resolveTrack(roadmapQ.data, trackKey, topicsQ.data, questionsQ.data ?? NO_QUESTIONS, lang)
       : []),
     [roadmapQ.data, topicsQ.data, questionsQ.data, trackKey, lang],
@@ -87,6 +88,23 @@ export default function RoadmapPage() {
   const jumpTo = (id: string) => {
     document.getElementById(`rung-${id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
+
+  // No ladder for the chosen stack: say so, and leave the track chips in place
+  // as the one click back to a stack that has one.
+  if (!trackKey) {
+    return (
+      <PageShell width="app">
+        <PageHeader eyebrow={`${t.roadmap.title} · ${stackLabel}`} title={c.noTrackTitle}>
+          <TrackChips activeKey={null} t={t} onPick={setRoadmapTrack} />
+        </PageHeader>
+        <EmptyState
+          title={c.noTrackAction}
+          body={c.noTrackBody(stackLabel)}
+          action={{ label: t.nav.browseTopics, to: '/topics' }}
+        />
+      </PageShell>
+    );
+  }
 
   if (roadmapQ.isLoading || topicsQ.isLoading || questionsQ.isLoading) return <RoadmapSkeleton />;
   if (roadmapQ.error || topicsQ.error || !rungs.length) {
@@ -107,22 +125,11 @@ export default function RoadmapPage() {
   return (
     <PageShell width="app">
       <PageHeader
-        eyebrow={`${t.roadmap.title} · ${trackLabel}`}
+        eyebrow={`${t.roadmap.title} · ${stackLabel}`}
         title={t.roadmap.subtitle}
         subtitle={t.roadmap.intro}
       >
-        {/* Track switcher — the roadmap's own scope, separate from the header's
-            stack control, so it says what it filters. */}
-        <ChipGroup ariaLabel={t.roadmap.track} label={t.roadmap.track}>
-          {ROADMAP_TRACKS.map((key) => {
-            const meta = PLATFORMS.find((p) => p.key === key);
-            return (
-              <Chip key={key} active={key === trackKey} onClick={() => setRoadmapTrack(key)} icon={<StackIcon stack={key} />}>
-                {meta ? t[meta.labelKey] : key}
-              </Chip>
-            );
-          })}
-        </ChipGroup>
+        <TrackChips activeKey={trackKey} t={t} onPick={setRoadmapTrack} />
       </PageHeader>
 
       {/* STANDING — the one card on the page: where you are and what is next. */}
@@ -174,9 +181,9 @@ export default function RoadmapPage() {
         </div>
       </section>
 
-      {/* READINESS — the ladder says where you stand; this says whether you
-          will be ready on a particular morning, which is the question someone
-          with an interview booked actually has. */}
+      {/* READINESS — the roadmap answers "where am I"; this answers "will I
+          be ready on the day", which is the question someone with an
+          interview booked actually has. */}
       <ReadinessCard
         rungs={rungs}
         standing={standing}
@@ -195,6 +202,34 @@ export default function RoadmapPage() {
         content={content}
       />
     </PageShell>
+  );
+}
+
+// ── Track switcher ───────────────────────────────────────────────────────────
+
+interface TrackChipsProps {
+  /** Null when the chosen stack has no track — no chip reads as active. */
+  activeKey: RoadmapTrackKey | null;
+  t: UICopy;
+  onPick: (key: RoadmapTrackKey) => void;
+}
+
+/**
+ * The roadmap's own scope, separate from the header's stack control, so it
+ * says what it filters — and the way to a track when the stack has none.
+ */
+function TrackChips({ activeKey, t, onPick }: TrackChipsProps) {
+  return (
+    <ChipGroup ariaLabel={t.roadmap.track} label={t.roadmap.track}>
+      {ROADMAP_TRACKS.map((key) => {
+        const meta = PLATFORMS.find((p) => p.key === key);
+        return (
+          <Chip key={key} active={key === activeKey} onClick={() => onPick(key)} icon={<StackIcon stack={key} />}>
+            {meta ? t[meta.labelKey] : key}
+          </Chip>
+        );
+      })}
+    </ChipGroup>
   );
 }
 
@@ -466,7 +501,7 @@ function NodeRow({ node, t, content }: NodeRowProps) {
             </Button>
             <Button variant="ghost" size="xs" onClick={() => navigate(`/topic/${node.topic.slug}`)}>
               {t.roadmap.openTopic}
-              <ArrowUpRight className="h-3 w-3" aria-hidden />
+              <ChevronRight className="h-3 w-3" aria-hidden />
             </Button>
           </div>
         </div>

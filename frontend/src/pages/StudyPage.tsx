@@ -256,7 +256,12 @@ export default function StudyPage() {
   const isFresh = getCardState(current.id).reps === 0;
 
   return (
-    <PageShell width="reading">
+    // `centered` is `my-auto` inside a `min-h-full` column: a card that fits
+    // sits in the middle of the session screen instead of clinging to the top
+    // of 450px of blank paper, and once the answer makes it taller than the
+    // scroller the auto margins collapse to zero and it scrolls from the top
+    // like any other page.
+    <PageShell width="reading" centered>
       {/* Title and close are hidden under sm: the mobile header already
           carries both for this route. */}
       <header className="mb-5 flex items-center gap-3">

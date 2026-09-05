@@ -6,7 +6,7 @@ import { useQueries, type UseQueryResult } from '@tanstack/react-query';
 import { useQuestions, useTopics } from '../lib/queries';
 import { queryKeys } from '../lib/queryClient';
 import { getAnswers } from '../api/api';
-import type { QuestionAnswer } from '../types/domain';
+import type { PlatformKey, QuestionAnswer, QuestionSummary } from '../types/domain';
 import QuestionCard from '../components/QuestionCard';
 import { toPlainText } from '../lib/markdown';
 import { useLang } from '../i18n/LangContext';
@@ -18,7 +18,7 @@ import {
 } from '../ui/index';
 import { useAdmin, applyDiff } from '../store/admin';
 import { usePrefs, type SearchFacets } from '../store/prefs';
-import { filterQuestionsByPlatform } from '../lib/platform';
+import { filterQuestionsByPlatform, PLATFORMS } from '../lib/platform';
 import { track } from '../lib/analytics';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
@@ -42,6 +42,13 @@ const NO_FACETS: SearchFacets = { level: null, difficulty: null, status: null };
  * them at once is a multi-second stall on a phone.
  */
 const PAGE_SIZE = 30;
+
+function matchesFacets(q: QuestionSummary, facets: SearchFacets): boolean {
+  if (facets.level && q.level !== facets.level) return false;
+  if (facets.difficulty && q.difficulty !== facets.difficulty) return false;
+  if (facets.status && (q.status || 'not_started') !== facets.status) return false;
+  return true;
+}
 
 /**
  * Last query we reported. Module scope rather than a ref because StrictMode
@@ -96,10 +103,26 @@ export default function SearchPage() {
   const edits = useAdmin((s) => s.edits);
   const adds = useAdmin((s) => s.adds);
   const deletes = useAdmin((s) => s.deletes);
-  const questions = useMemo(() => {
-    const merged = applyDiff(rawQuestions, { edits, adds, deletes });
-    return filterQuestionsByPlatform(merged, allTopics, platform);
-  }, [rawQuestions, edits, adds, deletes, allTopics, platform]);
+  const allQuestions = useMemo(
+    () => applyDiff(rawQuestions, { edits, adds, deletes }),
+    [rawQuestions, edits, adds, deletes],
+  );
+
+  // The sidebar's stack scopes this page, and nothing on this page used to say
+  // so — a query with hits in another stack read as "nothing found". The stack
+  // is a chip in the facet row now; dismissing it searches every stack. Holding
+  // the dismissed stack (rather than a boolean) means picking a different stack
+  // in the sidebar re-scopes the search on its own.
+  const [ignoredStack, setIgnoredStack] = useState<PlatformKey | null>(null);
+  const stackScoped = platform !== 'all' && ignoredStack !== platform;
+  const scope: PlatformKey = stackScoped ? platform : 'all';
+  const stackLabelKey = PLATFORMS.find((p) => p.key === platform)?.labelKey ?? 'platformAll';
+  const stackLabel = t[stackLabelKey];
+
+  const questions = useMemo(
+    () => filterQuestionsByPlatform(allQuestions, allTopics, scope),
+    [allQuestions, allTopics, scope],
+  );
 
   // Sync input → query (debounced) and URL
   useEffect(() => {
@@ -120,28 +143,45 @@ export default function SearchPage() {
   // Build/rebuild MiniSearch index when questions or language change.
   // We index against the localized question/answer/topic text so RU search
   // hits Russian content cleanly.
+  //
+  // The index covers every stack; the active stack narrows the *results*
+  // below, so dismissing it is instant and needs no rebuild.
+  //
+  // In Russian the English source text goes in as extra fields: the vocabulary
+  // of this field is English, and "state management" typed against a purely
+  // Russian index found one incidental hit. The reverse (an English reader
+  // searching Russian text) is deliberately not done — it would make every
+  // English visitor download the 1.5 MB RU corpus just to type in the box.
+  const isRu = lang === 'ru';
   const index = useMemo(() => {
     const ms = new MiniSearch({
-      fields: ['q', 'a', 'topic', 'tags'],
+      fields: ['q', 'a', 'topic', 'tags', 'qEn', 'aEn', 'topicEn'],
       storeFields: ['id'],
       searchOptions: {
-        boost: { q: 3, topic: 1.5, a: 1, tags: 1.5 },
+        boost: { q: 3, topic: 1.5, a: 1, tags: 1.5, qEn: 3, topicEn: 1.5, aEn: 1 },
         prefix: true,
         fuzzy: 0.15,
         combineWith: 'AND',
       },
     });
     ms.addAll(
-      questions.map((q) => ({
-        id: q.id,
-        q: toPlainText(questionText(q)),
-        a: toPlainText(answerText({ id: q.id, answer: answersById.get(q.id) })),
-        topic: topicTitle({ id: q.topic_id, title: q.topic_title || '' }) || q.topic_title || '',
-        tags: q.tags || '',
-      })),
+      allQuestions.map((q) => {
+        const answer = answersById.get(q.id);
+        return {
+          id: q.id,
+          q: toPlainText(questionText(q)),
+          a: toPlainText(answerText({ id: q.id, answer })),
+          topic: topicTitle({ id: q.topic_id, title: q.topic_title || '' }) || q.topic_title || '',
+          tags: q.tags || '',
+          // Empty in English, where these would just duplicate the fields above.
+          qEn: isRu ? toPlainText(q.question) : '',
+          aEn: isRu ? toPlainText(answer) : '',
+          topicEn: isRu ? q.topic_title || '' : '',
+        };
+      }),
     );
     return ms;
-  }, [questions, questionText, answerText, topicTitle, answersById]);
+  }, [allQuestions, questionText, answerText, topicTitle, answersById, isRu]);
 
   // Run query and apply facets
   const results = useMemo(() => {
@@ -154,20 +194,25 @@ export default function SearchPage() {
       pool = questions.filter((q) => order.has(q.id))
                       .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
     }
-    return pool.filter((q) => {
-      if (facets.level && q.level !== facets.level) return false;
-      if (facets.difficulty && q.difficulty !== facets.difficulty) return false;
-      if (facets.status && (q.status || 'not_started') !== facets.status) return false;
-      return true;
-    });
+    return pool.filter((q) => matchesFacets(q, facets));
   }, [query, facets, index, questions]);
+
+  // Zero hits inside a stack: what the same search would return across all of
+  // them, so the escape hatch can name its own payoff. Only computed on an
+  // empty result set, which is the only place it is shown.
+  const allStackCount = useMemo(() => {
+    if (!stackScoped || results.length > 0) return 0;
+    const q = query.trim();
+    const hits = q ? new Set(index.search(q).map((h) => h.id as number)) : null;
+    return allQuestions.filter((qu) => (!hits || hits.has(qu.id)) && matchesFacets(qu, facets)).length;
+  }, [stackScoped, results.length, query, index, allQuestions, facets]);
 
   // A new result set starts from the top of the first page again. Keyed on
   // the inputs rather than the array's identity — the memo above recomputes
   // whenever the content helpers change identity, and resetting on that would
   // loop. Adjusting during render keeps the first paint of the new list short
   // instead of flashing however many pages the previous one had grown to.
-  const resultsKey = [query.trim(), facets.level, facets.difficulty, facets.status, platform, lang].join('|');
+  const resultsKey = [query.trim(), facets.level, facets.difficulty, facets.status, scope, lang].join('|');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [seenKey, setSeenKey] = useState(resultsKey);
   if (seenKey !== resultsKey) {
@@ -185,7 +230,7 @@ export default function SearchPage() {
     const q = query.trim();
     if (q.length < 2 || lastSearch === q) return;
     lastSearch = q;
-    track('search', { query: q.slice(0, 80), results: results.length, platform });
+    track('search', { query: q.slice(0, 80), results: results.length, platform: scope });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
@@ -193,6 +238,13 @@ export default function SearchPage() {
     setFacets((f) => ({ ...f, [key]: f[key] === value ? null : value }) as SearchFacets);
   const clearFacets = (): void => setFacets(NO_FACETS);
   const hasFacets = Boolean(facets.level || facets.difficulty || facets.status);
+
+  // The words are fine, they just match in another stack: name the count and
+  // hand over the one tap that widens the search.
+  const elsewhere = query.trim() !== '' && allStackCount > 0
+    ? { label: c.allStacksAction(allStackCount), onClick: () => setIgnoredStack(platform) }
+    : undefined;
+  const clearFacetsAction = hasFacets ? { label: c.clearFilters, onClick: clearFacets } : undefined;
 
   // Focus shortcut: '/' focuses search
   useEffect(() => {
@@ -263,6 +315,16 @@ export default function SearchPage() {
         </div>
 
         <ChipGroup ariaLabel={c.facetsLabel} scroll className="mt-4">
+          {platform !== 'all' && (
+            <Chip
+              active={stackScoped}
+              icon={stackScoped ? <X /> : undefined}
+              aria-label={stackScoped ? `${stackLabel} — ${c.allStacksToggle}` : c.limitToStack(stackLabel)}
+              onClick={() => setIgnoredStack(stackScoped ? platform : null)}
+            >
+              {stackLabel}
+            </Chip>
+          )}
           {FACET_KEYS.flatMap((key) =>
             FACETS[key].map((value) => (
               <Chip
@@ -295,9 +357,14 @@ export default function SearchPage() {
 
       {results.length === 0 ? (
         <EmptyState
-          title={query ? t.noResultsFor(query) : t.enterSearchQuery}
-          body={query ? t.tryDifferentKeywords : c.indexed(questions.length)}
-          action={hasFacets ? { label: c.clearFilters, onClick: clearFacets } : undefined}
+          title={query ? (elsewhere ? c.nothingInStack(stackLabel) : t.noResultsFor(query)) : t.enterSearchQuery}
+          body={
+            query
+              ? (elsewhere ? c.scopedToStack(stackLabel) : (hasFacets ? t.tryDifferentKeywords : c.tryOtherWords))
+              : (stackScoped ? c.indexed(questions.length) : c.indexedAll(questions.length))
+          }
+          action={elsewhere ?? clearFacetsAction}
+          secondary={elsewhere ? clearFacetsAction : undefined}
         />
       ) : (
         <div className="space-y-3">

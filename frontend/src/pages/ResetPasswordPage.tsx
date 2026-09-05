@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Check, Copy } from 'lucide-react';
 import { authResetWithRecoveryCode } from '../api/api';
+import { useAuth } from '../store/auth';
 import { useLang } from '../i18n/LangContext';
+import { useLoginCopy } from '../i18n/loginPage';
 import { useRecoveryCopy, type RecoveryCopy, type RecoveryErrorKey } from '../i18n/ui';
 import { Button, PageHeader, PageShell, TextField, PasswordField } from '../ui/index';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
@@ -29,13 +31,18 @@ const schema = z.object({
 });
 
 type FieldName = 'email' | 'code' | 'password';
-type FormErrors = Partial<Record<FieldName | 'form', RecoveryErrorKey>>;
+// `network_error` is not part of the shared recovery dictionary — its wording
+// lives with the sign-in copy, which is where this page is reached from.
+type ResetErrorKey = RecoveryErrorKey | 'network_error';
+type FormErrors = Partial<Record<FieldName | 'form', ResetErrorKey>>;
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   useDocumentMeta({ title: `${lang === 'ru' ? 'Сброс пароля' : 'Reset your password'} — Onsite` });
   const T = useRecoveryCopy(lang);
+  const L = useLoginCopy(lang);
+  const backendAvailable = useAuth((s) => s.backendAvailable);
 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -46,8 +53,10 @@ export default function ResetPasswordPage() {
   // save-this-code screen.
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
 
-  const errLabel = (key: RecoveryErrorKey | undefined): string | null =>
-    (key ? T.errors[key] : null);
+  const errLabel = (key: ResetErrorKey | undefined): string | null => {
+    if (!key) return null;
+    return key === 'network_error' ? L.errors.network_error : T.errors[key];
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -96,6 +105,30 @@ export default function ResetPasswordPage() {
           ctaLabel={T.toSignIn}
           onAcknowledge={() => navigate('/login', { replace: true })}
         />
+      </PageShell>
+    );
+  }
+
+  // No backend on this deploy (the GitHub Pages build): there are no accounts,
+  // so there is nothing to recover. `null` means the probe is still out — the
+  // form stays until we know.
+  if (backendAvailable === false) {
+    return (
+      <PageShell width="narrow" centered>
+        <PageHeader
+          eyebrow={L.resetUnavailable.eyebrow}
+          title={L.resetUnavailable.title}
+          subtitle={L.resetUnavailable.body}
+          back={{ to: '/', label: L.back }}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="codex">
+            <Link to="/">{L.resetUnavailable.toHome}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/settings">{L.resetUnavailable.toSettings}</Link>
+          </Button>
+        </div>
       </PageShell>
     );
   }
@@ -235,11 +268,15 @@ export function RecoveryCodePanel({ code, T, ctaLabel, onAcknowledge }: Recovery
 // Axios rejections arrive as `unknown`. 401 is the deliberately generic
 // "email and code do not match" — a wrong code and an unknown address are
 // indistinguishable by design, so it is passed through untouched.
-function resetErrorKey(err: unknown): RecoveryErrorKey {
-  const status = (err as { response?: { status?: number } })?.response?.status;
+function resetErrorKey(err: unknown): ResetErrorKey {
+  const response = (err as { response?: { status?: number; data?: { error?: string } } })?.response;
+  // No response at all — the request never reached a server, which is a
+  // different problem from a code that does not match.
+  if (!response) return 'network_error';
+  const status = response.status;
   if (status === 401) return 'invalid';
   if (status === 429) return 'rate_limited';
-  const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+  const apiError = response.data?.error;
   if (apiError && /equal email/i.test(apiError)) return 'password_equals_email';
   return 'unknown_error';
 }

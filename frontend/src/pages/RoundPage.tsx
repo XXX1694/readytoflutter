@@ -153,8 +153,11 @@ export default function RoundPage() {
   const tags = tagsOf(current);
 
   return (
-    <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-5xl px-4 pb-20 pt-4 sm:px-6 sm:pt-10 lg:px-8">
+    // Flex column + `my-auto`: a question that fits is centred in the round
+    // screen, and one that overflows (the reveal, a long reference answer)
+    // drops its auto margins and scrolls from the top.
+    <div className="bg-page flex min-h-full flex-col">
+      <div className="mx-auto my-auto w-full max-w-5xl px-4 pb-20 pt-4 sm:px-6 sm:pt-10 lg:px-8">
         {/* Title and close are hidden under sm: the mobile header carries
             both for this route. */}
         <header className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -399,8 +402,8 @@ function Recap({
   ].join(' · ');
 
   return (
-    <div className="bg-page min-h-full">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <div className="bg-page flex min-h-full flex-col">
+      <div className="mx-auto my-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <h1 className="font-display text-3xl font-semibold text-ink">{c.recapTitle}</h1>
         <p className="mt-2 text-sm text-muted">{meta}</p>
 

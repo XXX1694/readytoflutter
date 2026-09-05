@@ -107,15 +107,15 @@ export default function TopicPage() {
   const metaTitleEn = topic ? `${topic.title} Interview Questions — Onsite` : null;
   const metaTitleRu = topic ? `${topicTitle(topic)}: вопросы для собеса — Onsite` : null;
   const metaDescEn = topic
-    ? `${topic.description || `Practice ${topic.title} interview questions`}. ${topic.question_count || ''} questions, SRS scheduling, AI-graded answers.`
+    ? `${topic.description || `Practice ${topic.title} interview questions`}. ${topic.question_count || ''} questions with spaced repetition, timed drills and a cheatsheet.`
     : null;
   const metaDescRu = topic
-    ? `${topicDesc(topic) || `Вопросы по теме ${topicTitle(topic)}`}. ${topic.question_count || ''} вопросов, SRS, AI-проверка.`
+    ? `${topicDesc(topic) || `Вопросы по теме ${topicTitle(topic)}`}. ${topic.question_count || ''} вопросов с интервальным повторением, тренировкой на время и шпаргалкой.`
     : null;
   useDocumentMeta({
     title: lang === 'ru' ? metaTitleRu : metaTitleEn,
     description: lang === 'ru' ? metaDescRu : metaDescEn,
-    canonical: topic ? `/topic/${topic.slug}` : null,
+    canonical: topic ? `/topic/${topic.slug}/` : null,
   });
 
   // Keyboard navigation: which question is "focused" + open. The cursor is
