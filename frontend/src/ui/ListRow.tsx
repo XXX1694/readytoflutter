@@ -53,7 +53,8 @@ export function ListRow({ leading, title, meta, trailing, to, onClick, onPointer
   );
   const rowClass = cn(
     'group flex min-h-[56px] w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left',
-    interactive && 'transition-colors hover:bg-brand/[0.05]',
+    // A pressed tint for the finger, the hover tint for the pointer.
+    interactive && 'transition-colors hover:bg-brand/[0.05] active:bg-brand/[0.08]',
     className,
   );
 
