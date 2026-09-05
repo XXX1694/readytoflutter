@@ -11,6 +11,7 @@ import {
   Button, Chip, ChipGroup, Eyebrow, PageHeader, PageShell, ProgressBar, Section, Skeleton, TopicGlyph,
 } from '../ui/index';
 import RoadmapStrip from '../components/RoadmapStrip';
+import ReadinessCard from '../components/ReadinessCard';
 import InlineMarkdown from '../components/InlineMarkdown';
 import { cn } from '../lib/cn';
 import { PLATFORMS } from '../lib/platform';
@@ -172,6 +173,17 @@ export default function RoadmapPage() {
           </div>
         </div>
       </section>
+
+      {/* READINESS — the ladder says where you stand; this says whether you
+          will be ready on a particular morning, which is the question someone
+          with an interview booked actually has. */}
+      <ReadinessCard
+        rungs={rungs}
+        standing={standing}
+        bandNames={bandNames}
+        fallbackLabel={t.roadmap.title}
+        onStudy={(ids, label) => navigate(`/study?ids=${ids.join(',')}&label=${encodeURIComponent(label)}`)}
+      />
 
       {/* LADDER — keyed by track so open/closed state resets on a switch. */}
       <Ladder

@@ -15,6 +15,8 @@ import { stackTileStyle } from '../lib/stackMeta';
 import { routeAt } from '../lib/routes';
 import { computeStreaks } from '../lib/activity';
 import { computeStanding, pickTrack, resolveTrack, rungLabel } from '../lib/roadmap';
+import { forecast, targetMoment } from '../lib/readiness';
+import { useReadinessCopy, shortDate } from '../i18n/readiness';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 import type { QuestionSummary as Question, Topic } from '../types/domain';
@@ -96,6 +98,18 @@ export default function HomePage({ landing = null }: HomePageProps) {
   );
   const standing = useMemo(() => computeStanding(rungs), [rungs]);
 
+  // With an interview date set, the orientation line also carries the forecast.
+  // One clock reading, so the number cannot shift between renders.
+  const [now] = useState(() => Date.now());
+  const readinessCopy = useReadinessCopy(lang);
+  const targetDate = usePrefs((s) => s.targetDate);
+  const readyLine = useMemo(() => {
+    const targetAt = targetDate ? targetMoment(targetDate) : null;
+    if (!targetAt || !rungs.length) return null;
+    const pct = Math.round(forecast(rungs, standing, targetAt, now).recall * 100);
+    return readinessCopy.readyBy(pct, shortDate(targetAt, lang));
+  }, [targetDate, rungs, standing, now, lang, readinessCopy]);
+
   // Streaks come from the local progress log plus the SRS review log. For a
   // signed-in user the progress map is cleared at login (it now lives on the
   // server), so the figure reflects study-session activity in this browser
@@ -139,6 +153,12 @@ export default function HomePage({ landing = null }: HomePageProps) {
       <span className="font-semibold text-brand">{c.trackLine(trackMeta ? t[trackMeta.labelKey] : trackKey ?? '')}</span>
       <span aria-hidden className="text-muted-2"> · </span>
       {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
+      {readyLine && (
+        <>
+          <span aria-hidden className="text-muted-2"> · </span>
+          <span className="num">{readyLine}</span>
+        </>
+      )}
     </Link>
   );
 
