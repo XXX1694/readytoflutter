@@ -24,6 +24,7 @@ import {
   filterTasks, dealTask, readDraft, writeDraft, clearDraft, type DifficultyScope,
 } from '../lib/liveTasks';
 import { aiReviewCode, noBackend } from '../api/api';
+import { highlightNow, prepareHighlighter } from '../lib/highlighter';
 import { goBack } from '../lib/navigation';
 import { cn } from '../lib/cn';
 import { tapMedium } from '../lib/haptics';
@@ -227,20 +228,23 @@ export default function LivePage() {
 
         <div className="mt-7">
           <label htmlFor="live-editor" className="eyebrow mb-2 block">{l.editorLabel}</label>
-          <Editor id="live-editor" value={code} onChange={updateCode} />
+          <Editor
+            id="live-editor"
+            value={code}
+            language={task.code_language}
+            status={l.chars(code.length)}
+            onChange={updateCode}
+          />
           <p className="mt-2 text-[12px] leading-relaxed text-muted-2">{l.editorHint}</p>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <span className="num text-[11px] text-muted-2">{l.chars(code.length)}</span>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" size="md" onClick={() => setSubmitted(true)}>
-              {l.giveUp}
-            </Button>
-            <Button variant="brand" size="md" onClick={() => { tapMedium(); setSubmitted(true); }}>
-              {l.submit}
-            </Button>
-          </div>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <Button variant="ghost" size="md" onClick={() => setSubmitted(true)}>
+            {l.giveUp}
+          </Button>
+          <Button variant="brand" size="md" onClick={() => { tapMedium(); setSubmitted(true); }}>
+            {l.submit}
+          </Button>
         </div>
       </PageShell>
     );
@@ -311,47 +315,185 @@ function Clock({ label, seconds, urgent }: { label: string; seconds: number; urg
 interface EditorProps {
   id: string;
   value: string;
+  language: string;
+  /** Right-hand side of the status strip — the attempt's size. */
+  status: string;
   onChange: (value: string) => void;
 }
 
+/** Two spaces is the indent everywhere in the seed, so it is the indent here. */
+const INDENT = '  ';
+
+/** A line ending in one of these opens a block: the next line steps in. */
+const OPENS_BLOCK = /[{([:]\s*$/;
+
 /**
- * A plain textarea wearing CodeBlock's clothes — the same hairline-and-wash
- * inset a snippet gets, so writing code and reading it look like one surface.
- * Deliberately not CodeMirror: an editor dependency would put the entry chunk
- * through its ceiling for a screen most visitors never open.
+ * The line the caret sits on, and the whitespace it starts with.
  */
-function Editor({ id, value, onChange }: EditorProps) {
+function lineAt(value: string, caret: number): { indent: string; text: string } {
+  const start = value.lastIndexOf('\n', caret - 1) + 1;
+  const text = value.slice(start, caret);
+  return { indent: /^[ \t]*/.exec(text)?.[0] ?? '', text };
+}
+
+/**
+ * A textarea that reads as an editor: a line-number gutter, the same Shiki
+ * colours the reference solution gets, Tab for indent and Enter that keeps
+ * your place in the block.
+ *
+ * How the colour works: the textarea's own text is transparent and it sits on
+ * top of a `<pre>` holding the highlighted copy, with identical metrics and
+ * padding, scrolled in lockstep. Deliberately not CodeMirror or Monaco — an
+ * editor dependency would put the entry chunk through its ceiling for a screen
+ * most visitors never open, and this is 60 lines.
+ */
+function Editor({ id, value, language, status, onChange }: EditorProps) {
+  const theme = usePrefs((s) => s.theme);
+  const overlayRef = useRef<HTMLPreElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
+  // Bumped once the grammar is registered, so the first render after that
+  // recomputes the memo below and the plain text turns into coloured text.
+  const [ready, setReady] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    prepareHighlighter(language)
+      .then(() => { if (alive) setReady((n) => n + 1); })
+      .catch(() => { /* chunk fetch failed — the plain text below still reads */ });
+    return () => { alive = false; };
+  }, [language]);
+
+  // Re-highlighting is the only expensive thing this page does per keystroke,
+  // and the parent re-renders every second for its clock — so it is memoised
+  // on the text, not left to run on every render.
+  const html = useMemo(
+    () => highlightNow(value, language, theme === 'dark'),
+    // `ready` is the signal that highlightNow has stopped returning null.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [value, language, theme, ready],
+  );
+
+  const lineCount = useMemo(() => value.split('\n').length, [value]);
+
+  const syncScroll = (el: HTMLTextAreaElement) => {
+    if (overlayRef.current) {
+      overlayRef.current.scrollTop = el.scrollTop;
+      overlayRef.current.scrollLeft = el.scrollLeft;
+    }
+    if (gutterRef.current) gutterRef.current.scrollTop = el.scrollTop;
+  };
+
+  /**
+   * Replace a range and leave the caret after the edit.
+   *
+   * `setRangeText` does both *synchronously*, which is the point: restoring
+   * the caret on the next frame instead loses a race with the next keystrokes,
+   * and a fast typist gets their characters shuffled into the old position.
+   * React then re-renders with a string the DOM already holds, so it does not
+   * touch the node and the caret survives.
+   */
+  const splice = (el: HTMLTextAreaElement, start: number, end: number, insert: string) => {
+    el.setRangeText(insert, start, end, 'end');
+    onChange(el.value);
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Tab indents. Losing focus mid-thought is worse than losing the
-    // keyboard's way out of the field, and Escape still leaves it.
-    if (event.key !== 'Tab' || event.shiftKey || event.metaKey || event.ctrlKey) return;
-    event.preventDefault();
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     const el = event.currentTarget;
     const { selectionStart: start, selectionEnd: end } = el;
-    onChange(`${value.slice(0, start)}  ${value.slice(end)}`);
-    // The value lands on the next render; move the caret once it has.
-    requestAnimationFrame(() => {
-      el.selectionStart = start + 2;
-      el.selectionEnd = start + 2;
-    });
+
+    // Tab indents. Losing focus mid-thought is worse than losing the
+    // keyboard's way out of the field, and Escape still leaves it.
+    if (event.key === 'Tab' && !event.shiftKey) {
+      event.preventDefault();
+      splice(el, start, end, INDENT);
+      return;
+    }
+    // Shift+Tab takes one indent step back off the current line.
+    if (event.key === 'Tab' && event.shiftKey) {
+      event.preventDefault();
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      if (!value.startsWith(INDENT, lineStart)) return;
+      // 'preserve' keeps the caret on the same character as the line slides left.
+      el.setRangeText('', lineStart, lineStart + INDENT.length, 'preserve');
+      onChange(el.value);
+      return;
+    }
+    // Enter keeps the block: the new line starts at the current indent, one
+    // step deeper after a line that opened a brace, bracket or parameter list.
+    if (event.key === 'Enter' && !event.shiftKey && start === end) {
+      const { indent, text } = lineAt(value, start);
+      const deeper = OPENS_BLOCK.test(text) ? indent + INDENT : indent;
+      if (!deeper) return; // column 0 — let the browser do it
+      event.preventDefault();
+      splice(el, start, end, `\n${deeper}`);
+    }
   };
 
   return (
-    <textarea
-      id={id}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={onKeyDown}
-      rows={16}
-      autoCorrect="off"
-      spellCheck={false}
-      autoCapitalize="off"
-      autoComplete="off"
-      className={
-        'w-full resize-y rounded-md border border-rule/12 bg-rule/4 p-3 sm:p-4 '
-        + 'font-mono text-[13px] leading-[1.65] text-ink outline-none placeholder:text-muted-2'
-      }
-    />
+    <div className="overflow-hidden rounded-md border border-rule/12 bg-rule/4">
+      {/* The same strip CodeBlock wears, so writing code and reading it read
+          as one surface. */}
+      <div className="flex items-center justify-between gap-2 border-b border-rule/8 px-3 py-1">
+        <span className="font-mono text-[11px] text-muted">{language}</span>
+        <span className="num text-[11px] text-muted-2">{status}</span>
+      </div>
+
+      <div className="flex">
+        {/* Line numbers scroll with the text but never sideways with it. */}
+        <div
+          ref={gutterRef}
+          aria-hidden
+          className={cn(
+            'shrink-0 select-none overflow-hidden border-r border-rule/8 py-3 pl-2 pr-2 text-right',
+            'font-mono text-[13px] leading-[1.65] text-muted-2 sm:py-4 sm:pl-3',
+          )}
+        >
+          {Array.from({ length: lineCount }, (_, i) => (
+            <div key={i}>{i + 1}</div>
+          ))}
+        </div>
+
+        <div className="relative min-w-0 flex-1">
+          {/* The coloured copy. Plain ink until the grammar lands, so a
+              keystroke is never invisible. */}
+          <pre
+            ref={overlayRef}
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute inset-0 overflow-hidden whitespace-pre px-3 py-3 sm:px-4 sm:py-4',
+              'font-mono text-[13px] leading-[1.65] text-ink',
+              '[&_pre]:!bg-transparent [&_pre]:m-0 [&_pre]:p-0 [&_code]:font-mono',
+            )}
+          >
+            {html
+              ? <span dangerouslySetInnerHTML={{ __html: html }} />
+              : value}
+            {/* A trailing newline has no glyph; this keeps the last line
+                scrollable to, exactly as the textarea has it. */}
+            {'\n'}
+          </pre>
+
+          <textarea
+            id={id}
+            value={value}
+            onChange={(e) => { onChange(e.target.value); syncScroll(e.currentTarget); }}
+            onKeyDown={onKeyDown}
+            onScroll={(e) => syncScroll(e.currentTarget)}
+            wrap="off"
+            rows={18}
+            autoCorrect="off"
+            spellCheck={false}
+            autoCapitalize="off"
+            autoComplete="off"
+            className={cn(
+              'relative block w-full resize-none overflow-auto bg-transparent px-3 py-3 sm:px-4 sm:py-4',
+              'font-mono text-[13px] leading-[1.65] text-transparent caret-ink outline-none',
+            )}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

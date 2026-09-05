@@ -23,6 +23,11 @@ import { createHighlighterCore, type HighlighterCore } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 
 let corePromise: Promise<HighlighterCore> | null = null;
+// The resolved core and the grammars already registered on it. `highlightNow`
+// reads these to colour without an await — the live-coding editor re-highlights
+// on every keystroke and cannot wait a microtask for the paint.
+let readyCore: HighlighterCore | null = null;
+const readyLangs = new Set<string>();
 
 const LANG_LOADERS: Record<string, () => Promise<{ default: unknown }>> = {
   dart: () => import('@shikijs/langs/dart'),
@@ -56,11 +61,12 @@ async function getCore(): Promise<HighlighterCore> {
       // shiki/core types are loose around the dynamic-loaded grammar shape;
       // cast through unknown to satisfy TS without bringing the whole grammar
       // typings into our app surface.
-      return createHighlighterCore({
+      readyCore = await createHighlighterCore({
         themes: themes.map((m) => m.default) as never,
         langs: [],
         engine: createJavaScriptRegexEngine(),
       });
+      return readyCore;
     })();
   }
   return corePromise;
@@ -74,7 +80,7 @@ async function loadLang(core: HighlighterCore, lang: string): Promise<void> {
   if (!pending) {
     pending = LANG_LOADERS[lang]()
       .then((m) => core.loadLanguage(m.default as never))
-      .then(() => undefined)
+      .then(() => { readyLangs.add(lang); })
       .catch((err: unknown) => {
         // Don't cache the failure — a transient chunk fetch error shouldn't
         // permanently un-highlight this language for the rest of the session.
@@ -110,6 +116,33 @@ export async function highlightCode(
   const lang = langAlias(language);
   await loadLang(hl, lang);
   return hl.codeToHtml(code, {
+    lang,
+    theme: isDark ? 'github-dark-default' : 'github-light',
+  });
+}
+
+/**
+ * Load the core and one grammar, so `highlightNow` can answer synchronously
+ * from then on. Resolves (and rejects) exactly like `highlightCode`.
+ */
+export async function prepareHighlighter(language: string | null | undefined): Promise<void> {
+  const hl = await getCore();
+  await loadLang(hl, langAlias(language));
+}
+
+/**
+ * Highlight without awaiting, or return null if the grammar is not registered
+ * yet. The caller renders plain text until `prepareHighlighter` has resolved —
+ * a text editor that blanks for a microtask on every keystroke is unusable.
+ */
+export function highlightNow(
+  code: string,
+  language: string | null | undefined,
+  isDark: boolean,
+): string | null {
+  const lang = langAlias(language);
+  if (!readyCore || !readyLangs.has(lang)) return null;
+  return readyCore.codeToHtml(code, {
     lang,
     theme: isDark ? 'github-dark-default' : 'github-light',
   });
