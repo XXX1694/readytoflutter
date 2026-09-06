@@ -4,6 +4,7 @@ import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { PLATFORMS, filterTopicsByPlatform } from './platform';
+import { tapLight } from './haptics';
 import { track } from './analytics';
 
 import type { PlatformKey } from '../types/domain';
@@ -47,7 +48,10 @@ export function useChooseStack(source: string): (key: PlatformKey) => void {
   const platform = usePrefs((s) => s.platform);
   const setPlatform = usePrefs((s) => s.setPlatform);
   return (key) => {
-    if (key !== platform) track('stack_selected', { stack: key, source });
+    if (key !== platform) {
+      tapLight();
+      track('stack_selected', { stack: key, source });
+    }
     setPlatform(key);
   };
 }

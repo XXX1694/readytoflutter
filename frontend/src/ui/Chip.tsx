@@ -1,4 +1,5 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
+import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
 
 export interface ChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
@@ -18,7 +19,7 @@ export interface ChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>,
  * a fill in the stack's colour — the same signal the primary button gives.
  */
 export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
-  { active = false, count, icon, size = 'md', className, children, ...props },
+  { active = false, count, icon, size = 'md', className, children, onClick, ...props },
   ref,
 ) {
   return (
@@ -26,8 +27,9 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
       ref={ref}
       type="button"
       aria-pressed={active}
+      onClick={(e: MouseEvent<HTMLButtonElement>) => { tapLight(); onClick?.(e); }}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full border font-medium transition-colors duration-150',
+        'pressable inline-flex shrink-0 items-center gap-1.5 rounded-full border font-medium',
         size === 'md' ? 'min-h-[40px] px-3.5 text-[13px]' : 'min-h-[32px] px-3 text-[12px]',
         icon && (size === 'md' ? 'pl-3' : 'pl-2.5'),
         active

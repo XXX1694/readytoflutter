@@ -808,7 +808,9 @@ function Setup({ t, l, difficulty, onDifficulty, budget, onBudget, available, on
 
   return (
     <PageShell width="reading">
-      <PageHeader title={t.nav.live} subtitle={l.intro} />
+      {/* The rail is hidden on this route (a session owns the window), and the
+          ✕ only exists once a card is dealt — so setup needs its own way out. */}
+      <PageHeader title={t.nav.live} subtitle={l.intro} back={{ to: '/', label: t.nav.today }} />
 
       <div className="space-y-7">
         <ChipGroup label={t.nav.stack} ariaLabel={t.nav.stack} scroll>

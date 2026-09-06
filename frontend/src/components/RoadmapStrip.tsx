@@ -37,7 +37,7 @@ export default function RoadmapStrip({ rungs, nextId, bandNames, onSelect, class
                     title={`${rungLabel(r, bandNames)} · ${r.title}`}
                     className={cn(
                       '-my-2 flex h-10 min-w-0 flex-1 items-center',
-                      onSelect ? 'cursor-pointer' : 'cursor-default',
+                      onSelect ? 'pressable pressable-lg cursor-pointer' : 'cursor-default',
                     )}
                   >
                     <span

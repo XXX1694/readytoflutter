@@ -326,15 +326,39 @@
     min-height: 44px;
   }
 
-  /* Active-state ripple-ish feedback. Tailwind's `active:` variant scales
-     the visual; this combines a subtle bg-tint + scale for buttons that
-     don't already have their own active state. */
-  .tap-feedback {
-    transition: transform 80ms ease-out, background-color 120ms ease-out;
+  /* ── Press. The one answer to "what happens when I touch this", used by
+       every control on the site: the surface dips under the finger and
+       springs back on the iOS ease, and the colour states settle on the same
+       clock. `--press` is the dip, so a 56px row and a 28px icon button can
+       each move by the amount that reads right at their size without a
+       second class per control.
+
+       It also owns the colour transition — a Tailwind `transition-colors`
+       utility on the same element would win the cascade (utilities come
+       after components) and silently drop the transform back to a snap. So
+       a pressable control carries `.pressable` INSTEAD of `transition-colors`,
+       never both. Declared after `.codex-card` for the same reason. */
+  .pressable {
+    --press: 0.97;
+    /* No 300ms click delay, and no double-tap zoom on a control. */
+    touch-action: manipulation;
+    transition:
+      transform 130ms cubic-bezier(0.32, 0.72, 0, 1),
+      color 140ms ease-out,
+      background-color 140ms ease-out,
+      border-color 140ms ease-out,
+      box-shadow 140ms ease-out,
+      opacity 140ms ease-out;
   }
-  .tap-feedback:active {
-    transform: scale(0.97);
-    background-color: rgb(var(--rule) / 0.10);
+  .pressable:active:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(var(--press));
+  }
+  /* A small control has to move further to be felt; a whole card barely at
+     all, or it reads as the page lurching. */
+  .pressable-sm { --press: 0.92; }
+  .pressable-lg { --press: 0.985; }
+  @media (prefers-reduced-motion: reduce) {
+    .pressable:active { transform: none; }
   }
 
   /* Hide scrollbars while keeping scroll behaviour — used by horizontal

@@ -25,7 +25,9 @@ export const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 select-none whitespace-nowrap',
     'font-medium leading-none',
-    'transition-colors duration-150 ease-out',
+    // `pressable` (index.css) carries both the colour transition and the dip
+    // under the finger, so every button on the site presses the same way.
+    'pressable',
     'disabled:opacity-50 disabled:pointer-events-none',
   ],
   {

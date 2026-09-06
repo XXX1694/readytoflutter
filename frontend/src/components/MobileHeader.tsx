@@ -25,6 +25,10 @@ import { useOnlineStatus } from '../lib/useOnlineStatus';
  * - Home → the wordmark sits in the leading slot; there is no drawer to open.
  * - Anywhere else → back arrow (history.back). Falls back to `/` when there
  *   is no prior in-app entry (deep link / first visit).
+ * - The stack control travels with the header: named in full beside the
+ *   wordmark on home, and as the mark alone on every other page — the rail
+ *   keeps it in view on desktop, and a phone should not have to go home to
+ *   change stacks.
  * - The right action is `Search` everywhere; on focus-flow routes (session,
  *   timed, follow-ups, login, signup) the X close swaps in instead.
  * - Offline, a badge sits before the action: the phone is the device that
@@ -59,7 +63,7 @@ function usePageTitle(): string {
 }
 
 const ACTION_CLASS =
-  'touch-target tap-feedback inline-flex items-center justify-center rounded-lg text-ink-2 active:text-ink';
+  'touch-target pressable pressable-sm inline-flex items-center justify-center rounded-lg text-ink-2 active:text-ink';
 
 // The stack sheet pulls in vaul; it loads on the first tap of the pill so the
 // entry chunk does not carry a drawer nobody has opened yet.
@@ -76,6 +80,9 @@ export default function MobileHeader() {
   const online = useOnlineStatus();
   const isHome = location.pathname === '/';
   const isFocus = FOCUS_ROUTES.some((re) => re.test(location.pathname));
+  // Home names the stack beside the wordmark; every other page that isn't a
+  // running flow carries the mark alone next to Search.
+  const showStackPill = !isHome && !isFocus;
 
   // Track scroll direction on the main scroller so we can auto-hide the
   // bar. `mainEl` resolves after Layout mounts — the hook handles a null
@@ -132,11 +139,6 @@ export default function MobileHeader() {
                 <span className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
               </span>
               <StackPill onClick={openStack} />
-              {stackMounted && (
-                <Suspense fallback={null}>
-                  <StackSheet open={stackOpen} onOpenChange={setStackOpen} />
-                </Suspense>
-              )}
             </>
           ) : (
             <button
@@ -156,7 +158,10 @@ export default function MobileHeader() {
           <span
             aria-hidden={!titleShown}
             className={cn(
-              'pointer-events-none absolute left-1/2 top-1/2 max-w-[60%] -translate-x-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink',
+              'pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 truncate text-center font-display text-[15px] font-semibold leading-tight tracking-tight text-ink',
+              // The stack mark shares the trailing slot on inner pages, so the
+              // title gives it room rather than running under it.
+              showStackPill ? 'max-w-[46%]' : 'max-w-[60%]',
               'transition-[opacity,transform] duration-200 ease-out',
               titleShown ? '-translate-y-1/2 opacity-100' : '-translate-y-1/4 opacity-0',
             )}
@@ -165,8 +170,9 @@ export default function MobileHeader() {
           </span>
         )}
 
-        {/* Trailing slot — search by default, X on focus-flow routes. */}
+        {/* Trailing slot — the stack mark, then search (X on focus flows). */}
         <div className="ml-auto flex shrink-0 items-center">
+          {showStackPill && <StackPill onClick={openStack} compact className="mr-1" />}
           {!online && (
             <span
               role="status"
@@ -201,6 +207,11 @@ export default function MobileHeader() {
           </div>
         </div>
       </div>
+      {stackMounted && (
+        <Suspense fallback={null}>
+          <StackSheet open={stackOpen} onOpenChange={setStackOpen} />
+        </Suspense>
+      )}
     </header>
   );
 }

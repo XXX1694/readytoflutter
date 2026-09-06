@@ -139,7 +139,14 @@ export const usePrefs = create<PrefsState>()(
       // Flutter / iOS / Android / Cross-Platform / Mobile so users can focus
       // on the stack they're interviewing for. 'all' shows every topic.
       platform: 'all',
-      setPlatform: (platform) => set({ platform }),
+      // Switching the stack is a site-wide move, so it also drops the
+      // roadmap's own track override: `pickTrack` prefers a track the user
+      // once tapped on /roadmap over this filter, which left an iOS reader
+      // on the Flutter ladder for ever. Cleared, the roadmap follows the
+      // stack — and says "no ladder here" for Cross-platform and Mobile,
+      // which is the truth. The chips on /roadmap still set a local
+      // override; it lasts until the next stack switch.
+      setPlatform: (platform) => set({ platform, roadmapTrack: null }),
 
       roadmapTrack: null,
       setRoadmapTrack: (roadmapTrack) => set({ roadmapTrack }),

@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useHomeCopy } from '../i18n/homePage';
+import { Section } from '../ui/Section';
 import { StackTile } from '../lib/stackIcons';
 import { useChooseStack, useStackOptions } from '../lib/useStack';
 
@@ -45,10 +46,10 @@ export default function StackPicker({ onPicked }: StackPickerProps) {
   };
 
   return (
-    <section className="mb-10 sm:mb-14" aria-label={c.pickStack}>
-      <p className="max-w-xl text-[17px] leading-relaxed text-ink-2">{c.promise}</p>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    // The heading is the page's second one — the hero above it already made
+    // the promise, so this block only has to ask the question.
+    <Section title={c.pickStack} subtitle={c.stackDesc} className="mb-8 sm:mb-12">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {CHOICES.map((key) => {
           const o = options.find((x) => x.key === key);
           if (!o) return null;
@@ -57,7 +58,7 @@ export default function StackPicker({ onPicked }: StackPickerProps) {
               key={key}
               type="button"
               onClick={() => choose(key)}
-              className="codex-card group flex items-start gap-4 p-4 text-left transition-colors hover:border-brand/40 sm:flex-col sm:gap-5 sm:p-5"
+              className="codex-card pressable pressable-lg group flex items-start gap-4 p-4 text-left hover:border-brand/40 sm:flex-col sm:gap-5 sm:p-5"
             >
               <StackTile stack={key} size="xl" />
               <span className="min-w-0 flex-1">
@@ -80,6 +81,6 @@ export default function StackPicker({ onPicked }: StackPickerProps) {
       >
         {c.browseEverything}
       </button>
-    </section>
+    </Section>
   );
 }

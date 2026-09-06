@@ -48,9 +48,11 @@ export default function Sidebar() {
   const completed = scoped.reduce((s, tp) => s + (tp.completed_count || 0), 0);
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  // A session owns the whole window, on desktop as on the phone: /study,
-  // /mock, /round and /live each carry their own ✕ to leave by, so the rail
-  // beside a single question card is chrome competing with the flow.
+  // A session owns the whole window, on desktop as on the phone: the rail
+  // beside a single question card is chrome competing with the flow. Every
+  // one of these routes has to carry its own way out, since this removes the
+  // only other one — a running card has its ✕, and the /mock and /live setup
+  // screens (which have no ✕ until a session starts) have a back link.
   if (FOCUS_ROUTES.some((re) => re.test(pathname)) && !AUTH_ROUTE.test(pathname)) return null;
 
   return (

@@ -40,7 +40,7 @@ export function StackRows({ variant = 'rail', onChosen, source, className }: Sta
               aria-checked={active}
               onClick={() => { choose(o.key); onChosen?.(); }}
               className={cn(
-                'flex w-full items-center gap-3 text-left transition-colors',
+                'pressable flex w-full items-center gap-3 text-left',
                 compact ? 'rounded-[10px] px-2 py-1.5' : 'min-h-[60px] rounded-xl px-3 py-2.5',
                 active
                   ? 'bg-brand/10 text-brand'
@@ -75,11 +75,13 @@ export function StackRows({ variant = 'rail', onChosen, source, className }: Sta
 
 export interface StackPillProps {
   onClick: () => void;
+  /** Drop the name — the header of an inner page has room for the mark only. */
+  compact?: boolean;
   className?: string;
 }
 
 /** The compact trigger for phones: the tile, the name, a chevron. */
-export function StackPill({ onClick, className }: StackPillProps) {
+export function StackPill({ onClick, compact = false, className }: StackPillProps) {
   const { lang } = useLang();
   const t = useT(lang);
   const current = useCurrentStack();
@@ -90,12 +92,13 @@ export function StackPill({ onClick, className }: StackPillProps) {
       aria-haspopup="dialog"
       aria-label={`${t.nav.stack}: ${current.label}`}
       className={cn(
-        'inline-flex h-9 items-center gap-1.5 rounded-full border border-brand/25 bg-brand/[0.08] pl-1 pr-2.5 text-[13px] font-semibold text-brand transition-colors active:bg-brand/15',
+        'pressable inline-flex h-9 items-center gap-1.5 rounded-full border border-brand/25 bg-brand/[0.08] pl-1 text-[13px] font-semibold text-brand active:bg-brand/15',
+        compact ? 'pr-1.5' : 'pr-2.5',
         className,
       )}
     >
       <StackTile stack={current.key} size="sm" className="rounded-full" />
-      <span className="max-w-[9rem] truncate">{current.label}</span>
+      {!compact && <span className="max-w-[9rem] truncate">{current.label}</span>}
       <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
     </button>
   );

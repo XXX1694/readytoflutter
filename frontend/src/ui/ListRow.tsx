@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
 
 export interface ListProps {
@@ -53,17 +54,20 @@ export function ListRow({ leading, title, meta, trailing, to, onClick, onPointer
   );
   const rowClass = cn(
     'group flex min-h-[56px] w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left',
-    // A pressed tint for the finger, the hover tint for the pointer.
-    interactive && 'transition-colors hover:bg-brand/[0.05] active:bg-brand/[0.08]',
+    // A pressed tint for the finger, the hover tint for the pointer, and the
+    // site-wide dip (`pressable`, index.css) under both.
+    interactive && 'pressable pressable-lg hover:bg-brand/[0.05] active:bg-brand/[0.08]',
     className,
   );
+  // A row is a destination, so it gets the same selection tick a tab does.
+  const press = interactive ? () => { tapLight(); onClick?.(); } : onClick;
 
   return (
     <li>
       {to ? (
-        <Link to={to} className={rowClass} onClick={onClick} onPointerDown={onPointerDown} {...aria}>{inner}</Link>
+        <Link to={to} className={rowClass} onClick={press} onPointerDown={onPointerDown} {...aria}>{inner}</Link>
       ) : onClick ? (
-        <button type="button" className={rowClass} onClick={onClick} onPointerDown={onPointerDown} {...aria}>{inner}</button>
+        <button type="button" className={rowClass} onClick={press} onPointerDown={onPointerDown} {...aria}>{inner}</button>
       ) : (
         <div className={rowClass}>{inner}</div>
       )}

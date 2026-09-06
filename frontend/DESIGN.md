@@ -143,9 +143,30 @@ These rules apply at page level and are what `src/ui` exists to enforce.
     with the page chunk. No `lang === 'ru' ? … : …` in new JSX.
 16. **The stack is chosen once, and always visible.** `StackRows` in the rail
     (desktop) and the `StackPill` in the phone header are the stack control
-    in the chrome; pages scope to `usePrefs.platform` instead of repeating
-    the choice. First run offers Flutter · iOS · Android as cards on Today;
-    there is no onboarding modal and no tour.
+    in the chrome — the pill names the stack on Today and shows the mark
+    alone on every other page, so a phone never has to go home to switch.
+    Pages scope to `usePrefs.platform` instead of repeating the choice; the
+    one exception is `/` in pitch mode, where the choice *is* the pitch.
+    Switching also clears `roadmapTrack` (`store/prefs`), so the ladder
+    follows the stack instead of staying where it was once tapped. First run
+    offers Flutter · iOS · Android as cards on Today; there is no onboarding
+    modal and no tour.
+
+17. **One press, everywhere.** Anything a finger lands on carries
+    `.pressable` (`index.css`): the surface dips (`--press`, `-sm` for icon
+    buttons, `-lg` for cards and rows) and springs back on the iOS ease, and
+    the colour states settle on the same clock. It replaces the transition
+    utility rather than joining it — a Tailwind `transition-colors` on the
+    same element wins the cascade and silently drops the dip. Selection
+    haptics (`lib/haptics` `tapLight`) fire where a choice is made: a tab, a
+    chip, a list row, a stack switch. `tapMedium` stays for a committed
+    grade.
+
+18. **`/` sells before it dashboards.** With no progress on record the front
+    page is the pitch — hero, the stack strip, the plan card, an index of
+    every destination, how the habit works, what is in the box — and the
+    moment there is progress it collapses back to Today. Nothing in the
+    pitch is a second primary action: the painted card keeps that job.
 
 ## Copy
 

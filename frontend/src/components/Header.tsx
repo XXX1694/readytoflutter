@@ -52,7 +52,7 @@ export default function Header() {
         type="button"
         onClick={() => setCommandOpen(true)}
         aria-label={t.searchOpenHint}
-        className="flex max-w-md flex-1 items-center gap-2.5 rounded-[10px] border border-rule/10 bg-paper-2 px-3 py-2 text-left text-sm shadow-codex-sm transition-colors hover:border-rule/24"
+        className="pressable pressable-lg flex max-w-md flex-1 items-center gap-2.5 rounded-[10px] border border-rule/10 bg-paper-2 px-3 py-2 text-left text-sm shadow-codex-sm hover:border-rule/24"
       >
         <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
         <span className="flex-1 truncate text-muted">{t.searchOpenHint}</span>
@@ -91,7 +91,7 @@ export default function Header() {
                 aria-pressed={active}
                 aria-label={`${t.cmdSwitchLang} — ${code.toUpperCase()}`}
                 className={cn(
-                  'inline-flex h-7 items-center rounded-full px-2.5 text-[12px] font-semibold transition-colors',
+                  'pressable inline-flex h-7 items-center rounded-full px-2.5 text-[12px] font-semibold',
                   active ? 'bg-brand text-on-brand' : 'text-muted hover:text-ink',
                 )}
               >

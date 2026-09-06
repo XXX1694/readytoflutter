@@ -23,7 +23,7 @@ export const OverflowTrigger = forwardRef<HTMLButtonElement, OverflowTriggerProp
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rule/12 bg-paper-2 text-ink-2 transition-colors hover:border-rule/25 hover:text-ink',
+        'pressable pressable-sm inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rule/12 bg-paper-2 text-ink-2 hover:border-rule/25 hover:text-ink',
         className,
       )}
       {...props}

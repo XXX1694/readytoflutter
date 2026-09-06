@@ -484,7 +484,9 @@ function Setup({ config, onChange, onStart, available, t, c, showStack }: SetupP
 
   return (
     <PageShell width="reading" centered>
-      <PageHeader title={t.nav.timed} subtitle={c.setupIntro} />
+      {/* The rail is hidden on this route (a session owns the window), and the
+          ✕ only exists once one is running — so setup needs its own way out. */}
+      <PageHeader title={t.nav.timed} subtitle={c.setupIntro} back={{ to: '/', label: t.nav.today }} />
 
       {/* Each clause holds together on its own line; the separator is glued to
           the clause before it with a non-breaking space, so a wrap never

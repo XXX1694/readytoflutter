@@ -35,8 +35,8 @@ type Reveal = 'hidden' | 'hint' | 'full';
 
 /** Quiet grotesk text action — used for the header's listen / hide controls. */
 const QUIET_ACTION =
-  'inline-flex min-h-[36px] items-center gap-1.5 rounded px-2 text-[12px] font-medium ' +
-  'transition-colors sm:h-7 sm:min-h-0';
+  'pressable inline-flex min-h-[36px] items-center gap-1.5 rounded px-2 text-[12px] font-medium ' +
+  'sm:h-7 sm:min-h-0';
 
 export interface QuestionCardProps {
   /** With its answer (a topic page) or without (search, saved) — the card fetches what it lacks. */

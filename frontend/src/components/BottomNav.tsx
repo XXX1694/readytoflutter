@@ -96,8 +96,8 @@ export default function BottomNav() {
                 onTouchStart={() => prefetch(route.path)}
                 className={
                   isStart
-                    ? 'relative mx-2 inline-flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-[13px] font-semibold text-on-brand transition-transform active:scale-[0.96]'
-                    : 'flex min-h-[56px] w-full flex-col items-center justify-center gap-0.5 pb-1 pt-1.5 text-[12px] leading-4 transition-opacity active:opacity-70'
+                    ? 'pressable relative mx-2 inline-flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-[13px] font-semibold text-on-brand'
+                    : 'pressable flex min-h-[56px] w-full flex-col items-center justify-center gap-0.5 pb-1 pt-1.5 text-[12px] leading-4'
                 }
               >
                 {({ isActive }) => (

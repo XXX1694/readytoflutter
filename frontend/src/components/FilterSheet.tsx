@@ -73,7 +73,7 @@ export default function FilterSheet({
               type="button"
               onClick={() => { tapLight(); onOpenChange(false); }}
               aria-label={closeLabel}
-              className="touch-target tap-feedback -mr-2 inline-flex shrink-0 items-center justify-center rounded-md text-muted active:text-ink"
+              className="touch-target pressable pressable-sm -mr-2 inline-flex shrink-0 items-center justify-center rounded-md text-muted active:text-ink"
             >
               <X className="h-5 w-5" />
             </button>
@@ -107,7 +107,7 @@ FilterSheet.Footer = function Footer({
         <button
           type="button"
           onClick={() => { tapLight(); onClear(); }}
-          className="flex-1 rounded-md border border-rule/15 bg-paper-2 py-3 text-[14px] font-medium text-ink-2 transition-transform active:scale-95"
+          className="pressable flex-1 rounded-md border border-rule/15 bg-paper-2 py-3 text-[14px] font-medium text-ink-2"
         >
           {clearLabel}
         </button>
@@ -115,7 +115,7 @@ FilterSheet.Footer = function Footer({
       <button
         type="button"
         onClick={() => { tapLight(); onApply?.(); }}
-        className="flex-[2] rounded-md bg-ink py-3 text-[14px] font-semibold text-paper transition-transform active:scale-95"
+        className="pressable flex-[2] rounded-md bg-ink py-3 text-[14px] font-semibold text-paper"
       >
         {applyLabel}
       </button>

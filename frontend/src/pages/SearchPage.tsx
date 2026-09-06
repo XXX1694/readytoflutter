@@ -315,11 +315,15 @@ export default function SearchPage() {
         </div>
 
         <ChipGroup ariaLabel={c.facetsLabel} scroll className="mt-4">
+          {/* No aria-label on the stack chip: its name is the stack, and
+              `aria-pressed` (which Chip sets from `active`) is what says
+              whether the scope is on. Naming it after the action instead made
+              a screen reader read "search every stack, pressed" while the
+              scope was still on. */}
           {platform !== 'all' && (
             <Chip
               active={stackScoped}
               icon={stackScoped ? <X /> : undefined}
-              aria-label={stackScoped ? `${stackLabel} — ${c.allStacksToggle}` : c.limitToStack(stackLabel)}
               onClick={() => setIgnoredStack(stackScoped ? platform : null)}
             >
               {stackLabel}

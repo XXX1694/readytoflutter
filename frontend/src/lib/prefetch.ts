@@ -47,9 +47,15 @@ const WARM_PATHS = ['/study', '/topics'];
  * parser — with them: 54 JS requests and ~1.25 MB on a cold first load, all
  * queued behind the seed bundle the first screen is waiting on. An earlier,
  * broader version put 22 chunk requests ahead of it. So the warm-up is the
- * two destinations above plus the topic page, and everything else — Roadmap,
- * Sources, Progress, Me — is left to the pointerdown/hover prefetch, which
- * already covers tap latency on the rail and the tab bar.
+ * two destinations above plus the topic page, and everything else is left to
+ * the pointer prefetch — `onPointerEnter`/`onFocus` on the desktop rail,
+ * `onPointerDown`/`onTouchStart` on the phone's tab bar.
+ *
+ * That covers every destination on desktop, and the five tabs on a phone.
+ * Sources and Progress are in neither the tab bar nor a prefetching menu, so
+ * on a phone their first tap pays the chunk fetch behind a Suspense fallback.
+ * Deliberate: they are secondary destinations, and warming them is what put
+ * their transitive chunks in front of the first screen's data.
  *
  * Skipped on slow connections (Save-Data / 2G / 3G): there the queue is the
  * cost, not the bytes, and the pointer prefetch still does its job.
