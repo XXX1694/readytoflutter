@@ -177,6 +177,25 @@ export default defineConfig({
                     }),
                 },
                 {
+                  // Every worker shipped before the `redirect` fix above wrote
+                  // redirected responses into this cache, and Cache storage
+                  // keeps the flag — a `rtf-pages` entry for a no-slash URL
+                  // comes back with `redirected: true` to this day. Handing one
+                  // to a navigation is the exact thing the browser refuses, so
+                  // a returning visitor would still hit ERR_FAILED on that URL
+                  // the first time the network is slow or gone. Treat it as a
+                  // miss and evict it: the handler falls through to the shell
+                  // below, and the fixed fetch can never write another (a
+                  // manual-redirect fetch yields an opaqueredirect, whose
+                  // status 0 `cacheableResponse` already rejects).
+                  cachedResponseWillBeUsed: async ({ cacheName, request, matchOptions, cachedResponse }) => {
+                    if (!cachedResponse?.redirected) return cachedResponse;
+                    const cache = await globalThis.caches.open(cacheName);
+                    await cache.delete(request, matchOptions);
+                    return null;
+                  },
+                },
+                {
                   // Offline, on a path this cache has never seen — a home
                   // screen shortcut, a notification tap, any route reached
                   // by pushState rather than a full load — serve the last
