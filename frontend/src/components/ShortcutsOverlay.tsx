@@ -20,12 +20,12 @@ interface ShortcutGroup {
 
 const SHORTCUTS: ShortcutGroup[] = [
   { group: { en: 'Navigation', ru: 'Навигация' }, items: [
-    { keys: [M, 'K'], en: 'Open command bar', ru: 'Открыть палитру' },
+    { keys: [M, 'K'], en: 'Search', ru: 'Поиск' },
     { keys: [M, 'S'], en: 'Start session', ru: 'Начать сессию' },
     { keys: [M, 'M'], en: 'Timed session', ru: 'Сессия на время' },
     { keys: [M, 'B'], en: 'Saved', ru: 'Сохранённое' },
     { keys: [M, ','], en: 'Me', ru: 'Профиль' },
-    { keys: ['/'],    en: 'Search or run a command', ru: 'Поиск или команда' },
+    { keys: ['/'],    en: 'Search', ru: 'Поиск' },
     { keys: ['?'],    en: 'This panel', ru: 'Эта панель' },
     { keys: ['Esc'],  en: 'Close / leave', ru: 'Закрыть / уйти' },
   ]},

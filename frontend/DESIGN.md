@@ -132,7 +132,7 @@ These rules apply at page level and are what `src/ui` exists to enforce.
    touched is "not started", never "weakest".
 10. **One name per destination.** Today · Roadmap · Topics · Progress · Me;
     Session / Timed session / Follow-ups; Saved; Sources. The rail, the tab
-    bar, page titles and the palette all read `lib/routes.ts` and the `nav`
+    bar and page titles all read `lib/routes.ts` and the `nav`
     block of `i18n/ui.ts`. The routes themselves (`/stats`, `/study`,
     `/mock`, `/knowledge`, `/bookmarks`, `/settings`) do not change.
 11. **Lists over cards.** The default for a collection is `List` + `ListRow`
@@ -181,13 +181,13 @@ These rules apply at page level and are what `src/ui` exists to enforce.
 
 18. **`/` sells before it dashboards.** With no progress on record the front
     page is the pitch, set like a book's title page: the headline at display
-    size with the plan card beside it from `xl` (under it below), the stack
-    ribbon under the copy on phones, the picker in the card's place on first
-    run; then an index of every destination in three groups (Learn ·
-    Practice · Yours — Search is not listed, the header carries it), how
-    the habit works in three steps down one column, and what is in the box
-    as two paragraphs. There is no closing card: the painted card is the one
-    call to action and nothing below repeats it. The moment there is
+    size over one line and the proof figures, the plan card beside it from
+    `xl` (under it below), the stack ribbon under the copy on phones, the
+    picker in the card's place on first run; then the index of every
+    destination in three groups (Learn · Practice · Yours — Search is not
+    listed, the header carries it), one short line per row — and nothing
+    else. No paragraph explains the product and there is no closing card:
+    the painted card is the one call to action. The moment there is
     progress the page collapses to Today — the dateline and streak under the
     title, the plate (the card given the whole row: the figure at 36/52/64px
     and, from `lg`, the mark whole and upright on the right — cropped in the

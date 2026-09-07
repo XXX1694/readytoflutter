@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Sun, Moon, WifiOff } from 'lucide-react';
 import { usePrefs } from '../store/prefs';
 import { useLang, type Lang } from '../i18n/LangContext';
@@ -22,7 +23,6 @@ export default function Header() {
   const t = useT(lang);
   const theme = usePrefs((s) => s.theme);
   const toggleTheme = usePrefs((s) => s.toggleTheme);
-  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
   const online = useOnlineStatus();
 
   // The header gains a hairline once the page has scrolled — a border, not a
@@ -47,21 +47,21 @@ export default function Header() {
         scrolled ? 'border-rule/12' : 'border-transparent',
       )}
     >
-      {/* Cmd+K trigger — looks like a search field but opens the palette */}
-      <button
-        type="button"
-        onClick={() => setCommandOpen(true)}
-        aria-label={t.searchOpenHint}
+      {/* Search — drawn as a field, but it is a link to the page, so a click
+          and ⌘K land in the same place */}
+      <Link
+        to="/search"
+        aria-label={t.nav.search}
         className="pressable pressable-lg flex max-w-md flex-1 items-center gap-2.5 rounded-[10px] border border-rule/10 bg-paper-2 px-3 py-2 text-left text-sm shadow-codex-sm hover:border-rule/24"
       >
         <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
-        <span className="flex-1 truncate text-muted">{t.searchOpenHint}</span>
+        <span className="flex-1 truncate text-muted">{t.searchPlaceholderLong}</span>
         <kbd className="flex items-center gap-0.5 rounded-md border border-rule/12 px-1.5 py-0.5 font-mono text-[11px] text-muted-2">
           {modKey}
           <span className="opacity-60">+</span>
           K
         </kbd>
-      </button>
+      </Link>
 
       <div className="ml-auto flex items-center gap-1.5">
         {/* Offline notice — writes still succeed (they fall back to

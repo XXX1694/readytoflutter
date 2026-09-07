@@ -25,7 +25,7 @@ export const UI = {
     expand: 'Expand',
 
     // Destinations and the few verbs the chrome needs. One name per place,
-    // used identically in the rail, the tab bar, page titles and the palette.
+    // used identically in the rail, the tab bar and page titles.
     nav: {
       today: 'Today',
       roadmap: 'Roadmap',
@@ -159,19 +159,9 @@ export const UI = {
     refreshPage: 'Refresh page',
     goHome: 'Go home',
 
-    // Command palette
-    commandPlaceholder: 'Type a command or search…',
-    commandHint: 'Press ⌘K anywhere',
+    // The rail's nav landmark and the header's language switch.
     cmdNavigation: 'Navigation',
-    cmdTopics: 'Topics',
-    cmdActions: 'Actions',
-    cmdAppearance: 'Appearance',
-    cmdGoDashboard: 'Go to dashboard',
-    cmdGoSearch: 'Open search',
-    cmdToggleTheme: 'Toggle theme',
     cmdSwitchLang: 'Switch language',
-    cmdReset: 'Reset all progress',
-    cmdNoResults: 'No commands match',
 
     // Platform filter (splits topic catalog by stack)
     platformLabel: 'Stack',
@@ -207,7 +197,6 @@ export const UI = {
     // Misc
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
-    searchOpenHint: 'Search or run command',
   },
 
   ru: {
@@ -366,19 +355,9 @@ export const UI = {
     refreshPage: 'Обновить страницу',
     goHome: 'На главную',
 
-    // Command palette
-    commandPlaceholder: 'Команда или поиск…',
-    commandHint: 'Нажми ⌘K в любом месте',
+    // The rail's nav landmark and the header's language switch.
     cmdNavigation: 'Навигация',
-    cmdTopics: 'Темы',
-    cmdActions: 'Действия',
-    cmdAppearance: 'Внешний вид',
-    cmdGoDashboard: 'На главную',
-    cmdGoSearch: 'Открыть поиск',
-    cmdToggleTheme: 'Сменить тему',
     cmdSwitchLang: 'Сменить язык',
-    cmdReset: 'Сбросить прогресс',
-    cmdNoResults: 'Ничего не найдено',
 
     // Platform filter
     platformLabel: 'Стек',
@@ -414,7 +393,6 @@ export const UI = {
     // Misc
     openMenu: 'Открыть меню',
     closeMenu: 'Закрыть меню',
-    searchOpenHint: 'Поиск или команда',
   },
 };
 

@@ -6,7 +6,7 @@ import type { UICopy } from '../i18n/ui';
 
 /**
  * The single registry of app destinations. The desktop rail, the mobile tab
- * bar, the mobile header's titles, the command palette, the route-transition
+ * bar, the mobile header's titles, the route-transition
  * tab roots and the prefetch warm-up all read from here, so a destination is
  * added or renamed in one place and every surface agrees on its name.
  *
@@ -22,8 +22,6 @@ export interface AppRoute {
   rail?: boolean;
   /** Slot in the mobile tab bar; `start` is the centre action. */
   tab?: 'left' | 'start' | 'right';
-  /** Listed in the command palette's Navigation group. */
-  palette?: boolean;
   /** Moving between two tab roots is a lateral swap, not a push. */
   tabRoot?: boolean;
   /** NavLink `end` — only the exact path counts as active. */
@@ -33,21 +31,21 @@ export interface AppRoute {
 }
 
 export const ROUTES: AppRoute[] = [
-  { path: '/',          labelKey: 'today',    icon: Home,       rail: true, tab: 'left',  palette: true, tabRoot: true, end: true, load: () => import('../pages/HomePage') },
-  { path: '/roadmap',   labelKey: 'roadmap',  icon: Milestone,  rail: true, tab: 'left',  palette: true, tabRoot: true, load: () => import('../pages/RoadmapPage') },
-  { path: '/study',     labelKey: 'session',  icon: Brain,                  tab: 'start', palette: true, tabRoot: true, load: () => import('../pages/StudyPage') },
-  { path: '/topics',    labelKey: 'topics',   icon: LayoutGrid, rail: true, tab: 'right', palette: true, tabRoot: true, load: () => import('../pages/TopicsPage') },
+  { path: '/',          labelKey: 'today',    icon: Home,       rail: true, tab: 'left',  tabRoot: true, end: true, load: () => import('../pages/HomePage') },
+  { path: '/roadmap',   labelKey: 'roadmap',  icon: Milestone,  rail: true, tab: 'left',  tabRoot: true, load: () => import('../pages/RoadmapPage') },
+  { path: '/study',     labelKey: 'session',  icon: Brain,                  tab: 'start', tabRoot: true, load: () => import('../pages/StudyPage') },
+  { path: '/topics',    labelKey: 'topics',   icon: LayoutGrid, rail: true, tab: 'right', tabRoot: true, load: () => import('../pages/TopicsPage') },
   // The knowledge base is a destination in its own right, so it sits in the
   // rail next to the catalogue; phones reach it from Topics and Me.
-  { path: '/knowledge', labelKey: 'sources',  icon: Library,    rail: true,               palette: true, tabRoot: true, load: () => import('../pages/KnowledgePage') },
-  { path: '/stats',     labelKey: 'progress', icon: TrendingUp, rail: true,               palette: true, tabRoot: true, load: () => import('../pages/StatsPage') },
-  { path: '/settings',  labelKey: 'me',       icon: User,       rail: true, tab: 'right', palette: true, tabRoot: true, load: () => import('../pages/SettingsPage') },
-  { path: '/bookmarks', labelKey: 'saved',    icon: Bookmark,                             palette: true, tabRoot: true, load: () => import('../pages/BookmarksPage') },
-  { path: '/mock',      labelKey: 'timed',    icon: Timer,                                palette: true, tabRoot: true, load: () => import('../pages/MockPage') },
+  { path: '/knowledge', labelKey: 'sources',  icon: Library,    rail: true,               tabRoot: true, load: () => import('../pages/KnowledgePage') },
+  { path: '/stats',     labelKey: 'progress', icon: TrendingUp, rail: true,               tabRoot: true, load: () => import('../pages/StatsPage') },
+  { path: '/settings',  labelKey: 'me',       icon: User,       rail: true, tab: 'right', tabRoot: true, load: () => import('../pages/SettingsPage') },
+  { path: '/bookmarks', labelKey: 'saved',    icon: Bookmark,                             tabRoot: true, load: () => import('../pages/BookmarksPage') },
+  { path: '/mock',      labelKey: 'timed',    icon: Timer,                                tabRoot: true, load: () => import('../pages/MockPage') },
   // Live coding is a full-screen timed flow like /mock, and reached the same
-  // ways: the palette, Today, and a link on the timed-session setup. The rail
+  // ways: Today's index and a link on the timed-session setup. The rail
   // and the tab bar are full — one name per destination, not one row each.
-  { path: '/live',      labelKey: 'live',     icon: Code2,                                palette: true, tabRoot: true, load: () => import('../pages/LivePage') },
+  { path: '/live',      labelKey: 'live',     icon: Code2,                                tabRoot: true, load: () => import('../pages/LivePage') },
   { path: '/search',    labelKey: 'search',   icon: Search,                                              tabRoot: true, load: () => import('../pages/SearchPage') },
 ];
 
@@ -59,8 +57,6 @@ export const TAB_ROUTES: AppRoute[] = [
   ...ROUTES.filter((r) => r.tab === 'start'),
   ...ROUTES.filter((r) => r.tab === 'right'),
 ];
-
-export const PALETTE_ROUTES: AppRoute[] = ROUTES.filter((r) => r.palette);
 
 export const TAB_ROOTS: string[] = [...ROUTES.filter((r) => r.tabRoot).map((r) => r.path), '/login', '/signup'];
 

@@ -70,8 +70,9 @@ export interface HomePageProps {
  * the headline at display size with the same plan card beside it as the
  * plate (under it, on narrower screens), the stack ribbon on phones where
  * there is no rail to carry the choice, then the site's own index in three
- * groups, how the habit works and what is in the box. Nothing below the card
- * is a second primary action (DESIGN.md rules 8, 11 and 18).
+ * groups — and nothing else. The headline, one line and the figures are the
+ * pitch; no paragraph explains the product, and nothing below the card is a
+ * second primary action (DESIGN.md rules 8, 11 and 18).
  *
  * The four SEO landings (/flutter, /ios, /android, /kmp) are this page with
  * their own hero and their stack pre-applied; they always pitch.
@@ -275,15 +276,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
         topics={scopedTopics.length}
         questions={scopedQuestions}
         hidden={hidden}
-        subtitle={pitching ? c.everythingDesc(scopedQuestions) : undefined}
       />
-
-      {pitching && (
-        <>
-          <HowItWorks c={c} />
-          <WhatYouGet c={c} account={backendAvailable === true && !token} />
-        </>
-      )}
     </PageShell>
   );
 }
@@ -295,7 +288,6 @@ export interface DestinationsProps {
   questions: number;
   /** Destinations already on the screen above, left out of the index. */
   hidden: Set<string>;
-  subtitle?: string;
 }
 
 /**
@@ -304,7 +296,7 @@ export interface DestinationsProps {
  * the margin, not a tile: nine tinted squares in a column were nine of the
  * same thing, and the card above already spends the colour.
  */
-function Destinations({ c, t, topics, questions, hidden, subtitle }: DestinationsProps) {
+function Destinations({ c, t, topics, questions, hidden }: DestinationsProps) {
   const meta: Record<string, string> = {
     '/roadmap': c.destRoadmap,
     '/study': c.destSession,
@@ -321,7 +313,7 @@ function Destinations({ c, t, topics, questions, hidden, subtitle }: Destination
     yours: c.groupYours,
   };
   return (
-    <Section title={c.everythingTitle} subtitle={subtitle} className="mt-10 sm:mt-14">
+    <Section title={c.everythingTitle} className="mt-10 sm:mt-14">
       <div className="space-y-8">
         {GROUPS.map((group) => {
           const paths = group.paths.filter((path) => !hidden.has(path));
@@ -355,53 +347,6 @@ function Destinations({ c, t, topics, questions, hidden, subtitle }: Destination
           );
         })}
       </div>
-    </Section>
-  );
-}
-
-/** Three steps in one column, because what is being sold is a habit, not a feature list. */
-function HowItWorks({ c }: { c: HomeCopy }) {
-  const steps: Array<[string, string]> = [
-    [c.step1, c.step1Body],
-    [c.step2, c.step2Body],
-    [c.step3, c.step3Body],
-  ];
-  return (
-    <Section title={c.howTitle}>
-      <ol className="max-w-[60ch] list-none space-y-6">
-        {steps.map(([title, body], i) => (
-          <li key={title} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-2">
-            <span className="num pt-[3px] text-[15px] leading-[1.35] text-brand" aria-hidden>{i + 1}</span>
-            <div>
-              <h3 className="font-display text-[17px] font-semibold leading-snug text-ink">{title}</h3>
-              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </Section>
-  );
-}
-
-/**
- * What is in the box, as two paragraphs that are all true without a backend.
- * With a backend behind it, one quiet line under them is the page's only
- * sign-up ask — there is no closing card: the painted card above keeps the
- * one primary action (DESIGN.md rule 8).
- */
-function WhatYouGet({ c, account }: { c: HomeCopy; account: boolean }) {
-  return (
-    <Section title={c.whyTitle}>
-      <div className="max-w-[60ch] space-y-4 text-[15px] leading-relaxed text-ink-2">
-        <p>{[c.why1, c.why2, c.why3].join(' ')}</p>
-        <p>{[c.why4, c.why5, c.why6].join(' ')}</p>
-      </div>
-      {account && (
-        <p className="mt-6 text-[13px] leading-relaxed text-muted">
-          {c.accountBody}{' '}
-          <Link to="/signup" className="rounded-sm text-brand hover:underline">{c.accountCta}</Link>
-        </p>
-      )}
     </Section>
   );
 }

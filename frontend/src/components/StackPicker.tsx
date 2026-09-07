@@ -22,9 +22,9 @@ export interface StackPickerProps {
 }
 
 /**
- * The first question the app asks, asked in the plan card's place: three
- * ruled rows, each the stack's mark on its own colour, its name, what it
- * covers and how many topics that is. A list, not three cards (DESIGN.md
+ * The first question the app asks, asked in the plan card's place: a
+ * heading and three ruled rows, each the stack's mark on its own colour,
+ * its name, what it covers and how many topics that is. A list, not three cards (DESIGN.md
  * rule 11) — the only colour in the row is the tile, and choosing one paints
  * the card that takes this spot.
  */
@@ -48,7 +48,6 @@ export default function StackPicker({ onPicked }: StackPickerProps) {
   return (
     <div>
       <h2 className="font-display text-[17px] font-semibold leading-tight text-ink">{c.pickStack}</h2>
-      <p className="mt-1 text-[13px] text-muted">{c.stackDesc}</p>
       <ul aria-label={c.pickStack} className="mt-3 divide-y divide-rule/10 border-y border-rule/12">
         {CHOICES.map((key) => {
           const o = options.find((x) => x.key === key);

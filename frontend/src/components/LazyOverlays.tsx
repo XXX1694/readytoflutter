@@ -1,36 +1,17 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { usePrefs } from '../store/prefs';
 
 /**
- * Lazy-loaded global overlays. Each is gated by its trigger condition and
- * only downloaded when that condition first flips:
- *   - CommandPalette → first time `commandOpen` becomes true
+ * Lazy-loaded global overlays, each downloaded only when its trigger first
+ * fires:
  *   - ShortcutsOverlay → first time the user presses `?`
  *
- * First-run onboarding is no longer a dialog: the stack picker renders
- * inline on Today until a stack is chosen, so nothing covers the page.
+ * There is no command palette: ⌘K, `/` and the header's search field all
+ * open the search page. First-run onboarding is not a dialog either: the
+ * stack picker renders inline on Today until a stack is chosen, so nothing
+ * covers the page.
  */
 
-const CommandPaletteLazy = lazy(() => import('./CommandPalette'));
 const ShortcutsOverlayLazy = lazy(() => import('./ShortcutsOverlay'));
-
-// `commandOpen` flipping to true is the only signal the palette needs.
-// Once mounted we keep the chunk loaded for the rest of the session —
-// re-opening shouldn't re-pay the network cost.
-function LazyCommandPalette() {
-  const open = usePrefs((s) => s.commandOpen);
-  const [mounted, setMounted] = useState(false);
-  // Adjusting state during render rather than in an effect: this is a pure
-  // latch on `open`, and an effect here cost an extra render pass every time
-  // the palette was toggled.
-  if (open && !mounted) setMounted(true);
-  if (!mounted) return null;
-  return (
-    <Suspense fallback={null}>
-      <CommandPaletteLazy />
-    </Suspense>
-  );
-}
 
 // Shortcuts overlay opens via `?` keypress. We listen for the key here, mount
 // the lazy component, and hand it `defaultOpen` — the keypress that got us
@@ -59,10 +40,5 @@ function LazyShortcutsOverlay() {
 }
 
 export default function LazyOverlays() {
-  return (
-    <>
-      <LazyCommandPalette />
-      <LazyShortcutsOverlay />
-    </>
-  );
+  return <LazyShortcutsOverlay />;
 }

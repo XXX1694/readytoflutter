@@ -86,8 +86,8 @@ export default function Layout() {
 
         <PlatformUrlSync />
         {/* Global keyboard shortcuts (mod+K, vim go-prefix, etc.) live in a
-            tiny eager file so they fire even before the lazy palette chunk
-            downloads. The actual UI overlays are gated and lazy. */}
+            tiny eager file so they fire on first paint. The shortcuts
+            overlay is gated and lazy. */}
         <GlobalHotkeys />
         <LazyOverlays />
         <PwaPrompts />

@@ -236,7 +236,7 @@
   }
 
   /* ── Glass surface — translucent with backdrop blur. Use for floating
-       UI like sidebars, headers, command palette. */
+       UI like sidebars, headers, sheets. */
   .glass {
     background: rgb(var(--paper-2) / 0.72);
     -webkit-backdrop-filter: saturate(180%) blur(24px);

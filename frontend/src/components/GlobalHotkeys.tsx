@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { usePrefs } from '../store/prefs';
 
@@ -9,29 +9,32 @@ import { usePrefs } from '../store/prefs';
  * be spelled by its code name — `mod+slash`, not `mod+/`. Written the other
  * way the binding silently never fires.
  *
- * Global keyboard shortcuts that need to fire even before the heavy
- * `CommandPalette` chunk has been downloaded. Used to live inside the
- * palette component itself, but mounting the palette eagerly cost ~80kb
- * of cmdk + Radix Dialog in the main bundle. This file is tiny so it
- * stays in the entry chunk and lights up the shortcuts immediately.
+ * Global keyboard shortcuts. This file is tiny so it stays in the entry
+ * chunk and lights up the shortcuts immediately.
  */
 export default function GlobalHotkeys() {
   const navigate = useNavigate();
-  const open = usePrefs((s) => s.commandOpen);
-  const setOpen = usePrefs((s) => s.setCommandOpen);
+  const { pathname } = useLocation();
   const toggleTheme = usePrefs((s) => s.toggleTheme);
   const toggleRecallMode = usePrefs((s) => s.toggleRecallMode);
 
-  useHotkeys('mod+k', (e: KeyboardEvent) => { e.preventDefault(); setOpen(!open); }, { enableOnFormTags: true });
-  useHotkeys('mod+slash', (e: KeyboardEvent) => { e.preventDefault(); setOpen(!open); }, { enableOnFormTags: true });
-  // Plain `/` opens the palette from any page — the same thing the header's
-  // search field does. Skipped while typing so a slash still types a slash.
+  // ⌘K, ⌘/ and a bare `/` all open search — the page, not a palette. On a
+  // bank of six hundred questions the thing people reach for is a question,
+  // and every command the palette used to carry (stack, theme, language,
+  // account, reset) has a visible control of its own.
+  const openSearch = (): void => {
+    if (pathname === '/search') document.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+    else navigate('/search');
+  };
+  useHotkeys('mod+k', (e: KeyboardEvent) => { e.preventDefault(); openSearch(); }, { enableOnFormTags: true });
+  useHotkeys('mod+slash', (e: KeyboardEvent) => { e.preventDefault(); openSearch(); }, { enableOnFormTags: true });
+  // Skipped while typing so a slash still types a slash.
   useHotkeys('slash', (e: KeyboardEvent) => {
     const target = e.target as HTMLElement | null;
     const tag = (target?.tagName || '').toLowerCase();
-    if (['input', 'textarea', 'select'].includes(tag) || target?.isContentEditable || open) return;
+    if (['input', 'textarea', 'select'].includes(tag) || target?.isContentEditable) return;
     e.preventDefault();
-    setOpen(true);
+    openSearch();
   });
   useHotkeys('mod+s', (e: KeyboardEvent) => { e.preventDefault(); navigate('/study'); }, { enableOnFormTags: true });
   useHotkeys('mod+m', (e: KeyboardEvent) => { e.preventDefault(); navigate('/mock'); }, { enableOnFormTags: true });
@@ -47,7 +50,7 @@ export default function GlobalHotkeys() {
   useHotkeys('mod+comma', (e: KeyboardEvent) => { e.preventDefault(); navigate('/settings'); }, { enableOnFormTags: true });
 
   // Vim-style "go" prefix: press `g` then a letter within ~1.2s for navigation.
-  // Skipped while typing or when the palette is open. Matches GitHub/Linear.
+  // Skipped while typing. Matches GitHub/Linear.
   const goPending = useRef(0);
   const isTyping = (e: KeyboardEvent): boolean => {
     const target = e.target as HTMLElement | null;
@@ -55,12 +58,12 @@ export default function GlobalHotkeys() {
     return ['input', 'textarea', 'select'].includes(tag) || !!target?.isContentEditable;
   };
   const armGo = (e: KeyboardEvent): void => {
-    if (isTyping(e) || open) return;
+    if (isTyping(e)) return;
     e.preventDefault();
     goPending.current = Date.now();
   };
   const consumeGo = (e: KeyboardEvent, to: string): boolean => {
-    if (isTyping(e) || open) return false;
+    if (isTyping(e)) return false;
     if (Date.now() - goPending.current >= 1200) return false;
     e.preventDefault();
     goPending.current = 0;
@@ -76,7 +79,7 @@ export default function GlobalHotkeys() {
   useHotkeys('b', (e: KeyboardEvent) => consumeGo(e, '/bookmarks'));
   useHotkeys('t', (e: KeyboardEvent) => {
     if (consumeGo(e, '/topics')) return;
-    if (isTyping(e) || open) return;
+    if (isTyping(e)) return;
     e.preventDefault();
     toggleTheme();
   });
@@ -84,7 +87,7 @@ export default function GlobalHotkeys() {
   useHotkeys('a', (e: KeyboardEvent) => consumeGo(e, '/settings'));
   useHotkeys('r', (e: KeyboardEvent) => {
     if (consumeGo(e, '/roadmap')) return;
-    if (isTyping(e) || open) return;
+    if (isTyping(e)) return;
     e.preventDefault();
     toggleRecallMode();
   });

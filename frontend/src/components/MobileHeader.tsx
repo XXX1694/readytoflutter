@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, WifiOff, X } from 'lucide-react';
 import { StackPill } from './StackSwitcher';
-import { usePrefs } from '../store/prefs';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
@@ -74,7 +73,6 @@ export default function MobileHeader() {
   const location = useLocation();
   const { lang } = useLang();
   const t = useT(lang);
-  const setCommandOpen = usePrefs((s) => s.setCommandOpen);
 
   const title = usePageTitle();
   const online = useOnlineStatus();
@@ -112,7 +110,7 @@ export default function MobileHeader() {
     tapLight();
     goBack(navigate);
   };
-  const onSearch = () => { tapLight(); setCommandOpen(true); };
+  const onSearch = () => { tapLight(); navigate('/search'); };
   const onClose = () => { tapLight(); navigate('/'); };
 
   return (
@@ -198,7 +196,7 @@ export default function MobileHeader() {
             <button
               type="button"
               onClick={onSearch}
-              aria-label={t.searchOpenHint}
+              aria-label={t.nav.search}
               className={cn(ACTION_CLASS, 'mr-0.5')}
             >
               <Search className="h-[22px] w-[22px]" aria-hidden />

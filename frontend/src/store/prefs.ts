@@ -33,9 +33,6 @@ export interface PrefsState {
   roadmapTrack: RoadmapTrackKey | null;
   setRoadmapTrack: (roadmapTrack: RoadmapTrackKey | null) => void;
 
-  commandOpen: boolean;
-  setCommandOpen: (commandOpen: boolean) => void;
-  toggleCommand: () => void;
 
   recallMode: boolean;
   setRecallMode: (recallMode: boolean) => void;
@@ -152,11 +149,6 @@ export const usePrefs = create<PrefsState>()(
 
       roadmapTrack: null,
       setRoadmapTrack: (roadmapTrack) => set({ roadmapTrack }),
-
-      // Command palette open state
-      commandOpen: false,
-      setCommandOpen: (commandOpen) => set({ commandOpen }),
-      toggleCommand: () => set((s) => ({ commandOpen: !s.commandOpen })),
 
       // Active Recall mode — when true:
       //  - QuestionCard hides answers behind a hint-ladder reveal

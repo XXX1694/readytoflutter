@@ -35,6 +35,7 @@ const FACETS: Record<FacetKey, string[]> = {
 const FACET_KEYS = Object.keys(FACETS) as FacetKey[];
 
 const NO_FACETS: SearchFacets = { level: null, difficulty: null, status: null };
+const NO_ANSWERS: ReadonlyMap<number, string> = new Map();
 
 /**
  * Results are paged on the client. An empty query lists the whole bank — every
@@ -80,15 +81,19 @@ export default function SearchPage() {
 
   // The catalogue carries no answer text. This is the one screen that
   // searches answers, so it loads every topic's answers file here and folds
-  // them into the index as they land; a query typed before they arrive
-  // matches on question text, topic and tags and widens on its own.
+  // them into the index once, when the last one has landed; a query typed
+  // before that matches on question text, topic and tags and widens on its
+  // own. Once, not per file: rebuilding the index on every arrival was fifty
+  // rebuilds of six hundred documents on the main thread, and the page
+  // stuttered under the very typing it exists for.
   const answersById = useQueries({
     queries: allTopics.map((tp) => ({
       queryKey: queryKeys.answers(tp.slug),
       queryFn: () => getAnswers(tp.slug),
       staleTime: Infinity,
     })),
-    combine: useCallback((results: UseQueryResult<Record<number, QuestionAnswer>>[]) => {
+    combine: useCallback((results: UseQueryResult<Record<number, QuestionAnswer>>[]): ReadonlyMap<number, string> => {
+      if (results.some((r) => r.status !== 'success' && r.status !== 'error')) return NO_ANSWERS;
       const map = new Map<number, string>();
       for (const r of results) {
         if (!r.data) continue;
