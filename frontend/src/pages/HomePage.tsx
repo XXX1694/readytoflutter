@@ -222,12 +222,16 @@ export default function HomePage({ landing = null }: HomePageProps) {
                 stat tiles: what is here, in which languages, and that it
                 costs nothing. */}
             <p className="text-[13px] leading-relaxed text-muted">
-              {/* Each part unbreakable, so a narrow column wraps between
-                  the figures and never leaves one word on a line of its own. */}
+              {/* Each part unbreakable, with the separator bound to the part
+                  before it, so a narrow column wraps only between the figures
+                  and never leaves one word — or a lone dot — on a line of its own. */}
               {proof.map((part, i) => (
                 <span key={part}>
-                  {i > 0 && <span aria-hidden> · </span>}
-                  <span className="whitespace-nowrap">{part}</span>
+                  <span className="whitespace-nowrap">
+                    {part}
+                    {i < proof.length - 1 && <span aria-hidden> ·</span>}
+                  </span>
+                  {i < proof.length - 1 && ' '}
                 </span>
               ))}
             </p>
@@ -324,7 +328,7 @@ function Destinations({ c, t, topics, questions, hidden, subtitle }: Destination
           if (!paths.length) return null;
           return (
             <div key={group.key} className="lg:grid lg:grid-cols-[160px_minmax(0,1fr)] lg:gap-x-8">
-              {/* 13px, not the row's 18px of padding: the 12px label then sits on
+              {/* 13px, not the 18px this started at: the 12px label then sits on
                   the first title's baseline instead of 5px under it. */}
               <h3 className="eyebrow mb-2 lg:mb-0 lg:pt-[13px]">{labels[group.key]}</h3>
               <List>

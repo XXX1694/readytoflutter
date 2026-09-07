@@ -44,7 +44,8 @@ export default function StackRibbon({ className }: StackRibbonProps) {
       role="group"
       aria-label={t.nav.stack}
       // The scroller clips vertically too, so it carries the 6px the focus
-      // ring needs; the caller absorbs them to keep its rhythm.
+      // ring needs: `-mb-1.5` takes the bottom 6px back, and the caller's top
+      // margin is 6px short (`mt-[14px]`) to keep its rhythm.
       className={cn('-mx-4 -mb-1.5 flex gap-1.5 overflow-x-auto px-4 py-1.5 no-scrollbar', className)}
     >
       {options.map((o) => {
