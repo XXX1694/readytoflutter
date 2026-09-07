@@ -13,6 +13,9 @@ const plural = (n: number, forms: [string, string, string]): string => {
   return forms[2];
 };
 
+/** "воскресенье" → "Воскресенье": a subtitle starts with a capital. */
+const capitalise = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
 const en = {
   // Head meta for the bare `/`. The four platform landings bring their own
   // (i18n/landings.ts); without these the dashboard inherited index.html's
@@ -26,6 +29,9 @@ const en = {
   // First run — the inline stack picker that replaced the modal.
   pickStack: 'Choose a stack',
   browseEverything: 'Browse everything',
+  /** Today's subtitle: "Sunday 6 September" — the page appends the streak. */
+  dateline: (at: number): string =>
+    new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(at),
 
   // The one card. The figure is set apart from its noun so it can be the
   // display element.
@@ -39,8 +45,7 @@ const en = {
   weakest: (topic: string, pct: number) => `Weakest: ${topic} · ${pct}%`,
   untouched: (topic: string) => `Not started yet: ${topic}`,
 
-  // The two cards under it, and the line after them.
-  catalogueLine: (topics: number, questions: number) => `${topics} topics · ${questions} questions`,
+  // The line after the card, appended to the dateline in the header.
   streak: (n: number) => `${n}-day streak`,
   localOnly: 'Progress is saved in this browser only',
   localOnlySignIn: 'sign in to keep it',
@@ -54,17 +59,20 @@ const en = {
   heroDesc: 'A curated bank of mobile interview questions — Flutter, iOS, Android, Kotlin Multiplatform — on a spaced-repetition schedule. Fifteen minutes a day, and a roadmap that tells you when you are ready.',
   proofQuestions: (n: number) => `${n} questions`,
   proofTopics: (n: number) => `${n} topics`,
-  proofStacks: (n: number) => `${n} stacks`,
+  proofLangs: 'English and Russian',
   proofFree: 'Free, no account needed',
 
-  // The stack strip — the one place a page repeats the chrome's stack
-  // control, because on the screen that sells it *is* the pitch.
-  stackTitle: 'Your stack',
+  // The stack question, asked on the page that sells — the one line under
+  // the first-run picker's heading. (The ribbon is labelled from `ui.ts`.)
   stackDesc: 'The questions, the roadmap and the colour of the app all follow this.',
 
-  // The index of everything the site does, so nothing is discovered by luck.
+  // The index of everything the site does, in three groups, so nothing is
+  // discovered by luck.
   everythingTitle: 'Everything in one place',
   everythingDesc: (questions: number) => `Every way into the same ${questions} questions.`,
+  groupLearn: 'Learn',
+  groupPractice: 'Practice',
+  groupYours: 'Yours',
   destRoadmap: 'Sixteen rungs, Junior to Staff — and where you stand on them',
   destSession: 'Today\'s cards, each one back before you forget it',
   destTimed: 'A clock, a set of questions, no answers until the end',
@@ -72,7 +80,6 @@ const en = {
   destSources: 'The docs, talks and articles behind the answers',
   destSaved: 'The questions you kept',
   destProgress: 'What you have closed, day by day',
-  destSearch: 'Any question, by a word in it',
 
   // Three steps, because the product is a habit and not a feature.
   howTitle: 'How it works',
@@ -91,11 +98,8 @@ const en = {
   why5: 'Every question and every answer in both English and Russian.',
   why6: 'Free. Nothing is behind a sign-up; an account only carries your progress between devices.',
 
-  accountTitle: 'Keep it across devices',
   accountBody: 'Progress lives in this browser. An account carries it to your phone, and back.',
   accountCta: 'Create an account',
-  closingTitle: 'Fifteen minutes, starting now',
-  closingBody: 'Today\'s cards are at the top of this page. There is nothing to sign up for.',
 };
 
 const ru: typeof en = {
@@ -105,6 +109,8 @@ const ru: typeof en = {
   trackLine: (track) => `Маршрут ${track}`,
   pickStack: 'Выбери стек',
   browseEverything: 'Смотреть всё',
+  dateline: (at) =>
+    capitalise(new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(at)),
 
   cardsWord: (cards) => plural(cards, ['карточка', 'карточки', 'карточек']),
   approxMinutes: (minutes) => `~${minutes} мин`,
@@ -116,8 +122,6 @@ const ru: typeof en = {
   weakest: (topic, pct) => `Слабее всего: ${topic} · ${pct}%`,
   untouched: (topic) => `Ещё не начато: ${topic}`,
 
-  catalogueLine: (topics, questions) =>
-    `${topics} ${plural(topics, ['тема', 'темы', 'тем'])} · ${questions} ${plural(questions, ['вопрос', 'вопроса', 'вопросов'])}`,
   streak: (n) => `Серия: ${n} ${plural(n, ['день', 'дня', 'дней'])}`,
   localOnly: 'Прогресс хранится только в этом браузере',
   localOnlySignIn: 'войди, чтобы не потерять',
@@ -127,14 +131,16 @@ const ru: typeof en = {
   heroDesc: 'Отобранные вопросы с мобильных собесов — Flutter, iOS, Android, Kotlin Multiplatform — с интервальным повторением. Пятнадцать минут в день и маршрут, который скажет, когда ты готов.',
   proofQuestions: (n) => `${n} ${plural(n, ['вопрос', 'вопроса', 'вопросов'])}`,
   proofTopics: (n) => `${n} ${plural(n, ['тема', 'темы', 'тем'])}`,
-  proofStacks: (n) => `${n} ${plural(n, ['стек', 'стека', 'стеков'])}`,
+  proofLangs: 'На русском и английском',
   proofFree: 'Бесплатно, без регистрации',
 
-  stackTitle: 'Твой стек',
   stackDesc: 'От него зависят вопросы, маршрут и цвет приложения.',
 
   everythingTitle: 'Всё в одном месте',
   everythingDesc: (questions) => `Разные входы в одни и те же ${questions} ${plural(questions, ['вопрос', 'вопроса', 'вопросов'])}.`,
+  groupLearn: 'Теория',
+  groupPractice: 'Практика',
+  groupYours: 'Моё',
   destRoadmap: 'Шестнадцать ступеней от Junior до Staff — и твоё место на них',
   destSession: 'Карточки на сегодня — каждая возвращается до того, как забудешь',
   destTimed: 'Таймер, набор вопросов и никаких ответов до конца',
@@ -142,7 +148,6 @@ const ru: typeof en = {
   destSources: 'Доки, доклады и статьи, на которых стоят ответы',
   destSaved: 'Вопросы, которые ты отложил',
   destProgress: 'Что закрыто и в какие дни',
-  destSearch: 'Любой вопрос по слову из него',
 
   howTitle: 'Как это работает',
   step1: 'Выбери стек',
@@ -160,11 +165,8 @@ const ru: typeof en = {
   why5: 'Каждый вопрос и каждый ответ на русском и английском.',
   why6: 'Бесплатно. Ничего не спрятано за регистрацией — аккаунт нужен только чтобы перенести прогресс между устройствами.',
 
-  accountTitle: 'Чтобы прогресс был везде',
   accountBody: 'Сейчас он хранится в этом браузере. Аккаунт перенесёт его на телефон и обратно.',
   accountCta: 'Создать аккаунт',
-  closingTitle: 'Пятнадцать минут — прямо сейчас',
-  closingBody: 'Карточки на сегодня — вверху этой страницы. Регистрироваться не нужно.',
 };
 
 export type HomeCopy = typeof en;

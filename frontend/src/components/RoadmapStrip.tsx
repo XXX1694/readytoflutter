@@ -13,12 +13,15 @@ export interface RoadmapStripProps {
 /**
  * The whole ladder in one line: sixteen segments grouped Junior · Middle ·
  * Senior · Staff. A passed rung is solid ink, a rung in progress fills to its
- * share, and the rung to work on next is the one thing in colour. Each
- * segment is a button so the strip doubles as a table of contents.
+ * share, and the rung to work on next is the one thing in colour. With
+ * `onSelect` each segment is a button and the strip doubles as a table of
+ * contents; without it the segments are plain spans and the whole strip is
+ * hidden from assistive tech — beside Today's standing row, which names the
+ * level and the next rung, a ladder nobody can operate is decorative.
  */
 export default function RoadmapStrip({ rungs, nextId, bandNames, onSelect, className }: RoadmapStripProps) {
   return (
-    <div className={cn('flex gap-3', className)}>
+    <div className={cn('flex gap-3', className)} aria-hidden={onSelect ? undefined : true}>
       {ROADMAP_BANDS.map((band) => {
         const items = rungs.filter((r) => r.band === band);
         if (!items.length) return null;
@@ -27,34 +30,42 @@ export default function RoadmapStrip({ rungs, nextId, bandNames, onSelect, class
             <div className="flex gap-1">
               {items.map((r) => {
                 const isNext = r.id === nextId;
-                return (
+                const label = rungLabel(r, bandNames);
+                const bar = (
+                  <span
+                    className={cn(
+                      'block h-2.5 w-full overflow-hidden rounded-[3px]',
+                      r.passed ? 'bg-ink' : 'bg-rule/12',
+                      isNext && 'ring-1 ring-brand',
+                    )}
+                  >
+                    {!r.passed && r.pct > 0 && (
+                      <span
+                        className={cn('block h-full', isNext ? 'bg-brand' : 'bg-ink/40')}
+                        style={{ width: `${r.pct}%` }}
+                      />
+                    )}
+                  </span>
+                );
+                return onSelect ? (
                   <button
                     key={r.id}
                     type="button"
-                    onClick={onSelect ? () => onSelect(r.id) : undefined}
-                    tabIndex={onSelect ? 0 : -1}
-                    aria-label={`${rungLabel(r, bandNames)} — ${r.completed}/${r.total}`}
-                    title={`${rungLabel(r, bandNames)} · ${r.title}`}
-                    className={cn(
-                      '-my-2 flex h-10 min-w-0 flex-1 items-center',
-                      onSelect ? 'pressable pressable-lg cursor-pointer' : 'cursor-default',
-                    )}
+                    onClick={() => onSelect(r.id)}
+                    aria-label={`${label} — ${r.completed}/${r.total}`}
+                    title={`${label} · ${r.title}`}
+                    className="pressable pressable-lg -my-2 flex h-10 min-w-0 flex-1 cursor-pointer items-center"
                   >
-                    <span
-                      className={cn(
-                        'block h-2.5 w-full overflow-hidden rounded-sm',
-                        r.passed ? 'bg-ink' : 'bg-rule/12',
-                        isNext && 'ring-1 ring-brand',
-                      )}
-                    >
-                      {!r.passed && r.pct > 0 && (
-                        <span
-                          className={cn('block h-full', isNext ? 'bg-brand' : 'bg-ink/40')}
-                          style={{ width: `${r.pct}%` }}
-                        />
-                      )}
-                    </span>
+                    {bar}
                   </button>
+                ) : (
+                  <span
+                    key={r.id}
+                    title={`${label} · ${r.title}`}
+                    className="-my-2 flex h-10 min-w-0 flex-1 items-center"
+                  >
+                    {bar}
+                  </span>
                 );
               })}
             </div>

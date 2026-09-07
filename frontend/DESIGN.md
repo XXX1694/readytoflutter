@@ -32,10 +32,14 @@ one idea spent in one place: **the app wears your stack.**
 - `lib/stackIcons.tsx` holds the marks (`StackIcon`), the coloured tile
   (`StackTile`, solid = identity, soft = tinted) and `STACK_TEXT`. The brand
   paths are Simple Icons (CC0).
-- `components/StackSwitcher.tsx` is the one stack control: `StackRows` in the
-  desktop rail (always visible — a choice that recolours the app should not
-  hide in a menu), in the phone header's `StackPill` → `StackSheet`, in Me,
-  and as the first-run `StackPicker` cards. Chips that scope a page to a
+- `components/StackSwitcher.tsx` is the one stack control in the chrome:
+  `StackRows` in the desktop rail (always visible — a choice that recolours
+  the app should not hide in a menu), in the phone header's `StackPill` →
+  `StackSheet`, and in Me. `/` adds two controls that live in the home chunk,
+  never the entry chunk (StackSwitcher.tsx is imported by Sidebar and
+  MobileHeader, so anything added there lands on every visitor's first
+  paint): `StackRibbon` in pitch mode and the first-run `StackPicker` rows.
+  All of them go through `useChooseStack`. Chips that scope a page to a
   stack (roadmap track, timed session) carry the stack's mark via
   `Chip icon=`.
 - `TopicGlyph` tints a topic's tile in its stack's colour, so a mixed list
@@ -63,10 +67,14 @@ behind text it read as a rendering glitch. Don't bring it back.
 
 Body copy is 15–17px. Answers use `.answer-text` (already serif, 68ch measure).
 Headings get weight and size, not letterspacing. The scale:
-Today's figure 52px · page title 32px bold · section 20px · answers 17px
-serif · body 15px · meta 13px · eyebrow 12px, plus 12px mono for figures
-and keys. There is no separate display size token; the one display figure
-is set inline on the Today card.
+Today's figure 36/52/64px (phone / `sm` / `lg`; 48px when the card sits
+beside the pitch headline) · pitch headline 40/48/46/52px (phone / `sm` /
+`xl` beside the card / 1376px, where the shell caps) · page title 32px
+bold · section 20px · answers 17px serif · body 15px · meta 13px · eyebrow
+12px, plus 12px mono for figures and keys. There is no display size token:
+the two display settings — the Today card's figure and the headline of `/`
+in pitch mode — are set inline and share a screen only in that pitch
+spread. Don't add a third.
 
 ## Colour
 
@@ -135,7 +143,11 @@ These rules apply at page level and are what `src/ui` exists to enforce.
     `reading` 768px (sessions, a topic, Me), `catalog` 1400px (Topics),
     `narrow` 448px (auth, 404). No page declares its own padding.
 13. **One header recipe.** `PageHeader` — eyebrow, 28px title, 15px subtitle,
-    the hairline, one `actions` slot. `Section` for 20px in-page headings.
+    the hairline, one `actions` slot. `size="display"` (used only by `/` in
+    pitch mode) sets the title at display size over a 17px subtitle; `aside`
+    places one object beside the text block from `xl` up and under it below
+    — on `/` the painted card, or the stack picker on first run. The
+    hairline stays under both. `Section` for 20px in-page headings.
 14. **Filters are `Chip`s in a `ChipGroup`.** 40px, pill, `aria-pressed`.
     Difficulty on a question row is 12px muted text, not a coloured chip.
 15. **Copy lives in dictionaries.** Chrome strings in `i18n/ui.ts`; page
@@ -146,11 +158,16 @@ These rules apply at page level and are what `src/ui` exists to enforce.
     in the chrome — the pill names the stack on Today and shows the mark
     alone on every other page, so a phone never has to go home to switch.
     Pages scope to `usePrefs.platform` instead of repeating the choice; the
-    one exception is `/` in pitch mode, where the choice *is* the pitch.
-    Switching also clears `roadmapTrack` (`store/prefs`), so the ladder
-    follows the stack instead of staying where it was once tapped. First run
-    offers Flutter · iOS · Android as cards on Today; there is no onboarding
-    modal and no tour.
+    one exception is `/` in pitch mode on screens without the rail, where
+    `StackRibbon` — six marks in their own colours, the active one tinted
+    `bg-brand/10 text-brand` like the rail's row — sits directly above the
+    card it recolours (`lg:hidden`). Beside the rail the ribbon would be a
+    duplicate and is not drawn. Switching also clears `roadmapTrack`
+    (`store/prefs`), so the ladder follows the stack instead of staying where
+    it was once tapped. First run offers Flutter · iOS · Android as three
+    ruled rows in the card's place (a list, per rule 11); the plan card
+    appears the moment a stack is chosen, painted in it. There is no
+    onboarding modal and no tour.
 
 17. **One press, everywhere.** Anything a finger lands on carries
     `.pressable` (`index.css`): the surface dips (`--press`, `-sm` for icon
@@ -163,10 +180,21 @@ These rules apply at page level and are what `src/ui` exists to enforce.
     grade.
 
 18. **`/` sells before it dashboards.** With no progress on record the front
-    page is the pitch — hero, the stack strip, the plan card, an index of
-    every destination, how the habit works, what is in the box — and the
-    moment there is progress it collapses back to Today. Nothing in the
-    pitch is a second primary action: the painted card keeps that job.
+    page is the pitch, set like a book's title page: the headline at display
+    size with the plan card beside it from `xl` (under it below), the stack
+    ribbon under the copy on phones, the picker in the card's place on first
+    run; then an index of every destination in three groups (Learn ·
+    Practice · Yours — Search is not listed, the header carries it), how
+    the habit works in three steps down one column, and what is in the box
+    as two paragraphs. There is no closing card: the painted card is the one
+    call to action and nothing below repeats it. The moment there is
+    progress the page collapses to Today — the dateline and streak under the
+    title, the plate (the card given the whole row: the figure at 36/52/64px
+    and, from `lg`, the mark whole and upright on the right — cropped in the
+    corner below that), the standing row (the level held, the
+    next rung as the one thing in colour, the sixteen-rung strip — a ruled
+    row, not a card) and the index without the destinations already on
+    screen.
 
 ## Copy
 

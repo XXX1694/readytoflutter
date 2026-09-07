@@ -12,25 +12,63 @@ import { usePrefs } from '../store/prefs';
 import { filterTopicsByPlatform, filterQuestionsByPlatform } from '../lib/platform';
 import { StackIcon, StackTile } from '../lib/stackIcons';
 import { useCurrentStack } from '../lib/useStack';
+import { cn } from '../lib/cn';
 
 const SECONDS_PER_CARD = 60;
 
+/**
+ * Two settings of the same card. `plate` has a row to itself: the figure and
+ * the emblem grow with the width, so on a wide screen the card is a spread
+ * rather than four lines in the corner of a blue rectangle. `column` is the
+ * card beside the pitch headline (PageHeader's aside, from `xl`), where it
+ * goes back to the phone's proportions; below `xl` the aside stacks and the
+ * column card is the plate.
+ */
+const LAYOUT = {
+  plate: {
+    card: 'p-5 sm:p-8 lg:p-10',
+    copy: 'max-w-[640px]',
+    figure: 'text-[36px] sm:text-[52px] lg:text-[64px]',
+    minutes: 'text-[17px] sm:text-[20px]',
+    composition: 'text-[15px] sm:text-[16px] lg:text-[17px]',
+    // The phone crops the mark in the corner; with room it sits whole,
+    // upright and centred on the right, clear of the copy column — 220px
+    // beside the rail at `lg`, where the plate is 704px, 280px from `xl`.
+    emblem: '-right-6 -top-8 h-44 w-44 rotate-[-8deg] opacity-[0.14] sm:-right-4 sm:-top-6 sm:h-60 sm:w-60 lg:right-4 lg:top-1/2 lg:h-[220px] lg:w-[220px] lg:-translate-y-1/2 lg:rotate-0 lg:opacity-[0.16] xl:right-10 xl:h-[280px] xl:w-[280px]',
+    button: 'w-full sm:w-auto',
+  },
+  column: {
+    card: 'p-5 sm:p-8 lg:p-10 xl:p-7',
+    copy: 'max-w-[640px]',
+    figure: 'text-[36px] sm:text-[52px] lg:text-[64px] xl:text-[48px]',
+    minutes: 'text-[17px] sm:text-[20px] xl:text-[17px]',
+    composition: 'text-[15px] sm:text-[16px] lg:text-[17px] xl:text-[15px]',
+    emblem: '-right-6 -top-8 h-44 w-44 rotate-[-8deg] opacity-[0.14] sm:-right-4 sm:-top-6 sm:h-60 sm:w-60 lg:right-4 lg:top-1/2 lg:h-[220px] lg:w-[220px] lg:-translate-y-1/2 lg:rotate-0 lg:opacity-[0.16] xl:-right-6 xl:-top-8 xl:h-40 xl:w-40 xl:translate-y-0 xl:rotate-[-8deg] xl:opacity-[0.14]',
+    button: 'w-full sm:w-auto xl:w-full',
+  },
+} as const;
+
 export interface TodayPlanProps {
   /**
-   * Shown above the headline. Today passes nothing (its own `h1` already says
-   * "Today"); the landings pass it, since there the `h1` names the stack.
+   * Set at the far end of the stack row. Today passes nothing (its own `h1`
+   * already says "Today"); the landings pass it, since there the `h1` names
+   * the stack.
    */
   eyebrow?: ReactNode;
+  /** See `LAYOUT`. Today is the plate; the pitch seats the column beside its headline. */
+  layout?: keyof typeof LAYOUT;
+  className?: string;
 }
 
 /**
  * The one card on Today, painted in the stack's colour. Four lines and one
  * button: which stack this is, what today is made of, where you are weakest,
- * and the way in. The stack's mark sits as a watermark in the corner — this
- * is the one place the design spends its boldness; everything around it is
- * ink on paper.
+ * and the way in. The stack's mark sits as a watermark — this is the one
+ * place the design spends its boldness; everything around it is ink on
+ * paper. In pitch mode the same card is the plate beside the headline.
  */
-export default function TodayPlan({ eyebrow }: TodayPlanProps) {
+export default function TodayPlan({ eyebrow, layout = 'plate', className }: TodayPlanProps) {
+  const L = LAYOUT[layout];
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
@@ -78,27 +116,23 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
   if (plan.fresh > 0) parts.push(c.fresh(plan.fresh));
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-brand p-5 text-on-brand shadow-codex-lg sm:p-8">
+    <div className={cn('relative overflow-hidden rounded-3xl bg-brand text-on-brand shadow-codex-lg', L.card, className)}>
       {/* Watermark — the stack's mark, large and faint, clear of the text. */}
-      <StackIcon
-        stack={platform}
-        className="pointer-events-none absolute -right-6 -top-8 h-44 w-44 rotate-[-8deg] opacity-[0.14] sm:-right-4 sm:-top-6 sm:h-60 sm:w-60"
-      />
+      <StackIcon stack={platform} className={cn('pointer-events-none absolute', L.emblem)} />
 
-      <div className="relative">
-        {eyebrow && <div className="mb-3 text-[12px] font-semibold text-on-brand/75">{eyebrow}</div>}
-
+      <div className={cn('relative', L.copy)}>
         <div className="flex items-center gap-2">
           <StackTile stack={platform} size="xs" className="bg-on-brand/20 text-on-brand shadow-none" />
           <span className="text-[13px] font-semibold tracking-[-0.005em] text-on-brand/90">{stack.label}</span>
+          {eyebrow && <span className="ml-auto text-[12px] font-semibold text-on-brand/75">{eyebrow}</span>}
         </div>
 
-        <h2 className="mt-5 font-display text-[36px] font-bold leading-[0.98] tracking-[-0.03em] sm:mt-6 sm:text-[52px]">
+        <h2 className={cn('mt-5 font-display font-bold leading-[0.98] tracking-[-0.03em] sm:mt-6', L.figure)}>
           {empty ? c.planEmpty : allCaughtUp ? c.planCaughtUp : (
             <>
               <span className="num">{total}</span>
               {' '}{c.cardsWord(total)}
-              <span className="ml-3 align-baseline text-[17px] font-semibold tracking-normal text-on-brand/70 sm:text-[20px]">
+              <span className={cn('ml-3 align-baseline font-semibold tracking-normal text-on-brand/70', L.minutes)}>
                 {c.approxMinutes(minutes)}
               </span>
             </>
@@ -106,7 +140,7 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
         </h2>
 
         {parts.length > 0 && (
-          <p className="mt-3 text-[15px] leading-relaxed text-on-brand/85 sm:mt-4 sm:text-[16px]">{parts.join(' · ')}</p>
+          <p className={cn('mt-3 leading-relaxed text-on-brand/85 sm:mt-4', L.composition)}>{parts.join(' · ')}</p>
         )}
 
         {weakTopic && (
@@ -127,7 +161,7 @@ export default function TodayPlan({ eyebrow }: TodayPlanProps) {
         )}
 
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 sm:mt-8">
-          <Button variant="inverse" size="lg" className="w-full sm:w-auto" onClick={start}>
+          <Button variant="inverse" size="lg" className={L.button} onClick={start}>
             {t.nav.startSession}
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Button>

@@ -1,8 +1,6 @@
-import { ArrowRight } from 'lucide-react';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useHomeCopy } from '../i18n/homePage';
-import { Section } from '../ui/Section';
 import { StackTile } from '../lib/stackIcons';
 import { useChooseStack, useStackOptions } from '../lib/useStack';
 
@@ -24,9 +22,11 @@ export interface StackPickerProps {
 }
 
 /**
- * The first question the app asks, asked in place: three cards, each the
- * stack's mark on its own colour, its name, what it covers and how many
- * topics that is. Choosing one paints the app in that colour.
+ * The first question the app asks, asked in the plan card's place: three
+ * ruled rows, each the stack's mark on its own colour, its name, what it
+ * covers and how many topics that is. A list, not three cards (DESIGN.md
+ * rule 11) — the only colour in the row is the tile, and choosing one paints
+ * the card that takes this spot.
  */
 export default function StackPicker({ onPicked }: StackPickerProps) {
   const { lang } = useLang();
@@ -46,41 +46,41 @@ export default function StackPicker({ onPicked }: StackPickerProps) {
   };
 
   return (
-    // The heading is the page's second one — the hero above it already made
-    // the promise, so this block only has to ask the question.
-    <Section title={c.pickStack} subtitle={c.stackDesc} className="mb-8 sm:mb-12">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div>
+      <h2 className="font-display text-[17px] font-semibold leading-tight text-ink">{c.pickStack}</h2>
+      <p className="mt-1 text-[13px] text-muted">{c.stackDesc}</p>
+      <ul aria-label={c.pickStack} className="mt-3 divide-y divide-rule/10 border-y border-rule/12">
         {CHOICES.map((key) => {
           const o = options.find((x) => x.key === key);
           if (!o) return null;
           return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => choose(key)}
-              className="codex-card pressable pressable-lg group flex items-start gap-4 p-4 text-left hover:border-brand/40 sm:flex-col sm:gap-5 sm:p-5"
-            >
-              <StackTile stack={key} size="xl" />
-              <span className="min-w-0 flex-1">
-                <span className="block font-display text-[18px] font-bold leading-tight text-ink">{o.label}</span>
-                <span className="mt-1 block text-[13px] leading-snug text-muted">{o.desc}</span>
-                <span className="mt-2.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-muted-2 transition-colors group-hover:text-brand">
-                  {o.count > 0 && t.stackPickerCount(o.count)}
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => choose(key)}
+                className="pressable pressable-lg flex min-h-[72px] w-full items-center gap-4 rounded-lg px-2 py-3 text-left hover:bg-brand/[0.05] active:bg-brand/[0.08]"
+              >
+                <StackTile stack={key} size="lg" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-[17px] font-semibold leading-tight text-ink">{o.label}</span>
+                  <span className="mt-0.5 block text-[13px] leading-snug text-muted">{o.desc}</span>
                 </span>
-              </span>
-            </button>
+                {o.count > 0 && (
+                  <span className="num shrink-0 text-[13px] font-normal text-muted-2">{t.stackPickerCount(o.count)}</span>
+                )}
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       <button
         type="button"
         onClick={() => choose('all')}
-        className="mt-4 rounded-sm text-[13px] font-medium text-brand hover:underline"
+        className="mt-3 inline-flex min-h-[44px] items-center rounded-sm text-[13px] font-medium text-brand hover:underline"
       >
         {c.browseEverything}
       </button>
-    </Section>
+    </div>
   );
 }

@@ -31,7 +31,7 @@ export interface PrefsState {
   // picks one there; the page then follows the global stack filter (or
   // Flutter when that filter is 'all'), so the two never need reconciling.
   roadmapTrack: RoadmapTrackKey | null;
-  setRoadmapTrack: (roadmapTrack: RoadmapTrackKey) => void;
+  setRoadmapTrack: (roadmapTrack: RoadmapTrackKey | null) => void;
 
   commandOpen: boolean;
   setCommandOpen: (commandOpen: boolean) => void;
@@ -145,7 +145,9 @@ export const usePrefs = create<PrefsState>()(
       // on the Flutter ladder for ever. Cleared, the roadmap follows the
       // stack — and says "no ladder here" for Cross-platform and Mobile,
       // which is the truth. The chips on /roadmap still set a local
-      // override; it lasts until the next stack switch.
+      // override; it lasts until the next stack switch, or until Today's
+      // standing row — which is the header stack's track by construction —
+      // deep-links onto the roadmap and clears it too.
       setPlatform: (platform) => set({ platform, roadmapTrack: null }),
 
       roadmapTrack: null,

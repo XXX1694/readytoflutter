@@ -1,35 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check } from 'lucide-react';
 import { useTopics, useStats, useQuestions, useRoadmap } from '../lib/queries';
 import { useLang } from '../i18n/LangContext';
 import { useT, type UICopy } from '../i18n/ui';
 import { useHomeCopy, type HomeCopy } from '../i18n/homePage';
 import { usePrefs } from '../store/prefs';
 import { useAuth } from '../store/auth';
-import { Button, Chip, ChipGroup, List, ListRow, PageShell, PageHeader, Section, Skeleton } from '../ui/index';
+import { Button, List, ListRow, PageShell, PageHeader, Section, Skeleton } from '../ui/index';
 import TodayPlan from '../components/TodayPlan';
 import StackPicker, { STACK_PICKER_KEY } from '../components/StackPicker';
+import StackRibbon from '../components/StackRibbon';
+import Standing from '../components/Standing';
 import { PLATFORMS, filterTopicsByPlatform } from '../lib/platform';
-import { stackTileStyle } from '../lib/stackMeta';
-import { StackIcon } from '../lib/stackIcons';
-import { useChooseStack, useStackOptions } from '../lib/useStack';
 import { prefetch } from '../lib/prefetch';
 import { routeAt, routeLabel } from '../lib/routes';
 import { computeStreaks } from '../lib/activity';
-import { computeStanding, pickTrack, resolveTrack, rungLabel } from '../lib/roadmap';
+import { computeStanding, pickTrack, resolveTrack } from '../lib/roadmap';
 import { forecast, targetMoment } from '../lib/readiness';
 import { useReadinessCopy, shortDate } from '../i18n/readiness';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
-import type { PlatformKey, QuestionSummary as Question, Topic } from '../types/domain';
+import type { QuestionSummary as Question, Topic } from '../types/domain';
 import type { LandingConfig } from '../i18n/landings';
 
-/** Every destination the site has, in the order a reader needs them. */
-const DESTINATIONS = ['/roadmap', '/study', '/mock', '/live', '/topics', '/knowledge', '/bookmarks', '/stats', '/search'];
+/**
+ * Every destination the site has, in three groups: what you study from, how
+ * you practise, and what is yours. Search is not listed — the header carries
+ * it on every width.
+ */
+type GroupKey = 'learn' | 'practice' | 'yours';
+const GROUPS: Array<{ key: GroupKey; paths: string[] }> = [
+  { key: 'learn', paths: ['/roadmap', '/topics', '/knowledge'] },
+  { key: 'practice', paths: ['/study', '/mock', '/live'] },
+  { key: 'yours', paths: ['/bookmarks', '/stats'] },
+];
 
 const NO_TOPICS: Topic[] = [];
 const NO_QUESTIONS: Question[] = [];
+const NO_HIDDEN = new Set<string>();
 
 /** Has the user already answered the stack question? */
 function stackPicked(): boolean {
@@ -52,16 +60,18 @@ export interface HomePageProps {
 /**
  * The front page, read by two people.
  *
- * Someone with progress opens it as **Today**: a title, where they stand in
- * one line, the plan card, and the way on. That is the whole screen for them
- * — the pitch is over, and repeating it would be noise.
+ * Someone with progress opens it as **Today**: the date and the streak under
+ * the title, the plan card as a full-width plate, one ruled row saying where
+ * they stand on the ladder, and the index of what is not already on screen.
+ * That is the whole screen for them — the pitch is over, and repeating it
+ * would be noise.
  *
- * Someone with none opens it as the **pitch**: what this is, what it costs
- * (nothing), which stack they are here for, and the same plan card as the one
- * button that matters. Under it, the site's own index — every destination
- * with a line saying what it does — then how the habit works and what is in
- * the box. Nothing here is a second primary action: the painted card keeps
- * that job (DESIGN.md rules 8 and 11).
+ * Someone with none opens it as the **pitch**, set like a book's title page:
+ * the headline at display size with the same plan card beside it as the
+ * plate (under it, on narrower screens), the stack ribbon on phones where
+ * there is no rail to carry the choice, then the site's own index in three
+ * groups, how the habit works and what is in the box. Nothing below the card
+ * is a second primary action (DESIGN.md rules 8, 11 and 18).
  *
  * The four SEO landings (/flutter, /ios, /android, /kmp) are this page with
  * their own hero and their stack pre-applied; they always pitch.
@@ -106,7 +116,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
 
   // Where you stand: the rung you last passed and the one to work on next, on
   // the track the header's stack control points at. No track (Cross-platform,
-  // Mobile, everything) means no orientation line rather than Flutter's.
+  // Mobile, everything) means no standing row rather than Flutter's.
   // Deliberately NOT the roadmap page's own `roadmapTrack`: one tap there
   // persists a track forever, which then pinned Today's standing to a stack
   // the header no longer points at (and showed a standing for Cross-platform /
@@ -119,10 +129,11 @@ export default function HomePage({ landing = null }: HomePageProps) {
   );
   const standing = useMemo(() => computeStanding(rungs), [rungs]);
 
-  // One reading of the clock, so the forecast cannot shift between renders.
+  // One reading of the clock, so the dateline and the forecast cannot shift
+  // between renders.
   const [now] = useState(() => Date.now());
-  // The interview date turns the orientation line into a forecast. Null when
-  // no date is set, which is the common case — the line stays as it was.
+  // The interview date turns the standing's meta line into a forecast. Null
+  // when no date is set, which is the common case.
   const targetDate = usePrefs((s) => s.targetDate);
   const readinessCopy = useReadinessCopy(lang);
   const readyLine = useMemo(() => {
@@ -139,9 +150,12 @@ export default function HomePage({ landing = null }: HomePageProps) {
   // and this page renders rarely.
   const streak = computeStreaks().current;
 
-  // First run: the stack question, asked in place. `picked` is state rather
-  // than a bare storage read so choosing drops the picker without a reload.
+  // First run: the stack question, asked in the card's place. `picked` is
+  // state rather than a bare storage read so choosing drops the picker without
+  // a reload; `justPicked` lets the card that replaces it fade in — a state
+  // change, so it may move (DESIGN.md rule 5).
   const [picked, setPicked] = useState(stackPicked);
+  const [justPicked, setJustPicked] = useState(false);
   const touched = (statsQ.data?.completed ?? 0) + (statsQ.data?.inProgress ?? 0) > 0;
   // A landing already answers the question it would ask.
   const showPicker = !landing && !picked && !touched;
@@ -162,35 +176,8 @@ export default function HomePage({ landing = null }: HomePageProps) {
     );
   }
 
-  const bandNames = t.roadmap.band;
-  const next = standing.next;
-  // Suppressed on first run — "Not started" under a stack you haven't chosen
-  // yet is noise, and the picker is the only thing that should be read there.
-  const orientation = !showPicker && rungs.length > 0 && (
-    // Where you stand, in one line. What comes next is the card under the plan.
-    // `py-1` lifts the hit box clear of the WCAG 2.2 AA 24px minimum — an
-    // inline <a> is only as tall as its glyphs — and `-my-1` gives the padding
-    // back to the layout, so nothing moves.
-    <Link
-      to="/roadmap"
-      className="-my-1 inline-block rounded-sm py-1 text-[15px] leading-relaxed text-ink-2 transition-colors hover:text-ink"
-    >
-      <span className="font-semibold text-brand">{c.trackLine(trackMeta ? t[trackMeta.labelKey] : trackKey ?? '')}</span>
-      <span aria-hidden className="text-muted-2"> · </span>
-      {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
-      {readyLine && (
-        <>
-          <span aria-hidden className="text-muted-2"> · </span>
-          <span className="num">{readyLine}</span>
-        </>
-      )}
-    </Link>
-  );
-
   const scopedTopics = filterTopicsByPlatform(topics, platform);
   const scopedQuestions = scopedTopics.reduce((s, tp) => s + (tp.question_count || 0), 0);
-  const roadmapRoute = routeAt('/roadmap');
-  const topicsRoute = routeAt('/topics');
 
   // Pitch mode: a landing always sells, and so does `/` until there is
   // progress to report. The moment the reader has answered something, the
@@ -199,69 +186,73 @@ export default function HomePage({ landing = null }: HomePageProps) {
   // The whole catalogue, not the active stack's slice — the proof line is
   // about what the site holds, not about what is filtered on screen.
   const allQuestions = topics.reduce((s, tp) => s + (tp.question_count || 0), 0);
+  const proof = [c.proofQuestions(allQuestions), c.proofTopics(topics.length), c.proofLangs, c.proofFree];
+  // Today's subtitle: the date, and the streak when there is one.
+  const todayLine = [c.dateline(now), streak > 0 ? c.streak(streak) : null].filter(Boolean).join(' · ');
+
+  const standingShown = !pitching && rungs.length > 0;
+  // Today does not list what is already on the screen: the card is the way
+  // into a session, and the standing row is the way onto the roadmap.
+  const hidden = pitching ? NO_HIDDEN : new Set(standingShown ? ['/study', '/roadmap'] : ['/study']);
 
   return (
     <PageShell width="app">
       <PageHeader
+        size={pitching ? 'display' : 'page'}
         eyebrow={landingCopy?.eyebrow}
         title={landingCopy ? `${landingCopy.title[0]} ${landingCopy.title[1]}` : pitching ? c.heroTitle : t.nav.today}
-        subtitle={landingCopy?.desc ?? (pitching ? c.heroDesc : undefined)}
+        subtitle={landingCopy?.desc ?? (pitching ? c.heroDesc : todayLine)}
+        aside={
+          pitching
+            ? showPicker
+              ? <StackPicker onPicked={() => { setPicked(true); setJustPicked(true); }} />
+              : (
+                <TodayPlan
+                  layout="column"
+                  eyebrow={landingCopy ? t.nav.today : undefined}
+                  className={justPicked ? 'animate-fade-in' : undefined}
+                />
+              )
+            : undefined
+        }
       >
-        {pitching ? (
-          // The figures, said once, in the header rather than as a rack of
-          // stat tiles: what is here, and that it costs nothing.
-          <p className="text-[14px] leading-relaxed text-muted">
-            {[c.proofQuestions(allQuestions), c.proofTopics(topics.length), c.proofStacks(PLATFORMS.length - 1), c.proofFree].join(' · ')}
-          </p>
-        ) : (orientation || undefined)}
+        {pitching && (
+          <>
+            {/* The figures, said once, in a line rather than as a rack of
+                stat tiles: what is here, in which languages, and that it
+                costs nothing. */}
+            <p className="text-[13px] leading-relaxed text-muted">
+              {/* Each part unbreakable, so a narrow column wraps between
+                  the figures and never leaves one word on a line of its own. */}
+              {proof.map((part, i) => (
+                <span key={part}>
+                  {i > 0 && <span aria-hidden> · </span>}
+                  <span className="whitespace-nowrap">{part}</span>
+                </span>
+              ))}
+            </p>
+            {/* The stack, chosen on the page that sells — on screens without
+                the rail, which carries this choice everywhere else (DESIGN.md
+                rule 16). On first run the picker in the aside is the control.
+                20px under the proof line: the ribbon's own 6px of padding
+                (room for the focus ring) plus 14px here. */}
+            {!showPicker && <StackRibbon className="mt-[14px] lg:hidden" />}
+          </>
+        )}
       </PageHeader>
 
-      {showPicker && <StackPicker onPicked={() => setPicked(true)} />}
+      {!pitching && <TodayPlan layout="plate" />}
 
-      {/* The stack, chosen on the page that sells. Everywhere else the rail
-          and the phone header carry this control (DESIGN.md rule 16) — here
-          it is half the pitch, so it is said out loud once. */}
-      {pitching && !showPicker && <StackStrip c={c} />}
-
-      <TodayPlan eyebrow={landingCopy ? t.nav.today : undefined} />
-
-      {/* Two quiet cards under the painted one: the next level on the
-          roadmap, and the way into the catalogue. Explicit `grid-cols-1`: an
-          implicit `auto` column will not shrink below the nowrap title's
-          width and pushes the card past 360px. */}
-      {!showPicker && (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {rungs.length > 0 && roadmapRoute && (
-            <Link to="/roadmap" className="codex-card pressable pressable-lg group flex min-w-0 items-center gap-3.5 p-4 hover:border-brand/40">
-              <span className="stack-tile stack-tile--soft h-10 w-10 rounded-[11px]" style={stackTileStyle(platform)}>
-                <roadmapRoute.icon className="h-5 w-5" strokeWidth={1.9} aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12px] font-medium text-muted">{next ? t.roadmap.nextUp : t.nav.roadmap}</span>
-                <span className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">
-                  {next ? `${rungLabel(next, bandNames)} — ${next.title}` : t.roadmap.allPassed}
-                </span>
-              </span>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />
-            </Link>
-          )}
-          {topicsRoute && (
-            <Link to="/topics" className="codex-card pressable pressable-lg group flex min-w-0 items-center gap-3.5 p-4 hover:border-brand/40">
-              <span className="stack-tile stack-tile--soft h-10 w-10 rounded-[11px]" style={stackTileStyle(platform)}>
-                <topicsRoute.icon className="h-5 w-5" strokeWidth={1.9} aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12px] font-medium text-muted">{t.nav.browseTopics}</span>
-                <span className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">{c.catalogueLine(scopedTopics.length, scopedQuestions)}</span>
-              </span>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />
-            </Link>
-          )}
-        </div>
-      )}
-
-      {streak > 0 && (
-        <p className="mt-5 text-[13px] text-muted">{c.streak(streak)}</p>
+      {standingShown && (
+        <Standing
+          rungs={rungs}
+          standing={standing}
+          bandNames={t.roadmap.band}
+          trackLabel={trackMeta ? t[trackMeta.labelKey] : trackKey ?? ''}
+          readyLine={readyLine}
+          t={t}
+          c={c}
+        />
       )}
 
       {!pitching && backendAvailable === true && !token && (
@@ -270,57 +261,46 @@ export default function HomePage({ landing = null }: HomePageProps) {
         </p>
       )}
 
-      {/* The site's own index. Live coding, the timed session and search have
-          no rail or tab-bar slot (DESIGN.md rule 10), so this list is where
-          they are found — and for a first-time reader it is the answer to
-          "what do I actually get". */}
-      <Destinations c={c} t={t} platform={platform} topics={scopedTopics.length} questions={scopedQuestions} />
+      {/* The site's own index. Live coding and the timed session have no rail
+          or tab-bar slot (DESIGN.md rule 10), so this list is where they are
+          found — and for a first-time reader it is the answer to "what do I
+          actually get". */}
+      <Destinations
+        c={c}
+        t={t}
+        topics={scopedTopics.length}
+        questions={scopedQuestions}
+        hidden={hidden}
+        subtitle={pitching ? c.everythingDesc(scopedQuestions) : undefined}
+      />
 
       {pitching && (
         <>
           <HowItWorks c={c} />
-          <WhatYouGet c={c} />
-          <Closing c={c} t={t} account={backendAvailable === true && !token} />
+          <WhatYouGet c={c} account={backendAvailable === true && !token} />
         </>
       )}
     </PageShell>
   );
 }
 
-/** The stack switch as the pitch: six chips, the active one filled. */
-function StackStrip({ c }: { c: HomeCopy }) {
-  const platform = usePrefs((s) => s.platform);
-  const options = useStackOptions();
-  const choose = useChooseStack('home');
-  return (
-    <Section title={c.stackTitle} subtitle={c.stackDesc} className="mb-6 sm:mb-8">
-      <ChipGroup ariaLabel={c.stackTitle} scroll>
-        {options.map((o) => (
-          <Chip
-            key={o.key}
-            active={o.key === platform}
-            icon={<StackIcon stack={o.key} />}
-            count={o.count}
-            onClick={() => choose(o.key)}
-          >
-            {o.label}
-          </Chip>
-        ))}
-      </ChipGroup>
-    </Section>
-  );
-}
-
 export interface DestinationsProps {
   c: HomeCopy;
   t: UICopy;
-  platform: PlatformKey;
   topics: number;
   questions: number;
+  /** Destinations already on the screen above, left out of the index. */
+  hidden: Set<string>;
+  subtitle?: string;
 }
 
-/** Every place the app can take you, one row each, named from lib/routes. */
-function Destinations({ c, t, platform, topics, questions }: DestinationsProps) {
+/**
+ * Every place the app can take you, one ruled row each, named from
+ * lib/routes, in three groups with a run-in label. The icon is a glyph in
+ * the margin, not a tile: nine tinted squares in a column were nine of the
+ * same thing, and the card above already spends the colour.
+ */
+function Destinations({ c, t, topics, questions, hidden, subtitle }: DestinationsProps) {
   const meta: Record<string, string> = {
     '/roadmap': c.destRoadmap,
     '/study': c.destSession,
@@ -330,35 +310,52 @@ function Destinations({ c, t, platform, topics, questions }: DestinationsProps) 
     '/knowledge': c.destSources,
     '/bookmarks': c.destSaved,
     '/stats': c.destProgress,
-    '/search': c.destSearch,
+  };
+  const labels: Record<GroupKey, string> = {
+    learn: c.groupLearn,
+    practice: c.groupPractice,
+    yours: c.groupYours,
   };
   return (
-    <Section title={c.everythingTitle} subtitle={c.everythingDesc(questions)} className="mt-10 sm:mt-14">
-      <List>
-        {DESTINATIONS.map((path) => {
-          const route = routeAt(path);
-          if (!route) return null;
+    <Section title={c.everythingTitle} subtitle={subtitle} className="mt-10 sm:mt-14">
+      <div className="space-y-8">
+        {GROUPS.map((group) => {
+          const paths = group.paths.filter((path) => !hidden.has(path));
+          if (!paths.length) return null;
           return (
-            <ListRow
-              key={path}
-              to={path}
-              onPointerDown={() => prefetch(path)}
-              leading={
-                <span className="stack-tile stack-tile--soft h-9 w-9 rounded-[10px]" style={stackTileStyle(platform)}>
-                  <route.icon className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden />
-                </span>
-              }
-              title={routeLabel(t, route)}
-              meta={meta[path]}
-            />
+            <div key={group.key} className="lg:grid lg:grid-cols-[160px_minmax(0,1fr)] lg:gap-x-8">
+              {/* 13px, not the row's 18px of padding: the 12px label then sits on
+                  the first title's baseline instead of 5px under it. */}
+              <h3 className="eyebrow mb-2 lg:mb-0 lg:pt-[13px]">{labels[group.key]}</h3>
+              <List>
+                {paths.map((path) => {
+                  const route = routeAt(path);
+                  if (!route) return null;
+                  return (
+                    <ListRow
+                      key={path}
+                      to={path}
+                      onPointerDown={() => prefetch(path)}
+                      leading={
+                        <span className="flex w-9 justify-center">
+                          <route.icon className="h-[18px] w-[18px] text-muted" strokeWidth={1.9} aria-hidden />
+                        </span>
+                      }
+                      title={routeLabel(t, route)}
+                      meta={meta[path]}
+                    />
+                  );
+                })}
+              </List>
+            </div>
           );
         })}
-      </List>
+      </div>
     </Section>
   );
 }
 
-/** Three steps, because what is being sold is a habit, not a feature list. */
+/** Three steps in one column, because what is being sold is a habit, not a feature list. */
 function HowItWorks({ c }: { c: HomeCopy }) {
   const steps: Array<[string, string]> = [
     [c.step1, c.step1Body],
@@ -367,12 +364,14 @@ function HowItWorks({ c }: { c: HomeCopy }) {
   ];
   return (
     <Section title={c.howTitle}>
-      <ol className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
+      <ol className="max-w-[60ch] list-none space-y-6">
         {steps.map(([title, body], i) => (
-          <li key={title} className="border-t border-rule/12 pt-3">
-            <span className="num block text-[13px] text-brand">{i + 1}</span>
-            <h3 className="mt-1.5 font-display text-[16px] font-semibold leading-snug text-ink">{title}</h3>
-            <p className="mt-1.5 text-[14px] leading-relaxed text-muted">{body}</p>
+          <li key={title} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-2">
+            <span className="num pt-[3px] text-[15px] leading-[1.35] text-brand" aria-hidden>{i + 1}</span>
+            <div>
+              <h3 className="font-display text-[17px] font-semibold leading-snug text-ink">{title}</h3>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{body}</p>
+            </div>
           </li>
         ))}
       </ol>
@@ -380,42 +379,26 @@ function HowItWorks({ c }: { c: HomeCopy }) {
   );
 }
 
-/** What is in the box, in six lines that are all true without a backend. */
-function WhatYouGet({ c }: { c: HomeCopy }) {
-  const lines = [c.why1, c.why2, c.why3, c.why4, c.why5, c.why6];
+/**
+ * What is in the box, as two paragraphs that are all true without a backend.
+ * With a backend behind it, one quiet line under them is the page's only
+ * sign-up ask — there is no closing card: the painted card above keeps the
+ * one primary action (DESIGN.md rule 8).
+ */
+function WhatYouGet({ c, account }: { c: HomeCopy; account: boolean }) {
   return (
     <Section title={c.whyTitle}>
-      <ul className="grid grid-cols-1 gap-x-10 gap-y-3 sm:grid-cols-2">
-        {lines.map((line) => (
-          <li key={line} className="flex gap-2.5 text-[14.5px] leading-relaxed text-ink-2">
-            <Check className="mt-[3px] h-4 w-4 shrink-0 text-brand" strokeWidth={2.25} aria-hidden />
-            <span>{line}</span>
-          </li>
-        ))}
-      </ul>
-    </Section>
-  );
-}
-
-/**
- * The last thing a long page says. With a backend behind it, that is the one
- * sign-up ask on the screen; without one — the Pages build — there is nothing
- * to sign up for, so it points back at the cards. Outline, not filled: the
- * painted card above keeps the one primary action (DESIGN.md rule 8).
- */
-function Closing({ c, t, account }: { c: HomeCopy; t: UICopy; account: boolean }) {
-  return (
-    <div className="codex-card mb-10 flex flex-col gap-4 p-5 sm:mb-14 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div className="min-w-0">
-        <h2 className="font-display text-[17px] font-semibold leading-tight text-ink">
-          {account ? c.accountTitle : c.closingTitle}
-        </h2>
-        <p className="mt-1 text-[14px] leading-relaxed text-muted">{account ? c.accountBody : c.closingBody}</p>
+      <div className="max-w-[60ch] space-y-4 text-[15px] leading-relaxed text-ink-2">
+        <p>{[c.why1, c.why2, c.why3].join(' ')}</p>
+        <p>{[c.why4, c.why5, c.why6].join(' ')}</p>
       </div>
-      <Button asChild variant="outline" className="shrink-0">
-        <Link to={account ? '/signup' : '/study'}>{account ? c.accountCta : t.nav.startSession}</Link>
-      </Button>
-    </div>
+      {account && (
+        <p className="mt-6 text-[13px] leading-relaxed text-muted">
+          {c.accountBody}{' '}
+          <Link to="/signup" className="rounded-sm text-brand hover:underline">{c.accountCta}</Link>
+        </p>
+      )}
+    </Section>
   );
 }
 
