@@ -169,10 +169,10 @@ test('the committed seed builds: sixteen rungs, every track full', () => {
   assert.deepEqual(
     payload.roadmap.rungs.map((r) => r.id),
     [
-      'junior-1', 'junior-2', 'junior-3', 'junior-4', 'junior-5',
-      'mid-1', 'mid-2', 'mid-3', 'mid-4', 'mid-5',
-      'senior-1', 'senior-2', 'senior-3', 'senior-4', 'senior-5',
-      'staff',
+      'junior-1', 'junior-2', 'junior-3', 'junior-4',
+      'mid-1', 'mid-2', 'mid-3', 'mid-4',
+      'senior-1', 'senior-2', 'senior-3', 'senior-4',
+      'staff-1', 'staff-2', 'staff-3', 'staff-4',
     ],
   );
   assert.deepEqual(payload.roadmap.tracks.map((t) => t.platform), ['flutter', 'ios', 'android']);

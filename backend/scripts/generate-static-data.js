@@ -49,7 +49,7 @@ function readJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
-// The roadmap is sixteen rungs — junior-1..5, mid-1..5, senior-1..5, staff —
+// The roadmap is sixteen rungs — junior, mid, senior and staff, four each —
 // and one track per stack that fills every rung with (topic × difficulty)
 // nodes. Every node resolves to real questions at build time, so a rung can
 // never be empty and a question can never be counted twice within a track.

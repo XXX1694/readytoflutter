@@ -5644,11 +5644,6 @@
         "step": 4
       },
       {
-        "id": "junior-5",
-        "band": "junior",
-        "step": 5
-      },
-      {
         "id": "mid-1",
         "band": "mid",
         "step": 1
@@ -5667,11 +5662,6 @@
         "id": "mid-4",
         "band": "mid",
         "step": 4
-      },
-      {
-        "id": "mid-5",
-        "band": "mid",
-        "step": 5
       },
       {
         "id": "senior-1",
@@ -5694,14 +5684,24 @@
         "step": 4
       },
       {
-        "id": "senior-5",
-        "band": "senior",
-        "step": 5
-      },
-      {
-        "id": "staff",
+        "id": "staff-1",
         "band": "staff",
         "step": 1
+      },
+      {
+        "id": "staff-2",
+        "band": "staff",
+        "step": 2
+      },
+      {
+        "id": "staff-3",
+        "band": "staff",
+        "step": 3
+      },
+      {
+        "id": "staff-4",
+        "band": "staff",
+        "step": 4
       }
     ],
     "tracks": [
@@ -5801,7 +5801,7 @@
               }
             ]
           },
-          "junior-5": {
+          "mid-1": {
             "title_en": "Ready for middle",
             "title_ru": "Готов к middle",
             "nodes": [
@@ -5832,7 +5832,7 @@
               }
             ]
           },
-          "mid-1": {
+          "mid-2": {
             "title_en": "Streams and advanced Dart",
             "title_ru": "Streams и продвинутый Dart",
             "nodes": [
@@ -5857,7 +5857,7 @@
               }
             ]
           },
-          "mid-2": {
+          "mid-3": {
             "title_en": "Provider and BLoC",
             "title_ru": "Provider и BLoC",
             "nodes": [
@@ -5875,7 +5875,7 @@
               }
             ]
           },
-          "mid-3": {
+          "mid-4": {
             "title_en": "Networking and local storage",
             "title_ru": "Сеть и локальное хранилище",
             "nodes": [
@@ -5895,7 +5895,7 @@
               }
             ]
           },
-          "mid-4": {
+          "senior-1": {
             "title_en": "Testing and architecture",
             "title_ru": "Тестирование и архитектура",
             "nodes": [
@@ -5913,7 +5913,7 @@
               }
             ]
           },
-          "mid-5": {
+          "senior-2": {
             "title_en": "Ready for senior",
             "title_ru": "Готов к senior",
             "nodes": [
@@ -5967,7 +5967,7 @@
               }
             ]
           },
-          "senior-1": {
+          "senior-3": {
             "title_en": "Patterns, Riverpod and algorithms",
             "title_ru": "Паттерны, Riverpod и алгоритмы",
             "nodes": [
@@ -5991,7 +5991,7 @@
               }
             ]
           },
-          "senior-2": {
+          "senior-4": {
             "title_en": "Rendering and the native bridge",
             "title_ru": "Рендеринг и мост к нативу",
             "nodes": [
@@ -6015,7 +6015,7 @@
               }
             ]
           },
-          "senior-3": {
+          "staff-1": {
             "title_en": "Security and delivery",
             "title_ru": "Безопасность и поставка",
             "nodes": [
@@ -6035,7 +6035,7 @@
               }
             ]
           },
-          "senior-4": {
+          "staff-2": {
             "title_en": "Hard design and algorithms",
             "title_ru": "Сложный дизайн и алгоритмы",
             "nodes": [
@@ -6059,7 +6059,7 @@
               }
             ]
           },
-          "senior-5": {
+          "staff-3": {
             "title_en": "Deep internals",
             "title_ru": "Глубокие внутренности",
             "nodes": [
@@ -6083,7 +6083,7 @@
               }
             ]
           },
-          "staff": {
+          "staff-4": {
             "title_en": "Cross-platform systems",
             "title_ru": "Кросс-платформенные системы",
             "nodes": [
@@ -6197,7 +6197,7 @@
               }
             ]
           },
-          "junior-5": {
+          "mid-1": {
             "title_en": "Ready for middle",
             "title_ru": "Готов к middle",
             "nodes": [
@@ -6234,7 +6234,7 @@
               }
             ]
           },
-          "mid-1": {
+          "mid-2": {
             "title_en": "Structured concurrency",
             "title_ru": "Структурированная конкурентность",
             "nodes": [
@@ -6246,7 +6246,7 @@
               }
             ]
           },
-          "mid-2": {
+          "mid-3": {
             "title_en": "Networking and persistence",
             "title_ru": "Сеть и персистентность",
             "nodes": [
@@ -6264,7 +6264,7 @@
               }
             ]
           },
-          "mid-3": {
+          "mid-4": {
             "title_en": "App architecture",
             "title_ru": "Архитектура приложения",
             "nodes": [
@@ -6276,7 +6276,7 @@
               }
             ]
           },
-          "mid-4": {
+          "senior-1": {
             "title_en": "Generics and the type system",
             "title_ru": "Дженерики и система типов",
             "nodes": [
@@ -6288,7 +6288,7 @@
               }
             ]
           },
-          "mid-5": {
+          "senior-2": {
             "title_en": "Ready for senior",
             "title_ru": "Готов к senior",
             "nodes": [
@@ -6312,7 +6312,7 @@
               }
             ]
           },
-          "senior-1": {
+          "senior-3": {
             "title_en": "ARC and Instruments",
             "title_ru": "ARC и Instruments",
             "nodes": [
@@ -6324,7 +6324,7 @@
               }
             ]
           },
-          "senior-2": {
+          "senior-4": {
             "title_en": "Combine",
             "title_ru": "Combine",
             "nodes": [
@@ -6336,7 +6336,7 @@
               }
             ]
           },
-          "senior-3": {
+          "staff-1": {
             "title_en": "Kotlin Multiplatform for iOS",
             "title_ru": "Kotlin Multiplatform для iOS",
             "nodes": [
@@ -6350,7 +6350,7 @@
               }
             ]
           },
-          "senior-4": {
+          "staff-2": {
             "title_en": "Architecture and data, senior level",
             "title_ru": "Архитектура и данные на уровне senior",
             "nodes": [
@@ -6374,7 +6374,7 @@
               }
             ]
           },
-          "senior-5": {
+          "staff-3": {
             "title_en": "Performance and Combine in depth",
             "title_ru": "Производительность и Combine вглубь",
             "nodes": [
@@ -6392,7 +6392,7 @@
               }
             ]
           },
-          "staff": {
+          "staff-4": {
             "title_en": "Cross-platform systems",
             "title_ru": "Кросс-платформенные системы",
             "nodes": [
@@ -6505,7 +6505,7 @@
               }
             ]
           },
-          "junior-5": {
+          "mid-1": {
             "title_en": "Ready for middle",
             "title_ru": "Готов к middle",
             "nodes": [
@@ -6541,7 +6541,7 @@
               }
             ]
           },
-          "mid-1": {
+          "mid-2": {
             "title_en": "Coroutines and Flow",
             "title_ru": "Корутины и Flow",
             "nodes": [
@@ -6553,7 +6553,7 @@
               }
             ]
           },
-          "mid-2": {
+          "mid-3": {
             "title_en": "Networking and persistence",
             "title_ru": "Сеть и персистентность",
             "nodes": [
@@ -6571,7 +6571,7 @@
               }
             ]
           },
-          "mid-3": {
+          "mid-4": {
             "title_en": "Architecture and DI",
             "title_ru": "Архитектура и DI",
             "nodes": [
@@ -6589,7 +6589,7 @@
               }
             ]
           },
-          "mid-4": {
+          "senior-1": {
             "title_en": "Advanced Kotlin",
             "title_ru": "Продвинутый Kotlin",
             "nodes": [
@@ -6601,7 +6601,7 @@
               }
             ]
           },
-          "mid-5": {
+          "senior-2": {
             "title_en": "Ready for senior",
             "title_ru": "Готов к senior",
             "nodes": [
@@ -6625,7 +6625,7 @@
               }
             ]
           },
-          "senior-1": {
+          "senior-3": {
             "title_en": "Profiling, ANRs and startup",
             "title_ru": "Профилирование, ANR и старт",
             "nodes": [
@@ -6637,7 +6637,7 @@
               }
             ]
           },
-          "senior-2": {
+          "senior-4": {
             "title_en": "Kotlin Multiplatform",
             "title_ru": "Kotlin Multiplatform",
             "nodes": [
@@ -6649,7 +6649,7 @@
               }
             ]
           },
-          "senior-3": {
+          "staff-1": {
             "title_en": "Compose Multiplatform",
             "title_ru": "Compose Multiplatform",
             "nodes": [
@@ -6661,7 +6661,7 @@
               }
             ]
           },
-          "senior-4": {
+          "staff-2": {
             "title_en": "Architecture and data, senior level",
             "title_ru": "Архитектура и данные на уровне senior",
             "nodes": [
@@ -6691,7 +6691,7 @@
               }
             ]
           },
-          "senior-5": {
+          "staff-3": {
             "title_en": "Performance and multiplatform in depth",
             "title_ru": "Производительность и мультиплатформа вглубь",
             "nodes": [
@@ -6715,7 +6715,7 @@
               }
             ]
           },
-          "staff": {
+          "staff-4": {
             "title_en": "Cross-platform systems",
             "title_ru": "Кросс-платформенные системы",
             "nodes": [

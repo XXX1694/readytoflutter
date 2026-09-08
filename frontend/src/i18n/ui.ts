@@ -2,26 +2,27 @@ import { ruPlural } from './plural';
 
 /**
  * The ladder's sixteen rungs under the names the market actually uses, keyed
- * by rung id. Shared by both languages: RU job posts write these titles in
- * Latin too, exactly as the grades themselves are written.
+ * by rung id — four to a band, so a rung's name always sits inside its own
+ * grade. Shared by both languages: RU job posts write these titles in Latin
+ * too, exactly as the grades themselves are written.
  */
 const LEVEL_NAMES: Record<string, string> = {
   'junior-1': 'Intern',
   'junior-2': 'Junior',
   'junior-3': 'Junior+',
   'junior-4': 'Strong Junior',
-  'junior-5': 'Middle−',
-  'mid-1': 'Middle',
-  'mid-2': 'Middle+',
-  'mid-3': 'Strong Middle',
-  'mid-4': 'Senior−',
-  'mid-5': 'Senior',
-  'senior-1': 'Senior+',
-  'senior-2': 'Strong Senior',
-  'senior-3': 'Lead',
-  'senior-4': 'Tech Lead',
-  'senior-5': 'Principal',
-  staff: 'Staff',
+  'mid-1': 'Middle−',
+  'mid-2': 'Middle',
+  'mid-3': 'Middle+',
+  'mid-4': 'Strong Middle',
+  'senior-1': 'Senior−',
+  'senior-2': 'Senior',
+  'senior-3': 'Senior+',
+  'senior-4': 'Strong Senior',
+  'staff-1': 'Lead',
+  'staff-2': 'Tech Lead',
+  'staff-3': 'Staff',
+  'staff-4': 'Principal',
 };
 
 export const UI = {
@@ -100,10 +101,10 @@ export const UI = {
     senior: { label: 'Senior Developer', short: 'Senior', desc: '5+ years experience' },
     staff:  { label: 'Staff Engineer', short: 'Staff', desc: 'Leads across teams and platforms' },
 
-    // Roadmap — sixteen rungs from Intern to Staff, per stack
+    // Roadmap — sixteen rungs from Intern to Principal, four per band, per stack
     roadmap: {
       title: 'Roadmap',
-      subtitle: 'From Intern to Staff',
+      subtitle: 'From Intern to Principal',
       intro: 'Sixteen levels, each a set of questions from the catalogue. A level counts as passed at 80%.',
       track: 'Track',
       band: { junior: 'Junior', mid: 'Middle', senior: 'Senior', staff: 'Staff' } as Record<string, string>,
@@ -111,8 +112,8 @@ export const UI = {
       bandDesc: {
         junior: 'Syntax, the first screens and the object model',
         mid: 'Data, state and architecture that scale',
-        senior: 'Internals, performance, security and delivery',
-        staff: 'Systems that span every platform',
+        senior: 'Advanced language, patterns, testing and performance',
+        staff: 'Security, delivery, internals and systems that span platforms',
       } as Record<string, string>,
       yourLevel: 'Your level',
       notStarted: 'Not started',
@@ -129,7 +130,7 @@ export const UI = {
       questions: (n: number) => `${n} question${n === 1 ? '' : 's'}`,
       tier: { easy: 'Foundations', medium: 'Core', hard: 'Advanced', all: 'Whole topic' } as Record<string, string>,
       inTrack: 'questions across the track\'s 16 levels, cross-platform ones included',
-      metaDesc: 'A sixteen-level interview roadmap for Flutter, iOS and Android — Intern to Staff — where every level is a set of real interview questions.',
+      metaDesc: 'A sixteen-level interview roadmap for Flutter, iOS and Android — Intern to Principal — where every level is a set of real interview questions.',
     },
 
     // TopicPage
@@ -299,7 +300,7 @@ export const UI = {
     // Roadmap
     roadmap: {
       title: 'Маршрут',
-      subtitle: 'От Intern до Staff',
+      subtitle: 'От Intern до Principal',
       intro: 'Шестнадцать уровней, каждый — набор вопросов из базы. Уровень считается пройденным на 80%.',
       track: 'Трек',
       band: { junior: 'Junior', mid: 'Middle', senior: 'Senior', staff: 'Staff' } as Record<string, string>,
@@ -307,8 +308,8 @@ export const UI = {
       bandDesc: {
         junior: 'Синтаксис, первые экраны и объектная модель',
         mid: 'Данные, состояние и архитектура, которые масштабируются',
-        senior: 'Внутренности, производительность, безопасность и поставка',
-        staff: 'Системы, охватывающие все платформы',
+        senior: 'Продвинутый язык, паттерны, тесты и производительность',
+        staff: 'Безопасность, поставка, внутренности и системы на всех платформах',
       } as Record<string, string>,
       yourLevel: 'Твой уровень',
       notStarted: 'Не начато',
@@ -325,7 +326,7 @@ export const UI = {
       questions: (n: number) => `${n} ${ruPlural(n, 'вопрос', 'вопроса', 'вопросов')}`,
       tier: { easy: 'Основы', medium: 'База', hard: 'Продвинутое', all: 'Вся тема' } as Record<string, string>,
       inTrack: 'вопросов во всех 16 уровнях трека, включая кросс-платформенные',
-      metaDesc: 'Маршрут подготовки к собеседованию для Flutter, iOS и Android из шестнадцати уровней — от Intern до Staff, где каждый уровень — набор реальных вопросов.',
+      metaDesc: 'Маршрут подготовки к собеседованию для Flutter, iOS и Android из шестнадцати уровней — от Intern до Principal, где каждый уровень — набор реальных вопросов.',
     },
 
     // TopicPage

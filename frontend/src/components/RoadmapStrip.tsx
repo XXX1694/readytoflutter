@@ -72,9 +72,9 @@ export default function RoadmapStrip({ rungs, nextId, levelNames, bandNames, onS
                 );
               })}
             </div>
-            {/* Not truncated: the one-rung Staff group is narrower than its
-                own name, and "St…" is worse than a label that spills a few
-                pixels past the last segment. */}
+            {/* Not truncated: the four groups are even and a band name is
+                short, so a caption at most spills a pixel or two past its
+                last segment — better than "St…". */}
             <span className="whitespace-nowrap text-[11px] leading-none text-muted">{bandNames[band] ?? band}</span>
           </div>
         );

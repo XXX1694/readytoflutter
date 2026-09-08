@@ -120,13 +120,13 @@ describe('computeStanding', () => {
 });
 
 describe('labels', () => {
-  const levels = { 'junior-1': 'Intern', 'mid-4': 'Senior−', staff: 'Staff' };
+  const levels = { 'junior-1': 'Intern', 'mid-4': 'Strong Middle', 'staff-4': 'Principal' };
   const tiers = { easy: 'Foundations', medium: 'Core', hard: 'Advanced', all: 'Whole topic' };
 
   it('names rungs by their market title, keyed by rung id', () => {
     expect(rungLabel({ band: 'junior', step: 1 }, levels)).toBe('Intern');
-    expect(rungLabel({ band: 'mid', step: 4 }, levels)).toBe('Senior−');
-    expect(rungLabel({ band: 'staff', step: 1 }, levels)).toBe('Staff');
+    expect(rungLabel({ band: 'mid', step: 4 }, levels)).toBe('Strong Middle');
+    expect(rungLabel({ band: 'staff', step: 4 }, levels)).toBe('Principal');
     expect(rungLabel({ band: 'senior', step: 2 }, levels)).toBe('senior-2');
   });
 
