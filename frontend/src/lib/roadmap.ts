@@ -1,5 +1,5 @@
 /**
- * The roadmap: sixteen rungs — Junior 1–5, Middle 1–5, Senior 1–5, Staff —
+ * The roadmap: sixteen rungs — Intern to Staff, five per band —
  * per stack, each rung a set of (topic × difficulty) nodes that resolve to
  * real questions. The seed (backend/data/seed/roadmap.json) only names topics
  * and tiers; this module joins it with the loaded catalogue and the user's
@@ -142,13 +142,17 @@ export function computeStanding(rungs: ResolvedRung[]): Standing {
   };
 }
 
-/** "Junior 1", "Middle 4", "Staff". */
+/**
+ * The rung's market title — "Intern", "Strong Junior", "Senior+", "Staff" —
+ * looked up by rung id, since the ladder's names do not follow from the band
+ * and the step.
+ */
 export function rungLabel(
   rung: Pick<RoadmapRung, 'band' | 'step'>,
-  bandNames: Record<string, string>,
+  levelNames: Record<string, string>,
 ): string {
-  const band = bandNames[rung.band] ?? rung.band;
-  return rung.band === 'staff' ? band : `${band} ${rung.step}`;
+  const key = rung.band === 'staff' ? 'staff' : `${rung.band}-${rung.step}`;
+  return levelNames[key] ?? key;
 }
 
 /** "Foundations", "Foundations · Core", "Whole topic". */

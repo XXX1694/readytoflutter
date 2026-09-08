@@ -16,8 +16,8 @@ const isoDay = (at: number): string => {
 export interface ReadinessCardProps {
   rungs: ResolvedRung[];
   standing: Standing;
-  /** `t.roadmap.band` — the localized band names `rungLabel` reads. */
-  bandNames: Record<string, string>;
+  /** `t.roadmap.level` — the localized rung titles `rungLabel` reads. */
+  levelNames: Record<string, string>;
   /** Fallback heading when the scope resolves to no rung at all. */
   fallbackLabel: string;
   onStudy: (ids: number[], label: string) => void;
@@ -30,7 +30,7 @@ export interface ReadinessCardProps {
  * curve forward to a date rather than only scheduling the next review.
  */
 export default function ReadinessCard({
-  rungs, standing, bandNames, fallbackLabel, onStudy,
+  rungs, standing, levelNames, fallbackLabel, onStudy,
 }: ReadinessCardProps) {
   const { lang } = useLang();
   const c = useReadinessCopy(lang);
@@ -83,7 +83,7 @@ export default function ReadinessCard({
 
   const pct = Math.round(readiness.recall * 100);
   const scopeRung = readiness.perRung.filter((r) => r.inScope).at(-1)?.rung ?? null;
-  const label = scopeRung ? rungLabel(scopeRung, bandNames) : fallbackLabel;
+  const label = scopeRung ? rungLabel(scopeRung, levelNames) : fallbackLabel;
   const when = readiness.targetAt < now ? c.datePassed : c.daysLeft(readiness.daysLeft);
 
   return (

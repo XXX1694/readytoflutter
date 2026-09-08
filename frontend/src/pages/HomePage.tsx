@@ -252,6 +252,7 @@ export default function HomePage({ landing = null }: HomePageProps) {
         <Standing
           rungs={rungs}
           standing={standing}
+          levelNames={t.roadmap.level}
           bandNames={t.roadmap.band}
           trackLabel={trackMeta ? t[trackMeta.labelKey] : trackKey ?? ''}
           readyLine={readyLine}

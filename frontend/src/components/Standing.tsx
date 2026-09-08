@@ -9,7 +9,9 @@ import type { HomeCopy } from '../i18n/homePage';
 export interface StandingProps {
   rungs: ResolvedRung[];
   standing: StandingData;
-  /** `t.roadmap.band` — the localised band names `rungLabel` reads. */
+  /** `t.roadmap.level` — the localised rung titles `rungLabel` reads. */
+  levelNames: Record<string, string>;
+  /** `t.roadmap.band` — the band captions under the ladder. */
   bandNames: Record<string, string>;
   /** The track's name, for the meta line ("Flutter roadmap"). */
   trackLabel: string;
@@ -25,13 +27,13 @@ export interface StandingProps {
  * beside it. A row, not a card (DESIGN.md rule 11); the completed-over-total
  * figure is not repeated here because the rail already carries it.
  */
-export default function Standing({ rungs, standing, bandNames, trackLabel, readyLine, t, c }: StandingProps) {
+export default function Standing({ rungs, standing, levelNames, bandNames, trackLabel, readyLine, t, c }: StandingProps) {
   const { level, next } = standing;
   const meta = [c.trackLine(trackLabel), readyLine].filter(Boolean);
   // This row describes the header stack's track (HomePage passes `null` to
   // `pickTrack` on purpose), while /roadmap prefers a track tapped there once.
   // Rung ids are shared across tracks, so the deep link must drop that
-  // override or `#junior-3` opens another ladder's Junior 3.
+  // override or `#junior-3` opens another ladder's third rung.
   const setRoadmapTrack = usePrefs((s) => s.setRoadmapTrack);
   return (
     <div className="mt-4 border-y border-rule/12 py-4 sm:flex sm:items-center sm:justify-between sm:gap-8">
@@ -42,12 +44,12 @@ export default function Standing({ rungs, standing, bandNames, trackLabel, ready
       >
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] leading-snug">
-            <span className="font-semibold text-ink">{level ? rungLabel(level, bandNames) : t.roadmap.notStarted}</span>
+            <span className="font-semibold text-ink">{level ? rungLabel(level, levelNames) : t.roadmap.notStarted}</span>
             <span aria-hidden className="text-muted-2"> · </span>
             {next ? (
               <>
                 <span className="text-muted">{t.roadmap.nextUp}: </span>
-                <span className="font-semibold text-brand">{rungLabel(next, bandNames)}</span>
+                <span className="font-semibold text-brand">{rungLabel(next, levelNames)}</span>
                 <span className="text-ink-2"> — {next.title}</span>
               </>
             ) : (
@@ -66,7 +68,7 @@ export default function Standing({ rungs, standing, bandNames, trackLabel, ready
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-2 transition-colors group-hover:text-brand" aria-hidden />
       </Link>
       <div className="mt-4 sm:mt-0 sm:w-[300px] sm:shrink-0 lg:w-[380px]">
-        <RoadmapStrip rungs={rungs} nextId={next?.id ?? null} bandNames={bandNames} />
+        <RoadmapStrip rungs={rungs} nextId={next?.id ?? null} levelNames={levelNames} bandNames={bandNames} />
       </div>
     </div>
   );

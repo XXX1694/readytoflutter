@@ -5,6 +5,9 @@ export interface RoadmapStripProps {
   rungs: ResolvedRung[];
   /** The rung to work on next — drawn in the pen's blue. */
   nextId: string | null;
+  /** `t.roadmap.level` — the rung titles the segment tooltips carry. */
+  levelNames: Record<string, string>;
+  /** `t.roadmap.band` — the caption under each group of segments. */
   bandNames: Record<string, string>;
   onSelect?: (rungId: string) => void;
   className?: string;
@@ -19,7 +22,7 @@ export interface RoadmapStripProps {
  * hidden from assistive tech — beside Today's standing row, which names the
  * level and the next rung, a ladder nobody can operate is decorative.
  */
-export default function RoadmapStrip({ rungs, nextId, bandNames, onSelect, className }: RoadmapStripProps) {
+export default function RoadmapStrip({ rungs, nextId, levelNames, bandNames, onSelect, className }: RoadmapStripProps) {
   return (
     <div className={cn('flex gap-3', className)} aria-hidden={onSelect ? undefined : true}>
       {ROADMAP_BANDS.map((band) => {
@@ -30,7 +33,7 @@ export default function RoadmapStrip({ rungs, nextId, bandNames, onSelect, class
             <div className="flex gap-1">
               {items.map((r) => {
                 const isNext = r.id === nextId;
-                const label = rungLabel(r, bandNames);
+                const label = rungLabel(r, levelNames);
                 const bar = (
                   <span
                     className={cn(

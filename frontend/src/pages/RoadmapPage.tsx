@@ -119,6 +119,7 @@ export default function RoadmapPage() {
   }
 
   const bandNames = t.roadmap.band;
+  const levelNames = t.roadmap.level;
   const next = standing.next;
   const pct = standing.total > 0 ? Math.round((standing.completed / standing.total) * 100) : 0;
 
@@ -139,12 +140,12 @@ export default function RoadmapPage() {
             <div className="min-w-0 flex-1">
               <Eyebrow>{t.roadmap.yourLevel}</Eyebrow>
               <h2 className="mt-2 font-display text-[26px] font-semibold leading-tight text-ink sm:text-[28px]">
-                {standing.level ? rungLabel(standing.level, bandNames) : t.roadmap.notStarted}
+                {standing.level ? rungLabel(standing.level, levelNames) : t.roadmap.notStarted}
               </h2>
               <p className="mt-2.5 text-[15px] leading-relaxed text-ink-2">
                 {next ? (
                   <>
-                    {t.roadmap.nextUp}: <span className="font-medium text-ink">{rungLabel(next, bandNames)}</span>
+                    {t.roadmap.nextUp}: <span className="font-medium text-ink">{rungLabel(next, levelNames)}</span>
                     {' — '}{next.title}
                     <span className="num text-muted"> · {next.completed} / {next.total}</span>
                   </>
@@ -155,7 +156,7 @@ export default function RoadmapPage() {
                   <Button
                     variant="brand"
                     size="md"
-                    onClick={() => navigate(studyUrl(next.questions, `${rungLabel(next, bandNames)} · ${next.title}`))}
+                    onClick={() => navigate(studyUrl(next.questions, `${rungLabel(next, levelNames)} · ${next.title}`))}
                   >
                     <Brain className="h-4 w-4" aria-hidden />
                     {t.roadmap.drillNext}
@@ -163,14 +164,14 @@ export default function RoadmapPage() {
                   {/* A jump down the page, not a menu: ghost, so the box
                       does not read as a select beside the one solid button. */}
                   <Button variant="ghost" size="md" onClick={() => jumpTo(next.id)}>
-                    {rungLabel(next, bandNames)}
+                    {rungLabel(next, levelNames)}
                     <ChevronDown className="h-3.5 w-3.5" aria-hidden />
                   </Button>
                 </div>
               )}
             </div>
             <div className="shrink-0 lg:w-[380px]">
-              <RoadmapStrip rungs={rungs} nextId={next?.id ?? null} bandNames={bandNames} onSelect={jumpTo} />
+              <RoadmapStrip rungs={rungs} nextId={next?.id ?? null} levelNames={levelNames} bandNames={bandNames} onSelect={jumpTo} />
               <p className="mt-3 text-[13px] text-muted">
                 <span className="num text-ink">{standing.completed}</span>
                 <span className="num"> / {standing.total}</span>{' '}
@@ -187,7 +188,7 @@ export default function RoadmapPage() {
       <ReadinessCard
         rungs={rungs}
         standing={standing}
-        bandNames={bandNames}
+        levelNames={levelNames}
         fallbackLabel={t.roadmap.title}
         onStudy={(ids, label) => navigate(`/study?ids=${ids.join(',')}&label=${encodeURIComponent(label)}`)}
       />
@@ -314,7 +315,7 @@ interface RungItemProps {
 
 function RungItem({ rung, isCurrent, isFirst, isLast, open, onToggle, t, content }: RungItemProps) {
   const navigate = useNavigate();
-  const label = rungLabel(rung, t.roadmap.band);
+  const label = rungLabel(rung, t.roadmap.level);
   const topicLine = rung.nodes.map((n) => content.topicTitle(n.topic)).join(' · ');
 
   return (

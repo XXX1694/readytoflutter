@@ -120,13 +120,14 @@ describe('computeStanding', () => {
 });
 
 describe('labels', () => {
-  const bands = { junior: 'Junior', mid: 'Middle', senior: 'Senior', staff: 'Staff' };
+  const levels = { 'junior-1': 'Intern', 'mid-4': 'Senior−', staff: 'Staff' };
   const tiers = { easy: 'Foundations', medium: 'Core', hard: 'Advanced', all: 'Whole topic' };
 
-  it('names rungs by band and step, and Staff without a number', () => {
-    expect(rungLabel({ band: 'junior', step: 1 }, bands)).toBe('Junior 1');
-    expect(rungLabel({ band: 'mid', step: 4 }, bands)).toBe('Middle 4');
-    expect(rungLabel({ band: 'staff', step: 1 }, bands)).toBe('Staff');
+  it('names rungs by their market title, keyed by rung id', () => {
+    expect(rungLabel({ band: 'junior', step: 1 }, levels)).toBe('Intern');
+    expect(rungLabel({ band: 'mid', step: 4 }, levels)).toBe('Senior−');
+    expect(rungLabel({ band: 'staff', step: 1 }, levels)).toBe('Staff');
+    expect(rungLabel({ band: 'senior', step: 2 }, levels)).toBe('senior-2');
   });
 
   it('names tiers, collapsing all three to the whole topic', () => {
