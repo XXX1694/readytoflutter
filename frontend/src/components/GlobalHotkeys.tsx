@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { usePrefs } from '../store/prefs';
+import { goToSearch } from '../lib/navigation';
 
 /**
  * NOTE ON HOTKEY STRINGS: react-hotkeys-hook v5 matches against
@@ -22,10 +23,7 @@ export default function GlobalHotkeys() {
   // bank of six hundred questions the thing people reach for is a question,
   // and every command the palette used to carry (stack, theme, language,
   // account, reset) has a visible control of its own.
-  const openSearch = (): void => {
-    if (pathname === '/search') document.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
-    else navigate('/search');
-  };
+  const openSearch = (): void => goToSearch(pathname, navigate);
   useHotkeys('mod+k', (e: KeyboardEvent) => { e.preventDefault(); openSearch(); }, { enableOnFormTags: true });
   useHotkeys('mod+slash', (e: KeyboardEvent) => { e.preventDefault(); openSearch(); }, { enableOnFormTags: true });
   // Skipped while typing so a slash still types a slash.

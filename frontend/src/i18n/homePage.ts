@@ -62,7 +62,6 @@ const en = {
   proofLangs: 'English and Russian',
   proofFree: 'Free, no account needed',
 
-
   // The index of everything the site does, in three groups, so nothing is
   // discovered by luck. One short line per row: what it is, not why.
   everythingTitle: 'Everything in one place',
@@ -76,9 +75,6 @@ const en = {
   destSources: 'Docs, talks and articles',
   destSaved: 'The questions you kept',
   destProgress: 'Closed questions, day by day',
-
-
-
 };
 
 const ru: typeof en = {
@@ -113,7 +109,6 @@ const ru: typeof en = {
   proofLangs: 'На русском и английском',
   proofFree: 'Бесплатно, без регистрации',
 
-
   everythingTitle: 'Всё в одном месте',
   groupLearn: 'Теория',
   groupPractice: 'Практика',
@@ -125,9 +120,6 @@ const ru: typeof en = {
   destSources: 'Доки, доклады и статьи',
   destSaved: 'Вопросы, которые ты отложил',
   destProgress: 'Что закрыто, по дням',
-
-
-
 };
 
 export type HomeCopy = typeof en;

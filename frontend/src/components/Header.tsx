@@ -51,7 +51,7 @@ export default function Header() {
           and ⌘K land in the same place */}
       <Link
         to="/search"
-        aria-label={t.nav.search}
+        aria-label={t.searchPlaceholderLong}
         className="pressable pressable-lg flex max-w-md flex-1 items-center gap-2.5 rounded-[10px] border border-rule/10 bg-paper-2 px-3 py-2 text-left text-sm shadow-codex-sm hover:border-rule/24"
       >
         <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />

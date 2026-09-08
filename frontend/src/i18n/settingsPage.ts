@@ -11,6 +11,8 @@ const en = {
   anonBody: 'You can study without an account — progress lives in this browser.',
   createAccount: 'Create account',
   joined: 'joined',
+  signOut: 'Sign out',
+  signedOut: 'Signed out',
 
   profileTitle: 'Profile',
   profileSubtitle: 'Your name is only shown to you. Your email is your sign-in.',
@@ -101,6 +103,8 @@ const ru: typeof en = {
   anonBody: 'Можно заниматься без аккаунта — прогресс живёт в этом браузере.',
   createAccount: 'Создать аккаунт',
   joined: 'с',
+  signOut: 'Выйти',
+  signedOut: 'Вышел из аккаунта',
 
   profileTitle: 'Профиль',
   profileSubtitle: 'Имя видно только тебе. Email используется для входа.',

@@ -164,7 +164,6 @@ export const UI = {
     cmdSwitchLang: 'Switch language',
 
     // Platform filter (splits topic catalog by stack)
-    platformLabel: 'Stack',
     platformAll: 'All',
     platformFlutter: 'Flutter',
     platformIos: 'iOS',
@@ -360,7 +359,6 @@ export const UI = {
     cmdSwitchLang: 'Сменить язык',
 
     // Platform filter
-    platformLabel: 'Стек',
     platformAll: 'Все',
     platformFlutter: 'Flutter',
     platformIos: 'iOS',

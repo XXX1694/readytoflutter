@@ -33,7 +33,6 @@ export interface PrefsState {
   roadmapTrack: RoadmapTrackKey | null;
   setRoadmapTrack: (roadmapTrack: RoadmapTrackKey | null) => void;
 
-
   recallMode: boolean;
   setRecallMode: (recallMode: boolean) => void;
   toggleRecallMode: () => void;

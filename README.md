@@ -42,7 +42,7 @@
 
 ## Стек
 
-**Frontend** &middot; React 18 &middot; Vite 5 &middot; **TypeScript** &middot; Tailwind CSS &middot; Zustand &middot; TanStack Query &middot; React Router 6 &middot; Framer Motion &middot; Radix UI &middot; cmdk &middot; MiniSearch &middot; Shiki &middot; Sonner &middot; vite-plugin-pwa.
+**Frontend** &middot; React 18 &middot; Vite 5 &middot; **TypeScript** &middot; Tailwind CSS &middot; Zustand &middot; TanStack Query &middot; React Router 6 &middot; Framer Motion &middot; Radix UI &middot; MiniSearch &middot; Shiki &middot; Sonner &middot; vite-plugin-pwa.
 
 **Backend** &middot; Node 18+ &middot; Express 4 &middot; better-sqlite3 (WAL) &middot; bcryptjs &middot; jsonwebtoken &middot; helmet &middot; express-rate-limit &middot; zod.
 
@@ -319,7 +319,7 @@ curl -fsS -X POST https://<api>/api/push/run-daily -H "X-Cron-Secret: $PUSH_CRON
 
 ## Фичи UX, на которые я тратил время
 
-- **Active recall** — глобальный режим (Cmd+K), Study получает `gist`-textarea, QuestionCard прячет ответ за hint-ladder с blur-peek.
+- **Active recall** — глобальный режим (клавиша `R` или тумблер в Профиль → Сессия), Study получает `gist`-textarea, QuestionCard прячет ответ за hint-ladder с blur-peek.
 - **Today's plan** — композит SRS due + weakest topic + fresh, всё одним кликом.
 - **Round** — кластеризация по тегам + ramp easy→hard, follow-up чипы для углубления.
 - **Cheatsheet** — 2-col grid, print-ready, копия в Markdown.
@@ -327,7 +327,7 @@ curl -fsS -X POST https://<api>/api/push/run-daily -H "X-Cron-Secret: $PUSH_CRON
 - **Light + Dark** — реально полированный, тени видны, heatmap читается.
 - **Mobile** — bottom-nav, safe-area inset, тач-таргеты ≥40px.
 - **Скелетоны и empty states** — никаких спиннеров на content-pages.
-- **Cmd+K палитра** — навигация, темы, action-команды, recall-toggle, account.
+- **Cmd+K / `/`** — открывают страницу поиска по всему банку (MiniSearch по вопросам, темам и ответам).
 - **i18n** — EN/RU параллельно, без рантайм-CDN.
 
 ---

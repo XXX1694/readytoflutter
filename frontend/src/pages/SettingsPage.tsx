@@ -5,9 +5,10 @@ import { toast } from 'sonner';
 import { ChevronDown, ExternalLink } from 'lucide-react';
 import { useAuth } from '../store/auth';
 import {
-  authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
+  authLogout, authUpdateName, authChangePassword, authChangeEmail, authDeleteAccount,
   authRegenerateRecoveryCode, readLocalProgress, serializeLocalProgress,
 } from '../api/api';
+import { track, resetIdentity } from '../lib/analytics';
 import { useLang } from '../i18n/LangContext';
 import { useT, useRecoveryCopy, type UICopy, type RecoveryErrorKey } from '../i18n/ui';
 import {
@@ -52,13 +53,30 @@ export default function SettingsPage() {
     navigate('/login');
   };
 
+  // The phone has no account menu — the header's is desktop-only — so the
+  // way out of an account lives here as well, the same steps the menu takes.
+  const handleSignOut = async () => {
+    try { await authLogout(); } catch { /* the session is dropped either way */ }
+    track('logout');
+    resetIdentity();
+    clearSession();
+    qc.invalidateQueries();
+    toast.success(c.signedOut);
+    navigate('/');
+  };
+
   return (
     <PageShell width="reading">
       <PageHeader title={t.nav.me} />
 
       <Section title={c.accountTitle}>
         {token && user ? (
-          <AccountFlows user={user} token={token} c={c} onDeleted={handleAccountDeleted} />
+          <>
+            <AccountFlows user={user} token={token} c={c} onDeleted={handleAccountDeleted} />
+            <Button variant="outline" size="md" className="mt-7" onClick={handleSignOut}>
+              {c.signOut}
+            </Button>
+          </>
         ) : (
           <SignedOut c={c} t={t} showButtons={backendAvailable !== false} />
         )}

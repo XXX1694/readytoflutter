@@ -13,3 +13,13 @@ export const goBack = (navigate: NavigateFunction): void => {
   if (idx > 0) navigate(-1);
   else navigate('/', { replace: true });
 };
+
+/**
+ * ⌘K, `/` and the phone header's magnifier all end here: the search page,
+ * with the caret in its box. Already there? Re-focus the box instead of
+ * pushing a second `/search` onto the history.
+ */
+export const goToSearch = (pathname: string, navigate: NavigateFunction): void => {
+  if (pathname === '/search') document.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+  else navigate('/search');
+};

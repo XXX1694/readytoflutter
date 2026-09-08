@@ -10,7 +10,7 @@ import { useScrollDirection } from '../lib/useScrollDirection';
 import { tapLight } from '../lib/haptics';
 import { cn } from '../lib/cn';
 import { FOCUS_ROUTES, routeAt, routeLabel } from '../lib/routes';
-import { goBack } from '../lib/navigation';
+import { goBack, goToSearch } from '../lib/navigation';
 import { useOnlineStatus } from '../lib/useOnlineStatus';
 
 /**
@@ -110,7 +110,7 @@ export default function MobileHeader() {
     tapLight();
     goBack(navigate);
   };
-  const onSearch = () => { tapLight(); navigate('/search'); };
+  const onSearch = () => { tapLight(); goToSearch(location.pathname, navigate); };
   const onClose = () => { tapLight(); navigate('/'); };
 
   return (
