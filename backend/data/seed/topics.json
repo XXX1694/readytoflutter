@@ -528,5 +528,445 @@
     "description": "Fastlane, GitHub Actions, signing, TestFlight, Play Internal, build flavors",
     "icon": "",
     "order_index": 53
+  },
+  {
+    "id": 54,
+    "title": "Animations & Motion",
+    "slug": "animations",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "AnimationController, Ticker, Tween, Curves, AnimatedBuilder, staggered motion, Lottie and Rive",
+    "icon": "",
+    "order_index": 54
+  },
+  {
+    "id": 55,
+    "title": "Forms, Input & Focus",
+    "slug": "forms-and-input",
+    "level": "junior",
+    "category": "Flutter",
+    "description": "TextField, TextEditingController, Form validation, FocusNode, input formatters, keyboard insets",
+    "icon": "",
+    "order_index": 55
+  },
+  {
+    "id": 56,
+    "title": "Responsive & Adaptive UI",
+    "slug": "adaptive-layout",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "Breakpoints, LayoutBuilder, NavigationRail, foldables, orientation, SafeArea, text scaling",
+    "icon": "",
+    "order_index": 56
+  },
+  {
+    "id": 57,
+    "title": "Slivers & Scrolling",
+    "slug": "slivers-scrolling",
+    "level": "senior",
+    "category": "Flutter",
+    "description": "CustomScrollView, SliverAppBar, ScrollController, ScrollPhysics, NestedScrollView, keep-alives",
+    "icon": "",
+    "order_index": 57
+  },
+  {
+    "id": 58,
+    "title": "Firebase & Backend Services",
+    "slug": "firebase-flutter",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "FlutterFire setup, Auth, Firestore, FCM, Remote Config, Crashlytics, App Check, Supabase",
+    "icon": "",
+    "order_index": 58
+  },
+  {
+    "id": 59,
+    "title": "Theming & Design Systems",
+    "slug": "theming-design-system",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "ThemeData, ColorScheme.fromSeed, Material 3, ThemeExtension, custom fonts, dark mode",
+    "icon": "",
+    "order_index": 59
+  },
+  {
+    "id": 60,
+    "title": "Accessibility & Localization",
+    "slug": "accessibility-i18n",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "Semantics, screen readers, text scaling, flutter_localizations, ARB, intl, plurals, RTL",
+    "icon": "",
+    "order_index": 60
+  },
+  {
+    "id": 61,
+    "title": "Modelling App State",
+    "slug": "state-modeling",
+    "level": "mid",
+    "category": "State",
+    "description": "Immutability, freezed, sealed unions, equality, optimistic updates, state restoration",
+    "icon": "",
+    "order_index": 61
+  },
+  {
+    "id": 62,
+    "title": "Dart 3 Patterns & Records",
+    "slug": "dart3-patterns",
+    "level": "mid",
+    "category": "Dart",
+    "description": "Records, destructuring, switch expressions, if-case guards, sealed types, exhaustiveness",
+    "icon": "",
+    "order_index": 62
+  },
+  {
+    "id": 63,
+    "title": "Isolates & True Concurrency",
+    "slug": "dart-isolates",
+    "level": "senior",
+    "category": "Dart",
+    "description": "Isolate.run, spawn, ports, message copying, worker pools, TransferableTypedData, DevTools",
+    "icon": "",
+    "order_index": 63
+  },
+  {
+    "id": 64,
+    "title": "Code Generation & build_runner",
+    "slug": "code-generation",
+    "level": "mid",
+    "category": "Dart",
+    "description": "build_runner, part files, json_serializable, freezed, build.yaml, source_gen, build times",
+    "icon": "",
+    "order_index": 64
+  },
+  {
+    "id": 65,
+    "title": "Dart Type System in Depth",
+    "slug": "dart-type-system",
+    "level": "senior",
+    "category": "Dart",
+    "description": "Top and bottom types, reified generics, variance, inference, FutureOr, extension types, Never",
+    "icon": "",
+    "order_index": 65
+  },
+  {
+    "id": 66,
+    "title": "Lints, Analyzer & Code Review",
+    "slug": "lints-and-analysis",
+    "level": "mid",
+    "category": "Quality",
+    "description": "analysis_options, lint rulesets, dart fix, dart format, custom_lint, annotations, PR review",
+    "icon": "",
+    "order_index": 66
+  },
+  {
+    "id": 67,
+    "title": "Packages & Dependencies",
+    "slug": "dart-packages",
+    "level": "mid",
+    "category": "DevOps",
+    "description": "Version constraints, pubspec.lock, version solving, overrides, publishing, melos, upgrades",
+    "icon": "",
+    "order_index": 67
+  },
+  {
+    "id": 68,
+    "title": "Live Coding Round in Dart",
+    "slug": "coding-round",
+    "level": "mid",
+    "category": "CS Fundamentals",
+    "description": "Debounce, Result types, LRU cache, backoff, concurrency limits, tries, stream transformers",
+    "icon": "",
+    "order_index": 68
+  },
+  {
+    "id": 69,
+    "title": "iOS Testing",
+    "slug": "ios-testing",
+    "level": "mid",
+    "category": "iOS",
+    "description": "XCTest, Swift Testing, XCUITest, test doubles, async tests, snapshots, coverage, flaky tests",
+    "icon": "",
+    "order_index": 69
+  },
+  {
+    "id": 70,
+    "title": "Swift 6 Strict Concurrency",
+    "slug": "swift-strict-concurrency",
+    "level": "senior",
+    "category": "Swift",
+    "description": "Isolation domains, Sendable, global actors, region isolation, sending, Swift 5 to 6 migration",
+    "icon": "",
+    "order_index": 70
+  },
+  {
+    "id": 71,
+    "title": "App Lifecycle, Background & Push",
+    "slug": "ios-lifecycle-background",
+    "level": "mid",
+    "category": "iOS",
+    "description": "Cold launch, scene phases, background modes, BGTaskScheduler, APNs, silent push, universal links",
+    "icon": "",
+    "order_index": 71
+  },
+  {
+    "id": 72,
+    "title": "Animations & Core Animation",
+    "slug": "ios-animations",
+    "level": "senior",
+    "category": "iOS",
+    "description": "CALayer, implicit animations, UIViewPropertyAnimator, transitions, PhaseAnimator, KeyframeAnimator",
+    "icon": "",
+    "order_index": 72
+  },
+  {
+    "id": 73,
+    "title": "Xcode Build & Modularization",
+    "slug": "ios-build-modularization",
+    "level": "senior",
+    "category": "iOS",
+    "description": "Targets, schemes, xcconfig, SPM, static vs dynamic linking, XCFramework, build times, thinning",
+    "icon": "",
+    "order_index": 73
+  },
+  {
+    "id": 74,
+    "title": "App Extensions & WidgetKit",
+    "slug": "ios-extensions-widgets",
+    "level": "mid",
+    "category": "iOS",
+    "description": "WidgetKit timelines, Live Activities, App Intents, share and notification extensions, App Groups",
+    "icon": "",
+    "order_index": 74
+  },
+  {
+    "id": 75,
+    "title": "Accessibility & Localization",
+    "slug": "ios-accessibility-localization",
+    "level": "mid",
+    "category": "iOS",
+    "description": "VoiceOver, traits, Dynamic Type, Reduce Motion, String Catalogs, plurals, RTL, locale formatting",
+    "icon": "",
+    "order_index": 75
+  },
+  {
+    "id": 76,
+    "title": "Android Testing",
+    "slug": "android-testing",
+    "level": "mid",
+    "category": "Android",
+    "description": "JUnit, MockK, Turbine, Robolectric, Espresso, Compose UI tests, Hilt rules, screenshot tests",
+    "icon": "",
+    "order_index": 76
+  },
+  {
+    "id": 77,
+    "title": "Background Work & Services",
+    "slug": "android-background-work",
+    "level": "mid",
+    "category": "Android",
+    "description": "WorkManager, foreground services, service types, AlarmManager, Doze, background limits",
+    "icon": "",
+    "order_index": 77
+  },
+  {
+    "id": 78,
+    "title": "Views, Layouts & RecyclerView",
+    "slug": "android-views-recyclerview",
+    "level": "mid",
+    "category": "Android",
+    "description": "Layouts, ConstraintLayout, ViewBinding, custom views, measure/layout/draw, RecyclerView, DiffUtil",
+    "icon": "",
+    "order_index": 78
+  },
+  {
+    "id": 79,
+    "title": "Compose Performance & Stability",
+    "slug": "compose-performance",
+    "level": "senior",
+    "category": "Compose",
+    "description": "Stability, skipping, deferred reads, phases, Lazy keys, Modifier.Node, compiler metrics",
+    "icon": "",
+    "order_index": 79
+  },
+  {
+    "id": 80,
+    "title": "Android Navigation",
+    "slug": "android-navigation",
+    "level": "mid",
+    "category": "Android",
+    "description": "Navigation Component, Safe Args, type-safe routes, deep links, back stack, predictive back",
+    "icon": "",
+    "order_index": 80
+  },
+  {
+    "id": 81,
+    "title": "Notifications & Push",
+    "slug": "android-notifications",
+    "level": "mid",
+    "category": "Android",
+    "description": "NotificationCompat, channels, POST_NOTIFICATIONS, FCM, data vs notification messages, deep links",
+    "icon": "",
+    "order_index": 81
+  },
+  {
+    "id": 82,
+    "title": "Gradle & Modularization",
+    "slug": "android-gradle-build",
+    "level": "senior",
+    "category": "Android",
+    "description": "Gradle KTS, version catalogs, convention plugins, KSP, build variants, configuration cache, modules",
+    "icon": "",
+    "order_index": 82
+  },
+  {
+    "id": 83,
+    "title": "KMP and Swift Interop",
+    "slug": "kmp-ios-interop",
+    "level": "senior",
+    "category": "Cross-Platform",
+    "description": "ObjC bridge, suspend and Flow to Swift, SKIE, XCFramework, SPM, linking, Swift export",
+    "icon": "",
+    "order_index": 83
+  },
+  {
+    "id": 84,
+    "title": "Offline Sync & Conflicts",
+    "slug": "offline-sync",
+    "level": "senior",
+    "category": "Mobile",
+    "description": "Mutation outbox, idempotency keys, delta sync, tombstones, LWW vs CRDT, backoff, convergence",
+    "icon": "",
+    "order_index": 84
+  },
+  {
+    "id": 85,
+    "title": "Release & Store Review",
+    "slug": "mobile-release-store",
+    "level": "mid",
+    "category": "Mobile",
+    "description": "App Store Connect, Play Console, review rejections, phased release, forced update, policy",
+    "icon": "",
+    "order_index": 85
+  },
+  {
+    "id": 86,
+    "title": "Analytics & Experiments",
+    "slug": "mobile-analytics",
+    "level": "mid",
+    "category": "Mobile",
+    "description": "Event taxonomy, funnels, crash-free rate, ANR, tracing, remote config, A/B tests, sampling",
+    "icon": "",
+    "order_index": 86
+  },
+  {
+    "id": 87,
+    "title": "KMP Shared Module in Practice",
+    "slug": "kmp-shared-module",
+    "level": "mid",
+    "category": "Cross-Platform",
+    "description": "Ktor, kotlinx.serialization, SQLDelight, Koin, source sets, Gradle, multiplatform tests",
+    "icon": "",
+    "order_index": 87
+  },
+  {
+    "id": 88,
+    "title": "Flutter on Web & Desktop",
+    "slug": "flutter-web-desktop",
+    "level": "senior",
+    "category": "Flutter",
+    "description": "Web renderers and wasm, deferred loading, PWA, JS interop, desktop windowing, plugin gaps",
+    "icon": "",
+    "order_index": 88
+  },
+  {
+    "id": 89,
+    "title": "Images, Video & Camera",
+    "slug": "flutter-media",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "Image pipeline, ImageCache, decode sizing, video_player, camera, audio, EXIF, thumbnails",
+    "icon": "",
+    "order_index": 89
+  },
+  {
+    "id": 90,
+    "title": "Gestures & Pointer Input",
+    "slug": "gestures-input",
+    "level": "mid",
+    "category": "Flutter",
+    "description": "Gesture arena, hit testing, drag and scale, custom recognizers, keyboard, hover, drag-and-drop",
+    "icon": "",
+    "order_index": 90
+  },
+  {
+    "id": 91,
+    "title": "Android Accessibility & Localization",
+    "slug": "android-accessibility-localization",
+    "level": "mid",
+    "category": "Android",
+    "description": "TalkBack, contentDescription, Compose semantics, plurals, per-app language, RTL, font scaling",
+    "icon": "",
+    "order_index": 91
+  },
+  {
+    "id": 92,
+    "title": "SwiftUI Layout, Identity & Rendering",
+    "slug": "swiftui-layout-rendering",
+    "level": "senior",
+    "category": "SwiftUI",
+    "description": "Layout protocol, GeometryReader, PreferenceKey, view identity, Canvas, lazy containers, insets",
+    "icon": "",
+    "order_index": 92
+  },
+  {
+    "id": 93,
+    "title": "Collection Views & Diffable Data",
+    "slug": "uikit-collections",
+    "level": "mid",
+    "category": "UIKit",
+    "description": "Compositional layout, diffable data sources, cell registration, content configuration, prefetching",
+    "icon": "",
+    "order_index": 93
+  },
+  {
+    "id": 94,
+    "title": "Compose Animation & Gestures",
+    "slug": "compose-animation-gestures",
+    "level": "mid",
+    "category": "Compose",
+    "description": "animate*AsState, Transition, AnimatedContent, Animatable, pointerInput, drag, nestedScroll, Canvas",
+    "icon": "",
+    "order_index": 94
+  },
+  {
+    "id": 95,
+    "title": "In-App Purchases & Subscriptions",
+    "slug": "mobile-payments",
+    "level": "mid",
+    "category": "Mobile",
+    "description": "StoreKit 2, Play Billing, entitlements, server validation, restores, offers, refunds, testing",
+    "icon": "",
+    "order_index": 95
+  },
+  {
+    "id": 96,
+    "title": "Permissions & Privacy",
+    "slug": "mobile-permissions-privacy",
+    "level": "mid",
+    "category": "Mobile",
+    "description": "Runtime permissions, purpose strings, ATT, location, photos, privacy manifests, consent, SDK audit",
+    "icon": "",
+    "order_index": 96
+  },
+  {
+    "id": 97,
+    "title": "AI Features in Mobile Apps",
+    "slug": "mobile-ai-features",
+    "level": "senior",
+    "category": "Mobile",
+    "description": "On-device vs server inference, token streaming UI, structured output, latency, cost, privacy",
+    "icon": "",
+    "order_index": 97
   }
 ]
