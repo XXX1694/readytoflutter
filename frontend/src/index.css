@@ -42,16 +42,24 @@
     --muted-2:      106 103  93;   /* #6A675D — 4.7:1, still body-safe */
 
     /* ── Stack colours. Each stack's own hue, from its own world: Flutter's
-       blue, Swift's orange, Android's green, Kotlin's violet, a teal for the
+       blue, Apple's space gray, Android's green, Kotlin's violet, a teal for the
        mobile-wide topics and the petrol navy for "every stack". Every value
        clears 4.5:1 as text on the sheet, so a stack colour can be a link,
        a figure or a filled button without a second "safe" variant. */
     --stack-flutter:  10  95 194;  /* #0A5FC2 — 6.1:1 */
-    --stack-ios:     198  60  21;  /* #C63C15 — 5.2:1 */
+    --stack-ios:      50  53  59;  /* #32353B Space Gray — 11.9:1 */
     --stack-android:  18 122  70;  /* #127A46 — 5.4:1 */
     --stack-cross:   107  63 224;  /* #6B3FE0 — 6.2:1 */
     --stack-mobile:   15 122 133;  /* #0F7A85 — 5.1:1 */
     --stack-all:      27  79 138;  /* #1B4F8A — 8.3:1 */
+
+    /* Card background tokens for the colored plate on the main screen. */
+    --stack-card-flutter:  var(--stack-flutter);
+    --stack-card-ios:      var(--stack-ios);
+    --stack-card-android:  var(--stack-android);
+    --stack-card-cross:    var(--stack-cross);
+    --stack-card-mobile:   var(--stack-mobile);
+    --stack-card-all:      var(--stack-all);
 
     /* The accent IS the active stack. `data-stack` on <html> (set by
        store/prefs) re-points it; nothing else in the app knows which
@@ -59,6 +67,7 @@
     --brand:         var(--stack-all);
     --brand-ink:     var(--stack-all);
     --brand-sky:     var(--stack-all);
+    --brand-card:    var(--stack-card-all);
     --on-brand:      255 255 255;
 
     /* Semantics, mixed toward the ink so they read as annotations rather
@@ -81,11 +90,11 @@
 
   /* The stack in effect re-points the accent. One rule per stack, and the
      dark values below flow through the same indirection. */
-  :root[data-stack="flutter"] { --brand: var(--stack-flutter); --brand-ink: var(--stack-flutter); --brand-sky: var(--stack-flutter); }
-  :root[data-stack="ios"]     { --brand: var(--stack-ios);     --brand-ink: var(--stack-ios);     --brand-sky: var(--stack-ios); }
-  :root[data-stack="android"] { --brand: var(--stack-android); --brand-ink: var(--stack-android); --brand-sky: var(--stack-android); }
-  :root[data-stack="cross"]   { --brand: var(--stack-cross);   --brand-ink: var(--stack-cross);   --brand-sky: var(--stack-cross); }
-  :root[data-stack="mobile"]  { --brand: var(--stack-mobile);  --brand-ink: var(--stack-mobile);  --brand-sky: var(--stack-mobile); }
+  :root[data-stack="flutter"] { --brand: var(--stack-flutter); --brand-ink: var(--stack-flutter); --brand-sky: var(--stack-flutter); --brand-card: var(--stack-card-flutter); }
+  :root[data-stack="ios"]     { --brand: var(--stack-ios);     --brand-ink: var(--stack-ios);     --brand-sky: var(--stack-ios);     --brand-card: var(--stack-card-ios); }
+  :root[data-stack="android"] { --brand: var(--stack-android); --brand-ink: var(--stack-android); --brand-sky: var(--stack-android); --brand-card: var(--stack-card-android); }
+  :root[data-stack="cross"]   { --brand: var(--stack-cross);   --brand-ink: var(--stack-cross);   --brand-sky: var(--stack-cross);   --brand-card: var(--stack-card-cross); }
+  :root[data-stack="mobile"]  { --brand: var(--stack-mobile);  --brand-ink: var(--stack-mobile);  --brand-sky: var(--stack-mobile);  --brand-card: var(--stack-card-mobile); }
 
   .dark {
     /* Dark — the same paper after hours: warm black, warm off-white ink. */
@@ -104,12 +113,21 @@
     /* The stack colours lift for dark: bright enough to be text on the
        sheet (all ≥ 7:1), so a filled control takes ink text, not white. */
     --stack-flutter:  95 184 245;  /* #5FB8F5 */
-    --stack-ios:     255 138 101;  /* #FF8A65 */
+    --stack-ios:     199 199 204;  /* #C7C7CC Apple Space Gray / Titanium */
     --stack-android:  61 220 132;  /* #3DDC84 */
     --stack-cross:   179 157 255;  /* #B39DFF */
     --stack-mobile:   77 208 219;  /* #4DD0DB */
     --stack-all:     126 169 220;  /* #7EA9DC */
     --on-brand:       14  14  13;
+
+    /* Dedicated dark-mode card palette: deep, rich tones so the Today
+       card stays dark, comfortable and elegant without blinding the reader. */
+    --stack-card-flutter:  15  46  82;  /* #0F2E52 deep midnight blue */
+    --stack-card-ios:      34  37  42;  /* #22252A deep space gray / slate */
+    --stack-card-android:  15  58  34;  /* #0F3A22 deep forest emerald */
+    --stack-card-cross:    44  26  90;  /* #2C1A5A deep royal violet */
+    --stack-card-mobile:   14  59  66;  /* #0E3B42 deep dark teal */
+    --stack-card-all:      22  46  78;  /* #162E4E deep petrol navy */
 
     --mint:         111 191 149;   /* #6FBF95 */
     --amber:        224 177  92;   /* #E0B15C */

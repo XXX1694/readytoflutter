@@ -38,9 +38,9 @@ export const buttonVariants = cva(
         // button on the same page are two near-blacks competing for the same
         // job, so the primary action is ink and the name is kept as its alias.
         brand: solid,
-        // On a brand-filled surface (the Today card): the fill and the text
-        // swap places.
-        inverse: ['bg-on-brand text-brand rounded-md shadow-codex', 'hover:bg-on-brand/90 active:bg-on-brand/80'],
+        // On a brand-filled surface (the Today card): white fill with
+        // brand text in light mode and dark ink text in dark mode.
+        inverse: ['bg-white text-brand dark:text-[#181714] rounded-md shadow-codex font-medium', 'hover:bg-white/95 active:bg-white/85'],
         outline: [
           'bg-paper-2 text-ink rounded-md border border-rule/12 shadow-codex-sm',
           'hover:border-rule/22',

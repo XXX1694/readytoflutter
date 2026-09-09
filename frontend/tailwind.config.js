@@ -31,6 +31,7 @@ export default {
           DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
           ink: 'rgb(var(--brand-ink) / <alpha-value>)',
           sky: 'rgb(var(--brand-sky) / <alpha-value>)',
+          card: 'rgb(var(--brand-card) / <alpha-value>)',
         },
         'on-brand': 'rgb(var(--on-brand) / <alpha-value>)',
         stack: {

@@ -16,14 +16,14 @@ one idea spent in one place: **the app wears your stack.**
 | Stack | Token | Light | Dark | Mark |
 |---|---|---|---|---|
 | Flutter | `--stack-flutter` | `#0A5FC2` | `#5FB8F5` | Flutter wing |
-| iOS | `--stack-ios` | `#C63C15` | `#FF8A65` | Apple |
+| iOS | `--stack-ios` | `#32353B` | `#C7C7CC` | Apple |
 | Android | `--stack-android` | `#127A46` | `#3DDC84` | Android head |
 | Cross-platform (KMP) | `--stack-cross` | `#6B3FE0` | `#B39DFF` | Kotlin K |
 | Mobile (shared topics) | `--stack-mobile` | `#0F7A85` | `#4DD0DB` | lucide `Smartphone` |
 | Every stack | `--stack-all` | `#1B4F8A` | `#7EA9DC` | lucide `Layers` |
 
 - `store/prefs.ts` mirrors `platform` to `<html data-stack="…">`; `index.css`
-  re-points `--brand` from it. **Nothing else in the app knows which stack is
+  re-points `--brand` and `--brand-card` from it. **Nothing else in the app knows which stack is
   on** — use `text-brand` / `bg-brand` / `text-on-brand` and it follows.
 - Every light value clears 4.5:1 as text on the white sheet, so a stack
   colour can be a link, a figure or a filled button without a "safe" variant.
@@ -44,9 +44,10 @@ one idea spent in one place: **the app wears your stack.**
   `Chip icon=`.
 - `TopicGlyph` tints a topic's tile in its stack's colour, so a mixed list
   reads by colour before it is read by name.
-- **The Today card is the one painted surface**: `bg-brand text-on-brand`,
-  the stack's mark as a watermark, an `inverse` button. Nothing else on the
-  site is a brand-filled panel. Do not paint a second one.
+- **The Today card is the one painted surface**: `bg-brand-card text-white`,
+  the stack's mark as a watermark, an `inverse` button. In dark mode, it uses
+  deep, comfortable tones (`--stack-card-*`) so it never glares. Nothing else
+  on the site is a brand-filled panel. Do not paint a second one.
 
 Tokens live in `src/index.css`; Tailwind maps them in `tailwind.config.js`.
 Always use the token classes (`text-ink`, `bg-paper-2`, `border-rule/12`).

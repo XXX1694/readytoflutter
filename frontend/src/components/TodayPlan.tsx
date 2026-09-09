@@ -116,23 +116,23 @@ export default function TodayPlan({ eyebrow, layout = 'plate', className }: Toda
   if (plan.fresh > 0) parts.push(c.fresh(plan.fresh));
 
   return (
-    <div className={cn('relative overflow-hidden rounded-3xl bg-brand text-on-brand shadow-codex-lg', L.card, className)}>
+    <div className={cn('relative overflow-hidden rounded-3xl bg-brand-card text-white shadow-codex-lg border border-white/10 dark:border-white/[0.08]', L.card, className)}>
       {/* Watermark — the stack's mark, large and faint, clear of the text. */}
-      <StackIcon stack={platform} className={cn('pointer-events-none absolute', L.emblem)} />
+      <StackIcon stack={platform} className={cn('pointer-events-none absolute text-white', L.emblem)} />
 
       <div className={cn('relative', L.copy)}>
         <div className="flex items-center gap-2">
-          <StackTile stack={platform} size="xs" className="bg-on-brand/20 text-on-brand shadow-none" />
-          <span className="text-[13px] font-semibold tracking-[-0.005em] text-on-brand/90">{stack.label}</span>
-          {eyebrow && <span className="ml-auto text-[12px] font-semibold text-on-brand/75">{eyebrow}</span>}
+          <StackTile stack={platform} size="xs" className="bg-white/20 text-white shadow-none" />
+          <span className="text-[13px] font-semibold tracking-[-0.005em] text-white/90">{stack.label}</span>
+          {eyebrow && <span className="ml-auto text-[12px] font-semibold text-white/75">{eyebrow}</span>}
         </div>
 
-        <h2 className={cn('mt-5 font-display font-bold leading-[0.98] tracking-[-0.03em] sm:mt-6', L.figure)}>
+        <h2 className={cn('mt-5 font-display font-bold leading-[0.98] tracking-[-0.03em] text-white sm:mt-6', L.figure)}>
           {empty ? c.planEmpty : allCaughtUp ? c.planCaughtUp : (
             <>
               <span className="num">{total}</span>
               {' '}{c.cardsWord(total)}
-              <span className={cn('ml-3 align-baseline font-semibold tracking-normal text-on-brand/70', L.minutes)}>
+              <span className={cn('ml-3 align-baseline font-semibold tracking-normal text-white/70', L.minutes)}>
                 {c.approxMinutes(minutes)}
               </span>
             </>
@@ -140,7 +140,7 @@ export default function TodayPlan({ eyebrow, layout = 'plate', className }: Toda
         </h2>
 
         {parts.length > 0 && (
-          <p className={cn('mt-3 leading-relaxed text-on-brand/85 sm:mt-4', L.composition)}>{parts.join(' · ')}</p>
+          <p className={cn('mt-3 leading-relaxed text-white/85 sm:mt-4', L.composition)}>{parts.join(' · ')}</p>
         )}
 
         {weakTopic && (
@@ -149,7 +149,7 @@ export default function TodayPlan({ eyebrow, layout = 'plate', className }: Toda
             // `py-1` lifts the hit box past the 24px WCAG 2.2 minimum; the
             // halved top margin and the negative bottom margin keep the text
             // exactly where it sat before the padding was added.
-            className="group -mb-1 mt-0.5 flex w-fit max-w-full items-center gap-1 rounded-sm py-1 text-[13px] text-on-brand/70 transition-colors hover:text-on-brand"
+            className="group -mb-1 mt-0.5 flex w-fit max-w-full items-center gap-1 rounded-sm py-1 text-[13px] text-white/70 transition-colors hover:text-white"
           >
             <span className="truncate underline-offset-[3px] group-hover:underline">
               {plan.weakUntouched
@@ -168,7 +168,7 @@ export default function TodayPlan({ eyebrow, layout = 'plate', className }: Toda
           <Link
             to="/mock"
             // `py-1 -my-1` grows the hit box past 24px without growing the row.
-            className="-my-1 inline-flex items-center gap-1.5 rounded-sm py-1 text-[13.5px] font-medium text-on-brand/85 hover:text-on-brand hover:underline"
+            className="-my-1 inline-flex items-center gap-1.5 rounded-sm py-1 text-[13.5px] font-medium text-white/85 hover:text-white hover:underline"
           >
             <Timer className="h-4 w-4" aria-hidden />
             {t.nav.timed}
