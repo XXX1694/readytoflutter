@@ -1,63 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Irbisa">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1E293B"/>
-      <stop offset="50%" stop-color="#0F172A"/>
-      <stop offset="100%" stop-color="#020617"/>
-    </linearGradient>
-    <radialGradient id="aurora" cx="50%" cy="30%" r="65%">
-      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.25"/>
-      <stop offset="60%" stop-color="#38BDF8" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="100%" stop-color="#CBD5E1"/>
-    </linearGradient>
-  </defs>
+<svg viewBox="0 0 40 40" width="512" height="512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="9" fill="#0E0E0D" />
+  <rect x="0.5" y="0.5" width="39" height="39" rx="8.5" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+  <style>
+    .ink { fill: #F2F1EA; }
+    .accent { fill: #5FB8F5; }
+  </style>
+  
+    <!-- Left & Right Ears (wide feline posture with beveled curve) -->
+    <path d="M 9 6 C 8 7 7 10 7.5 13 L 13.5 10 Z" class="ink" opacity="0.92" />
+    <path d="M 31 6 C 32 7 33 10 32.5 13 L 26.5 10 Z" class="ink" opacity="0.92" />
+    <!-- Inner ear facets -->
+    <polygon points="9.5,8.5 13,10.2 9,12" class="accent" opacity="0.88" />
+    <polygon points="30.5,8.5 27,10.2 31,12" class="accent" opacity="0.88" />
 
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <rect width="512" height="512" fill="url(#aurora)"/>
+    <!-- Forehead Crown -->
+    <polygon points="20,8 16,12.5 20,16.5 24,12.5" class="ink" />
+    <!-- Forehead side facets -->
+    <polygon points="15.5,10 8.5,13.5 14,15.5 19.5,13" class="ink" opacity="0.8" />
+    <polygon points="24.5,10 31.5,13.5 26,15.5 20.5,13" class="ink" opacity="0.8" />
 
-  <!-- Centered Irbisa geometric mark: 32x32 scaled 10.5x -> 336x336 at offset (88, 88) -->
-  <g transform="translate(88, 88) scale(10.5)">
-    <!-- Facet Body -->
-    <path
-      d="M6 9L10.5 3.5L14 9H18L21.5 3.5L26 9L23.5 15.5L19.5 18.5L16 28.5L12.5 18.5L8.5 15.5L6 9Z"
-      fill="#6366F1"
-      fill-opacity="0.18"
-    />
-    <!-- Outer Contour -->
-    <path
-      d="M6 9L10.5 3.5L14 9H18L21.5 3.5L26 9L23.5 15.5L19.5 18.5L16 28.5L12.5 18.5L8.5 15.5L6 9Z"
-      stroke="url(#silver)"
-      stroke-width="1.8"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <!-- Inner Ears -->
-    <path
-      d="M10.5 3.5L12.5 9.5M21.5 3.5L19.5 9.5"
-      stroke="#94A3B8"
-      stroke-width="1.5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <!-- Alert Eyes (Gleaming Cyan) -->
-    <path
-      d="M10.5 14L13.5 15.5L15 14M21.5 14L18.5 15.5L17 14"
-      stroke="#38BDF8"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <!-- Muzzle -->
-    <path
-      d="M16 16.5V22M14.5 22H17.5"
-      stroke="#F1F5F9"
-      stroke-width="1.8"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-  </g>
+    <!-- Cheeks: Broad feline cheekbones -->
+    <polygon points="7,14 13.5,16 9,21.5 5,16" class="ink" opacity="0.86" />
+    <polygon points="33,14 26.5,16 31,21.5 35,16" class="ink" opacity="0.86" />
+    <polygon points="9,22 14,19 12,25.5 8,24" class="ink" opacity="0.76" />
+    <polygon points="31,22 26,19 28,25.5 32,24" class="ink" opacity="0.76" />
+
+    <!-- Eyes: Piercing feline almond gems -->
+    <polygon points="12.5,16.8 17.5,18 14.5,19.6" class="accent" />
+    <polygon points="27.5,16.8 22.5,18 25.5,19.6" class="accent" />
+
+    <!-- Nose Bridge / Central Face -->
+    <polygon points="20,17 16.5,20 17.5,24.5 20,25.2 22.5,24.5 23.5,20" class="ink" opacity="0.96" />
+
+    <!-- Whisker Pads / Snout (Broad feline muzzle) -->
+    <polygon points="17,25 12.5,22 13,26.5 16.5,28.5" class="ink" opacity="0.86" />
+    <polygon points="23,25 27.5,22 27,26.5 23.5,28.5" class="ink" opacity="0.86" />
+
+    <!-- Nose Leather -->
+    <polygon points="18,24.8 22,24.8 20,27" class="ink" />
+
+    <!-- Chin -->
+    <polygon points="17.5,29.2 22.5,29.2 20,33.5" class="ink" />
+  
 </svg>
