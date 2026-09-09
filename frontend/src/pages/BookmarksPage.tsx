@@ -19,7 +19,7 @@ export default function BookmarksPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.saved} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.saved} — Irbisa` });
   const c = useBookmarksCopy(lang);
   const { data: questions = [], isLoading } = useQuestions();
   const { data: topics = [] } = useTopics();

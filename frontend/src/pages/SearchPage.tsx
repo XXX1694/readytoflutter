@@ -63,7 +63,7 @@ export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.search} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.search} — Irbisa` });
   const c = useSearchCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
 

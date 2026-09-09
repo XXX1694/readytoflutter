@@ -102,10 +102,10 @@ export default function TopicPage() {
   const { data: topic, isLoading, error } = useTopic(slug);
 
   // Per-topic head meta — title becomes "<Topic> Interview Questions —
-  // Onsite" so SERPs show topic-specific results instead of the same
+  // Irbisa" so SERPs show topic-specific results instead of the same
   // home title 53 times. Description quotes the topic's own one-liner.
-  const metaTitleEn = topic ? `${topic.title} Interview Questions — Onsite` : null;
-  const metaTitleRu = topic ? `${topicTitle(topic)}: вопросы для собеса — Onsite` : null;
+  const metaTitleEn = topic ? `${topic.title} Interview Questions — Irbisa` : null;
+  const metaTitleRu = topic ? `${topicTitle(topic)}: вопросы для собеса — Irbisa` : null;
   const metaDescEn = topic
     ? `${topic.description || `Practice ${topic.title} interview questions`}. ${topic.question_count || ''} questions with spaced repetition, timed drills and a cheatsheet.`
     : null;

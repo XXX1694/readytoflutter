@@ -62,7 +62,7 @@ export default function RoundPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.followups} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.followups} — Irbisa` });
   const c = useSessionCopy(lang);
   const { topicTitle, questionText, answerText } = useContent(lang);
   const { data: topic, isLoading, error } = useTopic(slug);

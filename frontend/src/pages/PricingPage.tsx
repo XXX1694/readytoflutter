@@ -22,7 +22,7 @@ export default function PricingPage() {
   const { lang } = useLang();
   const T = usePricingCopy(lang);
   useDocumentMeta({
-    title: `${lang === 'ru' ? 'Цены' : 'Pricing'} — Onsite`,
+    title: `${lang === 'ru' ? 'Цены' : 'Pricing'} — Irbisa`,
     description: T.metaDescription,
     // Trailing slash: the form GitHub Pages serves with a 200, and the form
     // the sitemap lists. The no-slash path is a 301.

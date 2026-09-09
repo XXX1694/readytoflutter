@@ -114,7 +114,7 @@ export default function StatsPage() {
   const questionsQ = useQuestions();
 
   useDocumentMeta({
-    title: `${t.nav.progress} — Onsite`,
+    title: `${t.nav.progress} — Irbisa`,
     canonical: '/stats',
   });
 

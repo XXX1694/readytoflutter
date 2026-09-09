@@ -4,10 +4,10 @@ import type { Lang } from './LangContext';
 // Copy for /roadmap. Lives beside the page (not in ui.ts) so the strings ship
 // with the page chunk rather than the entry.
 const en = {
-  metaTitle: (track: string) => `${track} roadmap — Onsite`,
+  metaTitle: (track: string) => `${track} roadmap — Irbisa`,
   // Cross-Platform and Mobile have no ladder of their own, so the tab must not
   // claim another stack's.
-  metaTitleNoTrack: 'Roadmap — Onsite',
+  metaTitleNoTrack: 'Roadmap — Irbisa',
   noTrackTitle: 'No level ladder for this stack',
   noTrackAction: 'Pick a track',
   noTrackBody: (stack: string) =>
@@ -16,8 +16,8 @@ const en = {
 };
 
 const ru: typeof en = {
-  metaTitle: (track) => `Маршрут ${track} — Onsite`,
-  metaTitleNoTrack: 'Маршрут — Onsite',
+  metaTitle: (track) => `Маршрут ${track} — Irbisa`,
+  metaTitleNoTrack: 'Маршрут — Irbisa',
   noTrackTitle: 'У этого стека нет лестницы уровней',
   noTrackAction: 'Выбери маршрут',
   noTrackBody: (stack) =>

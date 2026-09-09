@@ -63,7 +63,7 @@ export default function LivePage() {
   const t = useT(lang);
   const c = useSessionCopy(lang);
   const l = useLiveCopy(lang);
-  useDocumentMeta({ title: `${t.nav.live} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.live} — Irbisa` });
 
   const { topicTitle } = useContent(lang);
   const { data: allTasks = NO_TASKS, isLoading } = useLiveTasks();

@@ -37,7 +37,7 @@ export default function CheatsheetPage() {
   const metaTitle = useMemo(() => {
     if (!topic) return null;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    return lang === 'ru' ? `${safe}: шпаргалка — Onsite` : `${safe} cheatsheet — Onsite`;
+    return lang === 'ru' ? `${safe}: шпаргалка — Irbisa` : `${safe} cheatsheet — Irbisa`;
   }, [topic, topicTitle, lang]);
   useDocumentMeta({
     title: metaTitle,
@@ -153,7 +153,7 @@ export default function CheatsheetPage() {
         {/* Cover */}
         <header className="mb-5 border-b border-rule/25 pb-3">
           <div className="flex items-baseline justify-between text-[12px] text-muted">
-            <span>Onsite · {lang === 'ru' ? 'шпаргалка' : 'cheatsheet'}</span>
+            <span>Irbisa · {lang === 'ru' ? 'шпаргалка' : 'cheatsheet'}</span>
             <span>{today}</span>
           </div>
           <h1 className="mt-2 font-display text-2xl leading-tight text-ink sm:text-3xl">
@@ -202,7 +202,7 @@ export default function CheatsheetPage() {
         </ol>
 
         <footer className="mt-6 border-t border-rule/12 pt-2 text-center text-[11px] text-muted-2">
-          Onsite · {topicTitle(topic)} · {today}
+          Irbisa · {topicTitle(topic)} · {today}
         </footer>
       </article>
     </main>

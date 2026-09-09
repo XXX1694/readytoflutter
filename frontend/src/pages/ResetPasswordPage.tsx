@@ -39,7 +39,7 @@ type FormErrors = Partial<Record<FieldName | 'form', ResetErrorKey>>;
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
-  useDocumentMeta({ title: `${lang === 'ru' ? 'Сброс пароля' : 'Reset your password'} — Onsite` });
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Сброс пароля' : 'Reset your password'} — Irbisa` });
   const T = useRecoveryCopy(lang);
   const L = useLoginCopy(lang);
   const backendAvailable = useAuth((s) => s.backendAvailable);

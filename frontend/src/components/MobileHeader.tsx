@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, WifiOff, X } from 'lucide-react';
 import { StackPill } from './StackSwitcher';
+import { IrbisaLogo } from './IrbisaLogo';
 import { useLang } from '../i18n/LangContext';
 import { useT } from '../i18n/ui';
 import { useContent } from '../i18n/content';
@@ -132,8 +133,9 @@ export default function MobileHeader() {
         <div className="flex min-w-0 shrink-0 items-center gap-2.5">
           {isHome ? (
             <>
-              <span className="inline-flex items-baseline pl-2 font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
-                Onsite
+              <span className="inline-flex items-center gap-1.5 pl-2 font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
+                <IrbisaLogo className="h-6 w-6 shrink-0" />
+                Irbisa
                 <span className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
               </span>
               <StackPill onClick={openStack} />

@@ -38,7 +38,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.me} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.me} — Irbisa` });
   const c = useSettingsCopy(lang);
 
   const token = useAuth((s) => s.token);

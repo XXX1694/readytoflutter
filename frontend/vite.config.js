@@ -27,8 +27,8 @@ export default defineConfig({
         // `id`, `start_url` and `scope` are left to the plugin, which derives
         // them from `base` — on GitHub Pages that is /<repo>/, and a hardcoded
         // '/' launched the installed app at the wrong site.
-        name: 'Onsite — Mobile Interview Prep',
-        short_name: 'Onsite',
+        name: 'Irbisa — Mobile Interview Prep',
+        short_name: 'Irbisa',
         description: 'Flutter, iOS, Android & cross-platform mobile interview workspace with spaced repetition, mock interviews and a curated knowledge base.',
         // Theme color tracks the app's light surface so the iOS status bar
         // and the Android system chrome blend with the paper background.

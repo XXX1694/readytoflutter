@@ -54,7 +54,7 @@ export default function StudyPage() {
 
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.session} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.session} — Irbisa` });
   const c = useSessionCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
   const recallMode = usePrefs((s) => s.recallMode);

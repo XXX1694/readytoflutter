@@ -34,7 +34,7 @@ export default function PrintTopicPage() {
     if (!topic) return;
     const original = document.title;
     const safe = topicTitle(topic).replace(/[\\/:*?"<>|]+/g, ' ').trim();
-    document.title = lang === 'ru' ? `${safe}: печать — Onsite` : `${safe} — Onsite`;
+    document.title = lang === 'ru' ? `${safe}: печать — Irbisa` : `${safe} — Irbisa`;
     return () => { document.title = original; };
   }, [topic, topicTitle, lang]);
 
@@ -90,7 +90,7 @@ export default function PrintTopicPage() {
         {/* Cover header */}
         <header className="mb-6 border-b border-rule/25 pb-4">
           <div className="flex items-baseline justify-between text-[12px] text-muted">
-            <span>Onsite</span>
+            <span>Irbisa</span>
             <span>{today}</span>
           </div>
           <h1 className="mt-2 font-display text-2xl leading-tight text-ink sm:text-3xl">
@@ -141,7 +141,7 @@ export default function PrintTopicPage() {
         </ol>
 
         <footer className="mt-8 border-t border-rule/12 pt-3 text-center text-[11px] text-muted-2">
-          Onsite · {topicTitle(topic)} · {today}
+          Irbisa · {topicTitle(topic)} · {today}
         </footer>
       </article>
     </main>

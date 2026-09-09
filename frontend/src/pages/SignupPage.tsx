@@ -37,7 +37,7 @@ export default function SignupPage() {
   const backendAvailable = useAuth((s) => s.backendAvailable);
   const qc = useQueryClient();
   const { lang } = useLang();
-  useDocumentMeta({ title: `${lang === 'ru' ? 'Регистрация' : 'Create account'} — Onsite` });
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Регистрация' : 'Create account'} — Irbisa` });
   const isRu = lang === 'ru';
 
   const [name, setName] = useState('');

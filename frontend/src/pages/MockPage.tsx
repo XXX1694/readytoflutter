@@ -95,7 +95,7 @@ export default function MockPage() {
 
   const { lang } = useLang();
   const t = useT(lang);
-  useDocumentMeta({ title: `${t.nav.timed} — Onsite` });
+  useDocumentMeta({ title: `${t.nav.timed} — Irbisa` });
   const c = useSessionCopy(lang);
   const { questionText, answerText, topicTitle } = useContent(lang);
   const { data: allQuestions = NO_QUESTIONS, isLoading } = useQuestions();

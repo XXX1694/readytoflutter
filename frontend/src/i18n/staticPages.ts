@@ -17,7 +17,7 @@ const plural = (n: number, one: string, few: string, many: string): string => {
 const pricingEn = {
   eyebrow: 'Pricing',
   back: 'Back to home',
-  metaDescription: 'What Onsite costs. Every topic, every question, spaced repetition, timed sessions and the cheatsheets are free, with no account required.',
+  metaDescription: 'What Irbisa costs. Every topic, every question, spaced repetition, timed sessions and the cheatsheets are free, with no account required.',
   title: 'Pay if it pays you back.',
   subtitle: 'Free covers the bulk of prep. Pro unlocks unlimited AI grading — the part that earns its keep when interview week is three days out.',
   // Shown instead of the above while Pro is withdrawn.
@@ -66,7 +66,7 @@ const pricingEn = {
 const pricingRu: typeof pricingEn = {
   eyebrow: 'Цены',
   back: 'На главную',
-  metaDescription: 'Сколько стоит Onsite. Все темы и вопросы, интервальное повторение, сессии на время и шпаргалки — бесплатно и без аккаунта.',
+  metaDescription: 'Сколько стоит Irbisa. Все темы и вопросы, интервальное повторение, сессии на время и шпаргалки — бесплатно и без аккаунта.',
   title: 'Платишь, если окупается.',
   subtitle: 'Free закрывает основу подготовки. Pro даёт безлимитную AI-проверку — то, что окупается, когда интервью через три дня.',
   titleFree: 'Всё бесплатно.',
@@ -106,7 +106,7 @@ const pricingRu: typeof pricingEn = {
 const contactEn = {
   eyebrow: 'Contact',
   back: 'Back to home',
-  metaDescription: 'How to reach the people behind Onsite: report a bug, suggest a question, or ask about a team plan.',
+  metaDescription: 'How to reach the people behind Irbisa: report a bug, suggest a question, or ask about a team plan.',
   title: 'Drop us a line',
   subtitle: 'Bugs, feature ideas, partnerships — a real person reads every message.',
   // Shown instead of the form when there is no backend to post it to. The
@@ -134,7 +134,7 @@ const contactEn = {
 const contactRu: typeof contactEn = {
   eyebrow: 'Контакты',
   back: 'На главную',
-  metaDescription: 'Как связаться с командой Onsite: сообщить о баге, предложить вопрос или спросить про командный тариф.',
+  metaDescription: 'Как связаться с командой Irbisa: сообщить о баге, предложить вопрос или спросить про командный тариф.',
   title: 'Напиши нам',
   subtitle: 'Баги, идеи, партнёрство — каждое сообщение читает живой человек.',
   issuesSub: 'Баги, идеи, вопросы — всё это идёт в issue-трекер на GitHub, и его читают.',
@@ -157,13 +157,13 @@ const contactRu: typeof contactEn = {
 };
 
 const notFoundEn = {
-  docTitle: 'Page not found — Onsite',
+  docTitle: 'Page not found — Irbisa',
   title: 'No such page',
   body: 'The link is broken or out of date. Head back to Today, or pick a topic from the catalogue.',
 };
 
 const notFoundRu: typeof notFoundEn = {
-  docTitle: 'Страница не найдена — Onsite',
+  docTitle: 'Страница не найдена — Irbisa',
   title: 'Такой страницы нет',
   body: 'Ссылка битая или устарела. Вернись на «Сегодня» или выбери тему в каталоге.',
 };

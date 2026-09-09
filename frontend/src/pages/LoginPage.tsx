@@ -45,7 +45,7 @@ export default function LoginPage() {
   const backendAvailable = useAuth((s) => s.backendAvailable);
   const qc = useQueryClient();
   const { lang } = useLang();
-  useDocumentMeta({ title: `${lang === 'ru' ? 'Войти' : 'Sign in'} — Onsite` });
+  useDocumentMeta({ title: `${lang === 'ru' ? 'Войти' : 'Sign in'} — Irbisa` });
   const isRu = lang === 'ru';
 
   const [email, setEmail] = useState('');

@@ -21,7 +21,7 @@ const en = {
   // (i18n/landings.ts); without these the dashboard inherited index.html's
   // generic copy and had no canonical at all, so `/`, `/?stack=ios` and every
   // other query variant read as separate URLs to a crawler.
-  docTitle: 'Onsite — Mobile Interview Prep',
+  docTitle: 'Irbisa — Mobile Interview Prep',
   metaDesc: 'Prepare for a mobile developer interview — Flutter, iOS, Android and KMP. A curated question bank on a spaced-repetition schedule, timed mock interviews and per-topic cheatsheets, in English and Russian.',
 
   /** The orientation line names the roadmap track explicitly — it can differ from the header's stack. */
@@ -78,7 +78,7 @@ const en = {
 };
 
 const ru: typeof en = {
-  docTitle: 'Onsite — подготовка к мобильному собесу',
+  docTitle: 'Irbisa — подготовка к мобильному собесу',
   metaDesc: 'Подготовка к собеседованию мобильного разработчика — Flutter, iOS, Android и KMP. Отобранные вопросы с интервальным повторением, mock-интервью на время и шпаргалки по темам, на русском и английском.',
 
   trackLine: (track) => `Маршрут ${track}`,

@@ -11,6 +11,7 @@ import { FOCUS_ROUTES, RAIL_ROUTES, routeLabel } from '../lib/routes';
 import { prefetch } from '../lib/prefetch';
 import { StackRows } from './StackSwitcher';
 import { useCurrentStack } from '../lib/useStack';
+import { IrbisaLogo } from './IrbisaLogo';
 
 /**
  * The active-state device for the app chrome is a tinted row in the stack's
@@ -60,8 +61,9 @@ export default function Sidebar() {
       {/* Wordmark. Set in the grotesk — the name is the mark; the dot after
           it is the one pixel of stack colour on the top row. */}
       <div className="px-6 pb-3 pt-5">
-        <NavLink to="/" className="inline-flex items-baseline rounded-sm" aria-label={t.goToHomepage}>
-          <span className="font-display text-[20px] font-bold tracking-[-0.025em] text-ink">Onsite</span>
+        <NavLink to="/" className="group inline-flex items-center gap-2.5 rounded-sm" aria-label={t.goToHomepage}>
+          <IrbisaLogo className="h-7 w-7 transition-transform duration-200 group-hover:scale-105 shrink-0" />
+          <span className="font-display text-[20px] font-bold tracking-[-0.025em] text-ink">Irbisa</span>
           <span className="ml-0.5 inline-block h-[7px] w-[7px] rounded-full bg-brand" aria-hidden />
         </NavLink>
       </div>

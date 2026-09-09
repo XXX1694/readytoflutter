@@ -1,32 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="prepiroshi">
-  <!-- Atlas-aligned PWA icon. Indigo→violet brand gradient, white glyph, mint
-       accent dot. Full-bleed (no inner padding) so it survives Android's
-       maskable crop into circle/squircle. Sized 512×512 — `rsvg-convert`
-       rasterises down to 192/180/167 etc. for iOS+Android requirements. -->
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Irbisa">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"  stop-color="#6366F1"/>
-      <stop offset="60%" stop-color="#7C5DEF"/>
-      <stop offset="100%" stop-color="#8B5CF6"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#020617"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="35%" r="60%">
-      <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    <radialGradient id="aurora" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#38BDF8" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
   </defs>
 
-  <!-- Full-bleed background — Android maskable safe area is the central
-       80%, so the gradient extends to all edges. -->
-  <rect width="512" height="512" fill="url(#g)"/>
-  <rect width="512" height="512" fill="url(#glow)"/>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#aurora)"/>
 
-  <!-- Brand mark — Inter `p` lowercase, heavy. Sits inside the safe zone. -->
-  <text x="50%" y="65%" text-anchor="middle"
-        font-family="-apple-system, 'Inter', system-ui, sans-serif"
-        font-size="320" font-weight="700" letter-spacing="-12"
-        fill="#FFFFFF">p</text>
-
-  <!-- Mint accent dot — references the heatmap streak indicator. -->
-  <circle cx="372" cy="384" r="22" fill="#10B981"/>
+  <!-- Centered Irbisa geometric mark: 32x32 scaled 10.5x -> 336x336 at offset (88, 88) -->
+  <g transform="translate(88, 88) scale(10.5)">
+    <!-- Facet Body -->
+    <path
+      d="M6 9L10.5 3.5L14 9H18L21.5 3.5L26 9L23.5 15.5L19.5 18.5L16 28.5L12.5 18.5L8.5 15.5L6 9Z"
+      fill="#6366F1"
+      fill-opacity="0.18"
+    />
+    <!-- Outer Contour -->
+    <path
+      d="M6 9L10.5 3.5L14 9H18L21.5 3.5L26 9L23.5 15.5L19.5 18.5L16 28.5L12.5 18.5L8.5 15.5L6 9Z"
+      stroke="url(#silver)"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <!-- Inner Ears -->
+    <path
+      d="M10.5 3.5L12.5 9.5M21.5 3.5L19.5 9.5"
+      stroke="#94A3B8"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <!-- Alert Eyes (Gleaming Cyan) -->
+    <path
+      d="M10.5 14L13.5 15.5L15 14M21.5 14L18.5 15.5L17 14"
+      stroke="#38BDF8"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <!-- Muzzle -->
+    <path
+      d="M16 16.5V22M14.5 22H17.5"
+      stroke="#F1F5F9"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
 </svg>

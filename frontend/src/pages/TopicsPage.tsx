@@ -57,7 +57,7 @@ export default function TopicsPage() {
   const [query, setQuery] = useState('');
 
   useDocumentMeta({
-    title: lang === 'ru' ? 'Темы — Onsite' : 'Topics — Onsite',
+    title: lang === 'ru' ? 'Темы — Irbisa' : 'Topics — Irbisa',
     canonical: '/topics/',
   });
 
